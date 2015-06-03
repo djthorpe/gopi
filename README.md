@@ -8,6 +8,8 @@ This repository contains Raspberry Pi Go Language Experiments. In order to build
 go install github.com/djthorpe/gopi/examples
 ```
 
+This will put the binary programs in your ```${GOPATH}/bin``` subdirectory.
+
 ## Links
 
 Please see the following locations for more information:
