@@ -6,25 +6,39 @@ import (
     "log"
     "os"
     "encoding/csv"
+    "strings"
     "fmt"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
+type PrivacyValue string
+
+func (this *PrivacyValue) String() string {
+    return strings.ToUpper(string(*this))
+}
+
+func (this *PrivacyValue) Set(sval string) bool {
+    *this = PrivacyValue(sval)
+    return true
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 type InputRecord struct {
-    Channel string `field:"Channel"`
-    Video string `field:"Video"`
-    Stream string `field:"Stream"`
-    Title string `field:"Title"`
-    Description string `field:"Description"`
-    Category string `field:"Category"`
-    Keywords string `field:"Keywords"`
-    StartTime string `field:"Start Time"`
-    Duration string `field:"Duration"`
-    Thumbnail string `field:"Thumbnail"`
-    CustomID string `field:"Custom ID"`
-    Privacy string `field:"Privacy"`
-    Embedding bool `field:"Embedding"`
+    Channel string `field:"Channel" required:"false"`
+    Video string `field:"Video" required:"false"`
+    Stream string `field:"Stream" required:"false"`
+    Title string `field:"Title" required:"false"`
+    Description string `field:"Description" required:"false"`
+    Category string `field:"Category" required:"false"`
+    Keywords string `field:"Keywords" required:"false"`
+    StartTime string `field:"Start Time" required:"false"`
+    Duration string `field:"Duration" required:"false"`
+    Thumbnail string `field:"Thumbnail" required:"false"`
+    CustomID string `field:"Custom ID" required:"false"`
+    Privacy PrivacyValue `field:"Privacy" required:"false"`
+    Embedding bool `field:"Embedding" required:"false"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////

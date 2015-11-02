@@ -1,12 +1,19 @@
 package csvdata
 
+/* This package implements a CSV reader which outputs records, rather than
+   arrays of strings.
+*/
+
 import (
     "io"
     "errors"
     "reflect"
     "strconv"
     "strings"
+    "log"
 )
+
+////////////////////////////////////////////////////////////////////////////////
 
 // The data source is any object that has a Read method which can
 // return a row as a slice of strings. This matches csv.Reader in particular.
@@ -35,24 +42,28 @@ type ReadIter struct {
 }
 
 const (
-  none_k = iota
-  string_k
-  int_k
-  float_k
-  uint_k
-  value_k
+    none_k = iota
+    string_k
+    int_k
+    float_k
+    uint_k
+    bool_k
+    value_k
 )
 
 // Creates a new iterator from a Reader source and a user-defined struct.
-func NewReadIter(rdr Reader, ps interface{}) (this *ReadIter, err error) {
-    this = new(ReadIter)
+func NewReadIter(rdr Reader,ps interface{}) (*ReadIter,error) {
+    // create a "this" object" and read in the header
+    var this = new(ReadIter)
+    var err error
     this.Line = 1
-    this.Headers, err = rdr.Read()
     this.Reader = rdr
+    this.Headers, err = rdr.Read()
     if err != nil {
-        this = nil
-        return
+        return nil,err
     }
+
+    // Reflect data structure names and values
     st := reflect.TypeOf(ps).Elem()
     sv := reflect.ValueOf(ps).Elem()
     nf := st.NumField()
@@ -60,28 +71,34 @@ func NewReadIter(rdr Reader, ps interface{}) (this *ReadIter, err error) {
     this.tags = make([]int, nf)
     this.fields = make([]reflect.Value, nf)
     for i := 0; i < nf; i++ {
+        // Set up the field
         f := st.Field(i)
         val := sv.Field(i)
-        // get the corresponding field name and look it up in the headers
         tag := f.Tag.Get("field")
+        required,_ := strconv.ParseBool(f.Tag.Get("required"))
+
+        // get the corresponding field name as lowercase
         if len(tag) == 0 {
             tag = f.Name
-            if strings.Contains(tag,"_") {
-                tag = strings.Replace(tag,"_"," ",-1)
-            }
         }
+        tag = strings.ToLower(tag)
+        tag = strings.Replace(tag," ","_",-1)
+
+        // determine index of tag in header
         itag := -1
         for k, h := range this.Headers {
+            h = strings.ToLower(h)
+            h = strings.Replace(h," ","-",-1)
             if h == tag {
                 itag = k
                 break
             }
         }
-        if itag == -1 {
-            err = errors.New("cannot find this field " + tag)
-            this = nil
-            return
+        if itag == -1 && required {
+            return nil,errors.New("Missing required field: " + f.Name)
         }
+
+        // Work out type of the field
         kind := none_k
         Kind := f.Type.Kind()
         // this is necessary because Kind can't tell distinguish between a primitive type
@@ -101,13 +118,13 @@ func NewReadIter(rdr Reader, ps interface{}) (this *ReadIter, err error) {
                     kind = float_k
                 case reflect.String:
                     kind = string_k
+                case reflect.Bool:
+                    kind = bool_k
                 default:
                     kind = value_k
                     _, ok := val.Interface().(Value)
                     if !ok {
-                        err = errors.New("cannot convert this type ")
-                        this = nil
-                        return
+                        return nil,errors.New("Cannot determine type for field: " + f.Name)
                     }
             }
         }
@@ -115,7 +132,7 @@ func NewReadIter(rdr Reader, ps interface{}) (this *ReadIter, err error) {
         this.tags[i] = itag
         this.fields[i] = val
     }
-    return
+    return this,nil
 }
 
 // The Get method reads the next row. If there was an error or EOF, it
@@ -133,10 +150,16 @@ func (this *ReadIter) Get() bool {
     var ival int64
     var fval float64
     var uval uint64
+    var bval bool
     var v Value
     var ok bool
 
+    log.Printf("tags = %v",this.tags)
+
     for fi, ci := range this.tags {
+        if ci == -1 {
+            continue
+        }
         vals := row[ci] // string at column ci of current row
         f := this.fields[fi]
         switch this.kinds[fi] {
@@ -151,6 +174,9 @@ func (this *ReadIter) Get() bool {
             case float_k:
                 fval, err = strconv.ParseFloat(vals,64)
                 f.SetFloat(fval)
+            case bool_k:
+                bval, err = parseBool(vals)
+                f.SetBool(bval)
             case value_k:
                 v, ok = f.Interface().(Value)
                 if !ok {
@@ -166,5 +192,17 @@ func (this *ReadIter) Get() bool {
         }
     }
     return true
+}
+
+// The parseBool method will do wider boolean parsing than strconv method
+// It accepts y,n,YES,NO,true,false,0,1
+func parseBool(s string) (bool,error) {
+    switch strings.ToLower(s) {
+        case "t","true","y","yes","1":
+            return true,nil
+        case "f","false","n","no","0":
+            return false,nil
+    }
+    return false,errors.New("Invalid value: " + s)
 }
 
