@@ -161,6 +161,7 @@ func tokenFromWeb(config *oauth2.Config,ctx context.Context) (*oauth2.Token,erro
 	return token,nil
 }
 
+// Attempt to open a URL using a browser
 func openURL(url string) {
 	try := []string{"xdg-open", "google-chrome", "open"}
 	for _, bin := range try {
@@ -171,7 +172,9 @@ func openURL(url string) {
 	}
 }
 
-// Save token
-func (ctx *YouTubeService) SaveCredentials(filename string) (error) {
-	return nil
+// Set maximum number of results to return
+func (this *YouTubeService) SetMaxResults(value uint) (*YouTubeService) {
+	this.maxresults = value
+	return this
 }
+

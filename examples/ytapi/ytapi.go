@@ -75,7 +75,7 @@ func main() {
 	}
 
 	// Perform operation
-	ListVideos(service)
+	ListChannels(service)
 }
 
 func ListVideos(service *youtubeapi.YouTubeService) {
@@ -100,7 +100,7 @@ func ListVideos(service *youtubeapi.YouTubeService) {
 
 
 func ListChannels(service *youtubeapi.YouTubeService) {
-    channels, err := service.ChannelsList("snippet,statistics")
+    channels, err := service.SetMaxResults(1).ChannelsList("snippet,statistics")
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
