@@ -43,6 +43,12 @@ func userDir() (userDir string) {
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
+	// Set Usage function
+	flag.Usage = func() {
+        fmt.Fprintf(os.Stderr,"Usage of %s:\n",filepath.Base(os.Args[0]))
+        flag.PrintDefaults()
+	}
+
 	// Read flags
 	flag.Parse()
 
@@ -68,6 +74,7 @@ func main() {
 		log.Fatalf("Error: %v", err)
 	}
 
+	// Perform operation
 	ListVideos(service)
 }
 
