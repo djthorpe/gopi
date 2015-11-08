@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/user"
 	"path/filepath"
+	"strconv"
 
 	"github.com/djthorpe/gopi/youtubeapi"
 	"github.com/olekukonko/tablewriter"
@@ -63,22 +64,21 @@ func main() {
 		log.Fatalf("Error: %v", err)
 	}
 
-	// TODO CACHE
-	//
-
-    response, err := service.ChannelsList()
+    channels, err := service.ChannelsList("snippet,statistics")
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 
 	// Create table writer object
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Channel", "Uploads"})
+	table.SetHeader([]string{"Channel", "Subscriber Count"})
 	table.SetAutoFormatHeaders(false)
+
 	// Iterate through the channels
-	for _, channel := range response.Items {
-		table.Append([]string{channel.Snippet.Title, channel.ContentDetails.RelatedPlaylists.Uploads})
+	for _, channel := range channels {
+		table.Append([]string{channel.Snippet.Title,strconv.FormatUint(channel.Statistics.SubscriberCount,10)})
 	}
+
 	// Output the table
 	table.Render()
 }

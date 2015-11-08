@@ -6,16 +6,17 @@ import (
 
 // Returns set of channel items for YouTube service. Can return several, in the
 // case of service accounts, or a single one, based on simple OAuth authentication
-func (ctx *YouTubeService) ChannelsList() (*youtube.ChannelListResponse, error) {
+func (ctx *YouTubeService) ChannelsList(part string) ([]*youtube.Channel, error) {
 	var call *youtube.ChannelsListCall
 	if ctx.partnerapi {
-		call = ctx.service.Channels.List("contentDetails,snippet").OnBehalfOfContentOwner(ctx.contentowner).ManagedByMe(true)
+		call = ctx.service.Channels.List(part).OnBehalfOfContentOwner(ctx.contentowner).ManagedByMe(true)
 	} else {
-		call = ctx.service.Channels.List("contentDetails,snippet").Mine(true)
+		call = ctx.service.Channels.List(part).Mine(true)
 	}
 	response, err := call.MaxResults(50).Do()
 	if err != nil {
 		return nil, ErrorResponse
 	}
-	return response,nil
+	return response.Items,nil
 }
+
