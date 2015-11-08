@@ -13,10 +13,20 @@ func (this *YouTubeService) ChannelsList(part string) ([]*youtube.Channel, error
 	} else {
 		call = this.service.Channels.List(part).Mine(true)
 	}
-	response, _ := call.Do()
-	if err != nil {
-		return nil, ErrorResponse
-	}
-	return response.Items,nil
+
+    nextPageToken := ""
+    items := make([]*youtube.Channel,0,this.maxresults)
+    for {
+        response, err := call.MaxResults(1).PageToken(nextPageToken).Do()
+        if err != nil {
+            return nil, ErrorResponse
+        }
+        items = append(items,response.Items...)
+        nextPageToken = response.NextPageToken
+        if nextPageToken == "" {
+            break
+        }
+    }
+	return items,nil
 }
 
