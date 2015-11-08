@@ -1,3 +1,6 @@
+/* Copyright David Thorpe 2015 All Rights Reserved
+   This package demonstrates calling the YouTube API
+*/
 package main
 
 import (
@@ -7,6 +10,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strconv"
+	"fmt"
 
 	"github.com/djthorpe/gopi/youtubeapi"
 	"github.com/olekukonko/tablewriter"
@@ -64,6 +68,31 @@ func main() {
 		log.Fatalf("Error: %v", err)
 	}
 
+	ListVideos(service)
+}
+
+func ListVideos(service *youtubeapi.YouTubeService) {
+    videos, err := service.VideosList("snippet,statistics")
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+
+	// Create table writer object
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Video", "Viewcount"})
+	table.SetAutoFormatHeaders(false)
+
+	// Iterate through the channels
+	for _, video := range videos {
+		table.Append([]string{"X",fmt.Sprintf("%v",video)})
+	}
+
+	// Output the table
+	table.Render()
+}
+
+
+func ListChannels(service *youtubeapi.YouTubeService) {
     channels, err := service.ChannelsList("snippet,statistics")
 	if err != nil {
 		log.Fatalf("Error: %v", err)

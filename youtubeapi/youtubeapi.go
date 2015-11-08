@@ -28,6 +28,7 @@ type YouTubeService struct {
 	contentowner string
 	partnerapi   bool
 	debug        bool
+	maxresults   uint
 }
 
 var (
@@ -53,12 +54,12 @@ func NewYouTubeServiceFromServiceAccountJSON(filename string, contentowner strin
 	if err != nil {
 		return nil, ErrorInvalidServiceAccount
 	}
-	ctx := context.Background()
+	ctx := getContext(debug)
 	service, err := youtube.New(sa_config.Client(ctx))
 	if err != nil {
 		return nil, ErrorInvalidServiceAccount
 	}
-	return &YouTubeService{ service, nil, contentowner, true, debug }, nil
+	return &YouTubeService{ service, nil, contentowner, true, debug,0 }, nil
 }
 
 // Returns a service object given client secrets details
@@ -89,7 +90,7 @@ func NewYouTubeServiceFromClientSecretsJSON(clientsecrets string,tokencache stri
 		return nil, ErrorInvalidClientSecrets
 	}
 
-    return &YouTubeService{ service, token, "", false, debug },nil
+    return &YouTubeService{ service, token, "", false, debug,0 },nil
 }
 
 // Returns context
