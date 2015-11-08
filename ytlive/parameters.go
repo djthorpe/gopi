@@ -21,16 +21,16 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 
 type InputRecord struct {
-	Channel string `field:"Channel"`
-	Video string `field:"Video"`
-	Stream string `field:"Stream"`
-	Title string `field:"Title"`
-	Description string `field:"Description"`
-	Category string `field:"Category"`
-	Keywords string `field:"Keywords"`
-	StartTime string `field:"Start Time"`
-	Duration string `field:"Duration"`
-	Thumbnail string `field:"Thumbnail"`
+	Channel string `csv:"channel,user,username"`
+	Video string `csv:"video,video_id,videoid"`
+	Stream string `csv:"stream,stream_id,streamname,stream_name"`
+	Title string `csv:"title"`
+	Description string `csv:"description"`
+	Category string `csv:"category,category_id"`
+	Keywords string `csv:"keywords"`
+	StartTime string `csv:"start time,start"`
+	Duration string `csv:"duration,end time,end"`
+	Thumbnail string `csv:"thumbnail"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
