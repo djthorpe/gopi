@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"os"
-	//	"fmt"
 	"log"
 	"os/user"
 	"path/filepath"
@@ -20,10 +19,12 @@ var (
 	tokenFilename          = flag.String("authtoken", "oauth_token", "OAuth token filename")
 	credentialsFolder      = flag.String("credentials", ".credentials", "Folder containing credentials")
 	contentOwner           = flag.String("contentowner", "", "Content Owner ID")
+	debug                  = flag.Bool("debug",false,"Debug flag")
 )
 
 const (
 	credentialsPathMode = 0700
+	clientid = "973959355861.apps.googleusercontent.com"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -54,13 +55,16 @@ func main() {
 	var service *youtubeapi.YouTubeService
 	var err error
 	if len(*contentOwner) > 0 {
-		service, err = youtubeapi.NewYouTubeServiceFromServiceAccountJSON(filepath.Join(credentialsPath,*serviceAccountFilename), *contentOwner)
+		service, err = youtubeapi.NewYouTubeServiceFromServiceAccountJSON(filepath.Join(credentialsPath,*serviceAccountFilename), *contentOwner,*debug)
     } else {
-		service, err = youtubeapi.NewYouTubeServiceFromClientSecretsJSON(filepath.Join(credentialsPath,*clientsecretFilename))
+		service, err = youtubeapi.NewYouTubeServiceFromClientSecretsJSON(filepath.Join(credentialsPath,*clientsecretFilename),filepath.Join(credentialsPath,*tokenFilename),*debug)
     }
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
+
+	// TODO CACHE
+	//
 
     response, err := service.ChannelsList()
 	if err != nil {
