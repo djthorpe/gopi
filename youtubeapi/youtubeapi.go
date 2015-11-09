@@ -17,9 +17,6 @@ import (
 	"google.golang.org/api/youtube/v3"
 )
 
-
-import "log"
-
 // YouTubeService object which contains the main context for calling the YouTube API
 type YouTubeService struct {
     service      *youtube.Service
@@ -30,8 +27,9 @@ type YouTubeService struct {
 	maxresults   uint
 }
 
-// A PlaylistID
+// YouTube Identifiers
 type YouTubePlaylistID string
+type YouTubeVideoID string
 
 // Errors
 var (
@@ -42,6 +40,10 @@ var (
 	ErrorCacheTokenWrite       = errors.New("Unable to create cache token")
 	ErrorTokenExchange         = errors.New("Token Exchange Error")
 	ErrorResponse              = errors.New("Bad Response")
+)
+
+const (
+    YouTubeMaxPagingResults = 50
 )
 
 // Returns a service object given service account details
@@ -123,7 +125,6 @@ func tokenFromFile(filename string) (*oauth2.Token, error) {
 func saveToken(filename string,token *oauth2.Token) (error) {
 	f, err := os.Create(filename)
 	if err != nil {
-		log.Printf("Error writing to %s",filename)
 		return ErrorCacheTokenWrite
 	}
 	defer f.Close()

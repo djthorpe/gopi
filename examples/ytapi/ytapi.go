@@ -79,20 +79,37 @@ func main() {
 }
 
 func ListVideos(service *youtubeapi.YouTubeService) {
+	// setup table
+	// Create table writer object
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{ "Channel", "Video", "Title", "Status" })
+	table.SetAutoFormatHeaders(false)
+
 	// obtain channels
     channels, err := service.SetMaxResults(0).ChannelsList("contentDetails")
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
+
 	// obtain playlist items
 	for _,channel := range channels {
 		playlist := youtubeapi.YouTubePlaylistID(channel.ContentDetails.RelatedPlaylists.Uploads)
-		videos, err := service.SetMaxResults(0).VideosForPlaylist("id",playlist)
+		videos, err := service.SetMaxResults(0).VideosForPlaylist("id,snippet,status",playlist)
 		if err != nil {
 			log.Fatalf("Error: %v", err)
 		}
-		log.Printf("videos = %v",videos)
+		for _,video := range videos {
+			table.Append([]string{
+				video.Snippet.ChannelTitle,
+				video.Id,
+				video.Snippet.Title,
+				video.Status.PrivacyStatus,
+			})
+		}
 	}
+
+	// Output the table
+	table.Render()
 }
 
 
@@ -109,7 +126,10 @@ func ListChannels(service *youtubeapi.YouTubeService) {
 
 	// Iterate through the channels
 	for _, channel := range channels {
-		table.Append([]string{channel.Snippet.Title,strconv.FormatUint(channel.Statistics.SubscriberCount,10)})
+		table.Append([]string{
+			channel.Snippet.Title,
+			strconv.FormatUint(channel.Statistics.SubscriberCount,10),
+		})
 	}
 
 	// Output the table
