@@ -98,7 +98,7 @@ func ListVideos(service *youtubeapi.YouTubeService) {
 	// setup table
 	// Create table writer object
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{ "Channel", "Video", "Title", "Status" })
+	table.SetHeader([]string{ "channel_title", "video_id", "video_title", "video_status" })
 	table.SetAutoFormatHeaders(false)
 
 	// obtain channels
@@ -137,15 +137,18 @@ func ListChannels(service *youtubeapi.YouTubeService) {
 
 	// Create table writer object
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Channel", "Subscriber Count"})
+	table.SetHeader([]string{ "channel_id", "channel_title", "subscriber_count", "video_count","view_count" })
 	table.SetAutoFormatHeaders(false)
 
 	// Iterate through the channels
 	for _, channel := range channels {
 		table.Append([]string{
-			channel.Snippet.Title,
+            channel.Id,
+            channel.Snippet.Title,
 			strconv.FormatUint(channel.Statistics.SubscriberCount,10),
-		})
+			strconv.FormatUint(channel.Statistics.VideoCount,10),
+			strconv.FormatUint(channel.Statistics.ViewCount,10),
+        })
 	}
 
 	// Output the table
