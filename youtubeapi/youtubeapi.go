@@ -41,6 +41,10 @@ var (
 	ErrorResponse              = errors.New("Bad Response")
 )
 
+const (
+    YouTubeMaxPagingResults = 50
+)
+
 // Returns a service object given service account details
 func NewYouTubeServiceFromServiceAccountJSON(filename string, contentowner string,debug bool) (*YouTubeService, error) {
 	if len(contentowner) == 0 {

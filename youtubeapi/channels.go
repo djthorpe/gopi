@@ -13,11 +13,21 @@ func (this *YouTubeService) ChannelsList(part string) ([]*youtube.Channel, error
 	} else {
 		call = this.service.Channels.List(part).Mine(true)
 	}
-
+    var maxresults = this.maxresults
+    if maxresults==0 {
+        maxresults = YouTubeMaxPagingResults
+    }
     nextPageToken := ""
-    items := make([]*youtube.Channel,0,this.maxresults)
+    items := make([]*youtube.Channel,0,maxresults)
     for {
-        response, err := call.MaxResults(1).PageToken(nextPageToken).Do()
+        var pagingresults = int64(maxresults) - int64(len(items))
+        if pagingresults <= 0 {
+            break
+        }
+        if pagingresults > YouTubeMaxPagingResults {
+            pagingresults = YouTubeMaxPagingResults
+        }
+        response, err := call.MaxResults(pagingresults).PageToken(nextPageToken).Do()
         if err != nil {
             return nil, ErrorResponse
         }
@@ -29,4 +39,3 @@ func (this *YouTubeService) ChannelsList(part string) ([]*youtube.Channel, error
     }
 	return items,nil
 }
-
