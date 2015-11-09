@@ -4,18 +4,30 @@ import (
 	"google.golang.org/api/youtube/v3"
 )
 
-// Returns a list of videos for a playlist
-func (ctx *YouTubeService) VideosList(part string) ([]*youtube.Video, error) {
-	var call *youtube.VideosListCall
-	if ctx.partnerapi {
-		call = ctx.service.Videos.List(part).OnBehalfOfContentOwner(ctx.contentowner)
+// Returns set of video items for YouTube service, given one or more video ids.
+func (this *YouTubeService) VideosForPlaylist(part string,playlist YouTubePlaylistID) ([]*youtube.PlaylistItem, error) {
+	var call *youtube.PlaylistItemsListCall
+	if this.partnerapi {
+		call = this.service.PlaylistItems.List(part).OnBehalfOfContentOwner(this.contentowner)
 	} else {
-		call = ctx.service.Videos.List(part)
+		call = this.service.PlaylistItems.List(part)
 	}
-	response, err := call.MaxResults(50).Do()
-	if err != nil {
-		return nil, ErrorResponse
-	}
-	return response.Items,nil
-}
 
+	// set the playlist flag
+	call = call.PlaylistId(string(playlist))
+
+    nextPageToken := ""
+    items := make([]*youtube.PlaylistItem,0,this.maxresults)
+    for {
+        response, err := call.MaxResults(0).PageToken(nextPageToken).Do()
+        if err != nil {
+            return nil, ErrorResponse
+        }
+        items = append(items,response.Items...)
+        nextPageToken = response.NextPageToken
+        if nextPageToken == "" {
+            break
+        }
+    }
+	return items,nil
+}

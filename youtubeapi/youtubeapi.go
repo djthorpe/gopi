@@ -20,8 +20,7 @@ import (
 
 import "log"
 
-// YouTubeService object which contains the main context for calling the
-// YouTube API
+// YouTubeService object which contains the main context for calling the YouTube API
 type YouTubeService struct {
     service      *youtube.Service
 	token        *oauth2.Token
@@ -31,6 +30,10 @@ type YouTubeService struct {
 	maxresults   uint
 }
 
+// A PlaylistID
+type YouTubePlaylistID string
+
+// Errors
 var (
 	ErrorInvalidServiceAccount = errors.New("Invalid service account")
     ErrorInvalidClientSecrets  = errors.New("Invalid client secrets configuration")

@@ -75,32 +75,29 @@ func main() {
 	}
 
 	// Perform operation
-	ListChannels(service)
+	ListVideos(service)
 }
 
 func ListVideos(service *youtubeapi.YouTubeService) {
-    videos, err := service.VideosList("snippet,statistics")
+	// obtain channels
+    channels, err := service.SetMaxResults(0).ChannelsList("contentDetails")
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
-
-	// Create table writer object
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Video", "Viewcount"})
-	table.SetAutoFormatHeaders(false)
-
-	// Iterate through the channels
-	for _, video := range videos {
-		table.Append([]string{"X",fmt.Sprintf("%v",video)})
+	// obtain playlist items
+	for _,channel := range channels {
+		playlist := youtubeapi.YouTubePlaylistID(channel.ContentDetails.RelatedPlaylists.Uploads)
+		videos, err := service.SetMaxResults(0).VideosForPlaylist("id",playlist)
+		if err != nil {
+			log.Fatalf("Error: %v", err)
+		}
+		log.Printf("videos = %v",videos)
 	}
-
-	// Output the table
-	table.Render()
 }
 
 
 func ListChannels(service *youtubeapi.YouTubeService) {
-    channels, err := service.SetMaxResults(1).ChannelsList("snippet,statistics")
+    channels, err := service.ChannelsList("snippet,statistics")
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}

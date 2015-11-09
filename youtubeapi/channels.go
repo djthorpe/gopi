@@ -17,7 +17,7 @@ func (this *YouTubeService) ChannelsList(part string) ([]*youtube.Channel, error
     nextPageToken := ""
     items := make([]*youtube.Channel,0,this.maxresults)
     for {
-        response, err := call.MaxResults(1).PageToken(nextPageToken).Do()
+        response, err := call.MaxResults(0).PageToken(nextPageToken).Do()
         if err != nil {
             return nil, ErrorResponse
         }
