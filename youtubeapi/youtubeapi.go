@@ -42,6 +42,7 @@ var (
 	ErrorResponse              = errors.New("Bad Response")
 )
 
+// Constants
 const (
     YouTubeMaxPagingResults = 50
 )

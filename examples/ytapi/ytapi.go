@@ -27,6 +27,13 @@ var (
 	debug                  = flag.Bool("debug",false,"Debug flag")
 )
 
+var (
+    operations = map[string]func(*youtubeapi.YouTubeService) {
+        "videos": ListVideos,
+        "channels": ListChannels,
+    }
+)
+
 const (
 	credentialsPathMode = 0700
 	clientid = "973959355861.apps.googleusercontent.com"
@@ -49,8 +56,17 @@ func main() {
         flag.PrintDefaults()
 	}
 
-	// Read flags
+	// Read flags, exit with no operation
 	flag.Parse()
+    if flag.NArg() == 0 {
+        flag.Usage()
+        os.Exit(1)
+    }
+    opname := flag.Arg(0)
+    if operations[opname] == nil {
+        flag.Usage()
+        os.Exit(1)
+    }
 
 	// Obtain path for credentials
 	credentialsPath := filepath.Join(userDir(), *credentialsFolder)
@@ -75,7 +91,7 @@ func main() {
 	}
 
 	// Perform operation
-	ListVideos(service)
+    operations[opname](service)
 }
 
 func ListVideos(service *youtubeapi.YouTubeService) {
