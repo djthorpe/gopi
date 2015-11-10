@@ -5,12 +5,12 @@ package main
 
 import (
 	"flag"
-	"os"
+	"fmt"
 	"log"
+	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
-	"fmt"
 
 	"github.com/djthorpe/gopi/youtubeapi"
 	"github.com/olekukonko/tablewriter"
@@ -24,19 +24,23 @@ var (
 	tokenFilename          = flag.String("authtoken", "oauth_token", "OAuth token filename")
 	credentialsFolder      = flag.String("credentials", ".credentials", "Folder containing credentials")
 	contentOwner           = flag.String("contentowner", "", "Content Owner ID")
-	debug                  = flag.Bool("debug",false,"Debug flag")
+	debug                  = flag.Bool("debug", false, "Debug flag")
+
+	channelFlag = flag.String("channel", "", "Channel ID")
 )
 
 var (
-    operations = map[string]func(*youtubeapi.YouTubeService) {
-        "videos": ListVideos,
-        "channels": ListChannels,
-    }
+	operations = map[string]func(*youtubeapi.YouTubeService){
+		"videos":     ListVideos,     // (--channel=<id>|--video=<id>) --maxresults=<n>
+		"channels":   ListChannels,   // --channel=<id> --maxresults=<n>
+		"broadcasts": ListBroadcasts, // (--channel=<id>|--video=<id>) --maxresults=<n>
+		"streams":    ListStreams,    // --channel=<id> --maxresults=<n>
+	}
 )
 
 const (
 	credentialsPathMode = 0700
-	clientid = "973959355861.apps.googleusercontent.com"
+	clientid            = "973959355861.apps.googleusercontent.com"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -47,26 +51,33 @@ func userDir() (userDir string) {
 	return
 }
 
+func setDefaults(service *youtubeapi.YouTubeService) {
+	// Set channel
+	if err := service.SetChannel(*channelFlag); err != nil {
+		log.Fatalf("Error with --channel flag: %v\n", err)
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
 	// Set Usage function
 	flag.Usage = func() {
-        fmt.Fprintf(os.Stderr,"Usage of %s:\n",filepath.Base(os.Args[0]))
-        flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", filepath.Base(os.Args[0]))
+		flag.PrintDefaults()
 	}
 
 	// Read flags, exit with no operation
 	flag.Parse()
-    if flag.NArg() == 0 {
-        flag.Usage()
-        os.Exit(1)
-    }
-    opname := flag.Arg(0)
-    if operations[opname] == nil {
-        flag.Usage()
-        os.Exit(1)
-    }
+	if flag.NArg() == 0 {
+		flag.Usage()
+		os.Exit(1)
+	}
+	opname := flag.Arg(0)
+	if operations[opname] == nil {
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	// Obtain path for credentials
 	credentialsPath := filepath.Join(userDir(), *credentialsFolder)
@@ -82,39 +93,44 @@ func main() {
 	var service *youtubeapi.YouTubeService
 	var err error
 	if len(*contentOwner) > 0 {
-		service, err = youtubeapi.NewYouTubeServiceFromServiceAccountJSON(filepath.Join(credentialsPath,*serviceAccountFilename), *contentOwner,*debug)
-    } else {
-		service, err = youtubeapi.NewYouTubeServiceFromClientSecretsJSON(filepath.Join(credentialsPath,*clientsecretFilename),filepath.Join(credentialsPath,*tokenFilename),*debug)
-    }
+		service, err = youtubeapi.NewYouTubeServiceFromServiceAccountJSON(filepath.Join(credentialsPath, *serviceAccountFilename), *contentOwner, *debug)
+	} else {
+		service, err = youtubeapi.NewYouTubeServiceFromClientSecretsJSON(filepath.Join(credentialsPath, *clientsecretFilename), filepath.Join(credentialsPath, *tokenFilename), *debug)
+	}
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 
+	// Set defaults for flags
+	setDefaults(service)
+
 	// Perform operation
-    operations[opname](service)
+	operations[opname](service)
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 func ListVideos(service *youtubeapi.YouTubeService) {
 	// setup table
 	// Create table writer object
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{ "channel_title", "video_id", "video_title", "video_status" })
+	table.SetHeader([]string{"channeltitle", "video", "title", "privacy"})
 	table.SetAutoFormatHeaders(false)
 
 	// obtain channels
-    channels, err := service.SetMaxResults(0).ChannelsList("contentDetails")
+	channels, err := service.SetMaxResults(0).ChannelsList("contentDetails")
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 
 	// obtain playlist items
-	for _,channel := range channels {
+	for _, channel := range channels {
 		playlist := youtubeapi.YouTubePlaylistID(channel.ContentDetails.RelatedPlaylists.Uploads)
-		videos, err := service.SetMaxResults(0).VideosForPlaylist("id,snippet,status",playlist)
+		videos, err := service.SetMaxResults(0).VideosForPlaylist("id,snippet,status", playlist)
 		if err != nil {
 			log.Fatalf("Error: %v", err)
 		}
-		for _,video := range videos {
+		for _, video := range videos {
 			table.Append([]string{
 				video.Snippet.ChannelTitle,
 				video.Id,
@@ -128,27 +144,28 @@ func ListVideos(service *youtubeapi.YouTubeService) {
 	table.Render()
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
 func ListChannels(service *youtubeapi.YouTubeService) {
-    channels, err := service.ChannelsList("snippet,statistics")
+	channels, err := service.ChannelsList("snippet,statistics")
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 
 	// Create table writer object
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{ "channel_id", "channel_title", "subscriber_count", "video_count","view_count" })
+	table.SetHeader([]string{"channel", "title", "subscriber_count", "video_count", "view_count"})
 	table.SetAutoFormatHeaders(false)
 
 	// Iterate through the channels
 	for _, channel := range channels {
 		table.Append([]string{
-            channel.Id,
-            channel.Snippet.Title,
-			strconv.FormatUint(channel.Statistics.SubscriberCount,10),
-			strconv.FormatUint(channel.Statistics.VideoCount,10),
-			strconv.FormatUint(channel.Statistics.ViewCount,10),
-        })
+			channel.Id,
+			channel.Snippet.Title,
+			strconv.FormatUint(channel.Statistics.SubscriberCount, 10),
+			strconv.FormatUint(channel.Statistics.VideoCount, 10),
+			strconv.FormatUint(channel.Statistics.ViewCount, 10),
+		})
 	}
 
 	// Output the table

@@ -1,15 +1,15 @@
 package youtubeapi
 
 import (
-	"os"
+	"encoding/gob"
 	"errors"
-	"time"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"encoding/gob"
-	"io/ioutil"
+	"os"
 	"os/exec"
+	"time"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -19,9 +19,10 @@ import (
 
 // YouTubeService object which contains the main context for calling the YouTube API
 type YouTubeService struct {
-    service      *youtube.Service
+	service      *youtube.Service
 	token        *oauth2.Token
 	contentowner string
+	channel      string
 	partnerapi   bool
 	debug        bool
 	maxresults   uint
@@ -34,21 +35,22 @@ type YouTubeVideoID string
 // Errors
 var (
 	ErrorInvalidServiceAccount = errors.New("Invalid service account")
-    ErrorInvalidClientSecrets  = errors.New("Invalid client secrets configuration")
+	ErrorInvalidClientSecrets  = errors.New("Invalid client secrets configuration")
 	ErrorMissingContentOwner   = errors.New("Missing content owner")
 	ErrorCacheTokenRead        = errors.New("Invalid Cache Token")
 	ErrorCacheTokenWrite       = errors.New("Unable to create cache token")
 	ErrorTokenExchange         = errors.New("Token Exchange Error")
 	ErrorResponse              = errors.New("Bad Response")
+	ErrorBadParameter          = errors.New("Invalid Parameter")
 )
 
 // Constants
 const (
-    YouTubeMaxPagingResults = 50
+	YouTubeMaxPagingResults = 50
 )
 
 // Returns a service object given service account details
-func NewYouTubeServiceFromServiceAccountJSON(filename string, contentowner string,debug bool) (*YouTubeService, error) {
+func NewYouTubeServiceFromServiceAccountJSON(filename string, contentowner string, debug bool) (*YouTubeService, error) {
 	if len(contentowner) == 0 {
 		return nil, ErrorMissingContentOwner
 	}
@@ -65,45 +67,57 @@ func NewYouTubeServiceFromServiceAccountJSON(filename string, contentowner strin
 	if err != nil {
 		return nil, ErrorInvalidServiceAccount
 	}
-	return &YouTubeService{ service, nil, contentowner, true, debug,0 }, nil
+	this := new(YouTubeService)
+	this.service = service
+	this.contentowner = contentowner
+	this.partnerapi = true
+	this.debug = debug
+	this.maxresults = 0
+	return this, nil
 }
 
 // Returns a service object given client secrets details
-func NewYouTubeServiceFromClientSecretsJSON(clientsecrets string,tokencache string,debug bool) (*YouTubeService, error) {
-    bytes, err := ioutil.ReadFile(clientsecrets)
-    if err != nil {
-        return nil, ErrorInvalidClientSecrets
-    }
-	config,err := google.ConfigFromJSON(bytes,youtube.YoutubeScope)
+func NewYouTubeServiceFromClientSecretsJSON(clientsecrets string, tokencache string, debug bool) (*YouTubeService, error) {
+	bytes, err := ioutil.ReadFile(clientsecrets)
 	if err != nil {
-        return nil, ErrorInvalidClientSecrets
+		return nil, ErrorInvalidClientSecrets
+	}
+	config, err := google.ConfigFromJSON(bytes, youtube.YoutubeScope)
+	if err != nil {
+		return nil, ErrorInvalidClientSecrets
 	}
 	ctx := getContext(debug)
 
 	// Attempt to get token from cache
 	token, err := tokenFromFile(tokencache)
 	if err != nil {
-		token,err = tokenFromWeb(config,ctx)
-		saveToken(tokencache,token)
+		token, err = tokenFromWeb(config, ctx)
+		saveToken(tokencache, token)
 	}
 	if err != nil {
 		return nil, ErrorInvalidClientSecrets
 	}
 
 	// create client
-	service,err := youtube.New(config.Client(ctx,token))
+	service, err := youtube.New(config.Client(ctx, token))
 	if err != nil {
 		return nil, ErrorInvalidClientSecrets
 	}
 
-    return &YouTubeService{ service, token, "", false, debug,0 },nil
+	this := new(YouTubeService)
+	this.service = service
+	this.token = token
+	this.partnerapi = false
+	this.debug = debug
+	this.maxresults = 0
+	return this, nil
 }
 
 // Returns context
-func getContext(debug bool) (context.Context) {
+func getContext(debug bool) context.Context {
 	ctx := context.Background()
-	if(debug) {
-		ctx = context.WithValue(ctx,oauth2.HTTPClient,&http.Client{
+	if debug {
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{
 			Transport: &logTransport{http.DefaultTransport},
 		})
 	}
@@ -121,9 +135,8 @@ func tokenFromFile(filename string) (*oauth2.Token, error) {
 	return t, err
 }
 
-
 // Saves token
-func saveToken(filename string,token *oauth2.Token) (error) {
+func saveToken(filename string, token *oauth2.Token) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return ErrorCacheTokenWrite
@@ -134,7 +147,7 @@ func saveToken(filename string,token *oauth2.Token) (error) {
 }
 
 // Creates a webserver for user interaction with Google
-func tokenFromWeb(config *oauth2.Config,ctx context.Context) (*oauth2.Token,error) {
+func tokenFromWeb(config *oauth2.Config, ctx context.Context) (*oauth2.Token, error) {
 	ch := make(chan string)
 	randState := fmt.Sprintf("st%d", time.Now().UnixNano())
 	ts := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -143,27 +156,27 @@ func tokenFromWeb(config *oauth2.Config,ctx context.Context) (*oauth2.Token,erro
 			return
 		}
 		if req.FormValue("state") != randState {
-			http.Error(rw,"State doesn't match",500)
+			http.Error(rw, "State doesn't match", 500)
 			return
 		}
 		if code := req.FormValue("code"); code != "" {
-			fmt.Fprintf(rw,"<h1>Success</h1>Authorized - You can now close this window")
+			fmt.Fprintf(rw, "<h1>Success</h1>Authorized - You can now close this window")
 			rw.(http.Flusher).Flush()
 			ch <- code
 			return
 		}
-		http.Error(rw,"No Code",500)
+		http.Error(rw, "No Code", 500)
 	}))
 	defer ts.Close()
 	config.RedirectURL = ts.URL
 	authURL := config.AuthCodeURL(randState)
 	go openURL(authURL)
 	code := <-ch
-	token, err := config.Exchange(ctx,code)
+	token, err := config.Exchange(ctx, code)
 	if err != nil {
-		return nil,ErrorTokenExchange
+		return nil, ErrorTokenExchange
 	}
-	return token,nil
+	return token, nil
 }
 
 // Attempt to open a URL using a browser
@@ -178,8 +191,7 @@ func openURL(url string) {
 }
 
 // Set maximum number of results to return
-func (this *YouTubeService) SetMaxResults(value uint) (*YouTubeService) {
+func (this *YouTubeService) SetMaxResults(value uint) *YouTubeService {
 	this.maxresults = value
 	return this
 }
-
