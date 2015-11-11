@@ -6,26 +6,32 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// Returns set of channel items for YouTube service. Can return several, in the
-// case of service accounts, or a single one, based on simple OAuth authentication
-func (this *YouTubeService) ChannelsList(part string) ([]*youtube.Channel, error) {
+// Returns set of broadcast items for YouTube service
+func (this *YouTubeService) BroadcastsList(part string) ([]*youtube.LiveBroadcast, error) {
 
-	// create call for channels
-	call := this.service.Channels.List(part)
+	// create call for broadcasts
+	call := this.service.LiveBroadcasts.List(part)
 
-	// set channel or channels
-	if this.channel != "" {
-		call = call.Id(this.channel)
-	} else if this.partnerapi {
-		call = call.OnBehalfOfContentOwner(this.contentowner).ManagedByMe(true)
-	} else {
-		call = call.Mine(true)
+	// set channel
+	if this.partnerapi {
+		call = call.OnBehalfOfContentOwner(this.contentowner)
+		// check channel argument
+		if this.channel != "" {
+			call = call.OnBehalfOfContentOwnerChannel(this.channel)
+		} else {
+			return nil,ErrorMissingChannelFlag
+		}
+	}
+
+	// set status
+	if this.status != "" {
+		call = call.BroadcastStatus(this.status)
 	}
 
 	// page through results
 	var maxresults = this.maxresults
 	nextPageToken := ""
-	items := make([]*youtube.Channel, 0, maxresults)
+	items := make([]*youtube.LiveBroadcast, 0, maxresults)
 	for {
 		var pagingresults = int64(maxresults) - int64(len(items))
 		if pagingresults <= 0 {
@@ -47,5 +53,4 @@ func (this *YouTubeService) ChannelsList(part string) ([]*youtube.Channel, error
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
 

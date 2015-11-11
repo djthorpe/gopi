@@ -25,6 +25,7 @@ type YouTubeService struct {
 	channel      string
 	partnerapi   bool
 	debug        bool
+	status       string
 	maxresults   uint
 }
 
@@ -42,6 +43,7 @@ var (
 	ErrorTokenExchange         = errors.New("Token Exchange Error")
 	ErrorResponse              = errors.New("Bad Response")
 	ErrorBadParameter          = errors.New("Invalid Parameter")
+	ErrorMissingChannelFlag    = errors.New("Misssing --channel flag")
 )
 
 // Constants
@@ -190,8 +192,3 @@ func openURL(url string) {
 	}
 }
 
-// Set maximum number of results to return
-func (this *YouTubeService) SetMaxResults(value uint) *YouTubeService {
-	this.maxresults = value
-	return this
-}

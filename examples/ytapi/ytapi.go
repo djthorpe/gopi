@@ -25,15 +25,15 @@ var (
 	credentialsFolder      = flag.String("credentials", ".credentials", "Folder containing credentials")
 	contentOwner           = flag.String("contentowner", "", "Content Owner ID")
 	debug                  = flag.Bool("debug", false, "Debug flag")
-
-	channelFlag = flag.String("channel", "", "Channel ID")
+	channelFlag            = flag.String("channel", "", "Channel ID")
+	statusFlag             = flag.String("status", "", "Status filter")
 )
 
 var (
 	operations = map[string]func(*youtubeapi.YouTubeService){
-		"videos":     ListVideos,     // (--channel=<id>|--video=<id>) --maxresults=<n>
+		"videos":     ListVideos,     // --channel=<id> --maxresults=<n>
 		"channels":   ListChannels,   // --channel=<id> --maxresults=<n>
-		"broadcasts": ListBroadcasts, // (--channel=<id>|--video=<id>) --maxresults=<n>
+		"broadcasts": ListBroadcasts, // --channel=<id> --maxresults=<n> --status=<active|all|completed|upcoming>
 		"streams":    ListStreams,    // --channel=<id> --maxresults=<n>
 	}
 )
@@ -56,6 +56,11 @@ func setDefaults(service *youtubeapi.YouTubeService) {
 	if err := service.SetChannel(*channelFlag); err != nil {
 		log.Fatalf("Error with --channel flag: %v\n", err)
 	}
+	// Set status
+	if err := service.SetStatus(*statusFlag); err != nil {
+		log.Fatalf("Error with --status flag: %v\n", err)
+	}
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -171,3 +176,58 @@ func ListChannels(service *youtubeapi.YouTubeService) {
 	// Output the table
 	table.Render()
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+func ListBroadcasts(service *youtubeapi.YouTubeService) {
+	broadcasts, err := service.BroadcastsList("snippet,status")
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+
+	// Create table writer object
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{ "broadcast", "title", "privacy", "status", "default" })
+	table.SetAutoFormatHeaders(false)
+
+	// Iterate through the broadcasts
+	for _, broadcast := range broadcasts {
+		table.Append([]string{
+			broadcast.Id,
+			broadcast.Snippet.Title,
+			broadcast.Status.PrivacyStatus,
+			broadcast.Status.LifeCycleStatus,
+			strconv.FormatBool(broadcast.Snippet.IsDefaultBroadcast),
+		})
+	}
+
+	// Output the table
+	table.Render()
+}
+
+func ListStreams(service *youtubeapi.YouTubeService) {
+	streams, err := service.StreamsList("snippet,cdn,status")
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+
+	// Create table writer object
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{ "stream", "title", "format", "status", "default" })
+	table.SetAutoFormatHeaders(false)
+
+	// Iterate through the broadcasts
+	for _, stream := range streams {
+		table.Append([]string{
+			stream.Cdn.IngestionInfo.StreamName,
+			stream.Snippet.Title,
+			stream.Cdn.Format,
+			stream.Status.StreamStatus,
+			strconv.FormatBool(stream.Snippet.IsDefaultStream),
+		})
+	}
+
+	// Output the table
+	table.Render()
+}
+
