@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -27,6 +28,7 @@ var (
 	debug                  = flag.Bool("debug", false, "Debug flag")
 	channelFlag            = flag.String("channel", "", "Channel ID")
 	videoFlag              = flag.String("video", "", "Video ID")
+	streamFlag             = flag.String("stream", "", "Stream Key or ID")
 	statusFlag             = flag.String("status", "", "Status filter")
 )
 
@@ -36,6 +38,8 @@ var (
 		"channels":   ListChannels,   // --channel=<id> --maxresults=<n>
 		"broadcasts": ListBroadcasts, // --channel=<id> --maxresults=<n> --status=<active|all|completed|upcoming>
 		"streams":    ListStreams,    // --channel=<id> --maxresults=<n>
+		"bind":       BindBroadcast,  // --video=<id> --stream=<id>
+		"unbind":     UnbindBroadcast,// --video=<id>
 	}
 )
 
@@ -64,6 +68,11 @@ func setDefaults(service *youtubeapi.YouTubeService) {
 		log.Fatalf("Error with --video flag: %v\n", err)
 	}
 
+	// Set stream
+	if err := service.SetStream(*streamFlag); err != nil {
+		log.Fatalf("Error with --stream flag: %v\n", err)
+	}
+
 	// Set status
 	if err := service.SetStatus(*statusFlag); err != nil {
 		log.Fatalf("Error with --status flag: %v\n", err)
@@ -74,9 +83,17 @@ func setDefaults(service *youtubeapi.YouTubeService) {
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
-	// Set Usage function
+	// enumerate operations
+	operation_keys := make([]string,0,len(operations))
+	for key := range operations {
+	    operation_keys = append(operation_keys,key)
+	}
+
+	// Set usage function
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", filepath.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, "\n\t%s <flags> <%v>\n\n",filepath.Base(os.Args[0]),strings.Join(operation_keys,"|"))
+		fmt.Fprintf(os.Stderr, "Where <flags> are one or more of:\n\n")
 		flag.PrintDefaults()
 	}
 
@@ -238,4 +255,19 @@ func ListStreams(service *youtubeapi.YouTubeService) {
 	// Output the table
 	table.Render()
 }
+
+func BindBroadcast(service *youtubeapi.YouTubeService) {
+	_, err := service.BindBroadcast("snippet,status")
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+}
+
+func UnbindBroadcast(service *youtubeapi.YouTubeService) {
+	_, err := service.UnbindBroadcast("snippet,status")
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+}
+
 

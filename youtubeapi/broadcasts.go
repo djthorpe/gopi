@@ -58,3 +58,50 @@ func (this *YouTubeService) BroadcastsList(part string) ([]*youtube.LiveBroadcas
 
 ////////////////////////////////////////////////////////////////////////////////
 
+func (this *YouTubeService) BindBroadcast(part string) ([]*youtube.LiveBroadcast, error) {
+	// check for stream and video arguments
+	if this.stream == "" || this.video == "" {
+		return nil,ErrorMissingBindFlags
+	}
+
+	return this.BindUnbindBroadcast(part)
+}
+
+func (this *YouTubeService) UnbindBroadcast(part string) ([]*youtube.LiveBroadcast, error) {
+	// check video argument
+	if this.video == "" {
+		return nil,ErrorMissingVideoFlag
+	}
+
+	return this.BindUnbindBroadcast(part)
+}
+
+func (this *YouTubeService) BindUnbindBroadcast(part string) ([]*youtube.LiveBroadcast, error) {
+
+	// create call for bind
+	call := this.service.LiveBroadcasts.Bind(this.video,part)
+
+	// set authentication
+	if this.partnerapi {
+		call = call.OnBehalfOfContentOwner(this.contentowner)
+		// check channel argument
+		if this.channel != "" {
+			call = call.OnBehalfOfContentOwnerChannel(this.channel)
+		}
+	}
+
+	// set stream
+	if this.stream != "" {
+		call = call.StreamId(this.stream)
+	}
+
+	// make call
+	response, err := call.Do()
+	if err != nil {
+		return nil, ErrorResponse
+	}
+
+	// return items
+	return []*youtube.LiveBroadcast{ response }, nil
+}
+

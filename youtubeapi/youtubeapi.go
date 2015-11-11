@@ -1,15 +1,14 @@
 package youtubeapi
 
 import (
-	"encoding/gob"
-	"errors"
 	"fmt"
+	"time"
+	"os"
+	"os/exec"
+	"encoding/gob"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"os/exec"
-	"time"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -24,6 +23,7 @@ type YouTubeService struct {
 	contentowner string
 	channel      string
 	video        string
+	stream       string
 	partnerapi   bool
 	debug        bool
 	status       string
@@ -33,19 +33,6 @@ type YouTubeService struct {
 // YouTube Identifiers
 type YouTubePlaylistID string
 type YouTubeVideoID string
-
-// Errors
-var (
-	ErrorInvalidServiceAccount = errors.New("Invalid service account")
-	ErrorInvalidClientSecrets  = errors.New("Invalid client secrets configuration")
-	ErrorMissingContentOwner   = errors.New("Missing content owner")
-	ErrorCacheTokenRead        = errors.New("Invalid Cache Token")
-	ErrorCacheTokenWrite       = errors.New("Unable to create cache token")
-	ErrorTokenExchange         = errors.New("Token Exchange Error")
-	ErrorResponse              = errors.New("Bad Response")
-	ErrorBadParameter          = errors.New("Invalid Parameter")
-	ErrorMissingChannelFlag    = errors.New("Misssing --channel flag")
-)
 
 // Constants
 const (
