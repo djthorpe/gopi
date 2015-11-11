@@ -26,6 +26,10 @@ func (this *YouTubeService) BroadcastsList(part string) ([]*youtube.LiveBroadcas
 	// set status
 	if this.status != "" {
 		call = call.BroadcastStatus(this.status)
+	} else if this.video != "" {
+		call = call.Id(this.video)
+	} else {
+		call = call.BroadcastStatus("all")
 	}
 
 	// page through results

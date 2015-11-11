@@ -23,6 +23,7 @@ type YouTubeService struct {
 	token        *oauth2.Token
 	contentowner string
 	channel      string
+	video        string
 	partnerapi   bool
 	debug        bool
 	status       string

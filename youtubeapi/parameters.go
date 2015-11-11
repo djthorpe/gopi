@@ -22,6 +22,20 @@ func (this *YouTubeService) SetChannel(value string) error {
 	return nil
 }
 
+
+func (this *YouTubeService) SetVideo(value string) error {
+	if value != "" {
+		// check regular expression for video ID
+		matched, _ := regexp.MatchString("^([a-zA-Z0-9\\_\\-]){11}$", value)
+		if matched != true {
+			return ErrorBadParameter
+		}
+	}
+	// set parameter
+	this.video = value
+	return nil
+}
+
 func (this *YouTubeService) SetStatus(value string) error {
 	if value != "" {
 		// check regular expression for staus

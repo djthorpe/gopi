@@ -26,6 +26,7 @@ var (
 	contentOwner           = flag.String("contentowner", "", "Content Owner ID")
 	debug                  = flag.Bool("debug", false, "Debug flag")
 	channelFlag            = flag.String("channel", "", "Channel ID")
+	videoFlag              = flag.String("video", "", "Video ID")
 	statusFlag             = flag.String("status", "", "Status filter")
 )
 
@@ -52,10 +53,17 @@ func userDir() (userDir string) {
 }
 
 func setDefaults(service *youtubeapi.YouTubeService) {
+
 	// Set channel
 	if err := service.SetChannel(*channelFlag); err != nil {
 		log.Fatalf("Error with --channel flag: %v\n", err)
 	}
+
+	// Set video
+	if err := service.SetVideo(*videoFlag); err != nil {
+		log.Fatalf("Error with --video flag: %v\n", err)
+	}
+
 	// Set status
 	if err := service.SetStatus(*statusFlag); err != nil {
 		log.Fatalf("Error with --status flag: %v\n", err)
