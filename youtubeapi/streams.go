@@ -5,6 +5,31 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// TODO Cache results of keys => streams
+// Returns stream for key
+func (this *YouTubeService) StreamForKey(key string) (string, error) {
+	call := this.service.LiveStreams.List("id")
+
+	// set channel
+	if this.partnerapi {
+		call = call.OnBehalfOfContentOwner(this.contentowner)
+		// check channel argument
+		if this.channel != "" {
+			call = call.OnBehalfOfContentOwnerChannel(this.channel)
+		} else {
+			return "",ErrorMissingChannelFlag
+		}
+	} else {
+		call = call.Mine(true)
+	}
+
+	_,err := call.Id(key).Do()
+	if err != nil {
+		return "",err
+	}
+
+	return key,nil
+}
 
 // Returns set of stream items for YouTube service
 func (this *YouTubeService) StreamsList(part string) ([]*youtube.LiveStream, error) {

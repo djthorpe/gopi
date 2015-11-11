@@ -42,7 +42,15 @@ func (this *YouTubeService) SetStream(value string) error {
 		if matched != true {
 			return ErrorBadParameter
 		}
+
+		// Look up stream key
+		var err error
+		value,err = this.StreamForKey(value)
+		if err != nil {
+			return err
+		}
 	}
+
 	// set parameter
 	this.stream = value
 	return nil
