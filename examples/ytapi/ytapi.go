@@ -38,7 +38,7 @@ var (
 		"channels":   ListChannels,   // --channel=<id> --maxresults=<n>
 		"broadcasts": ListBroadcasts, // --channel=<id> --maxresults=<n> --status=<active|all|completed|upcoming>
 		"streams":    ListStreams,    // --channel=<id> --maxresults=<n>
-		"bind":       BindBroadcast,  // --video=<id> --stream=<id>
+		"bind":       BindBroadcast,  // --video=<id> --stream=<key>
 		"unbind":     UnbindBroadcast,// --video=<id>
 	}
 )
@@ -139,19 +139,18 @@ func main() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Videos
 
 func ListVideos(service *youtubeapi.YouTubeService) {
-	// setup table
-	// Create table writer object
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"channeltitle", "video", "title", "privacy"})
-	table.SetAutoFormatHeaders(false)
 
 	// obtain channels
 	channels, err := service.SetMaxResults(0).ChannelsList("contentDetails")
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
+
+	// Create table writer object
+	table := NewVideosTable
 
 	// obtain playlist items
 	for _, channel := range channels {
@@ -175,6 +174,7 @@ func ListVideos(service *youtubeapi.YouTubeService) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Channels
 
 func ListChannels(service *youtubeapi.YouTubeService) {
 	channels, err := service.ChannelsList("snippet,statistics")
@@ -183,9 +183,7 @@ func ListChannels(service *youtubeapi.YouTubeService) {
 	}
 
 	// Create table writer object
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"channel", "title", "subscriber_count", "video_count", "view_count"})
-	table.SetAutoFormatHeaders(false)
+	table := NewChannelsTable()
 
 	// Iterate through the channels
 	for _, channel := range channels {
@@ -203,6 +201,7 @@ func ListChannels(service *youtubeapi.YouTubeService) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Broadcasts
 
 func ListBroadcasts(service *youtubeapi.YouTubeService) {
 	broadcasts, err := service.BroadcastsList("snippet,status")
@@ -210,10 +209,7 @@ func ListBroadcasts(service *youtubeapi.YouTubeService) {
 		log.Fatalf("Error: %v", err)
 	}
 
-	// Create table writer object
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{ "broadcast", "title", "privacy", "status", "default" })
-	table.SetAutoFormatHeaders(false)
+	table := NewBroadcastsTable()
 
 	// Iterate through the broadcasts
 	for _, broadcast := range broadcasts {
@@ -230,6 +226,55 @@ func ListBroadcasts(service *youtubeapi.YouTubeService) {
 	table.Render()
 }
 
+func BindBroadcast(service *youtubeapi.YouTubeService) {
+	broadcasts, err := service.BindBroadcast("snippet,status")
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+
+	table := NewBroadcastsTable()
+
+	// Iterate through the broadcasts
+	for _, broadcast := range broadcasts {
+		table.Append([]string{
+			broadcast.Id,
+			broadcast.Snippet.Title,
+			broadcast.Status.PrivacyStatus,
+			broadcast.Status.LifeCycleStatus,
+			strconv.FormatBool(broadcast.Snippet.IsDefaultBroadcast),
+		})
+	}
+
+	// Output the table
+	table.Render()
+}
+
+func UnbindBroadcast(service *youtubeapi.YouTubeService) {
+	broadcasts, err := service.UnbindBroadcast("snippet,status")
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+
+	table := NewBroadcastsTable()
+
+	// Iterate through the broadcasts
+	for _, broadcast := range broadcasts {
+		table.Append([]string{
+			broadcast.Id,
+			broadcast.Snippet.Title,
+			broadcast.Status.PrivacyStatus,
+			broadcast.Status.LifeCycleStatus,
+			strconv.FormatBool(broadcast.Snippet.IsDefaultBroadcast),
+		})
+	}
+
+	// Output the table
+	table.Render()
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Streams
+
 func ListStreams(service *youtubeapi.YouTubeService) {
 	streams, err := service.StreamsList("snippet,cdn,status")
 	if err != nil {
@@ -237,9 +282,7 @@ func ListStreams(service *youtubeapi.YouTubeService) {
 	}
 
 	// Create table writer object
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{ "stream", "title", "format", "status", "default" })
-	table.SetAutoFormatHeaders(false)
+	table := NewStreamsTable()
 
 	// Iterate through the broadcasts
 	for _, stream := range streams {
@@ -256,18 +299,43 @@ func ListStreams(service *youtubeapi.YouTubeService) {
 	table.Render()
 }
 
-func BindBroadcast(service *youtubeapi.YouTubeService) {
-	_, err := service.BindBroadcast("snippet,status")
-	if err != nil {
-		log.Fatalf("Error: %v", err)
-	}
+////////////////////////////////////////////////////////////////////////////////
+// Create table objects for each type of return
+
+func NewBroadcastsTable() (*tablewriter.Table) {
+	// Create table writer object
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{ "broadcast", "title", "privacy", "status", "default" })
+	table.SetAutoFormatHeaders(false)
+	return table
 }
 
-func UnbindBroadcast(service *youtubeapi.YouTubeService) {
-	_, err := service.UnbindBroadcast("snippet,status")
-	if err != nil {
-		log.Fatalf("Error: %v", err)
-	}
+func NewStreamsTable() (*tablewriter.Table) {
+	// Create table writer object
+	table := tablewriter.NewWriter(os.Stdout)
+	tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{ "stream", "title", "format", "status", "default" })
+	table.SetAutoFormatHeaders(false)
+	return table
 }
+
+func NewVideosTable() (*tablewriter.Table) {
+	// Create table writer object
+	table := tablewriter.NewWriter(os.Stdout)
+	tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"channeltitle", "video", "title", "privacy"})
+	table.SetAutoFormatHeaders(false)
+	return table
+}
+
+func NewChannelsTable() (*tablewriter.Table) {
+	// Create table writer object
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"channel", "title", "subscriber_count", "video_count", "view_count"})
+	table.SetAutoFormatHeaders(false)
+	return table
+}
+
+
 
 
