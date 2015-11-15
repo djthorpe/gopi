@@ -17,18 +17,18 @@ func (this *YouTubeService) StreamForKey(key string) (string, error) {
 		if this.channel != "" {
 			call = call.OnBehalfOfContentOwnerChannel(this.channel)
 		} else {
-			return "",ErrorMissingChannelFlag
+			return "", ErrorMissingChannelFlag
 		}
 	} else {
 		call = call.Mine(true)
 	}
 
-	_,err := call.Id(key).Do()
+	_, err := call.Id(key).Do()
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
-	return key,nil
+	return key, nil
 }
 
 // Returns set of stream items for YouTube service
@@ -44,7 +44,7 @@ func (this *YouTubeService) StreamsList(part string) ([]*youtube.LiveStream, err
 		if this.channel != "" {
 			call = call.OnBehalfOfContentOwnerChannel(this.channel)
 		} else {
-			return nil,ErrorMissingChannelFlag
+			return nil, ErrorMissingChannelFlag
 		}
 	} else {
 		call = call.Mine(true)
@@ -75,4 +75,3 @@ func (this *YouTubeService) StreamsList(part string) ([]*youtube.LiveStream, err
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-

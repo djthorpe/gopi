@@ -150,7 +150,7 @@ func ListVideos(service *youtubeapi.YouTubeService) {
 	}
 
 	// Create table writer object
-	table := NewVideosTable
+	table := NewVideosTable()
 
 	// obtain playlist items
 	for _, channel := range channels {

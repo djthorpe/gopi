@@ -1,9 +1,7 @@
-
 // https://github.com/davecheney/gpio
 // See LICENSE file for licensing information and credits
 // package rpi provides a GPIO implementation customised for the RPi.
-
-package rpi
+package gpio
 
 import (
 	"log"

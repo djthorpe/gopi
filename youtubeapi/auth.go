@@ -1,14 +1,13 @@
-
 package youtubeapi
 
 import (
-	"fmt"
-	"time"
-	"os"
-	"os/exec"
 	"encoding/gob"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"os/exec"
+	"time"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"

@@ -43,37 +43,56 @@ func (this *YouTubeService) PlaylistItemsForPlaylist(part string, playlist YouTu
 
 // Returns Videos within a single playlist
 func (this *YouTubeService) VideosForPlaylist(part string, playlist YouTubePlaylistID) ([]*youtube.Video, error) {
-
-	// Fetch Playlist Items
-	playlistItems, err := this.PlaylistItemsForPlaylist("contentDetails", playlist)
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate List of VideoID's
-	videoIdList := make([]string, 0, len(playlistItems))
-	for _, video := range playlistItems {
-		videoIdList = append(videoIdList, video.ContentDetails.VideoId)
-	}
-
-	// Generate the call to youtube.videos.list
-	var call *youtube.VideosListCall
+	var call *youtube.PlaylistItemsListCall
 	if this.partnerapi {
-		call = this.service.Videos.List(part).OnBehalfOfContentOwner(this.contentowner)
+		call = this.service.PlaylistItems.List("contentDetails").OnBehalfOfContentOwner(this.contentowner)
 	} else {
-		call = this.service.Videos.List(part)
+		call = this.service.PlaylistItems.List("contentDetails")
 	}
-	call = call.Id(strings.Join(videoIdList, ","))
 
-	// Paging through calls
-	nextPageToken := ""
-	items := make([]*youtube.Video, 0, len(videoIdList))
+	// set the playlist flag
+	call = call.PlaylistId(string(playlist))
+
+	// Create the video call
+	var videoCall *youtube.VideosListCall
+	if this.partnerapi {
+		videoCall = this.service.Videos.List(part).OnBehalfOfContentOwner(this.contentowner)
+	} else {
+		videoCall = this.service.Videos.List(part)
+	}
+
+	// page through the items
+	var maxresults = this.maxresults
+	var nextPageToken string = ""
+	var items = make([]*youtube.Video, 0, maxresults)
+
 	for {
-		response, err := call.MaxResults(YouTubeMaxPagingResults).PageToken(nextPageToken).Do()
+		var pagingresults = int64(maxresults)
+		if pagingresults <= 0 {
+			pagingresults = YouTubeMaxPagingResults
+		} else if pagingresults > YouTubeMaxPagingResults {
+			pagingresults = YouTubeMaxPagingResults
+		}
+		response, err := call.MaxResults(pagingresults).PageToken(nextPageToken).Do()
 		if err != nil {
 			return nil, ErrorResponse
 		}
-		items = append(items, response.Items...)
+
+		// Create array of VideoID items
+		var playlistItems = make([]string, 0, len(response.Items))
+		for _, item := range response.Items {
+			playlistItems = append(playlistItems, item.ContentDetails.VideoId)
+		}
+
+		// return the videos
+		videoResponse, err := videoCall.Id(strings.Join(playlistItems, ",")).MaxResults(int64(len(playlistItems))).Do()
+		if err != nil {
+			return nil, ErrorResponse
+		}
+
+		// append items
+		items = append(items, videoResponse.Items...)
+
 		nextPageToken = response.NextPageToken
 		if nextPageToken == "" {
 			break

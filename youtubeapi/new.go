@@ -1,10 +1,10 @@
 package youtubeapi
 
 import (
-	"io/ioutil"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/youtube/v3"
+	"io/ioutil"
 )
 
 // YouTubeService object which contains the main context for calling the YouTube API
@@ -93,4 +93,3 @@ func NewYouTubeServiceFromClientSecretsJSON(clientsecrets string, tokencache str
 	this.maxresults = 0
 	return this, nil
 }
-

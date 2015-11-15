@@ -45,7 +45,7 @@ func (this *YouTubeService) SetStream(value string) error {
 
 		// Look up stream key
 		var err error
-		value,err = this.StreamForKey(value)
+		value, err = this.StreamForKey(value)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func (this *YouTubeService) SetStream(value string) error {
 func (this *YouTubeService) SetStatus(value string) error {
 	if value != "" {
 		// check regular expression for staus
-		matched, _ := regexp.MatchString("^(all|active|completed|upcoming)$",value)
+		matched, _ := regexp.MatchString("^(all|active|completed|upcoming)$", value)
 		if matched != true {
 			return ErrorBadParameter
 		}
