@@ -44,7 +44,7 @@ following command line sequence:
 
   # build ffmpeg
   cd ${FFMPEG_ROOT}/src/${FFMPEG_FILENAME}
-  ./configure --prefix=${FFMPEG_ROOT} --enable-nonfree --enable-gpl --enable-libx264 --enable-shared --enable-static --extra-cflags="-I${FFMPEG_ROOT}/include" --extra-ldflags="-L${FFMPEG_ROOT}/lib"
+  ./configure --prefix=${FFMPEG_ROOT} --enable-nonfree --enable-gpl --enable-libx264 --enable-static --extra-cflags="-I${FFMPEG_ROOT}/include" --extra-ldflags="-L${FFMPEG_ROOT}/lib"
   make && make install
   
 ```
