@@ -19,8 +19,8 @@ Please see the following locations for more information:
 
 ## Building ffmpeg
 
-In order to build ffmpeg for your Raspberry Pi, you can use the following
-command line:
+In order to build ffmpeg with libx264 for your Raspberry Pi, you can use the 
+following command line sequence:
 
 ```  
   export FFMPEG_ROOT="/opt/ffmpeg"
@@ -48,3 +48,15 @@ command line:
   make && make install
   
 ```
+
+The resulting binaries and libraries will be under `/opt/ffmpeg` or whereever you
+indicated `${FFMPEG_ROOT}` should be. You'll then need to add the location to
+your `${PATH}` variable:
+
+```
+  export FFMPEG_ROOT="/opt/ffmpeg"
+  export PATH="${PATH}:${FFMPEG_ROOT}/bin"
+```
+
+
+
