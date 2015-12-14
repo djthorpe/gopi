@@ -24,7 +24,8 @@ following command line sequence:
 
 ```  
   export FFMPEG_ROOT="/opt/ffmpeg"
-
+  export PKG_CONFIG_PATH="${FFMPEG_ROOT}/lib/pkgconfig"
+  
   # set up structure
   mkdir ${FFMPEG_ROOT}
   cd ${FFMPEG_ROOT}
@@ -34,17 +35,17 @@ following command line sequence:
   # download sources
   curl ftp://ftp.videolan.org/pub/videolan/x264/snapshots/last_stable_x264.tar.bz2 | tar xj
   curl https://ffmpeg.org/releases/ffmpeg-2.8.3.tar.gz | tar xz  
-  export X264_FILENAME=`ls -r | grep x264`; echo "X264=${X264_FILENAME}"
+  export X264_FILENAME=`ls -r ${FFMPEG_ROOT}/src | grep x264`; echo "X264=${X264_FILENAME}"
   export FFMPEG_FILENAME=`ls -r | grep ffmpeg`; echo "FFMPEG=${FFMPEG_FILENAME}"
 
   # build libx264
   cd ${FFMPEG_ROOT}/src/${X264_FILENAME}
-  ./configure --host=arm-unknown-linux-gnueabi --enable-static --disable-opencl --prefix=${FFMPEG_ROOT}
+  ./configure --host=arm-unknown-linux-gnueabi --enable-static --disable-opencl --extra-cflags="-fPIC" --prefix=${FFMPEG_ROOT}
   make -j4 && make install
 
   # build ffmpeg
   cd ${FFMPEG_ROOT}/src/${FFMPEG_FILENAME}
-  ./configure --prefix=${FFMPEG_ROOT} --enable-nonfree --enable-gpl --enable-libx264 --enable-static --extra-cflags="-I${FFMPEG_ROOT}/include" --extra-ldflags="-L${FFMPEG_ROOT}/lib"
+  ./configure --prefix=${FFMPEG_ROOT} --enable-nonfree --enable-gpl --enable-libx264 --enable-static --extra-cflags="-I${FFMPEG_ROOT}/include -fPIC" --extra-ldflags="-L${FFMPEG_ROOT}/lib"
   make -j4 && make install
   
 ```
