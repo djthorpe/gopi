@@ -28,7 +28,7 @@ following command line sequence:
   
   # set up structure
   install -d ${FFMPEG_ROOT}/src
-  cd ${FFMPEH_ROOT}/src
+  cd ${FFMPEG_ROOT}/src
 
   # download sources
   curl ftp://ftp.videolan.org/pub/videolan/x264/snapshots/last_stable_x264.tar.bz2 | tar xj
