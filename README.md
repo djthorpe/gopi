@@ -27,10 +27,8 @@ following command line sequence:
   export PKG_CONFIG_PATH="${FFMPEG_ROOT}/lib/pkgconfig"
   
   # set up structure
-  mkdir ${FFMPEG_ROOT}
-  cd ${FFMPEG_ROOT}
-  mkdir src
-  cd src
+  install -d ${FFMPEG_ROOT}/src
+  cd ${FFMPEH_ROOT}/src
 
   # download sources
   curl ftp://ftp.videolan.org/pub/videolan/x264/snapshots/last_stable_x264.tar.bz2 | tar xj
