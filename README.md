@@ -40,12 +40,12 @@ following command line sequence:
   # build libx264
   cd ${FFMPEG_ROOT}/src/${X264_FILENAME}
   ./configure --host=arm-unknown-linux-gnueabi --enable-static --disable-opencl --prefix=${FFMPEG_ROOT}
-  make && make install
+  make -j4 && make install
 
   # build ffmpeg
   cd ${FFMPEG_ROOT}/src/${FFMPEG_FILENAME}
   ./configure --prefix=${FFMPEG_ROOT} --enable-nonfree --enable-gpl --enable-libx264 --enable-static --extra-cflags="-I${FFMPEG_ROOT}/include" --extra-ldflags="-L${FFMPEG_ROOT}/lib"
-  make && make install
+  make -j4 && make install
   
 ```
 
