@@ -7,14 +7,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"github.com/giorgisio/goav/avcodec"
-	"github.com/giorgisio/goav/avformat"
-	"github.com/giorgisio/goav/avutil"
-	"github.com/giorgisio/goav/swscale"
-	"log"
-	"os"
-	"unsafe"
+	"github.com/djthorpe/goav/avformat"
+//	"fmt"
+//	"log"
+//	"os"
+//	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,6 +23,20 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
+	// Read flags
+    flag.Parse()
+
+	// Register all formats and codecs
+	avformat.AvRegisterAll()
+}
+
+/*
+	// Open video file
+	if avformat.AvformatOpenInput(&ctxtFormat,*filename,nil,nil) != 0 {
+		fmt.Printf("Error: Couldn't open file: %s\n",*filename)
+		return
+	}
+
 	var (
 		ctxtFormat    *avformat.Context
 		ctxtSource    *avcodec.Context
@@ -41,17 +52,7 @@ func main() {
 		url           string
 	)
 
-	// Read flags
-    flag.Parse()
 
-	// Register all formats and codecs
-	avformat.AvRegisterAll()
-
-	// Open video file
-	if avformat.AvformatOpenInput(&ctxtFormat,*filename,nil,nil) != 0 {
-		fmt.Printf("Error: Couldn't open file: %s\n",*filename)
-		return
-	}
 
 	// Retrieve stream information
 	if ctxtFormat.AvformatFindStreamInfo(nil) < 0 {
@@ -253,3 +254,5 @@ func saveFrame(videoFrame *avutil.Frame, width int, height int, iFrame int) {
 	file.Close()
 
 }
+*/
+
