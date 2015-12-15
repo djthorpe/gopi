@@ -8,8 +8,8 @@ package main
 import (
 	"flag"
 	"github.com/djthorpe/goav/avformat"
-//	"fmt"
-//	"log"
+	"fmt"
+	"log"
 //	"os"
 //	"unsafe"
 )
@@ -28,31 +28,27 @@ func main() {
 
 	// Register all formats and codecs
 	avformat.AvRegisterAll()
-}
 
-/*
+	var (
+		ctxtFormat    *avformat.Context
+		url           string
+//		ctxtSource    *avcodec.Context
+//		ctxtDest      *avcodec.Context
+//		videoCodec    *avcodec.Codec
+//		videoFrame    *avutil.Frame
+//		videoFrameRGB *avutil.Frame
+//		packet        *avcodec.Packet
+//		ctxtSws       *swscale.Context
+//		videoStream   int
+//		frameFinished int
+//		numBytes      int
+	)
+
 	// Open video file
 	if avformat.AvformatOpenInput(&ctxtFormat,*filename,nil,nil) != 0 {
 		fmt.Printf("Error: Couldn't open file: %s\n",*filename)
 		return
 	}
-
-	var (
-		ctxtFormat    *avformat.Context
-		ctxtSource    *avcodec.Context
-		ctxtDest      *avcodec.Context
-		videoCodec    *avcodec.Codec
-		videoFrame    *avutil.Frame
-		videoFrameRGB *avutil.Frame
-		packet        *avcodec.Packet
-		ctxtSws       *swscale.Context
-		videoStream   int
-		frameFinished int
-		numBytes      int
-		url           string
-	)
-
-
 
 	// Retrieve stream information
 	if ctxtFormat.AvformatFindStreamInfo(nil) < 0 {
@@ -62,7 +58,8 @@ func main() {
 
 	// Dump information about file onto standard error
 	ctxtFormat.AvDumpFormat(0, url, 0)
-
+}
+/*
 	// Find the first video stream
 	videoStream = -1
 	n := ctxtFormat.NbStreams()

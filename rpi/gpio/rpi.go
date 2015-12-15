@@ -102,7 +102,7 @@ const (
 	GPIO17 = GPIO_P1_11
 )
 
-func initRPi() {
+func New() {
 	memfd, err := os.OpenFile("/dev/mem", os.O_RDWR|os.O_SYNC, 0)
 	if err != nil {
 		log.Fatalf("rpi: unable to open /dev/mem: %v", err)
