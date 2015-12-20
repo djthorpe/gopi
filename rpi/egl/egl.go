@@ -124,23 +124,23 @@ func DestroyContext(disp Display, ctx Context) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func CreateWindowSurface(disp Display, config Config,window Window, attribList *int32) (Surface, error) {
-	surface := Surface(C.eglCreateWindowSurface(C.EGLDisplay(unsafe.Pointer(disp)),C.EGLConfig(unsafe.Pointer(config)),C.EGLNativeWindowType(unsafe.Pointer(&window)),(*C.EGLint)(attribList)))
+func CreateWindowSurface(disp Display, config Config, window Window, attribList *int32) (Surface, error) {
+	surface := Surface(C.eglCreateWindowSurface(C.EGLDisplay(unsafe.Pointer(disp)), C.EGLConfig(unsafe.Pointer(config)), C.EGLNativeWindowType(unsafe.Pointer(&window)), (*C.EGLint)(attribList)))
 	if surface != EGL_NO_SURFACE {
 		return surface, nil
 	}
-	return surface,toError(GetLastError())
+	return surface, toError(GetLastError())
 }
 
 func DestroySurface(disp Display, surface Surface) error {
-	if C.eglDestroySurface(C.EGLDisplay(unsafe.Pointer(disp)),C.EGLSurface(unsafe.Pointer(surface))) == EGL_TRUE {
+	if C.eglDestroySurface(C.EGLDisplay(unsafe.Pointer(disp)), C.EGLSurface(unsafe.Pointer(surface))) == EGL_TRUE {
 		return nil
 	}
 	return toError(GetLastError())
 }
 
-func MakeCurrent(disp Display, draw Surface,read Surface, ctx Context) error {
-	if C.eglMakeCurrent(C.EGLDisplay(unsafe.Pointer(disp)),C.EGLSurface(unsafe.Pointer(draw)),C.EGLSurface(unsafe.Pointer(read)),C.EGLContext(unsafe.Pointer(ctx))) == EGL_TRUE {
+func MakeCurrent(disp Display, draw Surface, read Surface, ctx Context) error {
+	if C.eglMakeCurrent(C.EGLDisplay(unsafe.Pointer(disp)), C.EGLSurface(unsafe.Pointer(draw)), C.EGLSurface(unsafe.Pointer(read)), C.EGLContext(unsafe.Pointer(ctx))) == EGL_TRUE {
 		return nil
 	}
 	return toError(GetLastError())
