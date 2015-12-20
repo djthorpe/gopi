@@ -30,7 +30,7 @@ func main() {
 
 	var i int32
 	for i = 0; i < numConfig; i++ {
-		log.Printf("Configuration %v", i)
+		log.Printf("Configuration %d", i)
 	}
 
 	/*	attr := []int32{
