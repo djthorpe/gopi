@@ -32,7 +32,7 @@ func main() {
 	if err := egl.GetConfigs(display, nil, 0, &numConfig); err != nil {
 		log.Fatalf("GetConfigs: %v", err)
 	}
-	if err := egl.GetConfigs(display, config, numConfig, &numConfig); err != nil {
+	if err := egl.GetConfigs(display, &config, numConfig, &numConfig); err != nil {
 		log.Fatalf("GetConfigs: %v", err)
 	}
 
