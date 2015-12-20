@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/djthorpe/gopi/rpi/egl"
+	"github.com/djthorpe/gopi/rpi/gles"
 	"log"
 	"runtime"
 	"flag"
