@@ -14,6 +14,10 @@ package egl
 */
 import "C"
 
+import (
+	"unsafe"
+)
+
 type (
 	Display		uintptr
 )
