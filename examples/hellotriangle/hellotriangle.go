@@ -15,7 +15,7 @@ func main() {
 	}
 
 	// Choose configuration
-	attr := []int32{
+/*	attr := []int32{
 		egl.EGL_RED_SIZE, 8,
 		egl.EGL_GREEN_SIZE, 8,
 		egl.EGL_BLUE_SIZE, 8,
@@ -23,11 +23,11 @@ func main() {
 		egl.EGL_SURFACE_TYPE, egl.EGL_WINDOW_BIT,
 		egl.EGL_NONE,
 	}
-
+*/
 	var (
-		config    egl.Config
+//		config    egl.Config
 		numConfig int32
-		video     int32
+//		video     int32
 	)
 
 	if err := egl.GetConfigs(display,nil,0,&numConfig); err != nil {
