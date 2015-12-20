@@ -29,14 +29,14 @@ func Initialize(disp Display, major, minor *int32) error {
 	if C.eglInitialize(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLint)(major), (*C.EGLint)(minor)) != EGL_FALSE {
 		return nil
 	}
-	return toError(GetError())
+	return toError(GetLastError())
 }
 
 func Terminate(disp Display) error {
 	if C.eglTerminate(C.EGLDisplay(unsafe.Pointer(disp))) != EGL_FALSE {
 		return nil
 	}
-	return toError(GetError())
+	return toError(GetLastError())
 }
 
 func GetDisplay() Display {
@@ -44,14 +44,14 @@ func GetDisplay() Display {
 }
 
 func ChooseConfig(disp Display, attribList []int32, configs *Config, configSize int32, numConfig *int32) error {
-	return := C.eglChooseConfig(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLint)(&attribList[0]), (*C.EGLConfig)(unsafe.Pointer(configs)), C.EGLint(configSize), (*C.EGLint)(numConfig))
-	log.Printf("return = %v",return)
-	if return != EGL_FALSE {
+	r := C.eglChooseConfig(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLint)(&attribList[0]), (*C.EGLConfig)(unsafe.Pointer(configs)), C.EGLint(configSize), (*C.EGLint)(numConfig))
+	log.Printf("return = %v",r)
+	if r != EGL_FALSE {
 		return nil
 	}
-	return toError(GetError())
+	return toError(GetLastError())
 }
 
-func GetError() int32 {
+func GetLastError() int32 {
 	return int32(C.eglGetError())
 }
