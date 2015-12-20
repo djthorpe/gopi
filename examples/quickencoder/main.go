@@ -8,10 +8,11 @@ package main
 import (
 	"flag"
 	"github.com/djthorpe/goav/avformat"
+	"github.com/djthorpe/goav/avcodec"
 	"fmt"
 	"log"
 //	"os"
-//	"unsafe"
+	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,14 +33,14 @@ func main() {
 	var (
 		ctxtFormat    *avformat.Context
 		url           string
-//		ctxtSource    *avcodec.Context
+		ctxtSource    *avcodec.Context
 //		ctxtDest      *avcodec.Context
 //		videoCodec    *avcodec.Codec
 //		videoFrame    *avutil.Frame
 //		videoFrameRGB *avutil.Frame
 //		packet        *avcodec.Packet
 //		ctxtSws       *swscale.Context
-//		videoStream   int
+		videoStream   int
 //		frameFinished int
 //		numBytes      int
 	)
@@ -58,20 +59,20 @@ func main() {
 
 	// Dump information about file onto standard error
 	ctxtFormat.AvDumpFormat(0, url, 0)
-}
-/*
+
 	// Find the first video stream
 	videoStream = -1
 	n := ctxtFormat.NbStreams()
 	s := ctxtFormat.Streams()
-	log.Print("Number of Streams:", n)
+	codec := s.Codec()
+	log.Print("Number of Streams: ", n)
 
 	for i := 0; i < int(n); i++ {
 		// ctxtFormat->streams[i]->codec->codec_type
 		log.Println("Stream Number:", i)
 
 		//FIX: AvMEDIA_TYPE_VIDEO
-		if (*avformat.CodecContext)(s.Codec()) != nil {
+		if (*avformat.CodecContext)(codec) != nil {
 			videoStream = i
 			break
 		}
@@ -81,8 +82,6 @@ func main() {
 		log.Println("Couldn't find a video stream")
 		return
 	}
-
-	codec := s.Codec()
 
 	// Get a pointer to the codec context for the video stream
 	ctxtSource = (*avcodec.Context)(unsafe.Pointer(&codec))
@@ -99,6 +98,9 @@ func main() {
 	log.Println("Width:", ctxtSource.Width())
 	log.Printf("Codec ID: %x", ctxtSource.CodecId())
 
+
+}
+/*
 	// C.enum_AVCodecID
 	codec_id := ctxtSource.CodecId()
 
