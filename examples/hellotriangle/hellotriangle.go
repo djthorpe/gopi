@@ -23,7 +23,7 @@ func main() {
 	if err := egl.GetConfigs(display, nil, 0, &numConfig); err != nil {
 		log.Fatalf("GetConfigs: %v", err)
 	}
-	configs = make(egl.Config, numConfig)
+	configs := make(egl.Config, numConfig)
 	if err := egl.GetConfigs(display, &configs, numConfig, &numConfig); err != nil {
 		log.Fatalf("GetConfigs: %v", err)
 	}
