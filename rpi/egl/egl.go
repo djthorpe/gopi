@@ -24,7 +24,7 @@ func Initialize(disp Display, major, minor *int32) bool {
 }
 
 func Terminate(disp Display) bool {
-	success := C.eglTerminate(C.EGLDisplay(unsafe.Pointer(disp))))
+	success := C.eglTerminate(C.EGLDisplay(unsafe.Pointer(disp)))
 	return bool(success)
 }
 
