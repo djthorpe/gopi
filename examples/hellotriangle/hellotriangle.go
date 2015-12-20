@@ -36,7 +36,8 @@ func main() {
 		log.Fatalf("GetConfigs: %v", err)
 	}
 
-	for i := 0; i < numConfig; i++ {
+	var i int32
+	for i = 0; i < numConfig; i++ {
 		log.Printf("Configuration %v", i)
 	}
 
