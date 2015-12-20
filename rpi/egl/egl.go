@@ -20,12 +20,20 @@ type (
 
 func Initialize(disp Display, major, minor *int32) bool {
 	success := C.eglInitialize(C.EGLDisplay(unsafe.Pointer(disp)),(*C.EGLint)(major),(*C.EGLint)(minor))
-	return bool(int(success))
+	if success {
+		return true
+	} else {
+		return false
+	}
 }
 
 func Terminate(disp Display) bool {
 	success := C.eglTerminate(C.EGLDisplay(unsafe.Pointer(disp)))
-	return bool(int(success))
+	if success {
+		return true
+	} else {
+		return false
+	}
 }
 
 func GetDisplay() Display {
