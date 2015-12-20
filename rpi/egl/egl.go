@@ -43,11 +43,27 @@ func GetDisplay() Display {
 	return Display(C.eglGetDisplay(C.EGLNativeDisplayType(unsafe.Pointer(nil))))
 }
 
-func GetConfigs(disp Display, configs *Config, configSize int32, numConfig *int32) error {
+func getConfigs(disp Display, configs *Config, configSize int32, numConfig *int32) error {
 	if C.eglGetConfigs(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLConfig)(unsafe.Pointer(configs)), C.EGLint(configSize), (*C.EGLint)(unsafe.Pointer(numConfig))) == EGL_TRUE {
 		return nil
 	}
 	return toError(GetLastError())
+}
+
+func GetNumConfigs(disp Display) (int32,error) {
+	var numConfigs int32
+	if err := egl.GetConfigs(disp,nil,0,&numConfigs); err != nil {
+		return -1,err
+	}
+	return numConfigs,nil
+}
+
+func GetConfigs(disp Display) ([]Config,error) {
+	numConfigs, err := GetNumConfigs(disp)
+	if err != nil {
+		return nil,err
+	}
+	return make(Config,numConfigs)
 }
 
 func GetConfigAttrib(disp Display, config Config, attribute int32) (int32, error) {
