@@ -14,7 +14,25 @@ func main() {
 		log.Fatalf("Unable to initalize display: %v", err)
 	}
 
-	// Choose configuration
+	// Configurations
+	var (
+		config    egl.Config
+		numConfig int32
+	)
+
+	if err := egl.GetConfigs(display, nil, 0, &numConfig); err != nil {
+		log.Fatalf("GetConfigs: %v", err)
+	}
+	configs = make(egl.Config, numConfig)
+	if err := egl.GetConfigs(display, &configs, numConfig, &numConfig); err != nil {
+		log.Fatalf("GetConfigs: %v", err)
+	}
+
+	var i int32
+	for i = 0; i < numConfig; i++ {
+		log.Printf("Configuration %v", i)
+	}
+
 	/*	attr := []int32{
 			egl.EGL_RED_SIZE, 8,
 			egl.EGL_GREEN_SIZE, 8,
@@ -24,22 +42,6 @@ func main() {
 			egl.EGL_NONE,
 		}
 	*/
-	var (
-		config    egl.Config
-		numConfig int32
-	)
-
-	if err := egl.GetConfigs(display, nil, 0, &numConfig); err != nil {
-		log.Fatalf("GetConfigs: %v", err)
-	}
-	if err := egl.GetConfigs(display, &config, numConfig, &numConfig); err != nil {
-		log.Fatalf("GetConfigs: %v", err)
-	}
-
-	var i int32
-	for i = 0; i < numConfig; i++ {
-		log.Printf("Configuration %v", i)
-	}
 
 	/*
 
