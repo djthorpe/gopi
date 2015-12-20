@@ -38,7 +38,7 @@ const (
 
 /* METHODS */
 func (e *Error) Error() string {
-	return e.msg
+	return fmt.Sprintf("%s (egl/%04X)",e.msg,e.code)
 }
 
 func toError(code int32) *Error {
@@ -74,6 +74,6 @@ func toError(code int32) *Error {
 	case CONTEXT_LOST:
 		return &Error{"Context Lost", code}
 	default:
-		return &Error{fmt.Sprintf("Other Error 0x%04X", code), code}
+		return &Error{"General Error", code}
 	}
 }
