@@ -16,7 +16,6 @@ import "C"
 
 import (
 	"unsafe"
-	"log"
 )
 
 type (
@@ -43,25 +42,23 @@ func GetDisplay() Display {
 	return Display(C.eglGetDisplay(C.EGLNativeDisplayType(unsafe.Pointer(nil))))
 }
 
-func GetConfigs(disp Display,configs *Config,configSize int32, numConfig *int32) error {
-	if C.eglGetConfigs(C.EGLDisplay(unsafe.Pointer(disp)),(*C.EGLConfig)(unsafe.Pointer(configs)),C.EGLint(configSize),(*C.EGLint)(unsafe.Pointer(numConfig))) == EGL_TRUE {
+func GetConfigs(disp Display, configs *Config, configSize int32, numConfig *int32) error {
+	if C.eglGetConfigs(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLConfig)(unsafe.Pointer(configs)), C.EGLint(configSize), (*C.EGLint)(unsafe.Pointer(numConfig))) == EGL_TRUE {
 		return nil
 	}
 	return toError(GetLastError())
 }
 
-func GetConfigAttrib(disp Display,config Config,attribute int32) int32,error {
+func GetConfigAttrib(disp Display, config Config, attribute int32) (int32, error) {
 	var value int32
-	if C.eglGetConfigAttrib(C.EGLDisplay(unsafe.Pointer(disp)),C.EGLConfig(config),C.EGLint(attribute),(*C.EGLint)(unsafe.Pointer(&value))) == EGL_TRUE {
-		return value,nil
+	if C.eglGetConfigAttrib(C.EGLDisplay(unsafe.Pointer(disp)), C.EGLConfig(config), C.EGLint(attribute), (*C.EGLint)(unsafe.Pointer(&value))) == EGL_TRUE {
+		return value, nil
 	}
-	return -1,toError(GetLastError())
+	return -1, toError(GetLastError())
 }
 
 func ChooseConfig(disp Display, attribList []int32, configs *Config, configSize int32, numConfig *int32) error {
-	r := C.eglChooseConfig(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLint)(&attribList[0]), (*C.EGLConfig)(unsafe.Pointer(configs)), C.EGLint(configSize), (*C.EGLint)(numConfig))
-	log.Printf("return = %v",r)
-	if r != EGL_FALSE {
+	if C.eglChooseConfig(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLint)(&attribList[0]), (*C.EGLConfig)(unsafe.Pointer(configs)), C.EGLint(configSize), (*C.EGLint)(numConfig)) != EGL_FALSE {
 		return nil
 	}
 	return toError(GetLastError())
