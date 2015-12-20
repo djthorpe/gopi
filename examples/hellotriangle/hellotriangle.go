@@ -19,8 +19,6 @@ func main() {
 	if ok := egl.Terminate(display); ok != true {
 		log.Fatalf("Unable to terminate display")
 	}
-
-	return 0
 }
 
 
