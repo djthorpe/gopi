@@ -25,24 +25,26 @@ func main() {
 	}
 */
 	var (
-//		config    egl.Config
+		config    egl.Config
 		numConfig int32
-//		video     int32
 	)
 
 	if err := egl.GetConfigs(display,nil,0,&numConfig); err != nil {
 		log.Fatalf("GetConfigs: %v", err)
 	}
-	log.Printf("There are %v configs",numConfig)
-
-/*
-	if err := egl.ChooseConfig(display, attr, &config, 1, &numConfig); err != nil {
-		log.Fatalf("ChooseConfig: %v", err)
+	if err := egl.GetConfigs(display,config,numConfig,&numConfig); err != nil {
+		log.Fatalf("GetConfigs: %v", err)
 	}
 
+	for(var i = 0; i < numConfig; i++) {
+		log.Printf("Configuration %v",i)
+	}
+
+/*
 
 
-	if err := egl.GetConfigAttrib(display, config, egl.EGL_NATIVE_VISUAL_ID, &video); err != nil {
+
+	if video,err := egl.GetConfigAttrib(display,config, egl.EGL_NATIVE_VISUAL_ID); err != nil {
 		log.Fatalf("GetConfigAttrib: %v", err)
 	}
 		egl.BindAPI(egl.OPENGL_ES_API)
