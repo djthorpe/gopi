@@ -12,4 +12,7 @@ package egl
 	#cgo LDFLAGS:  -L/opt/vc/lib -lGLESv2
 	#include "EGL/egl.h"
 */
+import "C"
+
+
 

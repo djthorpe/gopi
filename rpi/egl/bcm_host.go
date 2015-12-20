@@ -3,7 +3,6 @@ package egl
 /*
 #include "bcm_host.h"
 */
-
 import "C"
 
 func BCMHostInit() {
