@@ -9,8 +9,8 @@ package egl
 
 /* TYPES */
 type Error struct {
-    msg    string // description of error
-    code   int32  // error code
+	msg  string // description of error
+	code int32  // error code
 }
 
 /* CONSTANTS */
@@ -39,14 +39,13 @@ func (e *Error) Error() string {
 
 func toError(code int32) *Error {
 	switch code {
-		case SUCCESS:
-			return &Error{ "Success", code }
-		case NOT_INITIALIZED:
-			return &Error{ "Not Initialized", code }
-		case BAD_ACCESS:
-			return &Error{ "Bad Access", code }
-		default:
-			return &Error{ "Other Error", code }
+	case SUCCESS:
+		return &Error{"Success", code}
+	case NOT_INITIALIZED:
+		return &Error{"Not Initialized", code}
+	case BAD_ACCESS:
+		return &Error{"Bad Access", code}
+	default:
+		return &Error{"Other Error", code}
 	}
 }
-

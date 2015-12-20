@@ -19,17 +19,19 @@ import (
 )
 
 type (
-	Display		uintptr
+	Display uintptr
+	Config  uintptr
+	Surface uintptr
 )
 
-func Initialize(disp Display, major, minor *int32) (error) {
-	if C.eglInitialize(C.EGLDisplay(unsafe.Pointer(disp)),(*C.EGLint)(major),(*C.EGLint)(minor)) != EGL_FALSE {
+func Initialize(disp Display, major, minor *int32) error {
+	if C.eglInitialize(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLint)(major), (*C.EGLint)(minor)) != EGL_FALSE {
 		return nil
 	}
 	return toError(GetError())
 }
 
-func Terminate(disp Display) (error) {
+func Terminate(disp Display) error {
 	if C.eglTerminate(C.EGLDisplay(unsafe.Pointer(disp))) != EGL_FALSE {
 		return nil
 	}
@@ -38,6 +40,13 @@ func Terminate(disp Display) (error) {
 
 func GetDisplay() Display {
 	return Display(C.eglGetDisplay(C.EGLNativeDisplayType(unsafe.Pointer(nil))))
+}
+
+func ChooseConfig(disp Display, attribList []int32, configs *Config, configSize int32, numConfig *int32) error {
+	if C.eglChooseConfig(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLint)(&attribList[0]), (*C.EGLConfig)(unsafe.Pointer(configs)), C.EGLint(configSize), (*C.EGLint)(numConfig)) != EGL_FALSE {
+		return nil
+	}
+	return toError(GetError())
 }
 
 func GetError() int32 {
