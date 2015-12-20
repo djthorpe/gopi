@@ -2,17 +2,25 @@ package main
 
 import (
 	"github.com/djthorpe/gopi/rpi/egl"
+	"runtime"
 	"log"
 )
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	egl.BCMHostInit()
 
 	// Initalize display
 	display := egl.GetDisplay()
 	if err := egl.Initialize(display, nil, nil); err != nil {
-		log.Fatalf("Unable to initalize display: %v", err)
+		log.Fatalf("Initialize: %v", err)
 	}
+
+	// Bind API
+	if err := egl.BindAPI(egl.EGL_OPENGL_API); err != nil {
+		log.Fatalf("BindAPI: %v", err)
+	}
+	log.Println("API = ",egl.QueryAPI())
 
 	// Configurations
 	var (

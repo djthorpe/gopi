@@ -84,3 +84,10 @@ const (
 	EGL_OPENGL_ES2_BIT = 0x0004 /* EGL_RENDERABLE_TYPE mask bits */
 	EGL_OPENGL_BIT     = 0x0008 /* EGL_RENDERABLE_TYPE mask bits */
 )
+
+const (
+	/* BindAPI/QueryAPI targets */
+	EGL_OPENGL_ES_API = 0x30A0
+	EGL_OPENVG_API    = 0x30A1
+	EGL_OPENGL_API    = 0x30A2
+)

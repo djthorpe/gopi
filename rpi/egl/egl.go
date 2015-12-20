@@ -22,6 +22,7 @@ type (
 	Display uintptr
 	Config  uintptr
 	Surface uintptr
+	Enum    uint32
 )
 
 func Initialize(disp Display, major, minor *int32) error {
@@ -58,10 +59,21 @@ func GetConfigAttrib(disp Display, config Config, attribute int32) (int32, error
 }
 
 func ChooseConfig(disp Display, attribList []int32, configs *Config, configSize int32, numConfig *int32) error {
-	if C.eglChooseConfig(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLint)(&attribList[0]), (*C.EGLConfig)(unsafe.Pointer(configs)), C.EGLint(configSize), (*C.EGLint)(numConfig)) != EGL_FALSE {
+	if C.eglChooseConfig(C.EGLDisplay(unsafe.Pointer(disp)), (*C.EGLint)(&attribList[0]), (*C.EGLConfig)(unsafe.Pointer(configs)), C.EGLint(configSize), (*C.EGLint)(numConfig)) == EGL_TRUE {
 		return nil
 	}
 	return toError(GetLastError())
+}
+
+func BindAPI(api Enum) error {
+	if C.eglBindAPI(C.EGLenum(api)) == EGL_TRUE {
+		return nil
+	}
+	return toError(GetLastError())
+}
+
+func QueryAPI() Enum {
+	return Enum(C.eglQueryAPI())
 }
 
 func GetLastError() int32 {
