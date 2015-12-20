@@ -1,7 +1,9 @@
 package egl
 
 /*
-#include "bcm_host.h"
+	#cgo CFLAGS: -I/opt/vc/include
+	#cgo LDFLAGS: -L/opt/vc/lib -llibbcm_host
+	#include "bcm_host.h"
 */
 import "C"
 
