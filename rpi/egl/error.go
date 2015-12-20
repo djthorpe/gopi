@@ -10,7 +10,7 @@ package egl
 /* TYPES */
 type Error struct {
     msg    string // description of error
-    code   uint64 // error code
+    code   int32  // error code
 }
 
 /* CONSTANTS */
