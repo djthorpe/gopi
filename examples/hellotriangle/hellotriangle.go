@@ -27,22 +27,30 @@ func main() {
 	var (
 		config    egl.Config
 		numConfig int32
+		video     int32
 	)
 
+	if err := egl.GetConfigs(display,nil,0,&numConfig); err != nil {
+		log.Fatalf("GetConfigs: %v", err)
+	}
+	log.Printf("There are %v configs",numConfig)
+
+/*
 	if err := egl.ChooseConfig(display, attr, &config, 1, &numConfig); err != nil {
-		log.Fatalf("Unable to initalize display: %v", err)
+		log.Fatalf("ChooseConfig: %v", err)
 	}
 
-	/*
-		if ok := egl.GetConfigAttrib(display, config, egl.NATIVE_VISUAL_ID, &vid); !ok {
-			egl.LogError(egl.GetError())
-		}
+
+
+	if err := egl.GetConfigAttrib(display, config, egl.EGL_NATIVE_VISUAL_ID, &video); err != nil {
+		log.Fatalf("GetConfigAttrib: %v", err)
+	}
 		egl.BindAPI(egl.OPENGL_ES_API)
 		context = egl.CreateContext(display, config, egl.NO_CONTEXT, &ctxAttr[0])
 
 		screen_width, screen_height = egl.GraphicsGetDisplaySize(0)
 		log.Printf("Display size W: %d H: %d\n", screen_width, screen_height)
-	*/
+*/
 
 	// Terminate display
 	if err := egl.Terminate(display); err != nil {
