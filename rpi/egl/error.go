@@ -7,6 +7,10 @@
 */
 package egl
 
+import (
+	"fmt"
+)
+
 /* TYPES */
 type Error struct {
 	msg  string // description of error
@@ -45,7 +49,31 @@ func toError(code int32) *Error {
 		return &Error{"Not Initialized", code}
 	case BAD_ACCESS:
 		return &Error{"Bad Access", code}
+	case BAD_ALLOC:
+		return &Error{"Bad Memory Allocation", code}
+	case BAD_ATTRIBUTE:
+		return &Error{"Bad Attribute", code}
+	case BAD_CONFIG:
+		return &Error{"Bad Configuration", code}
+	case BAD_CONTEXT:
+		return &Error{"Bad Context", code}
+	case BAD_CURRENT_SURFACE:
+		return &Error{"Bad Current Surface", code}
+	case BAD_DISPLAY:
+		return &Error{"Bad Display", code}
+	case BAD_MATCH:
+		return &Error{"Bad Match", code}
+	case BAD_NATIVE_PIXMAP:
+		return &Error{"Bad Native Pixmap", code}
+	case BAD_NATIVE_WINDOW:
+		return &Error{"Bad Native Window", code}
+	case BAD_PARAMETER:
+		return &Error{"Bad Parameter", code}
+	case BAD_SURFACE:
+		return &Error{"Bad Surface", code}
+	case CONTEXT_LOST:
+		return &Error{"Context Lost", code}
 	default:
-		return &Error{"Other Error", code}
+		return &Error{fmt.Sprintf("Other Error 0x%04X", code), code}
 	}
 }
