@@ -20,7 +20,7 @@ func main() {
 	if err := egl.BindAPI(egl.EGL_OPENGL_ES_API); err != nil {
 		log.Fatalf("BindAPI: %v", err)
 	}
-	log.Println("API = ",egl.QueryAPI())
+	log.Printf("API = 0x%04X",egl.QueryAPI())
 
 	// Configurations
 	var (
@@ -31,7 +31,7 @@ func main() {
 	if err := egl.GetConfigs(display, nil, 0, &numConfig); err != nil {
 		log.Fatalf("GetConfigs: %v", err)
 	}
-	if err := egl.GetConfigs(display, &config, numConfig, &numConfig); err != nil {
+	if err := egl.GetConfigs(display, &config, 1, &numConfig); err != nil {
 		log.Fatalf("GetConfigs: %v", err)
 	}
 
