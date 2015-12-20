@@ -16,6 +16,7 @@ import "C"
 
 import (
 	"unsafe"
+    "github.com/djthorpe/gopi/rpi/displaymanx"
 )
 
 type (
@@ -124,7 +125,7 @@ func DestroyContext(disp Display, ctx Context) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func CreateWindowSurface(disp Display, config Config, window Window, attribList *int32) (Surface, error) {
+func CreateWindowSurface(disp Display, config Config, window displaymanx.Window, attribList *int32) (Surface, error) {
 	surface := Surface(C.eglCreateWindowSurface(C.EGLDisplay(unsafe.Pointer(disp)), C.EGLConfig(unsafe.Pointer(config)), C.EGLNativeWindowType(unsafe.Pointer(&window)), (*C.EGLint)(attribList)))
 	if surface != EGL_NO_SURFACE {
 		return surface, nil

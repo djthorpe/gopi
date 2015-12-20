@@ -8,7 +8,7 @@
 package rpi
 
 /*
-    #cgo CFLAGS: -I/opt/vc/include
+    #cgo CFLAGS: -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads
     #cgo LDFLAGS: -L/opt/vc/lib -lbcm_host
     #include "bcm_host.h"
 */

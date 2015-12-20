@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
+    "github.com/djthorpe/gopi/rpi"
 	"github.com/djthorpe/gopi/rpi/egl"
-	"github.com/djthorpe/gopi/rpi/gles"
+	"github.com/djthorpe/gopi/rpi/displaymanx"
 	"log"
 	"runtime"
 	"flag"
@@ -33,7 +34,7 @@ func PrintConfig(display egl.Display, config egl.Config) {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	egl.BCMHostInit()
+	rpi.BCMHostInit()
 	flag.Parse()
 
 	// Initalize display
@@ -80,20 +81,20 @@ func main() {
 		log.Fatalf("CreateContext: %v", err)
 	}
 
-	screen_width, screen_height := egl.GraphicsGetDisplaySize(uint16(*displayFlag))
+	screen_width, screen_height := rpi.GraphicsGetDisplaySize(uint16(*displayFlag))
 	fmt.Println("Screen size = (",screen_width,",",screen_height,")")
 
-	srcRect := egl.Rect{ 0,0,screen_width,screen_height }
-	dstRect := egl.Rect{ 0,0,screen_width << 16,screen_height << 16 }
+	srcRect := displaymanx.Rect{ 0,0,screen_width,screen_height }
+	dstRect := displaymanx.Rect{ 0,0,screen_width << 16,screen_height << 16 }
 
 	// Bind to actual screen
-	dispmanx_display := egl.VCDispmanxDisplayOpen(uint32(*displayFlag))
-	dispmanx_update := egl.VCDispmanxUpdateStart(0) /* priority */
-	dispmanx_element := egl.VCDispmanxElementAdd(dispmanx_update,dispmanx_display,0,&dstRect,0,&srcRect,egl.DISPMANX_PROTECTION_NONE,nil,nil,0)
-	window := egl.Window{ dispmanx_element,screen_width,screen_height }
+	dispmanx_display := displaymanx.DisplayOpen(uint32(*displayFlag))
+	dispmanx_update := displaymanx.UpdateStart(0) /* priority */
+	dispmanx_element := displaymanx.ElementAdd(dispmanx_update,dispmanx_display,0,&dstRect,0,&srcRect,displaymanx.DISPMANX_PROTECTION_NONE,nil,nil,0)
+	window := displaymanx.Window{ dispmanx_element,screen_width,screen_height }
 
 	// do something here
-	egl.VCDispmanxUpdateSubmitSync(dispmanx_update)
+	displaymanx.UpdateSubmitSync(dispmanx_update)
 
 	// make surface
 	surface,err := egl.CreateWindowSurface(display,configs[0],window,nil)
@@ -106,7 +107,7 @@ func main() {
 		log.Fatalf("MakeCurrent: %v", err)
 	}
 
-	
+    // TODO
 
 	// Destroy surface
 	if err := egl.DestroySurface(display,surface); err != nil {
