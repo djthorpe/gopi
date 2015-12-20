@@ -17,7 +17,7 @@ func main() {
 	}
 
 	// Bind API
-	if err := egl.BindAPI(egl.OPENGL_ES_API); err != nil {
+	if err := egl.BindAPI(egl.EGL_OPENGL_ES_API); err != nil {
 		log.Fatalf("BindAPI: %v", err)
 	}
 	log.Println("API = ",egl.QueryAPI())
