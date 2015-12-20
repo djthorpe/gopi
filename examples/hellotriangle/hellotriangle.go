@@ -27,11 +27,12 @@ func main() {
 		log.Fatalf("GetConfigs: %v", err)
 	}
 
+/*
 	var i int32
 	for i = 0; i < numConfig; i++ {
 		log.Printf("Configuration %d", i)
 	}
-
+*/
 	/*	attr := []int32{
 			egl.EGL_RED_SIZE, 8,
 			egl.EGL_GREEN_SIZE, 8,
