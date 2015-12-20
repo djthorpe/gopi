@@ -14,5 +14,21 @@ package egl
 */
 import "C"
 
+type (
+	Display		uintptr
+)
 
+func Initialize(disp Display, major, minor *int32) bool {
+	success := C.eglInitialize(C.EGLDisplay(unsafe.Pointer(disp)),(*C.EGLint)(major),(*C.EGLint)(minor))
+	return bool(success)
+}
+
+func Terminate(disp Display) bool {
+	success := C.eglTerminate(C.EGLDisplay(unsafe.Pointer(disp))))
+	return bool(success)
+}
+
+func GetDisplay() Display {
+	return Display(C.eglGetDisplay(C.EGLNativeDisplayType(unsafe.Pointer(nil))))
+}
 
