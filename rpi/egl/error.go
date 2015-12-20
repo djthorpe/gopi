@@ -38,7 +38,7 @@ const (
 
 /* METHODS */
 func (e *Error) Error() string {
-	return fmt.Sprintf("%s (egl/0x%04X)",e.msg,e.code)
+	return fmt.Sprintf("%s (egl/0x%04X)", e.msg, e.code)
 }
 
 func toError(code int32) *Error {

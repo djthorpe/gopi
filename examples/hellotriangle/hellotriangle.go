@@ -1,14 +1,39 @@
 package main
 
 import (
+	"fmt"
 	"github.com/djthorpe/gopi/rpi/egl"
-	"runtime"
 	"log"
+	"runtime"
+	"flag"
 )
+
+var (
+	displayFlag = flag.Uint("display",0,"Display Number")
+)
+
+func GetConfigAttributeValue(display egl.Display, config egl.Config, name int32) int32 {
+	value, err := egl.GetConfigAttribute(display, config, name)
+	if err != nil {
+		log.Fatalf("GetConfigAttribute: %v", err)
+	}
+	return value
+}
+
+func PrintConfig(display egl.Display, config egl.Config) {
+	fmt.Println("Configuration ID ", GetConfigAttributeValue(display, config, egl.EGL_CONFIG_ID))
+	fmt.Println("\t  EGL_BUFFER_SIZE: ", GetConfigAttributeValue(display, config, egl.EGL_BUFFER_SIZE))
+	fmt.Println("\t     EGL_RED_SIZE: ", GetConfigAttributeValue(display, config, egl.EGL_RED_SIZE))
+	fmt.Println("\t   EGL_GREEN_SIZE: ", GetConfigAttributeValue(display, config, egl.EGL_GREEN_SIZE))
+	fmt.Println("\t    EGL_BLUE_SIZE: ", GetConfigAttributeValue(display, config, egl.EGL_BLUE_SIZE))
+	fmt.Println("\t   EGL_ALPHA_SIZE: ", GetConfigAttributeValue(display, config, egl.EGL_ALPHA_SIZE))
+	fmt.Println("\t   EGL_DEPTH_SIZE: ", GetConfigAttributeValue(display, config, egl.EGL_DEPTH_SIZE))
+}
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	egl.BCMHostInit()
+	flag.Parse()
 
 	// Initalize display
 	display := egl.GetDisplay()
@@ -16,57 +41,84 @@ func main() {
 		log.Fatalf("Initialize: %v", err)
 	}
 
+	// Choose a configuration which matches
+	attr := []int32{
+		egl.EGL_RED_SIZE, 8,
+		egl.EGL_GREEN_SIZE, 8,
+		egl.EGL_BLUE_SIZE, 8,
+		egl.EGL_ALPHA_SIZE, 8,
+		egl.EGL_SURFACE_TYPE, egl.EGL_WINDOW_BIT,
+		egl.EGL_NONE,
+	}
+
+	configs, err := egl.ChooseConfig(display, attr)
+	if err != nil {
+		log.Fatalf("ChooseConfig: %v", err)
+	}
+	if len(configs) == 0 {
+		log.Fatalf("ChooseConfig: Failed to choose appropriate graphics mode")
+	}
+
+	// Print all Configs
+	for i := 0; i < len(configs); i++ {
+		PrintConfig(display, configs[i])
+	}
+
 	// Bind API
 	if err := egl.BindAPI(egl.EGL_OPENGL_ES_API); err != nil {
 		log.Fatalf("BindAPI: %v", err)
 	}
-	log.Printf("API = 0x%04X",egl.QueryAPI())
 
-	// Configurations
-	var (
-		config    egl.Config
-		numConfig int32
-	)
-
-	if err := egl.GetConfigs(display, nil, 0, &numConfig); err != nil {
-		log.Fatalf("GetConfigs: %v", err)
-	}
-	if err := egl.GetConfigs(display, &config, 1, &numConfig); err != nil {
-		log.Fatalf("GetConfigs: %v", err)
+	// Context
+	ctxAttr := []int32{
+		egl.EGL_CONTEXT_CLIENT_VERSION, 2,
+		egl.EGL_NONE,
+	}	
+	context,err := egl.CreateContext(display,configs[0],egl.EGL_NO_CONTEXT,&ctxAttr[0])
+	if err != nil {
+		log.Fatalf("CreateContext: %v", err)
 	}
 
-	var i int32
-	log.Println("Number of config: ",numConfig)
-	for i = 0; i < numConfig; i++ {
-		log.Println("Configuration ", i)
+	screen_width, screen_height := egl.GraphicsGetDisplaySize(uint16(*displayFlag))
+	fmt.Println("Screen size = (",screen_width,",",screen_height,")")
+
+	srcRect := egl.Rect{ 0,0,screen_width,screen_height }
+	dstRect := egl.Rect{ 0,0,screen_width << 16,screen_height << 16 }
+
+	// Bind to actual screen
+	dispmanx_display := egl.VCDispmanxDisplayOpen(uint32(*displayFlag))
+	dispmanx_update := egl.VCDispmanxUpdateStart(0) /* priority */
+	dispmanx_element := egl.VCDispmanxElementAdd(dispmanx_update,dispmanx_display,0,&dstRect,0,&srcRect,egl.DISPMANX_PROTECTION_NONE,nil,nil,0)
+	window := egl.Window{ dispmanx_element,screen_width,screen_height }
+
+	// do something here
+	egl.VCDispmanxUpdateSubmitSync(dispmanx_update)
+
+	// make surface
+	surface,err := egl.CreateWindowSurface(display,configs[0],window,nil)
+	if err != nil {
+		log.Fatalf("CreateWindowSurface: %v", err)
 	}
 
-	/*	attr := []int32{
-			egl.EGL_RED_SIZE, 8,
-			egl.EGL_GREEN_SIZE, 8,
-			egl.EGL_BLUE_SIZE, 8,
-			egl.EGL_ALPHA_SIZE, 8,
-			egl.EGL_SURFACE_TYPE, egl.EGL_WINDOW_BIT,
-			egl.EGL_NONE,
-		}
-	*/
+	// connect the context to the surface
+	if err := egl.MakeCurrent(display,surface,surface,context); err != nil {
+		log.Fatalf("MakeCurrent: %v", err)
+	}
 
-	/*
+	
 
+	// Destroy surface
+	if err := egl.DestroySurface(display,surface); err != nil {
+		log.Fatalf("DestroySurface: %v", err)
+	}
 
-
-		if video,err := egl.GetConfigAttrib(display,config, egl.EGL_NATIVE_VISUAL_ID); err != nil {
-			log.Fatalf("GetConfigAttrib: %v", err)
-		}
-			egl.BindAPI(egl.OPENGL_ES_API)
-			context = egl.CreateContext(display, config, egl.NO_CONTEXT, &ctxAttr[0])
-
-			screen_width, screen_height = egl.GraphicsGetDisplaySize(0)
-			log.Printf("Display size W: %d H: %d\n", screen_width, screen_height)
-	*/
+	// Destroy context
+	if err := egl.DestroyContext(display,context); err != nil {
+		log.Fatalf("DestroyContext: %v", err)
+	}
 
 	// Terminate display
 	if err := egl.Terminate(display); err != nil {
-		log.Fatalf("Unable to terminate display: %v", err)
+		log.Fatalf("Terminate: %v", err)
 	}
 }
