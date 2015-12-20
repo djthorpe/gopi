@@ -21,7 +21,7 @@ func main() {
 		egl.EGL_BLUE_SIZE, 8,
 		egl.EGL_ALPHA_SIZE, 8,
 		egl.EGL_SURFACE_TYPE, egl.EGL_WINDOW_BIT,
-		egl.NONE,
+		egl.EGL_NONE,
 	}
 
 	var (
