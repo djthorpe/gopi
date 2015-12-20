@@ -14,6 +14,7 @@ package egl
 import "C"
 
 const (
-	DEFAULT_DISPLAY = 0
+	EGL_FALSE	= 0
+	EGL_TRUE	= 1
 )
 

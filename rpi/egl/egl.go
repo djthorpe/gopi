@@ -22,21 +22,21 @@ type (
 	Display		uintptr
 )
 
-func Initialize(disp Display, major, minor *int32) bool {
-	success := C.eglInitialize(C.EGLDisplay(unsafe.Pointer(disp)),(*C.EGLint)(major),(*C.EGLint)(minor))
-	if success != 0 {
-		return true
+func Initialize(disp Display, major, minor *int32) (bool, error) {
+	result := C.eglInitialize(C.EGLDisplay(unsafe.Pointer(disp)),(*C.EGLint)(major),(*C.EGLint)(minor))
+	if result != EGL_FALSE {
+		return true,nil
 	} else {
-		return false
+		return false,toError(GetError())
 	}
 }
 
-func Terminate(disp Display) bool {
+func Terminate(disp Display) (bool, error) {
 	success := C.eglTerminate(C.EGLDisplay(unsafe.Pointer(disp)))
 	if success != 0 {
-		return true
+		return true,nil
 	} else {
-		return false
+		return false,toError(GetError())
 	}
 }
 
@@ -44,3 +44,6 @@ func GetDisplay() Display {
 	return Display(C.eglGetDisplay(C.EGLNativeDisplayType(unsafe.Pointer(nil))))
 }
 
+func GetError() int32 {
+	return int32(C.eglGetError())
+}
