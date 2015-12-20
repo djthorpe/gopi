@@ -51,7 +51,7 @@ func GetConfigs(disp Display,configs *Config,configSize int32, numConfig *int32)
 }
 
 func GetConfigAttrib(disp Display,config Config,attribute int32,value *int32) error {
-	if C.eglGetConfigAttrib(C.EGLDisplay(unsafe.Pointer(disp)),C.EGLConfig(config),C.EGLint(attribute),(*C.EGLint)(unsafe.Pointer(value)))) == EGL_TRUE {
+	if C.eglGetConfigAttrib(C.EGLDisplay(unsafe.Pointer(disp)),C.EGLConfig(config),C.EGLint(attribute),(*C.EGLint)(unsafe.Pointer(value))) == EGL_TRUE {
 		return nil
 	}
 	return toError(GetLastError())
