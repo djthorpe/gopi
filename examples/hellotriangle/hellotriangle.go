@@ -15,44 +15,44 @@ func main() {
 	}
 
 	// Choose configuration
-/*	attr := []int32{
-		egl.EGL_RED_SIZE, 8,
-		egl.EGL_GREEN_SIZE, 8,
-		egl.EGL_BLUE_SIZE, 8,
-		egl.EGL_ALPHA_SIZE, 8,
-		egl.EGL_SURFACE_TYPE, egl.EGL_WINDOW_BIT,
-		egl.EGL_NONE,
-	}
-*/
+	/*	attr := []int32{
+			egl.EGL_RED_SIZE, 8,
+			egl.EGL_GREEN_SIZE, 8,
+			egl.EGL_BLUE_SIZE, 8,
+			egl.EGL_ALPHA_SIZE, 8,
+			egl.EGL_SURFACE_TYPE, egl.EGL_WINDOW_BIT,
+			egl.EGL_NONE,
+		}
+	*/
 	var (
 		config    egl.Config
 		numConfig int32
 	)
 
-	if err := egl.GetConfigs(display,nil,0,&numConfig); err != nil {
+	if err := egl.GetConfigs(display, nil, 0, &numConfig); err != nil {
 		log.Fatalf("GetConfigs: %v", err)
 	}
-	if err := egl.GetConfigs(display,config,numConfig,&numConfig); err != nil {
+	if err := egl.GetConfigs(display, config, numConfig, &numConfig); err != nil {
 		log.Fatalf("GetConfigs: %v", err)
 	}
 
-	for(var i = 0; i < numConfig; i++) {
-		log.Printf("Configuration %v",i)
+	for i := 0; i < numConfig; i++ {
+		log.Printf("Configuration %v", i)
 	}
 
-/*
+	/*
 
 
 
-	if video,err := egl.GetConfigAttrib(display,config, egl.EGL_NATIVE_VISUAL_ID); err != nil {
-		log.Fatalf("GetConfigAttrib: %v", err)
-	}
-		egl.BindAPI(egl.OPENGL_ES_API)
-		context = egl.CreateContext(display, config, egl.NO_CONTEXT, &ctxAttr[0])
+		if video,err := egl.GetConfigAttrib(display,config, egl.EGL_NATIVE_VISUAL_ID); err != nil {
+			log.Fatalf("GetConfigAttrib: %v", err)
+		}
+			egl.BindAPI(egl.OPENGL_ES_API)
+			context = egl.CreateContext(display, config, egl.NO_CONTEXT, &ctxAttr[0])
 
-		screen_width, screen_height = egl.GraphicsGetDisplaySize(0)
-		log.Printf("Display size W: %d H: %d\n", screen_width, screen_height)
-*/
+			screen_width, screen_height = egl.GraphicsGetDisplaySize(0)
+			log.Printf("Display size W: %d H: %d\n", screen_width, screen_height)
+	*/
 
 	// Terminate display
 	if err := egl.Terminate(display); err != nil {
