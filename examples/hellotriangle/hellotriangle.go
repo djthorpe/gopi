@@ -17,7 +17,7 @@ func main() {
 	// Choose configuration
 	attr := []int32{
 		egl.EGL_RED_SIZE, 8,
-		egl.EGL_GREEN_SIZE, 8,
+		egl.EGL_GREEN_SIZE, 4,
 		egl.EGL_BLUE_SIZE, 8,
 		egl.EGL_ALPHA_SIZE, 8,
 		egl.EGL_SURFACE_TYPE, egl.EGL_WINDOW_BIT,
