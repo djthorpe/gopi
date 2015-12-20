@@ -37,16 +37,16 @@ func (e *Error) Error() string {
 	return e.msg
 }
 
-func toError(code int32) Error {
+func toError(code int32) *Error {
 	switch code {
 		case SUCCESS:
-			return Error{ "Success", code }
+			return &Error{ "Success", code }
 		case NOT_INITIALIZED:
-			return Error{ "Not Initialized", code }
+			return &Error{ "Not Initialized", code }
 		case BAD_ACCESS:
-			return Error{ "Bad Access", code }
+			return &Error{ "Bad Access", code }
 		default:
-			return Error{ "Other Error", code }
+			return &Error{ "Other Error", code }
 	}
 }
 
