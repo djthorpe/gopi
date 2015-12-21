@@ -19,6 +19,8 @@ import (
     "github.com/djthorpe/gopi/rpi/dispmanx"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+
 type (
 	Display uintptr
 	Config  uintptr

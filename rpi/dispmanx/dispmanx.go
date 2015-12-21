@@ -51,11 +51,42 @@ type Clamp struct {
 	ReplaceValue uint32 // uint32_t replace_value;
 }
 
+type ModeInfo struct {
+	Width, Height int32
+	Transform     int
+	InputFormat   int
+	Device        uint32
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
-func DisplayOpen(device uint32) DisplayHandle {
-	return DisplayHandle(C.vc_dispmanx_display_open(C.uint32_t(device)))
+func DisplayOpen(device uint32) (DisplayHandle, error) {
+	display := DisplayHandle(C.vc_dispmanx_display_open(C.uint32_t(device)))
+	if display >= DisplayHandle(0) {
+		return display, nil
+	} else {
+		return DisplayHandle(0), ErrorDisplay
+	}
 }
+
+func DisplayClose(display DisplayHandle) error {
+	if C.vc_dispmanx_display_close(C.DISPMANX_DISPLAY_HANDLE_T(display)) != DISPMANX_SUCCESS {
+		return ErrorDisplay
+	}
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func DisplayGetInfo(display DisplayHandle,info *ModeInfo) error {
+	if C.vc_dispmanx_display_get_info(C.DISPMANX_DISPLAY_HANDLE_T(display),(*C.DISPMANX_MODEINFO_T)(unsafe.Pointer(info))) != DISPMANX_SUCCESS {
+		return ErrorGetInfo
+	}
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 func DisplaySetBackground(update UpdateHandle, display DisplayHandle, red uint8, green uint8, blue uint8) {
 	C.vc_dispmanx_display_set_background(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_DISPLAY_HANDLE_T(display), C.uint8_t(red), C.uint8_t(green), C.uint8_t(blue))
