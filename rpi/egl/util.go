@@ -11,6 +11,8 @@ import (
 	"github.com/djthorpe/gopi/rpi"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+
 type EGL struct {
 	major,minor int32 // EGL version
 	displayn uint16 // Display number
@@ -20,6 +22,7 @@ type EGL struct {
     surfacep Surface // Surface handle
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
 func New(display uint16,attr []int32) (*EGL,error) {
 
@@ -92,3 +95,24 @@ func (this *EGL) Terminate () error {
 	// success
 	return nil
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+func (this *EGL) Display () Display {
+	return this.displayp
+}
+
+func (this *EGL) Context () Context {
+	return this.contextp
+}
+
+func (this *EGL) Surface () Surface {
+	return this.surfacep
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
