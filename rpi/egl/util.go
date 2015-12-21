@@ -9,6 +9,7 @@ package egl
 
 import (
 	"github.com/djthorpe/gopi/rpi"
+	"github.com/djthorpe/gopi/rpi/dispmanx"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -66,7 +67,27 @@ func New(display uint16,attr []int32) (*EGL,error) {
 	// Get display width and height
 	this.displayw,this.displayh = rpi.GraphicsGetDisplaySize(this.displayn)
 
-	// TODO
+	// Create window
+	srcRect := dispmanx.Rect{ 0,0,this.displayw,this.displayh }
+	dstRect := dispmanx.Rect{ 0,0,this.displayw << 16,this.displayh << 16 }
+
+	// Bind to screen
+	dispmanx_display := dispmanx.DisplayOpen(uint32(this.displayn))
+	dispmanx_update := dispmanx.UpdateStart(0) /* priority */
+	dispmanx_element := dispmanx.ElementAdd(dispmanx_update,dispmanx_display,0,&dstRect,0,&srcRect,dispmanx.DISPMANX_PROTECTION_NONE,nil,nil,0)
+	window := dispmanx.Window{ dispmanx_element,this.displayw,this.displayh }
+	dispmanx.UpdateSubmitSync(dispmanx_update)
+
+	// make surface
+	this.surfacep,err = CreateWindowSurface(this.displayp,configs[0],window,nil)
+	if err != nil {
+		return nil,err
+	}
+
+	// connect the context to the surface
+	if err := MakeCurrent(this.displayp,this.surfacep,this.surfacep,this.contextp); err != nil {
+		return nil,err
+	}
 
 	// Success
 	return this,nil
@@ -95,6 +116,10 @@ func (this *EGL) Terminate () error {
 	// success
 	return nil
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
