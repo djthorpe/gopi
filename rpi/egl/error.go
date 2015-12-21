@@ -36,6 +36,11 @@ const (
 	CONTEXT_LOST        = 0x300E
 )
 
+/* VARIABLES */
+var (
+	ErrorInvalidGraphicsConfiguration = toError(BAD_CONFIG)
+)
+
 /* METHODS */
 func (e *Error) Error() string {
 	return fmt.Sprintf("%s (egl/0x%04X)", e.msg, e.code)
