@@ -5,7 +5,7 @@
 
 	For Licensing and Usage information, please see LICENSE.md
 */
-package displaymanx
+package dispmanx
 
 /*
     #cgo CFLAGS: -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host -I/opt/vc/include/interface/vcos/pthreads

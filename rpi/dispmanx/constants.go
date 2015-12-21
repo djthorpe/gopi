@@ -5,7 +5,7 @@ All Rights Reserved
 
 For Licensing and Usage information, please see LICENSE.md
 */
-package displaymanx
+package dispmanx
 
 const (
 	/* Bottom 2 bits sets the alpha mode */
