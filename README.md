@@ -2,13 +2,24 @@
 
 ## Introduction
 
-This repository contains Raspberry Pi Go Language Experiments. In order to build the examples, use:
+This repository contains Raspberry Pi Go Language Experiments. In order to retrieve the source code, use:
 
 ```
-go install github.com/djthorpe/gopi/examples
+go get github.com/djthorpe/gopi
 ```
 
-This will put the binary programs in your ```${GOPATH}/bin``` subdirectory. You can then run the programs from there.
+There is a single `rpi` module and several submodules:
+
+  * `rpi` - Contains code for interfacing with the Raspberry Pi hardware
+  * `dispmanx` - Low-level VideoCore interface
+  * `egl` - Native interface to link OpenGL and OpenVC to the GPU
+  * `gles` - OpenGL ES for rendering 3D
+  * `vc` - OpenVG for rendering 2D vector graphics 
+  * `omx` - OpenMAX Media Library
+  * `gpio` - Interface to the General Purpose IO connector
+
+Most of these are still to be written or completed. There are a set of examples
+of using these in the `examples` folder.
 
 ## Links
 
