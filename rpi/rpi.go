@@ -66,5 +66,3 @@ func VCGenCmd(command string) (string,error) {
 	return string(cbuffer),nil
 }
 
-
-//,,)
