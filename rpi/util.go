@@ -17,10 +17,16 @@ type State struct {
 func New() *State {
 	// create this object
 	this := new(State)
+
+	// initialize
 	BCMHostInit()
+	VCGenCmdInit()
+
+	// Return this
 	return this
 }
 
 func (this *State) Terminate() {
+	VCGenCmdStop()
 	BCMHostTerminate()
 }
