@@ -9,7 +9,7 @@ package rpi
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type State struct { }
+type State struct{}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -32,11 +32,15 @@ func (this *State) Terminate() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func (this *State) GetCoreTemperatureCelcius() float,error {
-	value,err := rpi.GenCmd("measure_temp")
+func (this *State) GetCoreTemperatureCelcius() (float, error) {
+	value, err := rpi.GenCmd("measure_temp")
 	if err != nil {
-		return 0.0,err
+		return 0.0, err
 	}
 	// TODO: Parse value
-	return 99.0,nil
+	return 99.0, nil
+}
+
+func (this *State) GetRevision() (*Revision, error) {
+	// TODO
 }
