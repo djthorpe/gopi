@@ -51,6 +51,7 @@ func allCommand(pi *rpi.State) {
 	otpCommand(pi)
 	serialCommand(pi)
 	revisionCommand(pi)
+	modelCommand(pi)
 }
 
 func tempCommand(pi *rpi.State) {
