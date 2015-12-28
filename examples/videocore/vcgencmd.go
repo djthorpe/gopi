@@ -37,6 +37,7 @@ var commandmap = map[string]func(*rpi.State){
 	"otp":      otpCommand,
 	"serial":   serialCommand,
 	"revision": revisionCommand,
+	"model":    modelCommand,
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -155,6 +156,17 @@ func revisionCommand(pi *rpi.State) {
 	fmt.Printf("Revision=%08X\n", revision)
 }
 
+func modelCommand(pi *rpi.State) {
+	// print out Revision
+	model, err := pi.GetModel()
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(-1)
+	}
+
+	fmt.Printf("Model=%+v\n", model)
+}
+
 ////////////////////////////////////////////////////////////////////////////
 
 func main() {
@@ -205,5 +217,4 @@ func main() {
 		fmt.Println(rpi.VCGenCmd(strings.Join(args, " ")))
 	}
 
-	////////////////////////////////////////////////////////////////////////////
 }
