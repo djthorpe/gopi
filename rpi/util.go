@@ -120,8 +120,8 @@ func (this *State) GetClockFrequencyHertz() (map[string]uint64, error) {
 	}
 
 	// retrieve values as text
-	command := strings.Split(GENCMD_MEASURE_CLOCK," ")
-	clocks := make(map[string]uint64,len(command))
+	command := strings.Split(GENCMD_MEASURE_CLOCK, " ")
+	clocks := make(map[string]uint64, len(command))
 	for _, name := range command[1:] {
 
 		// Retrieve clock value
@@ -137,7 +137,7 @@ func (this *State) GetClockFrequencyHertz() (map[string]uint64, error) {
 		}
 
 		// Convert to uint64
-		value2, err := strconv.ParseUint(match[2],10,64)
+		value2, err := strconv.ParseUint(match[2], 10, 64)
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +149,6 @@ func (this *State) GetClockFrequencyHertz() (map[string]uint64, error) {
 	return clocks, nil
 }
 
-
 func (this *State) GetVolts() (map[string]float64, error) {
 	// Compile regular expression
 	if rVolt == nil {
@@ -157,8 +156,8 @@ func (this *State) GetVolts() (map[string]float64, error) {
 	}
 
 	// retrieve values as text
-	command := strings.Split(GENCMD_MEASURE_VOLTS," ")
-	volts := make(map[string]float64,len(command))
+	command := strings.Split(GENCMD_MEASURE_VOLTS, " ")
+	volts := make(map[string]float64, len(command))
 	for _, name := range command[1:] {
 
 		// Retrieve volt value
@@ -174,7 +173,7 @@ func (this *State) GetVolts() (map[string]float64, error) {
 		}
 
 		// Convert to uint64
-		value2, err := strconv.ParseFloat(match[1],64)
+		value2, err := strconv.ParseFloat(match[1], 64)
 		if err != nil {
 			return nil, err
 		}
@@ -193,8 +192,8 @@ func (this *State) GetCodecs() (map[string]bool, error) {
 	}
 
 	// retrieve values as text
-	command := strings.Split(GENCMD_CODEC_ENABLED," ")
-	codecs := make(map[string]bool,len(command))
+	command := strings.Split(GENCMD_CODEC_ENABLED, " ")
+	codecs := make(map[string]bool, len(command))
 	for _, name := range command[1:] {
 
 		// Retrieve volt value
@@ -227,8 +226,8 @@ func (this *State) GetMemoryMegabytes() (map[string]uint64, error) {
 	}
 
 	// retrieve values as text
-	command := strings.Split(GENCMD_MEMORY," ")
-	memories := make(map[string]uint64,len(command))
+	command := strings.Split(GENCMD_MEMORY, " ")
+	memories := make(map[string]uint64, len(command))
 	for _, name := range command[1:] {
 
 		// Retrieve memory value
@@ -244,7 +243,7 @@ func (this *State) GetMemoryMegabytes() (map[string]uint64, error) {
 		}
 
 		// Convert to uint64
-		value2, err := strconv.ParseUint(match[2],10,64)
+		value2, err := strconv.ParseUint(match[2], 10, 64)
 		if err != nil {
 			return nil, err
 		}
@@ -268,27 +267,27 @@ func (this *State) GetOTP() (map[byte]uint32, error) {
 	}
 
 	// find matches in the text
-	matches := rOTP.FindAllStringSubmatch(value,-1)
-	if len(matches)==0 {
+	matches := rOTP.FindAllStringSubmatch(value, -1)
+	if len(matches) == 0 {
 		return nil, ErrorResponse
 	}
-	otp := make(map[byte]uint32,len(matches))
-	for _,match := range matches {
+	otp := make(map[byte]uint32, len(matches))
+	for _, match := range matches {
 		if len(match) != 3 {
 			return nil, ErrorResponse
 		}
-		index, err := strconv.ParseUint(match[1],10,8)
+		index, err := strconv.ParseUint(match[1], 10, 8)
 		if err != nil {
 			return nil, err
 		}
-		value, err := strconv.ParseUint(match[2],16,32)
+		value, err := strconv.ParseUint(match[2], 16, 32)
 		if err != nil {
 			return nil, err
 		}
 		otp[byte(index)] = uint32(value)
 	}
 
-	return otp,nil
+	return otp, nil
 }
 
 func (this *State) GetSerial() (uint64, error) {
@@ -296,30 +295,19 @@ func (this *State) GetSerial() (uint64, error) {
 	// Get embedded memory
 	otp, err := this.GetOTP()
 	if err != nil {
-		return 0,err
+		return 0, err
 	}
 	// Return Serial number
-	return uint64(otp[GENCMD_OTPDUMP_SERIAL]),nil
+	return uint64(otp[GENCMD_OTPDUMP_SERIAL]), nil
 }
-
 
 func (this *State) GetRevision() (uint32, error) {
 
 	// Get embedded memory
 	otp, err := this.GetOTP()
 	if err != nil {
-		return 0,err
+		return 0, err
 	}
 	// Return revision number
-	return uint32(otp[GENCMD_OTPDUMP_REVISION]),nil
+	return uint32(otp[GENCMD_OTPDUMP_REVISION]), nil
 }
-
-
-
-
-
-
-
-
-
-

@@ -26,15 +26,15 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	GENCMD_BUFFER_SIZE   = 1024
-	GEMCMD_COMMANDS      = "commands"
-	GENCMD_MEASURE_TEMP  = "measure_temp"
-	GENCMD_MEASURE_CLOCK = "measure_clock arm core h264 isp v3d uart pwm emmc pixel vec hdmi dpi"
-	GENCMD_MEASURE_VOLTS = "measure_volts core sdram_c sdram_i sdram_p"
-	GENCMD_CODEC_ENABLED = "codec_enabled H264 MPG2 WVC1 MPG4 MJPG WMV9 VP8"
-	GENCMD_MEMORY        = "get_mem arm gpu"
-	GENCMD_OTPDUMP       = "otp_dump"
-	GENCMD_OTPDUMP_SERIAL = 28
+	GENCMD_BUFFER_SIZE      = 1024
+	GEMCMD_COMMANDS         = "commands"
+	GENCMD_MEASURE_TEMP     = "measure_temp"
+	GENCMD_MEASURE_CLOCK    = "measure_clock arm core h264 isp v3d uart pwm emmc pixel vec hdmi dpi"
+	GENCMD_MEASURE_VOLTS    = "measure_volts core sdram_c sdram_i sdram_p"
+	GENCMD_CODEC_ENABLED    = "codec_enabled H264 MPG2 WVC1 MPG4 MJPG WMV9 VP8"
+	GENCMD_MEMORY           = "get_mem arm gpu"
+	GENCMD_OTPDUMP          = "otp_dump"
+	GENCMD_OTPDUMP_SERIAL   = 28
 	GENCMD_OTPDUMP_REVISION = 30
 )
 
