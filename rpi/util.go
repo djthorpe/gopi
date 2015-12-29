@@ -35,7 +35,10 @@ var (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type State struct{}
+type State struct{
+	revision uint32
+	serial uint64
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -291,23 +294,34 @@ func (this *State) GetOTP() (map[byte]uint32, error) {
 }
 
 func (this *State) GetSerial() (uint64, error) {
+	// Return cached version
+	if this.serial != 0 {
+		return this.serial, nil
+	}
 
 	// Get embedded memory
 	otp, err := this.GetOTP()
 	if err != nil {
 		return 0, err
 	}
-	// Return Serial number
-	return uint64(otp[GENCMD_OTPDUMP_SERIAL]), nil
+	// Cache and return serial number
+	this.serial = uint64(otp[GENCMD_OTPDUMP_SERIAL])
+	return this.serial, nil
 }
 
 func (this *State) GetRevision() (uint32, error) {
+	// Return cached version
+	if this.revision != 0 {
+		return this.revision, nil
+	}
 
 	// Get embedded memory
 	otp, err := this.GetOTP()
 	if err != nil {
 		return 0, err
 	}
-	// Return revision number
-	return uint32(otp[GENCMD_OTPDUMP_REVISION]), nil
+
+	// Cache and return revision number
+	this.revision = uint32(otp[GENCMD_OTPDUMP_REVISION])
+	return this.revision, nil
 }
