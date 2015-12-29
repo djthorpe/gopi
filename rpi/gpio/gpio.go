@@ -1,13 +1,113 @@
-// https://github.com/davecheney/gpio
-// See LICENSE file for licensing information and credits
-// package rpi provides a GPIO implementation customised for the RPi.
+/*
+	Go Language Raspberry Pi Interface
+	(c) Copyright David Thorpe 2016
+	All Rights Reserved
+
+	For Licensing and Usage information, please see LICENSE.md
+
+	You may need to add your user to the gpio group
+	sudo usermod -a -G gpio ${USER}
+	then logout and log back in again
+*/
 package gpio
 
 import (
-	"log"
 	"os"
 	"sync"
+	"syscall"
+	"github.com/djthorpe/gopi/rpi"
 )
+
+////////////////////////////////////////////////////////////////////////////////
+
+const (
+	GPIO_DEV_GPIO = "/dev/gpiomem"
+	GPIO_DEV_MEM = "/dev/mem"
+	GPIO_SIZE_BYTES = 4096
+)
+
+const (
+	GPIO_PIN_MODE_UNKNOWN = iota
+	GPIO_PIN_MODE_IN               // Input
+	GPIO_PIN_MODE_OUT              // Output
+	GPIO_PIN_MODE_ALT0             // Alternate function 0
+	GPIO_PIN_MODE_ALT1             // Alternate function 1
+	GPIO_PIN_MODE_ALT2             // Alternate function 2
+	GPIO_PIN_MODE_ALT3             // Alternate function 3
+	GPIO_PIN_MODE_ALT4             // Alternate function 4
+	GPIO_PIN_MODE_ALT5             // Alternate function 5
+)
+
+////////////////////////////////////////////////////////////////////////////////
+
+type Mode byte
+
+type Pin struct{
+	Name string
+	Mode Mode
+}
+
+type State struct{
+	base rpi.PeripheralBase
+	bytes []byte
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+var (
+	memlock sync.Mutex
+)
+
+////////////////////////////////////////////////////////////////////////////////
+
+func New(base rpi.PeripheralBase) (*State,error) {
+	// create this object
+	this := new(State)
+	this.base = base
+	this.bytes = nil
+
+	// initialize
+	var file *os.File
+	var err error
+	if file, err = os.OpenFile(GPIO_DEV_GPIO,os.O_RDWR|os.O_SYNC,0); err != nil {
+		if os.IsNotExist(err) {
+			file, err = os.OpenFile(GPIO_DEV_MEM,os.O_RDWR|os.O_SYNC,0)
+		}
+	}
+
+	if err != nil {
+		return nil,err
+	}
+
+	// file descriptor can be closed after memory mapping
+	defer file.Close()
+
+	// lock for memmap
+	memlock.Lock()
+	defer memlock.Unlock()
+
+	// memory map GPIO registers to byte array
+	this.bytes, err = syscall.Mmap(int(file.Fd()),int64(this.base),GPIO_SIZE_BYTES,syscall.PROT_READ|syscall.PROT_WRITE,syscall.MAP_SHARED)
+	if err != nil {
+		return nil,err
+	}
+
+	// Return this
+	return this,nil
+}
+
+func (this *State) Terminate() {
+	// lock for memmap
+	memlock.Lock()
+	defer memlock.Unlock()
+	// unmap memory
+	if this.bytes != nil {
+		syscall.Munmap(this.bytes)
+		this.bytes = nil
+	}
+}
+
+/*
 
 const (
 	// Physical addresses for various peripheral register sets
@@ -75,15 +175,6 @@ const (
 	BCM2835_GPPUDCLK0 = 0x0098 // GPIO Pin Pull-up/down Enable Clock 0
 	BCM2835_GPPUDCLK1 = 0x009c // GPIO Pin Pull-up/down Enable Clock 1
 
-	BCM2835_GPIO_FSEL_INPT        = 0x0 // Input
-	BCM2835_GPIO_FSEL_OUTP        = 0x1 // Output
-	BCM2835_GPIO_FSEL_ALT0        = 0x4 // Alternate function 0
-	BCM2835_GPIO_FSEL_ALT1        = 0x5 // Alternate function 1
-	BCM2835_GPIO_FSEL_ALT2        = 0x6 // Alternate function 2
-	BCM2835_GPIO_FSEL_ALT3        = 0x7 // Alternate function 3
-	BCM2835_GPIO_FSEL_ALT4        = 0x3 // Alternate function 4
-	BCM2835_GPIO_FSEL_ALT5        = 0x2 // Alternate function 5
-	BCM2835_GPIO_FSEL_MASK uint32 = 0x7
 
 	GPIO_P1_12 = 18
 	GPIO_P1_13 = 27
@@ -102,14 +193,6 @@ const (
 	GPIO17 = GPIO_P1_11
 )
 
-func New() {
-	memfd, err := os.OpenFile("/dev/mem", os.O_RDWR|os.O_SYNC, 0)
-	if err != nil {
-		log.Fatalf("rpi: unable to open /dev/mem: %v", err)
-	}
-	initGPIO(int(memfd.Fd()))
-	memfd.Close()
-}
+*/
 
-var initOnce sync.Once
 
