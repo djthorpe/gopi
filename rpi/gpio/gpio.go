@@ -15,7 +15,6 @@ import (
 	"os"
 	"sync"
 	"syscall"
-	"fmt"
 	"github.com/djthorpe/gopi/rpi"
 )
 
@@ -29,13 +28,13 @@ type PhysicalPin uint
 type Pin struct{
 	Name string
 	LogicalPin  LogicalPin
-	PhysicalPin PhysicalPin
+	PhysicalPin []PhysicalPin // there can be more than one physical pin number
+	                          // in the case of voltage pins
 }
 
 type Pins struct{
-	base rpi.PeripheralBase
-	bytes []byte
-	pin map[LogicalPin]Pin
+	bytes []byte              // memory mapped byte array
+	NumberOfPins uint         // number of physical pins for GPIO connector
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,6 +43,7 @@ const (
 	GPIO_DEV_GPIO = "/dev/gpiomem"
 	GPIO_DEV_MEM = "/dev/mem"
 	GPIO_SIZE_BYTES = 4096
+	GPIO_OFFSET = 0x200000
 )
 
 // Pin modes
@@ -202,10 +202,13 @@ func New(model *rpi.Model) (*Pins,error) {
 		return nil,rpi.ErrorUnknownProduct
 	}
 
-	// create this object
+	// create 'this' object
 	this := new(Pins)
-	this.base = model.PeripheralBase
 	this.bytes = nil
+	this.NumberOfPins = uint(productpinsmap[model.Product])
+	if this.NumberOfPins == 0 {
+		return nil,rpi.ErrorUnknownProduct
+	}
 
 	// initialize
 	var file *os.File
@@ -228,18 +231,10 @@ func New(model *rpi.Model) (*Pins,error) {
 	defer memlock.Unlock()
 
 	// memory map GPIO registers to byte array
-	this.bytes, err = syscall.Mmap(int(file.Fd()),int64(this.base),GPIO_SIZE_BYTES,syscall.PROT_READ|syscall.PROT_WRITE,syscall.MAP_SHARED)
+	base := model.PeripheralBase + GPIO_OFFSET
+	this.bytes, err = syscall.Mmap(int(file.Fd()),int64(base),GPIO_SIZE_BYTES,syscall.PROT_READ|syscall.PROT_WRITE,syscall.MAP_SHARED)
 	if err != nil {
 		return nil,err
-	}
-
-	// create the pins from the physical pin connections
-	numberOfPhysicalPins := uint(productpinsmap[model.Product])
-	for p := uint(1); p <= numberOfPhysicalPins; p++ {
-		l := LogicalPin(logicalpinmap[PhysicalPin(p)])
-		n := logicalpinnamemap[l]
-		this.Pin[l] = Pin{ n,l,PhysicalPin(p) }
-		fmt.Printf("PIN: %+v\n",this.Pin[l])
 	}
 
 	// Return this
@@ -258,15 +253,44 @@ func (this *Pins) Terminate() {
 }
 
 // Return pin from logical pin name
-func (this *Pins) GetLogicalPin(l LogicalPin) *Pin {
-	return this.pin[l]
+func (this *Pins) getLogicalPin(pin LogicalPin) (*Pin,error) {
+/*	// create the pins from the physical pin connections
+	for p := uint(1); p <= this.NumberOfPins; p++ {
+		l := LogicalPin(logicalpinmap[PhysicalPin(p)])
+		n := logicalpinnamemap[l]
+		this.pin[l] = Pin{ n,l,PhysicalPin(p) }
+	}
+*/
+	// TODO
+	return nil,nil
 }
 
 // Return pin from physical pin location
-func (this *Pins) GetPhysicalPin(p PhysicalPin) *Pin {
-	LogicalPin l
+func (this *Pins) getPhysicalPin(pin PhysicalPin) (*Pin,error) {
+	// Sanity check the physical pin
+	if uint(pin) < 1 || uint(pin) > this.NumberOfPins {
+		return nil,rpi.ErrorUnknownPin
+	}
+	logicalPin := logicalpinmap[pin]
+	// Sanity check the logical pin
+	if logicalPin == GPIO_PIN_UNKNOWN {
+		return nil,rpi.ErrorUnknownPin
+	}
+	// Return the pin
+	return &Pin{ logicalpinnamemap[logicalPin],logicalPin,[]PhysicalPin{ pin } },nil
 }
 
+// Return pin for Logical or Physical pin
+func (this *Pins) GetPin(pin interface{}) (*Pin,error) {
+	switch pin.(type) {
+    case LogicalPin:
+        return this.getLogicalPin(pin.(LogicalPin))
+    case PhysicalPin:
+        return this.getPhysicalPin(pin.(PhysicalPin))
+    default:
+        return nil,rpi.ErrorUnknownPin
+    }
+}
 
 /*
 

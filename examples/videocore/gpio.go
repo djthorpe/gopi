@@ -55,9 +55,16 @@ func main() {
 	defer g.Terminate()
 
 	////////////////////////////////////////////////////////////////////////////
-	// TODO: enumerate through the pins of the GPIO connector
+	// Enumerate through the pins of the GPIO connector, starting at 1
 
-	fmt.Printf("GPIO=%v\n",g)
+	for i := uint(1); i <= g.NumberOfPins; i++ {
+		pin,err := g.GetPin(gpio.PhysicalPin(i))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n",err)
+			os.Exit(-1)
+		}
+		fmt.Printf("Pin: %v => %+v\n",i,pin)
+	}
 
 
 }
