@@ -10,12 +10,12 @@
 package main
 
 import (
-	"os"
 	"flag"
 	"fmt"
-	"path"
 	"github.com/djthorpe/gopi/rpi"
 	"github.com/djthorpe/gopi/rpi/gpio"
+	"os"
+	"path"
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -40,16 +40,19 @@ func main() {
 	////////////////////////////////////////////////////////////////////////////
 	// obtain information about the Pi and then create the GPIO interface
 
-	var model *rpi.Model
-	var g *gpio.Pins
-	var err error
-	if model,err = pi.GetModel(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n",err)
+	var (
+		model *rpi.Model
+		g     *gpio.Pins
+		err   error
+	)
+
+	if model, err = pi.GetModel(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(-1)
 	}
 
-	if g,err = gpio.New(model); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n",err)
+	if g, err = gpio.New(model); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(-1)
 	}
 	defer g.Terminate()
@@ -58,13 +61,11 @@ func main() {
 	// Enumerate through the pins of the GPIO connector, starting at 1
 
 	for i := uint(1); i <= g.NumberOfPins; i++ {
-		pin,err := g.GetPin(gpio.PhysicalPin(i))
+		pin, err := g.GetPin(gpio.PhysicalPin(i))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n",err)
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(-1)
 		}
-		fmt.Printf("Pin: %v => %+v\n",i,pin)
+		fmt.Printf("Pin: %v => %+v\n", i, pin)
 	}
-
-
 }

@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	ErrorInit     = errors.New("init error")
-	ErrorGenCmd   = errors.New("vcgencmd error")
-	ErrorResponse = errors.New("unexpected response")
-	ErrorUnknownProduct    = errors.New("unknown product")
-	ErrorUnknownPin        = errors.New("unknown pin")
+	ErrorInit           = errors.New("init error")
+	ErrorGenCmd         = errors.New("vcgencmd error")
+	ErrorResponse       = errors.New("unexpected response")
+	ErrorUnknownProduct = errors.New("unknown product")
+	ErrorUnknownPin     = errors.New("unknown pin")
 )

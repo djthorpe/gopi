@@ -17,17 +17,17 @@ type MemoryMB uint32
 type PeripheralBase uintptr
 
 type Model struct {
-	Revision uint32
-	WarrantyBit bool
-	Product Product
-	PCBRevision PCBRevision
-	Processor Processor
-	Manufacturer Manufacturer
-	MemoryMB MemoryMB
+	Revision       uint32
+	WarrantyBit    bool
+	Product        Product
+	PCBRevision    PCBRevision
+	Processor      Processor
+	Manufacturer   Manufacturer
+	MemoryMB       MemoryMB
 	PeripheralBase PeripheralBase
 
-	ProductString string
-	ProcessorString string
+	ProductString      string
+	ProcessorString    string
 	ManufacturerString string
 }
 
@@ -50,36 +50,36 @@ const (
 )
 
 const (
-    RPI_MODEL_UNKNOWN = iota
+	RPI_MODEL_UNKNOWN = iota
 	RPI_MODEL_A
-    RPI_MODEL_B
-    RPI_MODEL_A_PLUS
-    RPI_MODEL_B_PLUS
-    RPI_MODEL_B_PI_2
-    RPI_MODEL_ALPHA
-    RPI_COMPUTE_MODULE
-    RPI_MODEL_ZERO
+	RPI_MODEL_B
+	RPI_MODEL_A_PLUS
+	RPI_MODEL_B_PLUS
+	RPI_MODEL_B_PI_2
+	RPI_MODEL_ALPHA
+	RPI_COMPUTE_MODULE
+	RPI_MODEL_ZERO
 )
 
 const (
-    RPI_PROCESSOR_UNKNOWN = iota
+	RPI_PROCESSOR_UNKNOWN = iota
 	RPI_PROCESSOR_BCM2835
-    RPI_PROCESSOR_BCM2836
+	RPI_PROCESSOR_BCM2836
 )
 
 const (
-    RPI_MEMORY_UNKNOWN = iota
-    RPI_MEMORY_256MB = 256
-    RPI_MEMORY_512MB = 512
-	RPI_MEMORY_1024MB = 1024
+	RPI_MEMORY_UNKNOWN = iota
+	RPI_MEMORY_256MB   = 256
+	RPI_MEMORY_512MB   = 512
+	RPI_MEMORY_1024MB  = 1024
 )
 
 const (
-    RPI_MANUFACTURER_UNKNOWN = iota
-    RPI_MANUFACTURER_SONY
-    RPI_MANUFACTURER_EGOMAN
-    RPI_MANUFACTURER_QISDA
-    RPI_MANUFACTURER_EMBEST
+	RPI_MANUFACTURER_UNKNOWN = iota
+	RPI_MANUFACTURER_SONY
+	RPI_MANUFACTURER_EGOMAN
+	RPI_MANUFACTURER_QISDA
+	RPI_MANUFACTURER_EMBEST
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -104,7 +104,7 @@ var productmap1 = map[uint32]Product{
 	0x15: RPI_MODEL_A_PLUS,
 }
 
-var pcbmap1 = map[uint32]PCBRevision {
+var pcbmap1 = map[uint32]PCBRevision{
 	0x02: 1,
 	0x03: 1,
 	0x04: 2,
@@ -183,47 +183,47 @@ var manufacturermap1 = map[uint32]Manufacturer{
 }
 
 var manufacturermap2 = map[uint32]Manufacturer{
-	0<<16: RPI_MANUFACTURER_SONY,
-	1<<16: RPI_MANUFACTURER_EGOMAN,
-	2<<16: RPI_MANUFACTURER_EMBEST,
-	3<<16: RPI_MANUFACTURER_UNKNOWN,
-	4<<16: RPI_MANUFACTURER_EMBEST,
+	0 << 16: RPI_MANUFACTURER_SONY,
+	1 << 16: RPI_MANUFACTURER_EGOMAN,
+	2 << 16: RPI_MANUFACTURER_EMBEST,
+	3 << 16: RPI_MANUFACTURER_UNKNOWN,
+	4 << 16: RPI_MANUFACTURER_EMBEST,
 }
 
 var productmap2 = map[uint32]Product{
-	0<<4: RPI_MODEL_A,
-	1<<4: RPI_MODEL_B,
-	2<<4: RPI_MODEL_A_PLUS,
-	3<<4: RPI_MODEL_B_PLUS,
-	4<<4: RPI_MODEL_B_PI_2,
-	5<<4: RPI_MODEL_ALPHA,
-	6<<4: RPI_COMPUTE_MODULE,
-	7<<4: RPI_MODEL_UNKNOWN,
-	8<<4: RPI_MODEL_UNKNOWN,
-	9<<4: RPI_MODEL_ZERO,
+	0 << 4: RPI_MODEL_A,
+	1 << 4: RPI_MODEL_B,
+	2 << 4: RPI_MODEL_A_PLUS,
+	3 << 4: RPI_MODEL_B_PLUS,
+	4 << 4: RPI_MODEL_B_PI_2,
+	5 << 4: RPI_MODEL_ALPHA,
+	6 << 4: RPI_COMPUTE_MODULE,
+	7 << 4: RPI_MODEL_UNKNOWN,
+	8 << 4: RPI_MODEL_UNKNOWN,
+	9 << 4: RPI_MODEL_ZERO,
 }
 
 var processormap2 = map[uint32]Processor{
-	0<<12: RPI_PROCESSOR_BCM2835,
-	1<<12: RPI_PROCESSOR_BCM2836,
+	0 << 12: RPI_PROCESSOR_BCM2835,
+	1 << 12: RPI_PROCESSOR_BCM2836,
 }
 
 var memorymap2 = map[uint32]MemoryMB{
-	0<<20: RPI_MEMORY_256MB,
-	1<<20: RPI_MEMORY_512MB,
-	2<<20: RPI_MEMORY_1024MB,
+	0 << 20: RPI_MEMORY_256MB,
+	1 << 20: RPI_MEMORY_512MB,
+	2 << 20: RPI_MEMORY_1024MB,
 }
 
 var productstringmap = map[Product]string{
-    RPI_MODEL_UNKNOWN: "unknown",
-	RPI_MODEL_A: "A",
-    RPI_MODEL_B: "B",
-    RPI_MODEL_A_PLUS: "A+",
-    RPI_MODEL_B_PLUS: "B+",
-    RPI_MODEL_B_PI_2: "B2",
-    RPI_MODEL_ALPHA: "alpha",
-    RPI_COMPUTE_MODULE: "compute",
-    RPI_MODEL_ZERO: "zero",
+	RPI_MODEL_UNKNOWN:  "unknown",
+	RPI_MODEL_A:        "A",
+	RPI_MODEL_B:        "B",
+	RPI_MODEL_A_PLUS:   "A+",
+	RPI_MODEL_B_PLUS:   "B+",
+	RPI_MODEL_B_PI_2:   "B2",
+	RPI_MODEL_ALPHA:    "alpha",
+	RPI_COMPUTE_MODULE: "compute",
+	RPI_MODEL_ZERO:     "zero",
 }
 
 var processorstringmap = map[Processor]string{
@@ -239,11 +239,11 @@ var peripheralbasemap = map[Processor]PeripheralBase{
 }
 
 var manufacturerstringmap = map[Manufacturer]string{
-    RPI_MANUFACTURER_UNKNOWN: "unknown",
-    RPI_MANUFACTURER_SONY: "Sony",
-    RPI_MANUFACTURER_EGOMAN: "Egoman",
-    RPI_MANUFACTURER_QISDA: "Qisda",
-    RPI_MANUFACTURER_EMBEST: "Embest",
+	RPI_MANUFACTURER_UNKNOWN: "unknown",
+	RPI_MANUFACTURER_SONY:    "Sony",
+	RPI_MANUFACTURER_EGOMAN:  "Egoman",
+	RPI_MANUFACTURER_QISDA:   "Qisda",
+	RPI_MANUFACTURER_EMBEST:  "Embest",
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -257,7 +257,7 @@ func (this *State) GetModel() (*Model, error) {
 	// set Revision
 	revision, err := this.GetRevision()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	model.Revision = revision
 
@@ -270,14 +270,14 @@ func (this *State) GetModel() (*Model, error) {
 	}
 
 	// pare down revision and decode differently depending on the format
-    revision = revision & ^w
+	revision = revision & ^w
 	if (revision & RPI_REVISION_ENCODING_MASK) != 0 {
 		// Raspberry Pi 2 style revision coding
-		model.Product = Product(productmap2[revision & RPI_REVISION_PRODUCT_MASK])
+		model.Product = Product(productmap2[revision&RPI_REVISION_PRODUCT_MASK])
 		model.PCBRevision = PCBRevision(revision & RPI_REVISION_PCB_MASK)
-		model.Processor = Processor(processormap2[revision & RPI_REVISION_PROCESSOR_MASK])
-		model.Manufacturer = Manufacturer(manufacturermap2[revision & RPI_REVISION_MANUFACTURER_MASK])
-		model.MemoryMB = MemoryMB(memorymap2[revision & RPI_REVISION_MEMORY_MASK])
+		model.Processor = Processor(processormap2[revision&RPI_REVISION_PROCESSOR_MASK])
+		model.Manufacturer = Manufacturer(manufacturermap2[revision&RPI_REVISION_MANUFACTURER_MASK])
+		model.MemoryMB = MemoryMB(memorymap2[revision&RPI_REVISION_MEMORY_MASK])
 	} else {
 		// Raspberry Pi 1 style revision coding
 		model.Product = Product(productmap1[revision])
@@ -293,5 +293,5 @@ func (this *State) GetModel() (*Model, error) {
 	model.ProcessorString = processorstringmap[model.Processor]
 	model.ManufacturerString = manufacturerstringmap[model.Manufacturer]
 
-	return model,nil
+	return model, nil
 }

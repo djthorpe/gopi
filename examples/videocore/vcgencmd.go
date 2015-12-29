@@ -27,7 +27,7 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////
 
-var commandmap = map[string]func(*rpi.State) error {
+var commandmap = map[string]func(*rpi.State) error{
 	"all":      allCommand,
 	"temp":     tempCommand,
 	"clocks":   clocksCommand,
@@ -200,13 +200,13 @@ func modelCommand(pi *rpi.State) error {
 	}
 
 	fmt.Println("Model")
-	fmt.Printf("  Revision=0x%08X\n",model.Revision)
-	fmt.Printf("  Product=Respberry Pi %v (%v)\n",model.ProductString,model.Product)
-	fmt.Printf("  Processor=%v (%v)\n",model.ProcessorString,model.Processor)
-	fmt.Printf("  Memory=%vM\n",model.MemoryMB)
-	fmt.Printf("  Manufacturer=%v (%v)\n",model.ManufacturerString,model.Manufacturer)
-	fmt.Printf("  PCB Revision=%v\n",model.PCBRevision)
-	fmt.Printf("  Peripheral Base=0x%08X\n",model.PeripheralBase)
+	fmt.Printf("  Revision=0x%08X\n", model.Revision)
+	fmt.Printf("  Product=Respberry Pi %v (%v)\n", model.ProductString, model.Product)
+	fmt.Printf("  Processor=%v (%v)\n", model.ProcessorString, model.Processor)
+	fmt.Printf("  Memory=%vM\n", model.MemoryMB)
+	fmt.Printf("  Manufacturer=%v (%v)\n", model.ManufacturerString, model.Manufacturer)
+	fmt.Printf("  PCB Revision=%v\n", model.PCBRevision)
+	fmt.Printf("  Peripheral Base=0x%08X\n", model.PeripheralBase)
 
 	return nil
 }
@@ -247,20 +247,20 @@ func main() {
 	////////////////////////////////////////////////////////////////////////////
 
 	var err error
-	if len(args) == 1  && commandmap[args[0]] != nil {
+	if len(args) == 1 && commandmap[args[0]] != nil {
 		if f := commandmap[args[0]]; f != nil {
 			err = f(pi)
 		}
 	} else {
 		var value string
-		value,err := rpi.VCGenCmd(strings.Join(args, " "))
+		value, err := rpi.VCGenCmd(strings.Join(args, " "))
 		if err == nil {
 			fmt.Println(value)
 		}
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr,"%v\n",err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(-1)
 	}
 }
