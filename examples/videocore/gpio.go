@@ -48,7 +48,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	if g,err = gpio.New(model.PeripheralBase); err != nil {
+	if g,err = gpio.New(model); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n",err)
 		os.Exit(-1)
 	}

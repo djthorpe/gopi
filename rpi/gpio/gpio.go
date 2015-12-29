@@ -15,8 +15,28 @@ import (
 	"os"
 	"sync"
 	"syscall"
+	"fmt"
 	"github.com/djthorpe/gopi/rpi"
 )
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+type LogicalPin uint
+type PhysicalPin uint
+
+type Pin struct{
+	Name string
+	LogicalPin  LogicalPin
+	PhysicalPin PhysicalPin
+}
+
+type Pins struct{
+	base rpi.PeripheralBase
+	bytes []byte
+	pin map[LogicalPin]Pin
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -26,6 +46,7 @@ const (
 	GPIO_SIZE_BYTES = 4096
 )
 
+// Pin modes
 const (
 	GPIO_PIN_MODE_UNKNOWN = iota
 	GPIO_PIN_MODE_IN               // Input
@@ -38,19 +59,132 @@ const (
 	GPIO_PIN_MODE_ALT5             // Alternate function 5
 )
 
+// Logical GPIO pins
+const (
+	GPIO_PIN_UNKNOWN = iota
+	GPIO_PIN_PWR3V3
+	GPIO_PIN_PWR5V
+	GPIO_PIN_GROUND
+	GPIO_PIN_BCM0
+	GPIO_PIN_BCM1
+	GPIO_PIN_BCM2
+	GPIO_PIN_BCM3
+	GPIO_PIN_BCM4
+	GPIO_PIN_BCM5
+	GPIO_PIN_BCM6
+	GPIO_PIN_BCM7
+	GPIO_PIN_BCM8
+	GPIO_PIN_BCM9
+	GPIO_PIN_BCM10
+	GPIO_PIN_BCM11
+	GPIO_PIN_BCM12
+	GPIO_PIN_BCM13
+	GPIO_PIN_BCM14
+	GPIO_PIN_BCM15
+	GPIO_PIN_BCM16
+	GPIO_PIN_BCM17
+	GPIO_PIN_BCM18
+	GPIO_PIN_BCM19
+	GPIO_PIN_BCM20
+	GPIO_PIN_BCM21
+	GPIO_PIN_BCM22
+	GPIO_PIN_BCM23
+	GPIO_PIN_BCM24
+	GPIO_PIN_BCM25
+	GPIO_PIN_BCM26
+	GPIO_PIN_BCM27
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 
-type Mode byte
-
-type Pin struct{
-	Name string
-	Mode Mode
+// map product to number of pins
+var productpinsmap = map[rpi.Product]uint{
+    rpi.RPI_MODEL_UNKNOWN: 0,
+	rpi.RPI_MODEL_A: 26,
+    rpi.RPI_MODEL_B: 26,
+    rpi.RPI_MODEL_A_PLUS: 40,
+    rpi.RPI_MODEL_B_PLUS: 40,
+    rpi.RPI_MODEL_B_PI_2: 40,
+    rpi.RPI_MODEL_ZERO: 40,
 }
 
-type Pins struct{
-	base rpi.PeripheralBase
-	bytes []byte
-	Pin []Pins
+// map physical pin to PinNumber
+var logicalpinmap = map[PhysicalPin]LogicalPin {
+	1: GPIO_PIN_PWR3V3,
+	2: GPIO_PIN_PWR5V,
+	3: GPIO_PIN_BCM2,
+	4: GPIO_PIN_PWR5V,
+	5: GPIO_PIN_BCM3,
+	6: GPIO_PIN_GROUND,
+	7: GPIO_PIN_BCM4,
+	8: GPIO_PIN_BCM14,
+	9: GPIO_PIN_GROUND,
+	10: GPIO_PIN_BCM15,
+	11: GPIO_PIN_BCM17,
+	12: GPIO_PIN_BCM18,
+	13: GPIO_PIN_BCM27,
+	14: GPIO_PIN_GROUND,
+	15: GPIO_PIN_BCM22,
+	16: GPIO_PIN_BCM23,
+	17: GPIO_PIN_PWR3V3,
+	18: GPIO_PIN_BCM24,
+	19: GPIO_PIN_BCM10,
+	20: GPIO_PIN_GROUND,
+	21: GPIO_PIN_BCM9,
+	22: GPIO_PIN_BCM25,
+	23: GPIO_PIN_BCM11,
+	24: GPIO_PIN_BCM8,
+	25: GPIO_PIN_GROUND,
+	26: GPIO_PIN_BCM7,
+	27: GPIO_PIN_BCM0,
+	28: GPIO_PIN_BCM1,
+	29: GPIO_PIN_BCM5,
+	30: GPIO_PIN_GROUND,
+	31: GPIO_PIN_BCM6,
+	32: GPIO_PIN_BCM12,
+	33: GPIO_PIN_BCM13,
+	34: GPIO_PIN_GROUND,
+	35: GPIO_PIN_BCM19,
+	36: GPIO_PIN_BCM16,
+	37: GPIO_PIN_BCM26,
+	38: GPIO_PIN_BCM20,
+	39: GPIO_PIN_GROUND,
+	40: GPIO_PIN_BCM21,
+}
+
+var logicalpinnamemap = map[LogicalPin]string {
+	GPIO_PIN_UNKNOWN: "unknown",
+	GPIO_PIN_PWR3V3: "3V3",
+	GPIO_PIN_PWR5V: "5V",
+	GPIO_PIN_GROUND: "GND",
+	GPIO_PIN_BCM0: "GPIO0",
+	GPIO_PIN_BCM1: "GPIO1",
+	GPIO_PIN_BCM2: "GPIO2",
+	GPIO_PIN_BCM3: "GPIO3",
+	GPIO_PIN_BCM4: "GPIO4",
+	GPIO_PIN_BCM5: "GPIO5",
+	GPIO_PIN_BCM6: "GPIO6",
+	GPIO_PIN_BCM7: "GPIO7",
+	GPIO_PIN_BCM8: "GPIO8",
+	GPIO_PIN_BCM9: "GPIO9",
+	GPIO_PIN_BCM10: "GPIO10",
+	GPIO_PIN_BCM11: "GPIO11",
+	GPIO_PIN_BCM12: "GPIO12",
+	GPIO_PIN_BCM13: "GPIO13",
+	GPIO_PIN_BCM14: "GPIO14",
+	GPIO_PIN_BCM15: "GPIO15",
+	GPIO_PIN_BCM16: "GPIO16",
+	GPIO_PIN_BCM17: "GPIO17",
+	GPIO_PIN_BCM18: "GPIO18",
+	GPIO_PIN_BCM19: "GPIO19",
+	GPIO_PIN_BCM20: "GPIO20",
+	GPIO_PIN_BCM21: "GPIO21",
+	GPIO_PIN_BCM22: "GPIO22",
+	GPIO_PIN_BCM23: "GPIO23",
+	GPIO_PIN_BCM24: "GPIO24",
+	GPIO_PIN_BCM25: "GPIO25",
+	GPIO_PIN_BCM26: "GPIO26",
+	GPIO_PIN_BCM27: "GPIO27",
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,10 +195,16 @@ var (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func New(base rpi.PeripheralBase) (*Pins,error) {
+func New(model *rpi.Model) (*Pins,error) {
+
+	// check model
+	if model == nil || model.Product == rpi.RPI_MODEL_UNKNOWN {
+		return nil,rpi.ErrorUnknownProduct
+	}
+
 	// create this object
 	this := new(Pins)
-	this.base = base
+	this.base = model.PeripheralBase
 	this.bytes = nil
 
 	// initialize
@@ -93,6 +233,15 @@ func New(base rpi.PeripheralBase) (*Pins,error) {
 		return nil,err
 	}
 
+	// create the pins from the physical pin connections
+	numberOfPhysicalPins := uint(productpinsmap[model.Product])
+	for p := uint(1); p <= numberOfPhysicalPins; p++ {
+		l := LogicalPin(logicalpinmap[PhysicalPin(p)])
+		n := logicalpinnamemap[l]
+		this.Pin[l] = Pin{ n,l,PhysicalPin(p) }
+		fmt.Printf("PIN: %+v\n",this.Pin[l])
+	}
+
 	// Return this
 	return this,nil
 }
@@ -107,6 +256,17 @@ func (this *Pins) Terminate() {
 		this.bytes = nil
 	}
 }
+
+// Return pin from logical pin name
+func (this *Pins) GetLogicalPin(l LogicalPin) *Pin {
+	return this.pin[l]
+}
+
+// Return pin from physical pin location
+func (this *Pins) GetPhysicalPin(p PhysicalPin) *Pin {
+	LogicalPin l
+}
+
 
 /*
 
