@@ -38,6 +38,7 @@ func main() {
 	//args := flag.Args()
 
 	////////////////////////////////////////////////////////////////////////////
+	// obtain information about the Pi and then create the GPIO interface
 
 	var model *rpi.Model
 	var g *gpio.State
@@ -52,6 +53,9 @@ func main() {
 		os.Exit(-1)
 	}
 	defer g.Terminate()
+
+	////////////////////////////////////////////////////////////////////////////
+	// TODO: enumerate through the pins of the GPIO connector
 
 	fmt.Printf("GPIO=%v\n",g)
 

@@ -12,10 +12,10 @@ There is a single `rpi` module and several submodules:
 
   * `rpi` - Contains code for interfacing with the Raspberry Pi hardware
   * `dispmanx` - Low-level VideoCore interface
-  * `egl` - Native interface to link OpenGL and OpenVC to the GPU
+  * `egl` - Native interface to link OpenGL ES and OpenVG to the GPU
   * `gles` - OpenGL ES for rendering 3D
-  * `vc` - OpenVG for rendering 2D vector graphics 
-  * `omx` - OpenMAX Media Library
+  * `vg` - OpenVG for rendering 2D vector graphics 
+  * `openmax` - OpenMAX Media Library
   * `gpio` - Interface to the General Purpose IO connector
 
 Most of these are still to be written or completed. There are a set of examples
