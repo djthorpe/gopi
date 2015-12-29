@@ -47,9 +47,10 @@ type Pin struct{
 	Mode Mode
 }
 
-type State struct{
+type Pins struct{
 	base rpi.PeripheralBase
 	bytes []byte
+	Pin []Pins
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,9 +61,9 @@ var (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func New(base rpi.PeripheralBase) (*State,error) {
+func New(base rpi.PeripheralBase) (*Pins,error) {
 	// create this object
-	this := new(State)
+	this := new(Pins)
 	this.base = base
 	this.bytes = nil
 
@@ -96,7 +97,7 @@ func New(base rpi.PeripheralBase) (*State,error) {
 	return this,nil
 }
 
-func (this *State) Terminate() {
+func (this *Pins) Terminate() {
 	// lock for memmap
 	memlock.Lock()
 	defer memlock.Unlock()

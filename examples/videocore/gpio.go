@@ -41,7 +41,7 @@ func main() {
 	// obtain information about the Pi and then create the GPIO interface
 
 	var model *rpi.Model
-	var g *gpio.State
+	var g *gpio.Pins
 	var err error
 	if model,err = pi.GetModel(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n",err)
