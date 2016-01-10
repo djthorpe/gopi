@@ -162,7 +162,7 @@ func otpCommand(pi *rpi.State) error {
 
 	fmt.Println("OTP")
 	for i, v := range otp {
-		fmt.Printf("  %02d=%08X\n", i, v)
+		fmt.Printf("  %02d=0x%08X\n", i, v)
 	}
 
 	return nil
@@ -175,7 +175,7 @@ func serialCommand(pi *rpi.State) error {
 		return err
 	}
 
-	fmt.Printf("Serial=%016X\n", serial)
+	fmt.Printf("Serial=0x%016X\n", serial)
 
 	return nil
 }
@@ -187,7 +187,7 @@ func revisionCommand(pi *rpi.State) error {
 		return err
 	}
 
-	fmt.Printf("Revision=%08X\n", revision)
+	fmt.Printf("Revision=0x%08X\n", revision)
 
 	return nil
 }
@@ -260,7 +260,7 @@ func main() {
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		fmt.Fprintf(os.Stderr,"%v\n",err)
 		os.Exit(-1)
 	}
 }
