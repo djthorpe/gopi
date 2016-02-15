@@ -1,30 +1,31 @@
 package main
 
 import (
-    "flag"
-	"os"
-	"log"
+	"flag"
 	"fmt"
+	"os"
 	"path"
-	"strings"
 	"path/filepath"
-	"gopkg.in/fsnotify.v1"
+	"strings"
+
+	"github.com/rjeczalik/notify"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type WorkItem struct {
-	Path string
+	Path  string
+	Event notify.Event
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // FLAGS
 
 var (
-    flagMediaRoot = flag.String("mediaroot","","Media Root Path")
-	flagAllowedExtensions = flag.String("ext",".m4a .m4v .mov .mp3 .mp4","Allowed File Extensions")
-	flagNumberOfWorkers = flag.Int("workers",4,"The number of workers")
+	flagMediaRoot         = flag.String("mediaroot", "", "Media Root Path")
+	flagAllowedExtensions = flag.String("ext", ".m4a .m4v .mov .mp3 .mp4", "Allowed File Extensions")
+	flagNumberOfWorkers   = flag.Int("workers", 4, "The number of workers")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,31 +36,31 @@ var workQueue *WorkQueue
 ////////////////////////////////////////////////////////////////////////////////
 
 func flagUsage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s [flags]\n",path.Base(os.Args[0]))
+	fmt.Fprintf(os.Stderr, "Usage: %s [flags]\n", path.Base(os.Args[0]))
 	flag.PrintDefaults()
 }
 
 func checkAllowedExtension(ext string) bool {
 	if allowedExtensionsMap == nil {
 		extensions := strings.Fields(strings.ToLower(*flagAllowedExtensions))
-		allowedExtensionsMap = make(map[string]bool,len(extensions))
-		for _,e := range extensions {
+		allowedExtensionsMap = make(map[string]bool, len(extensions))
+		for _, e := range extensions {
 			allowedExtensionsMap[e] = true
 		}
 	}
-	if _,ok := allowedExtensionsMap[ext]; ok {
+	if _, ok := allowedExtensionsMap[ext]; ok {
 		return true
 	}
 	return false
 }
 
-func walkPath(fullpath string,info os.FileInfo,err error) error {
+func walkPath(fullpath string, info os.FileInfo, err error) error {
 	// get filename and extension
 	filename := path.Base(fullpath)
 	ext := strings.ToLower(path.Ext(filename))
 
 	// skip hidden paths
-	if strings.HasPrefix(filename,".") && info.IsDir() {
+	if strings.HasPrefix(filename, ".") && info.IsDir() {
 		return filepath.SkipDir
 	}
 
@@ -69,24 +70,24 @@ func walkPath(fullpath string,info os.FileInfo,err error) error {
 	}
 
 	// skip hidden files
-	if strings.HasPrefix(filename,".") {
+	if strings.HasPrefix(filename, ".") {
 		return nil
 	}
 
 	// check for file extension, queue work
 	if checkAllowedExtension(ext) {
-		workQueue.Push(WorkItem{Path:fullpath})
+		workQueue.Push(WorkItem{Path: fullpath, Event: notify.Create})
 	}
 
-    return nil
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
-    // Read flags
+	// Read flags
 	flag.Usage = flagUsage
-    flag.Parse()
+	flag.Parse()
 	if flag.NArg() != 0 {
 		flag.Usage()
 		os.Exit(1)
@@ -94,26 +95,41 @@ func main() {
 
 	// Check mediaroot to ensure it's a directory
 	if _, err := os.Stat(*flagMediaRoot); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr,"-mediaroot: %v\n",err)
+		fmt.Fprintf(os.Stderr, "-mediaroot: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Check number of workers
+	// Check number of workers which will process media files
 	if *flagNumberOfWorkers < 1 {
-		fmt.Fprintf(os.Stderr,"-workers: Needs to be a positive value\n")
+		fmt.Fprintf(os.Stderr, "-workers: Needs to be a positive value\n")
 		os.Exit(1)
 	}
 
-	// create queue, set up work handler
-	workQueue = NewWorkQueue(*flagNumberOfWorkers,func(val interface{}) {
+	// create queue for processing media files
+	workQueue = NewWorkQueue(*flagNumberOfWorkers, func(val interface{}) {
 		processWorkItem(val.(WorkItem))
 	})
 
 	// Walk the tree
-    if err := filepath.Walk(*flagMediaRoot,walkPath); err != nil {
-        log.Fatal(err)
-    }
+	if err := filepath.Walk(*flagMediaRoot, walkPath); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 
 	// wait until queue is done
 	workQueue.Wait()
+
+	// create the path watcher
+	watcher := make(chan notify.EventInfo, 1)
+	if err := notify.Watch(*flagMediaRoot+"/...", watcher, notify.All); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+	defer notify.Stop(watcher)
+
+	// Process changes to the media root
+	for {
+		event := <-watcher
+		processWorkItem(WorkItem{Path: event.Path(), Event: event.Event()})
+	}
 }

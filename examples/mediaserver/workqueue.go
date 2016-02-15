@@ -8,20 +8,20 @@ import (
 type WorkHandler func(interface{})
 
 type WorkQueue struct {
-	Handler          WorkHandler
-	Workers          int
-	push             chan interface{}
-	pop              chan struct{}
-	suspend          chan bool
-	suspended        bool
-	stop             chan struct{}
-	stopped          bool
-	buffer           []interface{}
-	count            int
-	wg               sync.WaitGroup
+	Handler   WorkHandler
+	Workers   int
+	push      chan interface{}
+	pop       chan struct{}
+	suspend   chan bool
+	suspended bool
+	stop      chan struct{}
+	stopped   bool
+	buffer    []interface{}
+	count     int
+	wg        sync.WaitGroup
 }
 
-func NewWorkQueue(workers int,handler WorkHandler) *WorkQueue {
+func NewWorkQueue(workers int, handler WorkHandler) *WorkQueue {
 	q := new(WorkQueue)
 	q.Handler = handler
 	q.Workers = workers
@@ -31,7 +31,7 @@ func NewWorkQueue(workers int,handler WorkHandler) *WorkQueue {
 	q.stop = make(chan struct{})
 
 	go q.run()
-	runtime.SetFinalizer(q,(*WorkQueue).Stop)
+	runtime.SetFinalizer(q, (*WorkQueue).Stop)
 	return q
 }
 
@@ -41,7 +41,7 @@ func (this *WorkQueue) Push(val interface{}) {
 
 func (this *WorkQueue) Stop() {
 	this.stop <- struct{}{}
-	runtime.SetFinalizer(this,nil)
+	runtime.SetFinalizer(this, nil)
 }
 
 func (this *WorkQueue) Wait() {
@@ -49,7 +49,7 @@ func (this *WorkQueue) Wait() {
 }
 
 func (this *WorkQueue) Len() (_, _ int) {
-	return this.count,len(this.buffer)
+	return this.count, len(this.buffer)
 }
 
 func (this *WorkQueue) run() {
@@ -60,22 +60,22 @@ func (this *WorkQueue) run() {
 
 	for {
 		select {
-			case val := <- this.push:
-				this.buffer = append(this.buffer, val)
-				this.wg.Add(1)
-			case <-this.pop:
-				this.count--
-			case suspend := <-this.suspend:
-				if suspend != this.suspended {
-					if suspend {
-						this.wg.Add(1)
-					} else {
-						this.wg.Done()
-					}
-					this.suspended = suspend
+		case val := <-this.push:
+			this.buffer = append(this.buffer, val)
+			this.wg.Add(1)
+		case <-this.pop:
+			this.count--
+		case suspend := <-this.suspend:
+			if suspend != this.suspended {
+				if suspend {
+					this.wg.Add(1)
+				} else {
+					this.wg.Done()
 				}
-			case <-this.stop:
-				this.stopped = true
+				this.suspended = suspend
+			}
+		case <-this.stop:
+			this.stopped = true
 		}
 
 		if this.stopped && this.count == 0 {
@@ -98,4 +98,3 @@ func (this *WorkQueue) run() {
 	}
 
 }
-
