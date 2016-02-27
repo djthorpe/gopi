@@ -27,7 +27,8 @@ var (
 	flagMediaRoot         = flag.String("mediaroot", "", "Media Root Path")
 	flagAllowedExtensions = flag.String("ext", ".m4a .m4v .mov .mp3 .mp4", "Allowed File Extensions")
 	flagNumberOfWorkers   = flag.Int("workers", 4, "The number of workers")
-	flagListenPort        = flag.Uint("port",8080,"Port to listen for HTTP connections on")
+	flagListenPort        = flag.Uint("port", 8080, "Port to listen for HTTP connections on")
+	flagHostname          = flag.String("hostname","","Server Hostname")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,7 +86,7 @@ func walkPath(fullpath string, info os.FileInfo, err error) error {
 	return nil
 }
 
-func processWorkItem(db *Database,item WorkItem) error {
+func processWorkItem(db *Database, item WorkItem) error {
 
 	// skip hidden files
 	filename := path.Base(item.Path)
@@ -94,18 +95,18 @@ func processWorkItem(db *Database,item WorkItem) error {
 	}
 
 	// get relative path
-	relpath, _ := filepath.Rel(item.Root,item.Path)
+	relpath, _ := filepath.Rel(item.Root, item.Path)
 
 	// check for file removal
 	_, err := os.Stat(item.Path)
 	if os.IsNotExist(err) && item.Event == notify.Remove {
-		fmt.Println("Removed: ",item.Path," (",relpath,")")
+		fmt.Println("Removed: ", item.Path, " (", relpath, ")")
 		return nil
 	}
 
 	// check for file addition
 	if item.Event == notify.Create && checkAllowedExtension(strings.ToLower(path.Ext(filename))) {
-		err := db.Insert(MediaItem{ FullPath: item.Path, RootPath: item.Root, RelPath: relpath })
+		err := db.Insert(MediaItem{FullPath: item.Path, RootPath: item.Root, RelPath: relpath})
 		if err != nil {
 			return err
 		}
@@ -114,17 +115,17 @@ func processWorkItem(db *Database,item WorkItem) error {
 
 	// check for file rename
 	if item.Event == notify.Rename && checkAllowedExtension(strings.ToLower(path.Ext(filename))) {
-		fmt.Println("Renamed: ",item.Path," (",relpath,")")
+		fmt.Println("Renamed: ", item.Path, " (", relpath, ")")
 		return nil
 	}
 
 	// check for file change
 	if item.Event == notify.Write {
-		fmt.Println("Modified: ",item.Path," (",relpath,")")
+		fmt.Println("Modified: ", item.Path, " (", relpath, ")")
 		return nil
 	}
 
-	fmt.Println("OTHER ", item.Path, item.Event," (",relpath,")")
+	fmt.Println("OTHER ", item.Path, item.Event, " (", relpath, ")")
 	return nil
 }
 
@@ -151,8 +152,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	// determine hostname
+	hostname := *flagHostname
+	if hostname == "" {
+		hostname2, err := os.Hostname()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Hostname error: %v\n", err)
+			os.Exit(1)
+		}
+		hostname = hostname2
+	}
+
 	// create database
-	db, err := NewDatabase()
+	db, err := NewDatabase(hostname)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Database error: %v\n", err)
 		os.Exit(1)
@@ -161,7 +173,7 @@ func main() {
 
 	// create queue for processing media files
 	workQueue = NewWorkQueue(*flagNumberOfWorkers, func(val interface{}) {
-		err := processWorkItem(db,val.(WorkItem))
+		err := processWorkItem(db, val.(WorkItem))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		}
@@ -180,21 +192,33 @@ func main() {
 
 	// create the path watcher
 	watcher := make(chan notify.EventInfo, 1)
-	if err := notify.Watch(*flagMediaRoot + "/...", watcher, notify.All); err != nil {
+	if err := notify.Watch(*flagMediaRoot+"/...", watcher, notify.All); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 	defer notify.Stop(watcher)
 
+	// Make an error channel from server
+	errorqueue := make(chan error)
+
 	// start listening in backgound
-	ListenAndServeInBackground(*flagListenPort)
+	ListenAndServeInBackground(*flagListenPort, errorqueue, db)
 
 	// Process changes to the media root
-	for {
-		event := <-watcher
-		err := processWorkItem(db,WorkItem{Root: *flagMediaRoot, Path: event.Path(), Event: event.Event()})
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+	notdone := true
+	for notdone {
+		select {
+		case event := <-watcher:
+			err := processWorkItem(db, WorkItem{Root: *flagMediaRoot, Path: event.Path(), Event: event.Event()})
+			// Ignore any of these types of errors
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			}
+		case err := <-errorqueue:
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				notdone = false
+			}
 		}
 	}
 }
