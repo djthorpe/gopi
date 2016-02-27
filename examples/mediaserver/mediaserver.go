@@ -15,6 +15,7 @@ import (
 // TYPES
 
 type WorkItem struct {
+	Root  string
 	Path  string
 	Event notify.Event
 }
@@ -32,6 +33,7 @@ var (
 
 var allowedExtensionsMap map[string]bool
 var workQueue *WorkQueue
+var db *Database
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -76,9 +78,52 @@ func walkPath(fullpath string, info os.FileInfo, err error) error {
 
 	// check for file extension, queue work
 	if checkAllowedExtension(ext) {
-		workQueue.Push(WorkItem{Path: fullpath, Event: notify.Create})
+		workQueue.Push(WorkItem{Root: *flagMediaRoot, Path: fullpath, Event: notify.Create})
 	}
 
+	return nil
+}
+
+func processWorkItem(db *Database,item WorkItem) error {
+
+	// skip hidden files
+	filename := path.Base(item.Path)
+	if strings.HasPrefix(filename, ".") {
+		return nil
+	}
+
+	// get relative path
+	relpath, _ := filepath.Rel(item.Root,item.Path)
+
+	// check for file removal
+	_, err := os.Stat(item.Path)
+	if os.IsNotExist(err) && item.Event == notify.Remove {
+		fmt.Println("Removed: ",item.Path," (",relpath,")")
+		return nil
+	}
+
+	// check for file addition
+	if item.Event == notify.Create && checkAllowedExtension(strings.ToLower(path.Ext(filename))) {
+		err := db.Insert(MediaItem{ FullPath: item.Path, RootPath: item.Root, RelPath: relpath })
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// check for file rename
+	if item.Event == notify.Rename && checkAllowedExtension(strings.ToLower(path.Ext(filename))) {
+		fmt.Println("Renamed: ",item.Path," (",relpath,")")
+		return nil
+	}
+
+	// check for file change
+	if item.Event == notify.Write {
+		fmt.Println("Modified: ",item.Path," (",relpath,")")
+		return nil
+	}
+
+	fmt.Println("OTHER ", item.Path, item.Event," (",relpath,")")
 	return nil
 }
 
@@ -105,23 +150,36 @@ func main() {
 		os.Exit(1)
 	}
 
+	// create database
+	db, err := NewDatabase()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Database error: %v\n", err)
+		os.Exit(1)
+	}
+	defer db.Terminate()
+
 	// create queue for processing media files
 	workQueue = NewWorkQueue(*flagNumberOfWorkers, func(val interface{}) {
-		processWorkItem(val.(WorkItem))
+		err := processWorkItem(db,val.(WorkItem))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 	})
 
 	// Walk the tree
+	fmt.Println("Creating database")
 	if err := filepath.Walk(*flagMediaRoot, walkPath); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
 	// wait until queue is done
+	fmt.Println("Serving database")
 	workQueue.Wait()
 
 	// create the path watcher
 	watcher := make(chan notify.EventInfo, 1)
-	if err := notify.Watch(*flagMediaRoot+"/...", watcher, notify.All); err != nil {
+	if err := notify.Watch(*flagMediaRoot + "/...", watcher, notify.All); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -130,6 +188,9 @@ func main() {
 	// Process changes to the media root
 	for {
 		event := <-watcher
-		processWorkItem(WorkItem{Path: event.Path(), Event: event.Event()})
+		err := processWorkItem(db,WorkItem{Root: *flagMediaRoot, Path: event.Path(), Event: event.Event()})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
 	}
 }
