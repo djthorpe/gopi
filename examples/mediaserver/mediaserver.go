@@ -27,6 +27,7 @@ var (
 	flagMediaRoot         = flag.String("mediaroot", "", "Media Root Path")
 	flagAllowedExtensions = flag.String("ext", ".m4a .m4v .mov .mp3 .mp4", "Allowed File Extensions")
 	flagNumberOfWorkers   = flag.Int("workers", 4, "The number of workers")
+	flagListenPort        = flag.Uint("port",8080,"Port to listen for HTTP connections on")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -184,6 +185,9 @@ func main() {
 		os.Exit(1)
 	}
 	defer notify.Stop(watcher)
+
+	// start listening in backgound
+	ListenAndServeInBackground(*flagListenPort)
 
 	// Process changes to the media root
 	for {
