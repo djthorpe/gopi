@@ -1,17 +1,17 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-    "github.com/djthorpe/gopi/rpi"
-	"github.com/djthorpe/gopi/rpi/egl"
+	"github.com/djthorpe/gopi/rpi"
 	"github.com/djthorpe/gopi/rpi/displaymanx"
+	"github.com/djthorpe/gopi/rpi/egl"
 	"log"
 	"runtime"
-	"flag"
 )
 
 var (
-	displayFlag = flag.Uint("display",0,"Display Number")
+	displayFlag = flag.Uint("display", 0, "Display Number")
 )
 
 func GetConfigAttributeValue(display egl.Display, config egl.Config, name int32) int32 {
@@ -75,47 +75,47 @@ func main() {
 	ctxAttr := []int32{
 		egl.EGL_CONTEXT_CLIENT_VERSION, 2,
 		egl.EGL_NONE,
-	}	
-	context,err := egl.CreateContext(display,configs[0],egl.EGL_NO_CONTEXT,&ctxAttr[0])
+	}
+	context, err := egl.CreateContext(display, configs[0], egl.EGL_NO_CONTEXT, &ctxAttr[0])
 	if err != nil {
 		log.Fatalf("CreateContext: %v", err)
 	}
 
 	screen_width, screen_height := rpi.GraphicsGetDisplaySize(uint16(*displayFlag))
-	fmt.Println("Screen size = (",screen_width,",",screen_height,")")
+	fmt.Println("Screen size = (", screen_width, ",", screen_height, ")")
 
-	srcRect := displaymanx.Rect{ 0,0,screen_width,screen_height }
-	dstRect := displaymanx.Rect{ 0,0,screen_width << 16,screen_height << 16 }
+	srcRect := displaymanx.Rect{0, 0, screen_width, screen_height}
+	dstRect := displaymanx.Rect{0, 0, screen_width << 16, screen_height << 16}
 
 	// Bind to actual screen
 	dispmanx_display := displaymanx.DisplayOpen(uint32(*displayFlag))
 	dispmanx_update := displaymanx.UpdateStart(0) /* priority */
-	dispmanx_element := displaymanx.ElementAdd(dispmanx_update,dispmanx_display,0,&dstRect,0,&srcRect,displaymanx.DISPMANX_PROTECTION_NONE,nil,nil,0)
-	window := displaymanx.Window{ dispmanx_element,screen_width,screen_height }
+	dispmanx_element := displaymanx.ElementAdd(dispmanx_update, dispmanx_display, 0, &dstRect, 0, &srcRect, displaymanx.DISPMANX_PROTECTION_NONE, nil, nil, 0)
+	window := displaymanx.Window{dispmanx_element, screen_width, screen_height}
 
 	// do something here
 	displaymanx.UpdateSubmitSync(dispmanx_update)
 
 	// make surface
-	surface,err := egl.CreateWindowSurface(display,configs[0],window,nil)
+	surface, err := egl.CreateWindowSurface(display, configs[0], window, nil)
 	if err != nil {
 		log.Fatalf("CreateWindowSurface: %v", err)
 	}
 
 	// connect the context to the surface
-	if err := egl.MakeCurrent(display,surface,surface,context); err != nil {
+	if err := egl.MakeCurrent(display, surface, surface, context); err != nil {
 		log.Fatalf("MakeCurrent: %v", err)
 	}
 
-    // TODO
+	// TODO
 
 	// Destroy surface
-	if err := egl.DestroySurface(display,surface); err != nil {
+	if err := egl.DestroySurface(display, surface); err != nil {
 		log.Fatalf("DestroySurface: %v", err)
 	}
 
 	// Destroy context
-	if err := egl.DestroyContext(display,context); err != nil {
+	if err := egl.DestroyContext(display, context); err != nil {
 		log.Fatalf("DestroyContext: %v", err)
 	}
 

@@ -26,7 +26,16 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	GENCMD_BUFFER_SIZE = 1024
+	GENCMD_BUFFER_SIZE      = 1024
+	GEMCMD_COMMANDS         = "commands"
+	GENCMD_MEASURE_TEMP     = "measure_temp"
+	GENCMD_MEASURE_CLOCK    = "measure_clock arm core h264 isp v3d uart pwm emmc pixel vec hdmi dpi"
+	GENCMD_MEASURE_VOLTS    = "measure_volts core sdram_c sdram_i sdram_p"
+	GENCMD_CODEC_ENABLED    = "codec_enabled H264 MPG2 WVC1 MPG4 MJPG WMV9 VP8"
+	GENCMD_MEMORY           = "get_mem arm gpu"
+	GENCMD_OTPDUMP          = "otp_dump"
+	GENCMD_OTPDUMP_SERIAL   = 28
+	GENCMD_OTPDUMP_REVISION = 30
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,13 +65,13 @@ func VCGenCmdStop() {
 	C.vc_gencmd_stop()
 }
 
-func VCGenCmd(command string) (string,error) {
+// See http://elinux.org/RPI_vcgencmd_usage for some example usage
+func VCGenCmd(command string) (string, error) {
 	ccommand := C.CString(command)
 	defer C.free(unsafe.Pointer(ccommand))
-	cbuffer := make([]byte,GENCMD_BUFFER_SIZE)
-	if int(C.vc_gencmd_wrapper((*C.char)(unsafe.Pointer(&cbuffer[0])),C.int(GENCMD_BUFFER_SIZE),(*C.char)(unsafe.Pointer(ccommand)))) != 0 {
-		return "",ErrorGenCmd
+	cbuffer := make([]byte, GENCMD_BUFFER_SIZE)
+	if int(C.vc_gencmd_wrapper((*C.char)(unsafe.Pointer(&cbuffer[0])), C.int(GENCMD_BUFFER_SIZE), (*C.char)(unsafe.Pointer(ccommand)))) != 0 {
+		return "", ErrorGenCmd
 	}
-	return string(cbuffer),nil
+	return string(cbuffer), nil
 }
-

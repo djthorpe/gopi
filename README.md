@@ -12,10 +12,10 @@ There is a single `rpi` module and several submodules:
 
   * `rpi` - Contains code for interfacing with the Raspberry Pi hardware
   * `dispmanx` - Low-level VideoCore interface
-  * `egl` - Native interface to link OpenGL and OpenVC to the GPU
+  * `egl` - Native interface to link OpenGL ES and OpenVG to the GPU
   * `gles` - OpenGL ES for rendering 3D
-  * `vc` - OpenVG for rendering 2D vector graphics 
-  * `omx` - OpenMAX Media Library
+  * `vg` - OpenVG for rendering 2D vector graphics 
+  * `openmax` - OpenMAX Media Library
   * `gpio` - Interface to the General Purpose IO connector
 
 Most of these are still to be written or completed. There are a set of examples
@@ -26,7 +26,60 @@ of using these in the `examples` folder.
 Please see the following locations for more information:
 
   * [How to write Go Code](http://golang.org/doc/code.html) in order to work out how to structure your Go folder
-  
+
+## Commands to set up a Raspberry Pi
+
+Start with the following commands to update your OS, then run through 
+expanding SD card space, changing the password for the 'pi' user, etc:
+
+```
+sudo apt-get update
+sudo apt-get upgrade
+sudo raspi-config
+```
+
+This will then require a reboot. Then add a user for yourself, and add to the relevant groups:
+
+```
+sudo useradd -m -g pi -G adm,sudo,audio,video,gpio,input,i2c,spi -s /bin/bash <USERNAME>
+sudo passwd <USERNAME>
+```
+
+You should then logout and login again as your own user.
+
+## Setting up your golang environment
+
+Please see here http://dave.cheney.net/2015/09/04/building-go-1-5-on-the-raspberry-pi
+for more information. Here are the commands you can run to have Go installed in a
+`/opt/go` folder:
+
+```
+cd $HOME
+install -d go/bin
+install -d go/src
+install -d go/pkg
+curl http://dave.cheney.net/paste/go-linux-arm-bootstrap-c788a8e.tbz | tar xj
+sudo install -o $USER -d /opt/go
+curl https://storage.googleapis.com/golang/go1.5.src.tar.gz | tar xz -C /opt
+ulimit -s 1024
+cd /opt/go/src
+env GO_TEST_TIMEOUT_SCALE=10 GOROOT_BOOTSTRAP=$HOME/go-linux-arm-bootstrap ./all.bash
+```
+
+Once this is completed (it can take a few hours) you can add the following lines
+to your `~/.bash_profile` file:
+
+```
+# Raspberry Pi
+export PIROOT="/opt/vc"
+export PATH="${PATH}:${PIROOT}/bin"
+
+# Go Language
+export GOROOT="/opt/go"
+export GOPATH="${HOME}/go"
+export GOBIN="${GOPATH}/bin"
+export PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+```
 
 ## Building ffmpeg
 
@@ -38,6 +91,7 @@ following command line sequence:
   export PKG_CONFIG_PATH="${FFMPEG_ROOT}/lib/pkgconfig"
   
   # set up structure
+  sudo install -o $USER -d ${FFMPEG_ROOT}
   install -d ${FFMPEG_ROOT}/src
   cd ${FFMPEG_ROOT}/src
 
@@ -59,7 +113,7 @@ following command line sequence:
   
 ```
 
-The resulting binaries and libraries will be under `/opt/ffmpeg` or whereever you
+The resulting binaries and libraries will be under `/opt/ffmpeg` or wherever you
 indicated `${FFMPEG_ROOT}` should be. You'll then need to add the location to
 your `${PATH}` variable:
 
@@ -69,4 +123,7 @@ your `${PATH}` variable:
 ```
 
 
+
+
+ 
 
