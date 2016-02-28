@@ -4,12 +4,12 @@ import (
 	"regexp"
 )
 
-func (this *YouTubeService) SetMaxResults(value uint) *YouTubeService {
+func (this *Parameters) SetMaxResults(value uint) error {
 	this.maxresults = value
-	return this
+	return nil
 }
 
-func (this *YouTubeService) SetChannel(value string) error {
+func (this *Parameters) SetChannel(value string) error {
 	if value != "" {
 		// check regular expression for channel ID
 		matched, _ := regexp.MatchString("^UC([a-zA-Z0-9]){22}$", value)
@@ -22,7 +22,7 @@ func (this *YouTubeService) SetChannel(value string) error {
 	return nil
 }
 
-func (this *YouTubeService) SetVideo(value string) error {
+func (this *Parameters) SetVideo(value string) error {
 	if value != "" {
 		// check regular expression for video ID
 		matched, _ := regexp.MatchString("^([a-zA-Z0-9\\_\\-]){11}$", value)
@@ -35,7 +35,7 @@ func (this *YouTubeService) SetVideo(value string) error {
 	return nil
 }
 
-func (this *YouTubeService) SetStream(value string) error {
+func (this *Parameters) SetStream(value string) error {
 	if value != "" {
 		// check regular expression for stream key xxxxxxxx-xxxx.xxxx.xxxx.xxxx
 		matched, _ := regexp.MatchString("^([a-z0-9])+\\.([a-z0-9]){4}\\-([a-z0-9]){4}\\-([a-z0-9]){4}\\-([a-z0-9]){4}$", value)
@@ -56,7 +56,7 @@ func (this *YouTubeService) SetStream(value string) error {
 	return nil
 }
 
-func (this *YouTubeService) SetStatus(value string) error {
+func (this *Parameters) SetStatus(value string) error {
 	if value != "" {
 		// check regular expression for staus
 		matched, _ := regexp.MatchString("^(all|active|completed|upcoming)$", value)

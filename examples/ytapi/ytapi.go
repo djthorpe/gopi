@@ -26,6 +26,7 @@ var (
 	credentialsFolder      = flag.String("credentials", ".credentials", "Folder containing credentials")
 	contentOwner           = flag.String("contentowner", "", "Content Owner ID")
 	debug                  = flag.Bool("debug", false, "Debug flag")
+    maxResultsFlag         = flag.Uint("maxresults", 0, "Maximum Results to return")
 	channelFlag            = flag.String("channel", "", "Channel ID")
 	videoFlag              = flag.String("video", "", "Video ID")
 	streamFlag             = flag.String("stream", "", "Stream Key or ID")
@@ -77,6 +78,11 @@ func setDefaults(service *youtubeapi.YouTubeService) {
 	if err := service.SetStatus(*statusFlag); err != nil {
 		log.Fatalf("Error with --status flag: %v\n", err)
 	}
+
+    // Set Max Results
+    if err := service.SetMaxResults(*maxResultsFlag); err != nil {
+        log.Fatalf("Error with --maxresults flag: %v\n", err)
+    }
 
 }
 
@@ -144,7 +150,7 @@ func main() {
 func ListVideos(service *youtubeapi.YouTubeService) {
 
 	// obtain channels
-	channels, err := service.SetMaxResults(0).ChannelsList("contentDetails")
+	channels, err := service.ChannelsList("contentDetails")
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
@@ -155,7 +161,7 @@ func ListVideos(service *youtubeapi.YouTubeService) {
 	// obtain playlist items
 	for _, channel := range channels {
 		playlist := youtubeapi.YouTubePlaylistID(channel.ContentDetails.RelatedPlaylists.Uploads)
-		videos, err := service.SetMaxResults(0).VideosForPlaylist("id,snippet,status", playlist)
+		videos, err := service.VideosForPlaylist("id,snippet,status", playlist)
 		if err != nil {
 			log.Fatalf("Error: %v", err)
 		}

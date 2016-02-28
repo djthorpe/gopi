@@ -7,23 +7,30 @@ import (
 	"io/ioutil"
 )
 
-// YouTubeService object which contains the main context for calling the YouTube API
-type YouTubeService struct {
+// Service object which contains the main context for calling the YouTube API
+type Service struct {
 	service      *youtube.Service
 	token        *oauth2.Token
 	contentowner string
-	channel      string
-	video        string
-	stream       string
 	partnerapi   bool
 	debug        bool
-	status       string
-	maxresults   uint
+}
+
+// Parameters object contains parameters used when calling the API
+type Parameters struct {
+    channel      string
+    video        string
+    broadcast    string
+    stream       string
+    status       string
+    maxresults   uint
 }
 
 // YouTube Identifiers
 type YouTubePlaylistID string
 type YouTubeVideoID string
+type YouTubeChannelID string
+type YouTubeStreamID string
 
 // Constants
 const (
@@ -31,7 +38,7 @@ const (
 )
 
 // Returns a service object given service account details
-func NewYouTubeServiceFromServiceAccountJSON(filename string, contentowner string, debug bool) (*YouTubeService, error) {
+func NewYouTubeServiceFromServiceAccountJSON(filename string, contentowner string, debug bool) (*Service, error) {
 	if len(contentowner) == 0 {
 		return nil, ErrorMissingContentOwner
 	}
@@ -48,17 +55,16 @@ func NewYouTubeServiceFromServiceAccountJSON(filename string, contentowner strin
 	if err != nil {
 		return nil, ErrorInvalidServiceAccount
 	}
-	this := new(YouTubeService)
+	this := new(Service)
 	this.service = service
 	this.contentowner = contentowner
 	this.partnerapi = true
 	this.debug = debug
-	this.maxresults = 0
 	return this, nil
 }
 
 // Returns a service object given client secrets details
-func NewYouTubeServiceFromClientSecretsJSON(clientsecrets string, tokencache string, debug bool) (*YouTubeService, error) {
+func NewYouTubeServiceFromClientSecretsJSON(clientsecrets string, tokencache string, debug bool) (*Service, error) {
 	bytes, err := ioutil.ReadFile(clientsecrets)
 	if err != nil {
 		return nil, ErrorInvalidClientSecrets
@@ -85,11 +91,10 @@ func NewYouTubeServiceFromClientSecretsJSON(clientsecrets string, tokencache str
 		return nil, ErrorInvalidClientSecrets
 	}
 
-	this := new(YouTubeService)
+	this := new(Service)
 	this.service = service
 	this.token = token
 	this.partnerapi = false
 	this.debug = debug
-	this.maxresults = 0
 	return this, nil
 }
