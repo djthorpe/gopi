@@ -1,11 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"sync"
 	"time"
+	"database/sql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,9 +30,10 @@ type Database struct {
 }
 
 type MediaItem struct {
-	FullPath string
-	RootPath string
-	RelPath  string
+	ID       uint `json:"id"`
+	FullPath string `json:"-"`
+	RootPath string `json:"-"`
+	RelPath  string `json:"path"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -103,6 +104,29 @@ func (this *Database) Insert(item MediaItem) error {
 
 	// return success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// QUERY DATABASE
+
+func (this *Database) Query() ([]MediaItem, error) {
+	rows, err := this.db.Query("SELECT id,relpath FROM media_item ORDER BY id")
+	if err != nil {
+		return nil,err
+	}
+	defer rows.Close()
+
+	// make empty result object
+	r := make([]MediaItem,0)
+
+	// append media items
+	for rows.Next() {
+		var m MediaItem
+		rows.Scan(&m.ID,&m.RelPath)
+		r = append(r,m)
+	}
+
+	return r,nil
 }
 
 /*
