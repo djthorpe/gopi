@@ -53,9 +53,7 @@ the package is compiled using Go itself. You can use the following command line 
   cd ${GOROOT_BOOTSTRAP}/src
   . ./all.bash
 ```
-
-TODO
-
+
 ## Appendix: Building ffmpeg
 
 In order to build ffmpeg with libx264 for your Raspberry Pi, you can use the 
@@ -66,6 +64,7 @@ following command line sequence:
   export PKG_CONFIG_PATH="${FFMPEG_ROOT}/lib/pkgconfig"
   
   # set up structure
+  sudo install -o $USER -d ${FFMPEG_ROOT}
   install -d ${FFMPEG_ROOT}/src
   cd ${FFMPEG_ROOT}/src
 
@@ -87,7 +86,7 @@ following command line sequence:
   
 ```
 
-The resulting binaries and libraries will be under `/opt/ffmpeg` or whereever you
+The resulting binaries and libraries will be under `/opt/ffmpeg` or wherever you
 indicated `${FFMPEG_ROOT}` should be. You'll then need to add the location to
 your `${PATH}` variable:
 
@@ -97,4 +96,7 @@ your `${PATH}` variable:
 ```
 
 
+
+
+ 
 

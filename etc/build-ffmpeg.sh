@@ -5,6 +5,7 @@
 export FFMPEG_ROOT="/opt/ffmpeg"
 
 # set up structure
+sudo install -o ${USER} -d "${FFMPEG_ROOT}" || exit -1
 install -d "${FFMPEG_ROOT}/src" || exit -1
 cd "${FFMPEG_ROOT}/src"
 
@@ -28,13 +29,13 @@ fi
 
 
 # build libx264
-cd ${FFMPEG_ROOT}/src/${X264_FILENAME}
-./configure --host=arm-unknown-linux-gnueabi --enable-shared --enable-pic --disable-opencl --prefix=${FFMPEG_ROOT}
+cd "${FFMPEG_ROOT}/src/${X264_FILENAME}"
+./configure --host=arm-unknown-linux-gnueabi --enable-shared --enable-pic --disable-opencl --prefix="${FFMPEG_ROOT}"
 make -j4 && make install
 
 # build ffmpeg
 export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${FFMPEG_ROOT}/lib/pkgconfig"
-cd ${FFMPEG_ROOT}/src/${FFMPEG_FILENAME}
+cd "${FFMPEG_ROOT}/src/${FFMPEG_FILENAME}"
 ./configure --prefix=${FFMPEG_ROOT} --enable-nonfree --enable-gpl --enable-libx264 --disable-static --enable-shared --extra-cflags="-I${FFMPEG_ROOT}/include" --extra-ldflags="-L${FFMPEG_ROOT}/lib"
 make -j4 && make install
 
