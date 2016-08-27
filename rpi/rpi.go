@@ -64,14 +64,3 @@ func VCGenCmdInit() error {
 func VCGenCmdStop() {
 	C.vc_gencmd_stop()
 }
-
-// See http://elinux.org/RPI_vcgencmd_usage for some example usage
-func VCGenCmd(command string) (string, error) {
-	ccommand := C.CString(command)
-	defer C.free(unsafe.Pointer(ccommand))
-	cbuffer := make([]byte, GENCMD_BUFFER_SIZE)
-	if int(C.vc_gencmd_wrapper((*C.char)(unsafe.Pointer(&cbuffer[0])), C.int(GENCMD_BUFFER_SIZE), (*C.char)(unsafe.Pointer(ccommand)))) != 0 {
-		return "", ErrorGenCmd
-	}
-	return string(cbuffer), nil
-}

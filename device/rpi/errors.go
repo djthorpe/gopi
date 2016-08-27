@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	ErrorInit   = errors.New("init error")
-	ErrorVchiq  = errors.New("Failed to open vchiq instance")
-	ErrorGenCmd = errors.New("vcgencmd error")
+	ErrorInit     = errors.New("init error")
+	ErrorVchiq    = errors.New("Failed to open vchiq instance")
+	ErrorGenCmd   = errors.New("vcgencmd error")
+	ErrorResponse = errors.New("Unexpected response")
 )

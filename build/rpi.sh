@@ -29,4 +29,3 @@ fi
 echo "go install vcgencmd"
 go install -ldflags "${LDFLAGS}" cmd/vcgencmd.go
 
-

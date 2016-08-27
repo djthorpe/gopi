@@ -12,38 +12,18 @@ package rpi
     #cgo LDFLAGS: -L/opt/vc/lib -lbcm_host
     #include "bcm_host.h"
 	#include "vc_vchi_gencmd.h"
-
-	int vc_gencmd_wrapper(char* response,int maxlen,const char* command) {
-		return vc_gencmd(response,maxlen,command);
-	}
 */
 import "C"
 
 import (
 	"os"
-	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	GENCMD_BUFFER_SIZE = 1024
-	GENCMD_DEVICE      = "/dev/vchiq"
+	VIDEOCORE_DEVICE = "/dev/vchiq"
 )
-
-/*
-const
-	GEMCMD_COMMANDS         = "commands"
-	GENCMD_MEASURE_TEMP     = "measure_temp"
-	GENCMD_MEASURE_CLOCK    = "measure_clock arm core h264 isp v3d uart pwm emmc pixel vec hdmi dpi"
-	GENCMD_MEASURE_VOLTS    = "measure_volts core sdram_c sdram_i sdram_p"
-	GENCMD_CODEC_ENABLED    = "codec_enabled H264 MPG2 WVC1 MPG4 MJPG WMV9 VP8"
-	GENCMD_MEMORY           = "get_mem arm gpu"
-	GENCMD_OTPDUMP          = "otp_dump"
-	GENCMD_OTPDUMP_SERIAL   = 28
-	GENCMD_OTPDUMP_REVISION = 30
-)
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -57,7 +37,7 @@ type RaspberryPi struct {
 
 func _BCMHostInit() error {
 	// TODO: Ensure /dev/vchiq is readable and writable
-	_, err := os.Stat(GENCMD_DEVICE)
+	_, err := os.Stat(VIDEOCORE_DEVICE)
 	if err != nil {
 		return ErrorVchiq
 	}
@@ -105,15 +85,4 @@ func New() (*RaspberryPi, error) {
 func (this *RaspberryPi) Close() {
 	_VCGenCmdStop()
 	_BCMHostTerminate()
-}
-
-// See http://elinux.org/RPI_vcgencmd_usage for some example usage
-func VCGenCmd(command string) (string, error) {
-	ccommand := C.CString(command)
-	defer C.free(unsafe.Pointer(ccommand))
-	cbuffer := make([]byte, GENCMD_BUFFER_SIZE)
-	if int(C.vc_gencmd_wrapper((*C.char)(unsafe.Pointer(&cbuffer[0])), C.int(GENCMD_BUFFER_SIZE), (*C.char)(unsafe.Pointer(ccommand)))) != 0 {
-		return "", ErrorGenCmd
-	}
-	return string(cbuffer), nil
 }
