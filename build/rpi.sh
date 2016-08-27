@@ -29,3 +29,6 @@ fi
 echo "go install vcgencmd"
 go install -ldflags "${LDFLAGS}" cmd/vcgencmd.go
 
+echo "go install gpio"
+go install -ldflags "${LDFLAGS}" cmd/gpio.go
+

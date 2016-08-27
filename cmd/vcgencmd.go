@@ -13,6 +13,8 @@
 	vcgencmd volts
 
     etc.
+
+	The command vcgencmd all will provide a list of all information
 */
 package main
 
@@ -207,20 +209,26 @@ func modelCommand(pi *rpi.RaspberryPi) error {
 	if err != nil {
 		return err
 	}
+	processor, err := pi.ProcessorName()
+	if err != nil {
+		return err
+	}
+	peripheralbase, err := pi.PeripheralBase()
+	if err != nil {
+		return err
+	}
 	warranty, err := pi.WarrantyBit()
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Product=%v\n",product)
+	fmt.Printf("Processor=%v\n",processor)
+	fmt.Printf("Peripheral Base=0x%08X\n",peripheralbase)
 	fmt.Printf("Warranty=%v\n",warranty)
-
-//	fmt.Printf("Processor=%v\n",model.ProcessorString)
-//	fmt.Printf("Manufacturer=%v\n",model.ManufacturerString)
 
 	return nil
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 
