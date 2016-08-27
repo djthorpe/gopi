@@ -36,5 +36,8 @@ func main() {
 	}
 	defer gpio.Close()
 
+	// Enumerate the physical pins
+	for _,pin := range gpio.Pins() {
 
+	}
 }

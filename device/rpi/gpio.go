@@ -38,7 +38,7 @@ const (
 	GPIO_DEV_MEM = "/dev/mem"
 	GPIO_BASE uint32 = 0x200000
 	GPIO_MEMLENGTH = 4096
-	PINMASK uint32 = 7
+	PINMASK uint32 = 7 // pin mode is 3 bits
 )
 
 // Pin direction
@@ -106,6 +106,12 @@ func (this *GPIO) Close() error {
 	this.memlock.Lock()
 	defer this.memlock.Unlock()
 	return syscall.Munmap(this.mem8)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func (this *GPIO) Pins() []Pin {
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

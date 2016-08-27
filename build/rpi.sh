@@ -26,9 +26,15 @@ fi
 ##############################################################
 # install
 
+echo "go install helloworld"
+go install -ldflags "${LDFLAGS}" cmd/helloworld.go
+
 echo "go install vcgencmd"
 go install -ldflags "${LDFLAGS}" cmd/vcgencmd.go
 
 echo "go install gpio"
 go install -ldflags "${LDFLAGS}" cmd/gpio.go
+
+echo "go install i2c"
+go install -ldflags "${LDFLAGS}" cmd/i2c.go
 
