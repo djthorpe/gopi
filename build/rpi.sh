@@ -26,6 +26,7 @@ fi
 ##############################################################
 # install
 
+echo "go install vcgencmd"
 go install -ldflags "${LDFLAGS}" cmd/vcgencmd.go
 
 

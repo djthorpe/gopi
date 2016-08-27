@@ -20,13 +20,19 @@ package rpi
 import "C"
 
 import (
+	"os"
 	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	GENCMD_BUFFER_SIZE      = 1024
+	GENCMD_BUFFER_SIZE = 1024
+	GENCMD_DEVICE      = "/dev/vchiq"
+)
+
+/*
+const
 	GEMCMD_COMMANDS         = "commands"
 	GENCMD_MEASURE_TEMP     = "measure_temp"
 	GENCMD_MEASURE_CLOCK    = "measure_clock arm core h264 isp v3d uart pwm emmc pixel vec hdmi dpi"
@@ -37,32 +43,68 @@ const (
 	GENCMD_OTPDUMP_SERIAL   = 28
 	GENCMD_OTPDUMP_REVISION = 30
 )
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func BCMHostInit() {
-	C.bcm_host_init()
+type RaspberryPi struct {
+	revision uint32
+	serial   uint64
 }
 
-func BCMHostTerminate() {
+////////////////////////////////////////////////////////////////////////////////
+// Private methods
+
+func _BCMHostInit() error {
+	// TODO: Ensure /dev/vchiq is readable and writable
+	_, err := os.Stat(GENCMD_DEVICE)
+	if err != nil {
+		return ErrorVchiq
+	}
+	C.bcm_host_init()
+	return nil
+}
+
+func _BCMHostTerminate() {
 	C.bcm_host_deinit()
 }
 
-func GraphicsGetDisplaySize(displayNumber uint16) (uint32, uint32) {
+func _GraphicsGetDisplaySize(displayNumber uint16) (uint32, uint32) {
 	var w, h uint32
 	C.graphics_get_display_size((C.uint16_t)(displayNumber), (*C.uint32_t)(&w), (*C.uint32_t)(&h))
 	return w, h
 }
 
-func VCGenCmdInit() error {
+func _VCGenCmdInit() error {
 	if C.vc_gencmd_init() >= 0 {
 		return nil
 	}
 	return ErrorInit
 }
 
-func VCGenCmdStop() {
+func _VCGenCmdStop() {
 	C.vc_gencmd_stop()
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Create a new RaspberryPi object
+func New() (*RaspberryPi, error) {
+	// create this object
+	this := new(RaspberryPi)
+	// initialize
+	_BCMHostInit()
+	err := _VCGenCmdInit()
+	if err != nil {
+		return nil, err
+	}
+	return this, nil
+}
+
+// Close RaspberryPi object
+func (this *RaspberryPi) Close() {
+	_VCGenCmdStop()
+	_BCMHostTerminate()
 }
 
 // See http://elinux.org/RPI_vcgencmd_usage for some example usage

@@ -7,4 +7,12 @@
 */
 package rpi
 
+import (
+	"errors"
+)
 
+var (
+	ErrorInit   = errors.New("init error")
+	ErrorVchiq  = errors.New("Failed to open vchiq instance")
+	ErrorGenCmd = errors.New("vcgencmd error")
+)
