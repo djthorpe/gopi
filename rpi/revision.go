@@ -9,27 +9,7 @@ package rpi
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type Product uint32
-type PCBRevision uint32
-type Processor uint32
-type Manufacturer uint32
-type MemoryMB uint32
-type PeripheralBase uintptr
-
-type Model struct {
-	Revision       uint32
-	WarrantyBit    bool
-	Product        Product
-	PCBRevision    PCBRevision
-	Processor      Processor
-	Manufacturer   Manufacturer
-	MemoryMB       MemoryMB
-	PeripheralBase PeripheralBase
-
-	ProductString      string
-	ProcessorString    string
-	ManufacturerString string
-}
+type Product uint
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -44,47 +24,23 @@ const (
 )
 
 const (
-	RPI_PERIPHERAL_BASE_UNKNOWN = 0x00000000
-	RPI_PERIPHERAL_BASE_BCM2835 = 0x20000000
-	RPI_PERIPHERAL_BASE_BCM2836 = 0x3F000000
-)
-
-const (
-	RPI_MODEL_UNKNOWN = iota
+	RPI_MODEL_UNKNOWN Product = iota
 	RPI_MODEL_A
 	RPI_MODEL_B
 	RPI_MODEL_A_PLUS
 	RPI_MODEL_B_PLUS
 	RPI_MODEL_B_PI_2
+	RPI_MODEL_B_PI_3
 	RPI_MODEL_ALPHA
 	RPI_MODEL_COMPUTE_MODULE
 	RPI_MODEL_ZERO
 )
 
-const (
-	RPI_PROCESSOR_UNKNOWN = iota
-	RPI_PROCESSOR_BCM2835
-	RPI_PROCESSOR_BCM2836
-)
-
-const (
-	RPI_MEMORY_UNKNOWN = iota
-	RPI_MEMORY_256MB   = 256
-	RPI_MEMORY_512MB   = 512
-	RPI_MEMORY_1024MB  = 1024
-)
-
-const (
-	RPI_MANUFACTURER_UNKNOWN = iota
-	RPI_MANUFACTURER_SONY
-	RPI_MANUFACTURER_EGOMAN
-	RPI_MANUFACTURER_QISDA
-	RPI_MANUFACTURER_EMBEST
-)
-
 ////////////////////////////////////////////////////////////////////////////////
 
 var productmap1 = map[uint32]Product{
+	0x00: RPI_MODEL_UNKNOWN,
+	0x01: RPI_MODEL_UNKNOWN,
 	0x02: RPI_MODEL_B,
 	0x03: RPI_MODEL_B,
 	0x04: RPI_MODEL_B,
@@ -93,6 +49,9 @@ var productmap1 = map[uint32]Product{
 	0x07: RPI_MODEL_A,
 	0x08: RPI_MODEL_A,
 	0x09: RPI_MODEL_A,
+	0x0A: RPI_MODEL_UNKNOWN,
+	0x0B: RPI_MODEL_UNKNOWN,
+	0x0C: RPI_MODEL_UNKNOWN,
 	0x0D: RPI_MODEL_B,
 	0x0E: RPI_MODEL_B,
 	0x0F: RPI_MODEL_B,
@@ -102,6 +61,19 @@ var productmap1 = map[uint32]Product{
 	0x13: RPI_MODEL_B_PLUS,
 	0x14: RPI_COMPUTE_MODULE,
 	0x15: RPI_MODEL_A_PLUS,
+}
+
+var productmap2 = map[uint32]Product{
+	0 << 4: RPI_MODEL_A,
+	1 << 4: RPI_MODEL_B,
+	2 << 4: RPI_MODEL_A_PLUS,
+	3 << 4: RPI_MODEL_B_PLUS,
+	4 << 4: RPI_MODEL_B_PI_2,
+	5 << 4: RPI_MODEL_ALPHA,
+	6 << 4: RPI_COMPUTE_MODULE,
+	7 << 4: RPI_MODEL_UNKNOWN,
+	8 << 4: RPI_MODEL_B_PI_3,
+	9 << 4: RPI_MODEL_ZERO,
 }
 
 var pcbmap1 = map[uint32]PCBRevision{
@@ -190,19 +162,6 @@ var manufacturermap2 = map[uint32]Manufacturer{
 	4 << 16: RPI_MANUFACTURER_EMBEST,
 }
 
-var productmap2 = map[uint32]Product{
-	0 << 4: RPI_MODEL_A,
-	1 << 4: RPI_MODEL_B,
-	2 << 4: RPI_MODEL_A_PLUS,
-	3 << 4: RPI_MODEL_B_PLUS,
-	4 << 4: RPI_MODEL_B_PI_2,
-	5 << 4: RPI_MODEL_ALPHA,
-	6 << 4: RPI_COMPUTE_MODULE,
-	7 << 4: RPI_MODEL_UNKNOWN,
-	8 << 4: RPI_MODEL_UNKNOWN,
-	9 << 4: RPI_MODEL_ZERO,
-}
-
 var processormap2 = map[uint32]Processor{
 	0 << 12: RPI_PROCESSOR_BCM2835,
 	1 << 12: RPI_PROCESSOR_BCM2836,
@@ -248,50 +207,37 @@ var manufacturerstringmap = map[Manufacturer]string{
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// Function to return a 'Model' structure which includes all relevant details
-// of the Raspberry Pi this software is running on
-func (this *State) GetModel() (*Model, error) {
-	// create struct
-	model := new(Model)
+// Function to return the product name, revision and warranty bit
+func (this *State) GetModel() (Product, PCBRevision, Warranty, error) {
+	var warranty Warranty
+	var product Product
+	var pcbrevision PCBRevision
 
 	// set Revision
 	revision, err := this.GetRevision()
 	if err != nil {
-		return nil, err
+		return Product(0),PCBRevision(0),Warranty(false),err
 	}
-	model.Revision = revision
 
-	// set WarrantyBit
+	// set warranty bit
 	w := uint32(RPI_REVISION_WARRANTY_MASK)
 	if (revision & w) != 0 {
-		model.WarrantyBit = true
+		warranty = Warranty(true)
 	} else {
-		model.WarrantyBit = false
+		warranty = Warranty(false)
 	}
 
 	// pare down revision and decode differently depending on the format
 	revision = revision & ^w
 	if (revision & RPI_REVISION_ENCODING_MASK) != 0 {
 		// Raspberry Pi 2 style revision coding
-		model.Product = Product(productmap2[revision&RPI_REVISION_PRODUCT_MASK])
-		model.PCBRevision = PCBRevision(revision & RPI_REVISION_PCB_MASK)
-		model.Processor = Processor(processormap2[revision&RPI_REVISION_PROCESSOR_MASK])
-		model.Manufacturer = Manufacturer(manufacturermap2[revision&RPI_REVISION_MANUFACTURER_MASK])
-		model.MemoryMB = MemoryMB(memorymap2[revision&RPI_REVISION_MEMORY_MASK])
+		product = Product(productmap2[revision & RPI_REVISION_PRODUCT_MASK])
+		pcbrevision = PCBRevision(revision & RPI_REVISION_PCB_MASK)
 	} else {
 		// Raspberry Pi 1 style revision coding
-		model.Product = Product(productmap1[revision])
-		model.PCBRevision = PCBRevision(pcbmap1[revision])
-		model.Processor = Processor(processormap1[revision])
-		model.Manufacturer = Manufacturer(manufacturermap1[revision])
-		model.MemoryMB = MemoryMB(memorymap1[revision])
+		product = Product(productmap1[revision])
+		pcbrevision = PCBRevision(pcbmap1[revision])
 	}
 
-	// set other members of the struct
-	model.PeripheralBase = PeripheralBase(peripheralbasemap[model.Processor])
-	model.ProductString = productstringmap[model.Product]
-	model.ProcessorString = processorstringmap[model.Processor]
-	model.ManufacturerString = manufacturerstringmap[model.Manufacturer]
-
-	return model, nil
+	return product, pcbrevision, warranty, nil
 }

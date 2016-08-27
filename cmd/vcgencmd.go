@@ -41,6 +41,7 @@ var (
 		"otp":      otpCommand,
 		"serial":   serialCommand,
 		"revision": revisionCommand,
+		"model":    modelCommand,
 	}
 )
 
@@ -77,6 +78,10 @@ func allCommands(pi *rpi.RaspberryPi) error {
 	}
 
 	if err := revisionCommand(pi); err != nil {
+		return err
+	}
+
+	if err := modelCommand(pi); err != nil {
 		return err
 	}
 
@@ -195,6 +200,27 @@ func revisionCommand(pi *rpi.RaspberryPi) error {
 
 	return nil
 }
+
+func modelCommand(pi *rpi.RaspberryPi) error {
+	// print out model details
+	product, err := pi.ProductName()
+	if err != nil {
+		return err
+	}
+	warranty, err := pi.WarrantyBit()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Product=%v\n",product)
+	fmt.Printf("Warranty=%v\n",warranty)
+
+//	fmt.Printf("Processor=%v\n",model.ProcessorString)
+//	fmt.Printf("Manufacturer=%v\n",model.ManufacturerString)
+
+	return nil
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
