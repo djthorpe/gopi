@@ -15,14 +15,11 @@ package rpi
 */
 import "C"
 
-import (
-	"os"
-)
-
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	VIDEOCORE_DEVICE = "/dev/vchiq"
+	BMC2835_VIDEOCORE_FILENAME  = "/dev/vchiq"
+	BMC2835_DEVICETREE_FILENAME = "/proc/device-tree/soc/ranges"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,15 +27,14 @@ const (
 type RaspberryPi struct {
 	revision uint32
 	serial   uint64
+	peribase uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods
 
 func _BCMHostInit() error {
-	// TODO: Ensure /dev/vchiq is readable and writable
-	_, err := os.Stat(VIDEOCORE_DEVICE)
-	if err != nil {
+	if err := isWritablePath(BMC2835_VIDEOCORE_FILENAME); err != nil {
 		return ErrorVchiq
 	}
 	C.bcm_host_init()
@@ -72,12 +68,20 @@ func _VCGenCmdStop() {
 func New() (*RaspberryPi, error) {
 	// create this object
 	this := new(RaspberryPi)
-	// initialize
-	_BCMHostInit()
-	err := _VCGenCmdInit()
-	if err != nil {
+
+	// initialize broadcom host
+	if err := _BCMHostInit(); err != nil {
 		return nil, err
 	}
+
+	// initialize videocore device
+	err := _VCGenCmdInit()
+	if err != nil {
+		_BCMHostTerminate()
+		return nil, err
+	}
+
+	// return success
 	return this, nil
 }
 
@@ -86,3 +90,33 @@ func (this *RaspberryPi) Close() {
 	_VCGenCmdStop()
 	_BCMHostTerminate()
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+/*
+// Read /proc/device-tree/soc/ranges and determine the base address.
+// Use the default Raspberry Pi 1 base address if this fails.
+func (this *RaspberryPi) getBaseAddress() (uint32,error) {
+	peripheralbase, err := this.PeripheralBase()
+	if err != nil {
+		return 0,err
+	}
+	ranges, err := os.Open(BMC2835_DEVICETREE_FILENAME)
+	if err != nil {
+		return uint32(peripheralbase + GPIO_BASE), nil
+	}
+	defer ranges.Close()
+	b := make([]byte, 4)
+	n, err := ranges.ReadAt(b, 4)
+	if n != 4 || err != nil {
+		return uint32(peripheralbase + GPIO_BASE), nil
+	}
+	buf := bytes.NewReader(b)
+	var out uint32
+	err = binary.Read(buf,binary.BigEndian,&out)
+	if err != nil {
+		return uint32(peripheralbase + GPIO_BASE), nil
+	}
+	return uint32(out + GPIO_BASE), nil
+}
+*/

@@ -8,19 +8,19 @@
 package rpi
 
 import (
+	"bytes"
+	"encoding/binary"
 	"os"
+	"reflect"
 	"sync"
 	"syscall"
-	"bytes"
-	"reflect"
 	"unsafe"
-	"encoding/binary"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 type GPIO struct {
-	base	uint32
+	base    uint32
 	memlock sync.Mutex
 	mem8    []uint8
 	mem     []uint32
@@ -34,11 +34,11 @@ type Pull uint8
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	GPIO_DEV_GPIOMEM = "/dev/gpiomem"
-	GPIO_DEV_MEM = "/dev/mem"
-	GPIO_BASE uint32 = 0x200000
-	GPIO_MEMLENGTH = 4096
-	PINMASK uint32 = 7 // pin mode is 3 bits
+	GPIO_DEV_GPIOMEM        = "/dev/gpiomem"
+	GPIO_DEV_MEM            = "/dev/mem"
+	GPIO_BASE        uint32 = 0x200000
+	GPIO_MEMLENGTH          = 4096
+	PINMASK          uint32 = 7 // pin mode is 3 bits
 )
 
 // Pin direction
@@ -69,15 +69,15 @@ func (rpi *RaspberryPi) NewGPIO() (*GPIO, error) {
 	var base uint32
 
 	// open GPIO file
-	if file, err = os.OpenFile(GPIO_DEV_GPIOMEM,os.O_RDWR|os.O_SYNC,0); os.IsNotExist(err) {
-		file, err = os.OpenFile(GPIO_DEV_MEM,os.O_RDWR|os.O_SYNC,0)
-		base, err = getBaseAddress(rpi)
+	if file, err = os.OpenFile(GPIO_DEV_GPIOMEM, os.O_RDWR|os.O_SYNC, 0); os.IsNotExist(err) {
+		file, err = os.OpenFile(GPIO_DEV_MEM, os.O_RDWR|os.O_SYNC, 0)
 		if err != nil {
 			return nil, err
 		}
+		base, err = getBaseAddress(rpi)
 	}
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	defer file.Close()
 
@@ -87,9 +87,9 @@ func (rpi *RaspberryPi) NewGPIO() (*GPIO, error) {
 	defer this.memlock.Unlock()
 
 	// Memory map GPIO registers to byte array
-	this.mem8, err = syscall.Mmap(int(file.Fd()),int64(base),GPIO_MEMLENGTH,syscall.PROT_READ | syscall.PROT_WRITE,syscall.MAP_SHARED)
+	this.mem8, err = syscall.Mmap(int(file.Fd()), int64(base), GPIO_MEMLENGTH, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	// Convert mapped byte memory to unsafe []uint32 pointer, adjust length as needed
@@ -98,7 +98,7 @@ func (rpi *RaspberryPi) NewGPIO() (*GPIO, error) {
 	header.Cap /= (32 / 8)
 	this.mem = *(*[]uint32)(unsafe.Pointer(&header))
 
-	return this,nil
+	return this, nil
 }
 
 // Close unmaps GPIO memory
@@ -106,12 +106,6 @@ func (this *GPIO) Close() error {
 	this.memlock.Lock()
 	defer this.memlock.Unlock()
 	return syscall.Munmap(this.mem8)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-func (this *GPIO) Pins() []Pin {
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -138,12 +132,12 @@ func (this *GPIO) WritePin(pin Pin, state State) {
 
 // WritePinLow sets a pin to LOW
 func (this *GPIO) WritePinLow(pin Pin) {
-	this.WritePin(pin,LOW)
+	this.WritePin(pin, LOW)
 }
 
 // WritePinHigh sets a pin to HIGH
 func (this *GPIO) WritePinHigh(pin Pin) {
-	this.WritePin(pin,HIGH)
+	this.WritePin(pin, HIGH)
 }
 
 // ReadPin reads the state of a pin
@@ -176,22 +170,22 @@ func (this *GPIO) SetPinMode(pin Pin, direction Direction) {
 
 // SetPinModeInput sets pin to INPUT
 func (this *GPIO) SetPinModeInput(pin Pin) {
-	this.SetPinMode(pin,INPUT)
+	this.SetPinMode(pin, INPUT)
 }
 
 // SetPinModeOutput sets pin to OUTPUT
 func (this *GPIO) SetPinModeOutput(pin Pin) {
-	this.SetPinMode(pin,OUTPUT)
+	this.SetPinMode(pin, OUTPUT)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // Read /proc/device-tree/soc/ranges and determine the base address.
 // Use the default Raspberry Pi 1 base address if this fails.
-func getBaseAddress(pi *RaspberryPi) (uint32,error) {
+func getBaseAddress(pi *RaspberryPi) (uint32, error) {
 	peripheralbase, err := pi.PeripheralBase()
 	if err != nil {
-		return 0,err
+		return 0, err
 	}
 	ranges, err := os.Open("/proc/device-tree/soc/ranges")
 	if err != nil {
@@ -205,10 +199,9 @@ func getBaseAddress(pi *RaspberryPi) (uint32,error) {
 	}
 	buf := bytes.NewReader(b)
 	var out uint32
-	err = binary.Read(buf,binary.BigEndian,&out)
+	err = binary.Read(buf, binary.BigEndian, &out)
 	if err != nil {
 		return uint32(peripheralbase + GPIO_BASE), nil
 	}
 	return uint32(out + GPIO_BASE), nil
 }
-

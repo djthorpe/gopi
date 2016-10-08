@@ -8,8 +8,8 @@
 package main
 
 import (
-	"os"
 	"fmt"
+	"os"
 )
 
 import (
@@ -35,9 +35,4 @@ func main() {
 		os.Exit(-1)
 	}
 	defer gpio.Close()
-
-	// Enumerate the physical pins
-	for _,pin := range gpio.Pins() {
-
-	}
 }

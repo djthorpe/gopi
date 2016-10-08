@@ -16,4 +16,7 @@ var (
 	ErrorVchiq    = errors.New("Failed to open vchiq instance")
 	ErrorGenCmd   = errors.New("vcgencmd error")
 	ErrorResponse = errors.New("Unexpected response")
+	ErrorDisplay  = errors.New("Display error")
+	ErrorResource = errors.New("Resource error")
+	ErrorUpdate   = errors.New("Update error")
 )

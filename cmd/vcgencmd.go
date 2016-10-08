@@ -34,12 +34,12 @@ import (
 
 var (
 	commandmap = map[string]func(*rpi.RaspberryPi) error{
-		"all":    allCommands,
-		"temp":   tempCommand,
-		"clocks": clocksCommand,
-		"volts":  voltsCommand,
-		"memory": memoryCommand,
-		"codecs": codecsCommand,
+		"all":      allCommands,
+		"temp":     tempCommand,
+		"clocks":   clocksCommand,
+		"volts":    voltsCommand,
+		"memory":   memoryCommand,
+		"codecs":   codecsCommand,
 		"otp":      otpCommand,
 		"serial":   serialCommand,
 		"revision": revisionCommand,
@@ -73,7 +73,7 @@ func allCommands(pi *rpi.RaspberryPi) error {
 
 	if err := otpCommand(pi); err != nil {
 		return err
-	}	
+	}
 
 	if err := serialCommand(pi); err != nil {
 		return err
@@ -148,7 +148,6 @@ func memoryCommand(pi *rpi.RaspberryPi) error {
 	return nil
 }
 
-
 func codecsCommand(pi *rpi.RaspberryPi) error {
 	// print out codecs
 	codecs, err := pi.GetCodecs()
@@ -222,10 +221,10 @@ func modelCommand(pi *rpi.RaspberryPi) error {
 		return err
 	}
 
-	fmt.Printf("Product=%v\n",product)
-	fmt.Printf("Processor=%v\n",processor)
-	fmt.Printf("Peripheral Base=0x%08X\n",peripheralbase)
-	fmt.Printf("Warranty=%v\n",warranty)
+	fmt.Printf("Product=%v\n", product)
+	fmt.Printf("Processor=%v\n", processor)
+	fmt.Printf("Peripheral Base=0x%08X\n", peripheralbase)
+	fmt.Printf("Warranty=%v\n", warranty)
 
 	return nil
 }
