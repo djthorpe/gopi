@@ -47,24 +47,20 @@ func main() {
 	info, err := vc.GetModeInfo()
 	fmt.Printf("ModeInfo=%v\n", info)
 
-	// Create a background resource
-	background, err := vc.CreateResource(rpi.VC_IMAGE_RGB565, rpi.Size{1, 1})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error: ", err)
-		os.Exit(-1)
-	}
-
 	// Start an update
 	handle, err := vc.UpdateBegin()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error: ", err)
 		os.Exit(-1)
 	}
-	vc.SetBackgroundColor(handle, rpi.Color{255, 0, 0})
-	vc.UpdateSubmit(handle)
 
-	// Delete the background
-	vc.DeleteResource(background)
+	// Add an element onto the screen
+	dest := Rectangle{ Point{ 0,0 }, info.Size }
+	src := Rectangle{ Point{ 0,0 }, info.Size }
+	element := vc.ElementAdd(handle,Layer(0),dest,0,src,rpi.DISPMANX_PROTECTION_NONE,Alpha(0),Clamp(0),Transform(0))
+
+	vc.SetBackgroundColor(handle, rpi.Color{ 0, 200, 0})
+	vc.UpdateSubmit(handle)
 
 	// Wait...
 	time.Sleep(time.Second * 3)

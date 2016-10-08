@@ -264,7 +264,30 @@ func updateSubmitSync(handle UpdateHandle) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Private methods - create a resource
+// Private methods - elements
+
+func elementAdd(handle UpdateHandle,display DisplayHandle,layer Layer,dest_rect *Rectangle,src_resource ResourceHandle,src_rect *Rectangle,protection Protection,alpha Alpha,clamp Clamp,transform Transform) (ElementHandle,error) {
+	// TODO
+}
+
+func elementRemove(handle UpdateHandle,element ElementHandle) error {
+	// TODO
+}
+
+func elementModified(handle UpdateHandle,element ElementHandle,rect Rectangle) error {
+	// TODO
+}
+
+func elementChangeLayer(handle UpdateHandle,element ElementHandle,layer Layer) error {
+	// TODO
+}
+
+func elementChangeSource(handle UpdateHandle,element ElementHandle,src_resource ResourceHandle) error {
+	// TODO
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Private methods - resources
 
 func resourceCreate(format ImageType, w, h uint32, buffer *uint32) (ResourceHandle, error) {
 	handle := C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(format), C.uint32_t(w), C.uint32_t(h), (*C.uint32_t)(unsafe.Pointer(buffer)))
