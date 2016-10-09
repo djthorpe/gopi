@@ -115,9 +115,9 @@ func main() {
 	defer vc.Close()
 
 	// Create a background & two gradients
-	bg, _ := CreateBackground(vc,rpi.Color{ 70, 70, 70 },255)
-	fg1, _ := CreateGradient(vc,rpi.Color{ 255, 0, 0 },rpi.Color{ 255, 255, 0 },rpi.Color{ 0, 255, 255 },rpi.Color{ 255, 0, 255 },255)
-	fg2, _ := CreateGradient(vc,rpi.Color{ 255, 255, 0 },rpi.Color{ 0, 255, 255 },rpi.Color{ 255, 0, 255 },rpi.Color{ 255, 0, 0 },255)
+	bg, _ := CreateBackground(vc,rpi.Color{ 70, 70, 70 },128)
+	fg1, _ := CreateGradient(vc,rpi.Color{ 255, 0, 0 },rpi.Color{ 255, 255, 0 },rpi.Color{ 0, 255, 255 },rpi.Color{ 255, 0, 255 },128)
+	fg2, _ := CreateGradient(vc,rpi.Color{ 255, 255, 0 },rpi.Color{ 0, 255, 255 },rpi.Color{ 255, 0, 255 },rpi.Color{ 255, 0, 0 },128)
 
 	// Start an update
 	update, err := vc.UpdateBegin()
