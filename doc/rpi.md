@@ -79,7 +79,9 @@ func main() {
 }
 ```
 
-The additional utility functions are:
+A list of all defined command names can be retrived using the `GetCommands`
+method, which returns an array of command strings. Additional utility functions 
+are defined as convenience methods:
 
   * `commands, err := device.GetCommands()`
   * `temperature, err := device.GetCoreTemperatureCelcius()`
