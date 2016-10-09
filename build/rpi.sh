@@ -29,8 +29,8 @@ fi
 echo "go install helloworld"
 go install -ldflags "${LDFLAGS}" cmd/helloworld.go || exit -1
 
-#echo "go install vcgencmd"
-#go install -ldflags "${LDFLAGS}" cmd/vcgencmd.go || exit -1
+echo "go install vcgencmd"
+go install -ldflags "${LDFLAGS}" cmd/vcgencmd.go || exit -1
 
 #echo "go install gpio"
 #go install -ldflags "${LDFLAGS}" cmd/gpio.go || exit -1
