@@ -18,5 +18,6 @@ var (
 	ErrorResponse = errors.New("Unexpected response")
 	ErrorDisplay  = errors.New("Display error")
 	ErrorResource = errors.New("Resource error")
+	ErrorElement  = errors.New("Element error")
 	ErrorUpdate   = errors.New("Update error")
 )

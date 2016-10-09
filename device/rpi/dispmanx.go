@@ -14,9 +14,19 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
+type Point struct {
+	X int32
+	Y int32
+}
+
 type Size struct {
 	Width  uint32
 	Height uint32
+}
+
+type Rectangle struct {
+	Point
+	Size
 }
 
 type (
@@ -25,19 +35,16 @@ type (
 	ElementHandle  uint32
 	ResourceHandle uint32
 	UpdatePriority int32
-	Transform      uint32
 	InputFormat    uint32
+	Opacity        uint8
+	Protection     uint32
+	Transform      int
 	ImageType      int
+	ClampMode      int
 )
 
-type VideoCore struct {
-	display uint16
-	size    Size
-	handle  DisplayHandle
-}
-
 type ModeInfo struct {
-	Width, Height int32
+	Size          Size
 	Transform     Transform
 	InputFormat   InputFormat
 	Handle        DisplayHandle
@@ -49,15 +56,54 @@ type Color struct {
 
 type Resource struct {
 	handle ResourceHandle
+	size Size
+	buffer *byte
+}
+
+type Element struct {
+	handle ElementHandle
+	frame *Rectangle
+	layer int32
+}
+
+type Alpha struct {
+	Flags   uint32
+	Opacity uint32
+	Mask    ResourceHandle
+}
+
+type Clamp struct {
+	Mode    ClampMode
+	Flags   int
+	Opacity uint32
+	Mask    ResourceHandle
+}
+
+type VideoCore struct {
+	display uint16
+	size    Size
+	handle  DisplayHandle
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
 
 const (
 	/* Success and failure conditions */
 	DISPMANX_SUCCESS   = 0
 	DISPMANX_INVALID   = -1
 	DISPMANX_NO_HANDLE = 0
+)
+
+const (
+	/* Display ID's */
+	DISPMANX_ID_MAIN_LCD uint16 = iota
+	DISPMANX_ID_AUX_LCD
+	DISPMANX_ID_HDMI
+	DISPMANX_ID_SDTV
+	DISPMANX_ID_FORCE_LCD
+	DISPMANX_ID_FORCE_TV
+	DISPMANX_ID_FORCE_OTHER /* non-default display */
 )
 
 const (
@@ -77,7 +123,7 @@ const (
 	VC_IMAGE_RGB666        /* 32-bit format holding 18 bits of 6.6.6 RGB */
 	VC_IMAGE_PAL4_OBSOLETE // 4bpp palettised image with embedded palette
 	VC_IMAGE_PAL8_OBSOLETE // 8bpp palettised image with embedded palette
-	VC_IMAGE_RGBA32        /* RGB888 with an alpha byte after each pixel */ /* xxx: isn't it BEFORE each pixel? */
+	VC_IMAGE_RGBA32        /* RGB888 0xAABBGGRR */
 	VC_IMAGE_YUV422        /* a line of Y (32-byte padded), a line of U (16-byte padded), and a line of V (16-byte padded) */
 	VC_IMAGE_RGBA565       /* RGB565 with a transparent patch */
 	VC_IMAGE_RGBA16        /* Compressed (4444) version of RGBA32 */
@@ -120,6 +166,54 @@ const (
 	VC_IMAGE_TF_V8        /* T-format 8-bit U - same as TF_Y8 buf from V plane */
 )
 
+const (
+	/* Alpha flags */
+	DISPMANX_FLAGS_ALPHA_FROM_SOURCE       uint32 = 0 /* Bottom 2 bits sets the alpha mode */
+	DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS  uint32 = 1
+	DISPMANX_FLAGS_ALPHA_FIXED_NON_ZERO    uint32 = 2
+	DISPMANX_FLAGS_ALPHA_FIXED_EXCEED_0X07 uint32 = 3
+	DISPMANX_FLAGS_ALPHA_PREMULT           uint32 = 1 << 16
+	DISPMANX_FLAGS_ALPHA_MIX               uint32 = 1 << 17
+)
+
+const (
+	/* Clamp values */
+	DISPMANX_FLAGS_CLAMP_NONE               ClampMode = 0
+	DISPMANX_FLAGS_CLAMP_LUMA_TRANSPARENT   ClampMode = 1
+	DISPMANX_FLAGS_CLAMP_TRANSPARENT        ClampMode = 2
+	DISPMANX_FLAGS_CLAMP_CHROMA_TRANSPARENT ClampMode = 2
+	DISPMANX_FLAGS_CLAMP_REPLACE            ClampMode = 3
+)
+
+const (
+	/* Protection values */
+	DISPMANX_PROTECTION_NONE Protection = 0
+	DISPMANX_PROTECTION_HDCP Protection = 11
+)
+
+const (
+	/* Transform values */
+	DISPMANX_NO_ROTATE Transform = iota
+	DISPMANX_ROTATE_90
+	DISPMANX_ROTATE_180
+	DISPMANX_ROTATE_270
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// GLOBAL VARIABLES
+
+var (
+	Displays = map[string]uint16{
+		"lcd":        DISPMANX_ID_MAIN_LCD,
+		"aux":        DISPMANX_ID_AUX_LCD,
+		"hdmi":       DISPMANX_ID_HDMI,
+		"tv":         DISPMANX_ID_SDTV,
+		"forcelcd":   DISPMANX_ID_FORCE_LCD,
+		"forcetv":    DISPMANX_ID_FORCE_TV,
+		"forceother": DISPMANX_ID_FORCE_OTHER,
+	}
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // Create new VideoCore object, returns error if not possible
@@ -134,14 +228,15 @@ func (rpi *RaspberryPi) NewVideoCore(display uint16) (*VideoCore, error) {
 	if err != nil {
 		return nil, err
 	}
-	this.size.Width = width
-	this.size.Height = height
 
 	// open the display
 	handle, err := displayOpen(uint32(display))
 	if err != nil {
 		return nil, err
 	}
+
+	// Populate the structure
+	this.size = Size{ width, height }
 	this.handle = handle
 
 	// success
@@ -150,18 +245,24 @@ func (rpi *RaspberryPi) NewVideoCore(display uint16) (*VideoCore, error) {
 
 // Close unmaps GPIO memory
 func (this *VideoCore) Close() error {
+	// Close display
 	err := displayClose(this.handle)
 	return err
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Get VideoCore properties
 
-func (this *VideoCore) GetDisplay() uint16 {
+func (this *VideoCore) GetDisplayID() uint16 {
 	return this.display
 }
 
 func (this *VideoCore) GetSize() Size {
 	return this.size
+}
+
+func (this *VideoCore) GetFrame() *Rectangle {
+	return &Rectangle{ Point{ 0, 0 }, this.GetSize() }
 }
 
 func (this *VideoCore) GetModeInfo() (ModeInfo, error) {
@@ -170,9 +271,8 @@ func (this *VideoCore) GetModeInfo() (ModeInfo, error) {
 	return info, err
 }
 
-func (this *VideoCore) SetBackgroundColor(handle UpdateHandle, color Color) error {
-	return displaySetBackground(handle, this.handle, color.Red, color.Green, color.Blue)
-}
+////////////////////////////////////////////////////////////////////////////////
+// UPDATES
 
 func (this *VideoCore) UpdateBegin() (UpdateHandle, error) {
 	return updateStart(UpdatePriority(0))
@@ -182,15 +282,22 @@ func (this *VideoCore) UpdateSubmit(handle UpdateHandle) error {
 	return updateSubmitSync(handle)
 }
 
+func (this *VideoCore) SetBackgroundColor(handle UpdateHandle, color Color) error {
+	return displaySetBackground(handle, this.handle, color.Red, color.Green, color.Blue)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RESOURCES
+
 func (this *VideoCore) CreateResource(format ImageType, size Size) (*Resource, error) {
-	var buffer uint32
-	handle, err := resourceCreate(format, size.Width, size.Height, &buffer)
+	handle, err := resourceCreate(format, size.Width, size.Height)
 	if err != nil {
 		return nil, err
 	}
 
 	resource := new(Resource)
 	resource.handle = handle
+	resource.size = size
 
 	return resource, nil
 }
@@ -203,8 +310,79 @@ func (this *VideoCore) DeleteResource(resource *Resource) error {
 	return nil
 }
 
+func (this *Resource) GetSize() Size {
+	return this.size
+}
+
+func (this *Resource) GetFrame() *Rectangle {
+	return &Rectangle{ Point{ 0, 0 },this.GetSize() }
+}
+
+func (this *Resource) WriteData(format ImageType,src_pitch int,src_buffer []byte,dst_rect *Rectangle) error {
+	return resourceWriteData(this.handle,format,src_pitch,&src_buffer[0],dst_rect)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
-// Private methods - display information
+// RECTANGLES
+
+func (this *Rectangle) Set(point Point,size Size) {
+	C.vc_dispmanx_rect_set((*C.VC_RECT_T)(unsafe.Pointer(this)),C.uint32_t(point.X),C.uint32_t(point.Y),C.uint32_t(size.Width),C.uint32_t(size.Height))
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ELEMENTS
+
+func (this *VideoCore) AddElement(update UpdateHandle,layer int32,dst_rect *Rectangle,src_resource *Resource,src_rect *Rectangle) (*Element, error) {
+	var src_resource_handle ResourceHandle
+
+	// if there is a source resource, then set the handle
+	if src_resource != nil {
+		src_resource_handle = src_resource.handle
+	}
+	// destination frame
+	if dst_rect == nil {
+		dst_rect = this.GetFrame()
+	}
+	// source frame
+	if src_rect == nil {
+		if src_resource == nil {
+			return nil, ErrorElement
+		}
+		src_rect = src_resource.GetFrame()
+	}
+
+	// set alpha to 255
+	// TODO: Allow Alpha to be set
+	alpha := Alpha{ DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS, 255, 0 }
+
+	// add element
+	handle, err := elementAdd(update,this.handle,layer,dst_rect,src_resource_handle,src_rect,DISPMANX_PROTECTION_NONE,&alpha,nil,0);
+	if err != nil {
+		return nil, err
+	}
+
+	// create element structure
+	element := new(Element)
+	element.handle = handle
+	element.layer = layer
+	element.frame = dst_rect
+
+	return element,nil
+}
+
+func (this *VideoCore) RemoveElement(update UpdateHandle,element *Element) error {
+	return elementRemove(update,element.handle)
+}
+
+func (this *VideoCore) ChangeElementSource(update UpdateHandle,element *Element,resource *Resource) error {
+	if element == nil || resource == nil {
+		return ErrorElement
+	}
+	return elementChangeSource(update,element.handle,resource.handle)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Private methods - display
 
 func graphicsGetDisplaySize(display uint16) (uint32, uint32, error) {
 	var w, h uint32
@@ -217,11 +395,10 @@ func graphicsGetDisplaySize(display uint16) (uint32, uint32, error) {
 
 func displayOpen(display uint32) (DisplayHandle, error) {
 	handle := DisplayHandle(C.vc_dispmanx_display_open(C.uint32_t(display)))
-	if handle >= DisplayHandle(0) {
-		return handle, nil
-	} else {
-		return DisplayHandle(0), ErrorDisplay
+	if handle == DisplayHandle(0) {
+		return handle, ErrorDisplay
 	}
+	return handle, nil
 }
 
 func displayClose(display DisplayHandle) error {
@@ -266,31 +443,45 @@ func updateSubmitSync(handle UpdateHandle) error {
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods - elements
 
-func elementAdd(handle UpdateHandle,display DisplayHandle,layer Layer,dest_rect *Rectangle,src_resource ResourceHandle,src_rect *Rectangle,protection Protection,alpha Alpha,clamp Clamp,transform Transform) (ElementHandle,error) {
-	// TODO
+func elementAdd(update UpdateHandle, display DisplayHandle, layer int32, dest_rect *Rectangle, src_resource ResourceHandle, src_rect *Rectangle, protection Protection, alpha *Alpha, clamp *Clamp, transform Transform) (ElementHandle, error) {
+	handle := C.vc_dispmanx_element_add(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_DISPLAY_HANDLE_T(display), C.int32_t(layer), (*C.VC_RECT_T)(unsafe.Pointer(dest_rect)), C.DISPMANX_RESOURCE_HANDLE_T(src_resource), (*C.VC_RECT_T)(unsafe.Pointer(src_rect)), C.DISPMANX_PROTECTION_T(protection), (*C.VC_DISPMANX_ALPHA_T)(unsafe.Pointer(alpha)), (*C.DISPMANX_CLAMP_T)(unsafe.Pointer(clamp)), C.DISPMANX_TRANSFORM_T(transform))
+	if handle == DISPMANX_NO_HANDLE {
+		return ElementHandle(0), ErrorElement
+	}
+	return ElementHandle(handle), nil
 }
 
-func elementRemove(handle UpdateHandle,element ElementHandle) error {
-	// TODO
+func elementRemove(update UpdateHandle, element ElementHandle) error {
+	if C.vc_dispmanx_element_remove(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element)) != DISPMANX_SUCCESS {
+		return ErrorElement
+	}
+	return nil
 }
 
-func elementModified(handle UpdateHandle,element ElementHandle,rect Rectangle) error {
+func elementModified(update UpdateHandle, element ElementHandle, rect Rectangle) error {
 	// TODO
+	return ErrorElement
 }
 
-func elementChangeLayer(handle UpdateHandle,element ElementHandle,layer Layer) error {
+func elementChangeLayer(update UpdateHandle, element ElementHandle, layer int32) error {
 	// TODO
+	return ErrorElement
 }
 
-func elementChangeSource(handle UpdateHandle,element ElementHandle,src_resource ResourceHandle) error {
-	// TODO
+func elementChangeSource(update UpdateHandle, element ElementHandle, resource ResourceHandle) error {
+	if C.vc_dispmanx_element_change_source(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element),C.DISPMANX_RESOURCE_HANDLE_T(resource)) != DISPMANX_SUCCESS {
+		return ErrorElement
+	} else {
+		return nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods - resources
 
-func resourceCreate(format ImageType, w, h uint32, buffer *uint32) (ResourceHandle, error) {
-	handle := C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(format), C.uint32_t(w), C.uint32_t(h), (*C.uint32_t)(unsafe.Pointer(buffer)))
+func resourceCreate(format ImageType, w, h uint32) (ResourceHandle, error) {
+	var ptr C.uint32_t
+	handle := C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(format), C.uint32_t(w), C.uint32_t(h), (*C.uint32_t)(unsafe.Pointer(&ptr)))
 	if handle == DISPMANX_NO_HANDLE {
 		return ResourceHandle(0), ErrorResource
 	}
@@ -303,3 +494,11 @@ func resourceDelete(handle ResourceHandle) error {
 	}
 	return nil
 }
+
+func resourceWriteData(handle ResourceHandle,format ImageType,src_pitch int,src_buffer *byte,dst_rect *Rectangle) error {
+	if C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle),C.VC_IMAGE_TYPE_T(format),C.int(src_pitch),unsafe.Pointer(src_buffer),(*C.VC_RECT_T)(unsafe.Pointer(dst_rect))) != DISPMANX_SUCCESS {
+		return ErrorResource
+	}
+	return nil
+}
+
