@@ -26,8 +26,8 @@ fi
 ##############################################################
 # install
 
-#echo "go install helloworld"
-#go install -ldflags "${LDFLAGS}" cmd/helloworld.go || exit -1
+echo "go install helloworld"
+go install -ldflags "${LDFLAGS}" cmd/helloworld.go || exit -1
 
 #echo "go install vcgencmd"
 #go install -ldflags "${LDFLAGS}" cmd/vcgencmd.go || exit -1
@@ -40,5 +40,8 @@ fi
 
 echo "go install dispmanx"
 go install -ldflags "${LDFLAGS}" cmd/dispmanx.go || exit -1
+
+echo "go install touchscreen"
+go install -ldflags "${LDFLAGS}" cmd/touchscreen.go || exit -1
 
 
