@@ -199,6 +199,15 @@ const (
 	DISPMANX_ROTATE_270
 )
 
+const (
+	ELEMENT_CHANGE_LAYER uint32 = (1<<0)
+	ELEMENT_CHANGE_OPACITY uint32 =        (1<<1)
+	ELEMENT_CHANGE_DEST_RECT uint32 =      (1<<2)
+	ELEMENT_CHANGE_SRC_RECT uint32 =       (1<<3)
+	ELEMENT_CHANGE_MASK_RESOURCE uint32 =  (1<<4)
+	ELEMENT_CHANGE_TRANSFORM uint32 =      (1<<5)
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 
@@ -381,6 +390,30 @@ func (this *VideoCore) ChangeElementSource(update UpdateHandle,element *Element,
 	return elementChangeSource(update,element.handle,resource.handle)
 }
 
+func (this *VideoCore) ChangeElementLayer(update UpdateHandle,element *Element,layer int32) error {
+	if element == nil {
+		return ErrorElement
+	}
+	err := elementChangeLayer(update,element.handle,layer)
+	if err != nil {
+		return err
+	}
+	element.layer = layer
+	return nil
+}
+
+func (this *VideoCore) ChangeElementFrame(update UpdateHandle,element *Element,frame *Rectangle) error {
+	if element == nil {
+		return ErrorElement
+	}
+	err := elementChangeDestination(update,element.handle,frame)
+	if err != nil {
+		return err
+	}
+	element.frame = frame
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods - display
 
@@ -455,6 +488,7 @@ func elementRemove(update UpdateHandle, element ElementHandle) error {
 	if C.vc_dispmanx_element_remove(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element)) != DISPMANX_SUCCESS {
 		return ErrorElement
 	}
+	// success
 	return nil
 }
 
@@ -464,16 +498,36 @@ func elementModified(update UpdateHandle, element ElementHandle, rect Rectangle)
 }
 
 func elementChangeLayer(update UpdateHandle, element ElementHandle, layer int32) error {
-	// TODO
-	return ErrorElement
+	if C.vc_dispmanx_element_change_layer(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element),C.int32_t(layer)) != DISPMANX_SUCCESS {
+		return ErrorElement
+	}
+	// success
+	return nil
 }
 
 func elementChangeSource(update UpdateHandle, element ElementHandle, resource ResourceHandle) error {
 	if C.vc_dispmanx_element_change_source(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element),C.DISPMANX_RESOURCE_HANDLE_T(resource)) != DISPMANX_SUCCESS {
 		return ErrorElement
-	} else {
-		return nil
 	}
+	// success
+	return nil
+}
+
+func elementChangeDestination(update UpdateHandle, element ElementHandle, frame *Rectangle) error {
+	if C.vc_dispmanx_element_change_attributes(
+		C.DISPMANX_UPDATE_HANDLE_T(update),
+		C.DISPMANX_ELEMENT_HANDLE_T(element),
+		C.uint32_t(ELEMENT_CHANGE_DEST_RECT),
+		C.int32_t(0), // layer
+		C.uint8_t(0), // opacity
+		(*C.VC_RECT_T)(unsafe.Pointer(frame)), // dest_rect
+		(*C.VC_RECT_T)(unsafe.Pointer(nil)), // src_rect
+		C.DISPMANX_RESOURCE_HANDLE_T(0), // mask
+		C.DISPMANX_TRANSFORM_T(0), // transform
+	) != DISPMANX_SUCCESS {
+		return ErrorElement
+	}
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

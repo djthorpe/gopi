@@ -131,21 +131,34 @@ func main() {
 
 	// Add foreground element to overlay
 	size := vc.GetSize()
-	position := &rpi.Rectangle{ rpi.Point{ 100,100 }, rpi.Size{ size.Width - 200, size.Height - 200 } }
-	element, _ := vc.AddElement(update,2,position,fg1,&rpi.Rectangle{ rpi.Point{}, rpi.Size{ 2 << 16, 2 << 16 }});
+	position1 := &rpi.Rectangle{ rpi.Point{ 100,100 }, rpi.Size{ size.Width - 200, size.Height - 200 } }
+	position2 := &rpi.Rectangle{ rpi.Point{ 150,150 }, rpi.Size{ size.Width - 200, size.Height - 200 } }
+	element1, _ := vc.AddElement(update,2,position1,fg1,&rpi.Rectangle{ rpi.Point{}, rpi.Size{ 2 << 16, 2 << 16 }});
+	element2, _ := vc.AddElement(update,3,position2,fg2,&rpi.Rectangle{ rpi.Point{}, rpi.Size{ 2 << 16, 2 << 16 }});
 
-	// End the update
+	// Place elements on the screen
 	vc.UpdateSubmit(update)
 
 	// now switch between the two sources
-	for i := 0; i < 50; i++ {
-		time.Sleep(500 * time.Millisecond)
-		update, _ := vc.UpdateBegin()
-		if i % 2 == 0 {
-			vc.ChangeElementSource(update,element,fg2)
-		} else {
-			vc.ChangeElementSource(update,element,fg1)
+	for {
+		if position1.Size.Width <= 0 || position1.Size.Height <= 0 {
+			break
 		}
+		if position1.Point.X <= 0 || position1.Point.Y <= 0 {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+
+		update, _ := vc.UpdateBegin()
+
+		position1.Point.X -= 1
+		position1.Point.Y -= 1
+		vc.ChangeElementFrame(update,element1,position1)
+
+		position2.Point.X += 3
+		position2.Point.Y += 3
+		vc.ChangeElementFrame(update,element2,position2)
+
 		vc.UpdateSubmit(update)
 	}
 
