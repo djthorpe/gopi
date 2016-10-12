@@ -13,6 +13,8 @@ import (
 	"path"
 	"regexp"
 	"syscall"
+	"errors"
+	"time"
 	"io/ioutil"
     "path/filepath"
 	"encoding/binary"
@@ -47,6 +49,21 @@ const (
 	PATH_INPUT_DEVICES = "/sys/class/input/event*"
 	MAX_POLL_EVENTS = 32
 	MAX_EVENT_SIZE_BYTES = 1024
+)
+
+const ( // https://www.kernel.org/doc/Documentation/input/event-codes.txt
+	EV_SYN uint16 = 0
+	EV_KEY uint16 = 1
+	EV_ABS uint16 = 3
+	BTN_TOUCH uint16 = 330
+	BTN_TOUCH_RELEASE uint32 = 0
+	BTN_TOUCH_PRESS uint32 = 1
+	ABS_X uint16 = 0
+	ABS_Y uint16 = 1
+	ABS_MT_SLOT uint16 = 0x2F // 47 MT slot being modified
+	ABS_MT_POSITION_X uint16 = 0x35 // 53 Center X of multi touch position
+	ABS_MT_POSITION_Y uint16 = 0x36 // 54 Center Y of multi touch position
+	ABS_MT_TRACKING_ID uint16 = 0x39 // 57 Unique ID of initiated contact
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -127,11 +144,49 @@ func (this *FT5406) ProcessEvents() {
 			}
 			if err != nil {
 				fmt.Println("Decode error:",err)
-			} else {
-				fmt.Println(event)
+				continue
+			}
+			err = this.ProcessEvent(&event)
+			if err != nil {
+				fmt.Println("Decode error:",err)
 			}
 		}
 	})
+}
+
+func (this *FT5406) ProcessEvent(event *FT5406Event) error {
+	timestamp := time.Duration(time.Duration(event.Second) * time.Second + time.Duration(event.Microsecond) * time.Microsecond)
+	switch {
+	case event.Type == EV_SYN:
+		fmt.Println("SYNC:",timestamp)
+		return nil
+	case event.Type == EV_KEY && event.Code == BTN_TOUCH && event.Value == BTN_TOUCH_PRESS:
+		fmt.Println("BTN_TOUCH_PRESS")
+		return nil
+	case event.Type == EV_KEY && event.Code == BTN_TOUCH && event.Value == BTN_TOUCH_RELEASE:
+		fmt.Println("BTN_TOUCH_RELEASE")
+		return nil
+	case event.Type == EV_ABS && event.Code == ABS_MT_SLOT:
+		fmt.Println("SLOT:",event.Value)
+		return nil
+	case event.Type == EV_ABS && event.Code == ABS_MT_POSITION_X:
+		fmt.Println("X:",event.Value)
+		return nil
+	case event.Type == EV_ABS && event.Code == ABS_MT_POSITION_Y:
+		fmt.Println("Y:",event.Value)
+		return nil
+	case event.Type == EV_ABS && event.Code == ABS_MT_TRACKING_ID:
+		fmt.Println("ID:",event.Value)
+		return nil
+	case event.Type == EV_ABS && event.Code == ABS_X:
+		fmt.Println("ABS X:",event.Value)
+		return nil
+	case event.Type == EV_ABS && event.Code == ABS_Y:
+		fmt.Println("ABS X:",event.Value)
+		return nil
+	default:
+		return errors.New(fmt.Sprintf("Invalid event: %v",event))
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
