@@ -1,14 +1,12 @@
 # Introduction
 
-This repository contains Raspberry Pi Go Language Experiments. Firstly, you'll need to build Go on
-your Raspberry Pi, please see an Appendix on order to see the instructions for that. In order to 
-retrieve the source code, use:
+This repository contains Golang interface to the Raspberry Pi hardware. In order to use
+it, you'll need to have a working version of Go on your Raspberry Pi, which you
+can [download](https://golang.org/dl/). Then in order to retrieve the source code, use:
 
 ```
 go get github.com/djthorpe/gopi
 ```
-
-Once you have your Go environment setup...TODO
 
 There is a single `rpi` module and several submodules:
 
