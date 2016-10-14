@@ -8,16 +8,17 @@
 package input
 
 import (
-	"os"
+	"encoding/binary"
+	"errors"
+	"image"
 	"io"
+	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"syscall"
-	"errors"
 	"time"
-	"io/ioutil"
-    "path/filepath"
-	"encoding/binary"
 )
 
 import (
@@ -31,39 +32,19 @@ type FT5406 struct {
 	file   *os.File
 	poll   int
 	event  syscall.EpollEvent
+	slots  []*TouchEvent
+	slot     uint32
+	position image.Point
 }
 
-type FT5406Callback func (syscall.EpollEvent)
-
-type FT5406Event struct {
-	Second uint32
-	Microsecond uint32
-	Type uint16
-	Code uint16
-	Value uint32
-}
+type FT5406Callback func(syscall.EpollEvent)
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	PATH_INPUT_DEVICES = "/sys/class/input/event*"
-	MAX_POLL_EVENTS = 32
+	PATH_INPUT_DEVICES   = "/sys/class/input/event*"
+	MAX_POLL_EVENTS      = 32
 	MAX_EVENT_SIZE_BYTES = 1024
-)
-
-const ( // https://www.kernel.org/doc/Documentation/input/event-codes.txt
-	EV_SYN uint16 = 0
-	EV_KEY uint16 = 1
-	EV_ABS uint16 = 3
-	BTN_TOUCH uint16 = 330
-	BTN_TOUCH_RELEASE uint32 = 0
-	BTN_TOUCH_PRESS uint32 = 1
-	ABS_X uint16 = 0
-	ABS_Y uint16 = 1
-	ABS_MT_SLOT uint16 = 0x2F // 47 MT slot being modified
-	ABS_MT_POSITION_X uint16 = 0x35 // 53 Center X of multi touch position
-	ABS_MT_POSITION_Y uint16 = 0x36 // 54 Center Y of multi touch position
-	ABS_MT_TRACKING_ID uint16 = 0x39 // 57 Unique ID of initiated contact
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,13 +56,18 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // Create Touchscreen
 
-func NewFT5406() (*FT5406, error) {
+func NewFT5406(slots uint) (*FT5406, error) {
 	var err error
+
+	// check for inputs
+	if slots == 0 {
+		return nil, errors.New("Invalid slots value")
+	}
 
 	this := new(FT5406)
 	this.device, err = getDeviceName()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	// open driver
@@ -100,10 +86,21 @@ func NewFT5406() (*FT5406, error) {
 	// register the poll with the device
 	this.event.Events = syscall.EPOLLIN
 	this.event.Fd = int32(this.file.Fd())
-	if err = syscall.EpollCtl(this.poll,syscall.EPOLL_CTL_ADD,int(this.event.Fd),&this.event); err != nil {
+	if err = syscall.EpollCtl(this.poll, syscall.EPOLL_CTL_ADD, int(this.event.Fd), &this.event); err != nil {
 		syscall.Close(this.poll)
 		this.file.Close()
-		return nil,err
+		return nil, err
+	}
+
+	// set position and slot to zero, plus create the slots
+	this.position.X = 0
+	this.position.Y = 0
+	this.slot = 0
+	this.slots = make([]*TouchEvent, slots)
+
+	// set up the slot values
+	for i, _ := range this.slots {
+		this.slots[i] = &TouchEvent{ Slot: uint32(i) }
 	}
 
 	return this, nil
@@ -116,7 +113,7 @@ func (this *FT5406) Close() error {
 }
 
 func (this *FT5406) waitForEvents(callback FT5406Callback) error {
-	events := make([]syscall.EpollEvent,MAX_POLL_EVENTS)
+	events := make([]syscall.EpollEvent, MAX_POLL_EVENTS)
 	for {
 		n, err := syscall.EpollWait(this.poll, events, -1)
 		if err != nil {
@@ -137,28 +134,28 @@ func (this *FT5406) waitForEvents(callback FT5406Callback) error {
 func (this *FT5406) ProcessEvents() {
 	this.waitForEvents(func(event syscall.EpollEvent) {
 		for {
-			var event FT5406Event
-			err := binary.Read(this.file,binary.LittleEndian,&event)
+			var event rawEvent
+			err := binary.Read(this.file, binary.LittleEndian, &event)
 			if err == io.EOF {
 				break
 			}
 			if err != nil {
-				fmt.Println("Decode error:",err)
+				fmt.Println("Decode error:", err)
 				continue
 			}
-			err = this.ProcessEvent(&event)
+			err = this.processEvent(&event)
 			if err != nil {
-				fmt.Println("Decode error:",err)
+				fmt.Println("Decode error:", err)
 			}
 		}
 	})
 }
 
-func (this *FT5406) ProcessEvent(event *FT5406Event) error {
-	timestamp := time.Duration(time.Duration(event.Second) * time.Second + time.Duration(event.Microsecond) * time.Microsecond)
+func (this *FT5406) processEvent(event *rawEvent) error {
 	switch {
 	case event.Type == EV_SYN:
-		fmt.Println("SYNC:",timestamp)
+		this.slots[this.slot].Timestamp = time.Duration(time.Duration(event.Second)*time.Second + time.Duration(event.Microsecond)*time.Microsecond)
+		fmt.Println("SYNC:",this.slots[this.slot])
 		return nil
 	case event.Type == EV_KEY && event.Code == BTN_TOUCH && event.Value == BTN_TOUCH_PRESS:
 		fmt.Println("BTN_TOUCH_PRESS")
@@ -167,44 +164,57 @@ func (this *FT5406) ProcessEvent(event *FT5406Event) error {
 		fmt.Println("BTN_TOUCH_RELEASE")
 		return nil
 	case event.Type == EV_ABS && event.Code == ABS_MT_SLOT:
-		fmt.Println("SLOT:",event.Value)
+		if event.Value >= uint32(len(this.slots)) {
+			return errors.New("Invalid slot value")
+		}
+		this.slot = event.Value
 		return nil
 	case event.Type == EV_ABS && event.Code == ABS_MT_POSITION_X:
-		fmt.Println("X:",event.Value)
+		this.slots[this.slot].Point.X = int(event.Value)
 		return nil
 	case event.Type == EV_ABS && event.Code == ABS_MT_POSITION_Y:
-		fmt.Println("Y:",event.Value)
+		this.slots[this.slot].Point.Y = int(event.Value)
 		return nil
 	case event.Type == EV_ABS && event.Code == ABS_MT_TRACKING_ID:
-		fmt.Println("ID:",event.Value)
+		// Identifier is a 16 bit value which we turn into an int
+		id := int(int16(event.Value))
+		if id == -1 {
+			fmt.Println("RELEASE:",this.slots[this.slot])
+		} else {
+			this.slots[this.slot].Identifier = id
+		}
 		return nil
 	case event.Type == EV_ABS && event.Code == ABS_X:
-		fmt.Println("ABS X:",event.Value)
+		this.position.X = int(event.Value)
 		return nil
 	case event.Type == EV_ABS && event.Code == ABS_Y:
-		fmt.Println("ABS X:",event.Value)
+		this.position.Y = int(event.Value)
 		return nil
 	default:
-		return errors.New(fmt.Sprintf("Invalid event: %v",event))
+		return errors.New(fmt.Sprintf("Invalid event: %v", event))
 	}
+}
+
+func (this *FT5406) GetPosition() image.Point {
+	return this.position
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Private Methods
 
-func getDeviceName() (string,error) {
+func getDeviceName() (string, error) {
 	files, err := filepath.Glob(PATH_INPUT_DEVICES)
 	if err != nil {
-		return "",err
+		return "", err
 	}
 	for _, file := range files {
-		buf, err := ioutil.ReadFile(path.Join(file,"device","name"))
+		buf, err := ioutil.ReadFile(path.Join(file, "device", "name"))
 		if err != nil {
 			continue
 		}
 		if REGEXP_DEVICENAME.Match(buf) {
-			return path.Join("/","dev","input",path.Base(file)),nil
+			return path.Join("/", "dev", "input", path.Base(file)), nil
 		}
 	}
-	return "",nil
+	return "", nil
 }

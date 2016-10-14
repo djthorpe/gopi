@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	driver, err := input.NewFT5406()
+	driver, err := input.NewFT5406(10) // ten slots
 	if err != nil {
 		fmt.Println("Error: ",err)
 		os.Exit(-1)
