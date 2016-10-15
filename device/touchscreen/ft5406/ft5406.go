@@ -14,12 +14,12 @@ package ft5406
 // System imports
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
+	"io/ioutil"
+	"path/filepath"
 )
 
 // Local imports
@@ -58,29 +58,25 @@ var (
 
 // Concrete Open method
 func (config Config) Open() (input.Driver, error) {
-	return NewFT5406()
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Create Touchscreen
-
-func NewFT5406() (*Driver, error) {
 	var err error
 
-	this := new(Driver)
-	this.name, this.device, err = getDeviceNameAndPath()
+	driver := new(Driver)
+	driver.name, driver.device, err = getDeviceNameAndPath()
 	if err != nil {
 		return nil, err
 	}
 
 	// open driver
-	this.file, err = os.Open(this.device)
+	driver.file, err = os.Open(driver.device)
 	if err != nil {
 		return nil, err
 	}
 
-	return this, nil
+	return driver, nil
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// input.Driver interface
 
 func (this *Driver) Close() error {
 	return this.file.Close()

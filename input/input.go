@@ -188,11 +188,17 @@ func Open(config Config) (*Device, error) {
 	device.position = image.ZP
 	device.last_position = image.Point{ -1, -1 }
 
-	// set slot to zero, create the slots, set slot values
-	device.slot = 0
-	device.slots = make([]*TouchEvent, driver.GetSlots())
-	for i, _ := range device.slots {
-		device.slots[i] = &TouchEvent{ Slot: uint32(i) }
+	// GetSlots will return positive non-zero value where the device is a slot
+	// based multitouch device, for example, where you can use more than one
+	// finger on a touchscreen
+	num_slots := driver.GetSlots()
+	if num_slots > 0 {
+		// set slot to zero, create the slots, set slot values
+		device.slot = 0
+		device.slots = make([]*TouchEvent, driver.GetSlots())
+		for i, _ := range device.slots {
+			device.slots[i] = &TouchEvent{ Slot: uint32(i) }
+		}
 	}
 
 	// success - return device
@@ -273,24 +279,31 @@ func (device *Device) waitForEvents(callback processEventsCallback) error {
 }
 
 func (device *Device) processRawTouchEvent(event *rawEvent,callback TouchEventCallback) error {
+	// Calculate timestamp
 	ts := time.Duration(time.Duration(event.Second) * time.Second + time.Duration(event.Microsecond) * time.Microsecond)
+
+	// Parse raw event data
 	switch {
 	case event.Type == EV_SYN:
+
 		// Fire EVENT_MOVE
 		if device.position.Eq(device.last_position) == false {
 			callback(device,&TouchEvent{ Event{ Timestamp: ts, Type: EVENT_MOVE }, 0, 0, device.position, device.last_position })
 		}
 		device.last_position = device.position
 
-		e := device.slots[device.slot]
+		// Don't do slot-based events if there aren't any slots
+		if device.slots == nil {
+			return nil
+		}
 
-		// For touchscreens, we also fire slot-based event
+		e := device.slots[device.slot]
 		e.Timestamp = ts
 
 		// If type of event is not release, then set to press
 		if e.Type == EVENT_SLOT_PRESS {
 			e.Type = EVENT_SLOT_MOVE
-		} else if e.Type != EVENT_SLOT_RELEASE {
+		} else if e.Type != EVENT_SLOT_RELEASE && e.Type != EVENT_SLOT_MOVE {
 			e.Type = EVENT_SLOT_PRESS
 		}
 		callback(device,e)
