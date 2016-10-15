@@ -414,6 +414,10 @@ func (this *VideoCore) ChangeElementFrame(update UpdateHandle,element *Element,f
 	return nil
 }
 
+func (this *Element) GetFrame() *Rectangle {
+	return this.frame
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods - display
 
