@@ -4,115 +4,48 @@
 	All Rights Reserved
 
 	For Licensing and Usage information, please see LICENSE.md
+
+	This package provides input mechanisms, including the touchscreen
+	interface for the official Raspberry Pi LED.
 */
 package input
 
 import (
-	"encoding/binary"
-	"errors"
 	"image"
-	"io"
-	"io/ioutil"
-	"os"
-	"path"
-	"path/filepath"
-	"regexp"
-	"syscall"
 	"time"
-)
-
-import (
-	"fmt"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type FT5406 struct {
-	device string
-	file   *os.File
-	poll   int
-	event  syscall.EpollEvent
-	slots  []*TouchEvent
-	slot     uint32
-	position image.Point
-}
-
-type FT5406Callback func(syscall.EpollEvent)
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	PATH_INPUT_DEVICES   = "/sys/class/input/event*"
-	MAX_POLL_EVENTS      = 32
-	MAX_EVENT_SIZE_BYTES = 1024
+	// References:
+
+	// Event types
+	// https://www.kernel.org/doc/Documentation/input/event-codes.txt
+	EV_SYN uint16 = 0x0000
+	EV_KEY uint16 = 0x0001
+	EV_ABS uint16 = 0x0003
+
+	// Button information
+	BTN_TOUCH         uint16 = 0x014A
+	BTN_TOUCH_RELEASE uint32 = 0x00000000
+	BTN_TOUCH_PRESS   uint32 = 0x00000001
+
+	// Multi-Touch Types
+	// https://www.kernel.org/doc/Documentation/input/multi-touch-protocol.txt
+	ABS_X              uint16 = 0x0000
+	ABS_Y              uint16 = 0x0001
+	ABS_MT_SLOT        uint16 = 0x002F // 47 MT slot being modified
+	ABS_MT_POSITION_X  uint16 = 0x0035 // 53 Center X of multi touch position
+	ABS_MT_POSITION_Y  uint16 = 0x0036 // 54 Center Y of multi touch position
+	ABS_MT_TRACKING_ID uint16 = 0x0039 // 57 Unique ID of initiated contact
 )
 
-////////////////////////////////////////////////////////////////////////////////
 
-var (
-	REGEXP_DEVICENAME = regexp.MustCompile("^FT5406")
-)
-
-////////////////////////////////////////////////////////////////////////////////
-// Create Touchscreen
-
-func NewFT5406(slots uint) (*FT5406, error) {
-	var err error
-
-	// check for inputs
-	if slots == 0 {
-		return nil, errors.New("Invalid slots value")
-	}
-
-	this := new(FT5406)
-	this.device, err = getDeviceName()
-	if err != nil {
-		return nil, err
-	}
-
-	// open driver
-	this.file, err = os.Open(this.device)
-	if err != nil {
-		return nil, err
-	}
-
-	// create a poll
-	this.poll, err = syscall.EpollCreate1(0)
-	if err != nil {
-		this.file.Close()
-		return nil, err
-	}
-
-	// register the poll with the device
-	this.event.Events = syscall.EPOLLIN
-	this.event.Fd = int32(this.file.Fd())
-	if err = syscall.EpollCtl(this.poll, syscall.EPOLL_CTL_ADD, int(this.event.Fd), &this.event); err != nil {
-		syscall.Close(this.poll)
-		this.file.Close()
-		return nil, err
-	}
-
-	// set position and slot to zero, plus create the slots
-	this.position.X = 0
-	this.position.Y = 0
-	this.slot = 0
-	this.slots = make([]*TouchEvent, slots)
-
-	// set up the slot values
-	for i, _ := range this.slots {
-		this.slots[i] = &TouchEvent{ Slot: uint32(i) }
-	}
-
-	return this, nil
-}
-
-func (this *FT5406) Close() error {
-	syscall.Close(this.poll)
-	this.file.Close()
-	return nil
-}
-
-func (this *FT5406) waitForEvents(callback FT5406Callback) error {
+func (this *Device) waitForEvents(callback FT5406Callback) error {
 	events := make([]syscall.EpollEvent, MAX_POLL_EVENTS)
 	for {
 		n, err := syscall.EpollWait(this.poll, events, -1)
@@ -131,7 +64,7 @@ func (this *FT5406) waitForEvents(callback FT5406Callback) error {
 	}
 }
 
-func (this *FT5406) ProcessEvents() {
+func (this *Device) ProcessEvents() {
 	this.waitForEvents(func(event syscall.EpollEvent) {
 		for {
 			var event rawEvent
@@ -151,7 +84,7 @@ func (this *FT5406) ProcessEvents() {
 	})
 }
 
-func (this *FT5406) processEvent(event *rawEvent) error {
+func (this *Device) processEvent(event *rawEvent) error {
 	switch {
 	case event.Type == EV_SYN:
 		this.slots[this.slot].Timestamp = time.Duration(time.Duration(event.Second)*time.Second + time.Duration(event.Microsecond)*time.Microsecond)
@@ -195,26 +128,7 @@ func (this *FT5406) processEvent(event *rawEvent) error {
 	}
 }
 
-func (this *FT5406) GetPosition() image.Point {
+func (this *Device) GetPosition() image.Point {
 	return this.position
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Private Methods
-
-func getDeviceName() (string, error) {
-	files, err := filepath.Glob(PATH_INPUT_DEVICES)
-	if err != nil {
-		return "", err
-	}
-	for _, file := range files {
-		buf, err := ioutil.ReadFile(path.Join(file, "device", "name"))
-		if err != nil {
-			continue
-		}
-		if REGEXP_DEVICENAME.Match(buf) {
-			return path.Join("/", "dev", "input", path.Base(file)), nil
-		}
-	}
-	return "", nil
-}
