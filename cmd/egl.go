@@ -66,14 +66,6 @@ func main() {
 	}
 	defer egl.Close()
 
-	err = egl.BindAPI("OpenVG")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		return
-	}
-
-	fmt.Println(egl)
-
 	if err := egl.Do(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
