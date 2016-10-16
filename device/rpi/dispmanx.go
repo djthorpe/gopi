@@ -10,6 +10,7 @@ import "C"
 
 import (
 	"unsafe"
+	"strconv"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,15 +40,15 @@ type (
 	Opacity        uint8
 	Protection     uint32
 	Transform      int
-	ImageType      int
+	ColorModel     int
 	ClampMode      int
 )
 
 type ModeInfo struct {
-	Size          Size
-	Transform     Transform
-	InputFormat   InputFormat
-	Handle        DisplayHandle
+	Size        Size
+	Transform   Transform
+	InputFormat InputFormat
+	Handle      DisplayHandle
 }
 
 type Color struct {
@@ -56,14 +57,14 @@ type Color struct {
 
 type Resource struct {
 	handle ResourceHandle
-	size Size
+	size   Size
 	buffer *byte
 }
 
 type Element struct {
 	handle ElementHandle
-	frame *Rectangle
-	layer int32
+	frame  *Rectangle
+	layer  int32
 }
 
 type Alpha struct {
@@ -107,63 +108,20 @@ const (
 )
 
 const (
-	/* ImageType */
-	_ ImageType = iota
-	VC_IMAGE_RGB565
-	VC_IMAGE_1BPP
-	VC_IMAGE_YUV420
-	VC_IMAGE_48BPP
-	VC_IMAGE_RGB888
-	VC_IMAGE_8BPP
-	VC_IMAGE_4BPP          // 4bpp palettised image
-	VC_IMAGE_3D32          /* A separated format of 16 colour/light shorts followed by 16 z values */
-	VC_IMAGE_3D32B         /* 16 colours followed by 16 z values */
-	VC_IMAGE_3D32MAT       /* A separated format of 16 material/colour/light shorts followed by 16 z values */
-	VC_IMAGE_RGB2X9        /* 32 bit format containing 18 bits of 6.6.6 RGB, 9 bits per short */
-	VC_IMAGE_RGB666        /* 32-bit format holding 18 bits of 6.6.6 RGB */
-	VC_IMAGE_PAL4_OBSOLETE // 4bpp palettised image with embedded palette
-	VC_IMAGE_PAL8_OBSOLETE // 8bpp palettised image with embedded palette
-	VC_IMAGE_RGBA32        /* RGB888 0xAABBGGRR */
-	VC_IMAGE_YUV422        /* a line of Y (32-byte padded), a line of U (16-byte padded), and a line of V (16-byte padded) */
-	VC_IMAGE_RGBA565       /* RGB565 with a transparent patch */
-	VC_IMAGE_RGBA16        /* Compressed (4444) version of RGBA32 */
-	VC_IMAGE_YUV_UV        /* VCIII codec format */
-	VC_IMAGE_TF_RGBA32     /* VCIII T-format RGBA8888 */
-	VC_IMAGE_TF_RGBX32     /* VCIII T-format RGBx8888 */
-	VC_IMAGE_TF_FLOAT      /* VCIII T-format float */
-	VC_IMAGE_TF_RGBA16     /* VCIII T-format RGBA4444 */
-	VC_IMAGE_TF_RGBA5551   /* VCIII T-format RGB5551 */
-	VC_IMAGE_TF_RGB565     /* VCIII T-format RGB565 */
-	VC_IMAGE_TF_YA88       /* VCIII T-format 8-bit luma and 8-bit alpha */
-	VC_IMAGE_TF_BYTE       /* VCIII T-format 8 bit generic sample */
-	VC_IMAGE_TF_PAL8       /* VCIII T-format 8-bit palette */
-	VC_IMAGE_TF_PAL4       /* VCIII T-format 4-bit palette */
-	VC_IMAGE_TF_ETC1       /* VCIII T-format Ericsson Texture Compressed */
-	VC_IMAGE_BGR888        /* RGB888 with R & B swapped */
-	VC_IMAGE_BGR888_NP     /* RGB888 with R & B swapped, but with no pitch, i.e. no padding after each row of pixels */
-	VC_IMAGE_BAYER         /* Bayer image, extra defines which variant is being used */
-	VC_IMAGE_CODEC         /* General wrapper for codec images e.g. JPEG from camera */
-	VC_IMAGE_YUV_UV32      /* VCIII codec format */
-	VC_IMAGE_TF_Y8         /* VCIII T-format 8-bit luma */
-	VC_IMAGE_TF_A8         /* VCIII T-format 8-bit alpha */
-	VC_IMAGE_TF_SHORT      /* VCIII T-format 16-bit generic sample */
-	VC_IMAGE_TF_1BPP       /* VCIII T-format 1bpp black/white */
-	VC_IMAGE_OPENGL
-	VC_IMAGE_YUV444I      /* VCIII-B0 HVS YUV 4:4:4 interleaved samples */
-	VC_IMAGE_YUV422PLANAR /* Y, U, & V planes separately (VC_IMAGE_YUV422 has them interleaved on a per line basis) */
-	VC_IMAGE_ARGB8888     /* 32bpp with 8bit alpha at MS byte, with R, G, B (LS byte) */
-	VC_IMAGE_XRGB8888     /* 32bpp with 8bit unused at MS byte, with R, G, B (LS byte) */
-	VC_IMAGE_YUV422YUYV   /* interleaved 8 bit samples of Y, U, Y, V */
-	VC_IMAGE_YUV422YVYU   /* interleaved 8 bit samples of Y, V, Y, U */
-	VC_IMAGE_YUV422UYVY   /* interleaved 8 bit samples of U, Y, V, Y */
-	VC_IMAGE_YUV422VYUY   /* interleaved 8 bit samples of V, Y, U, Y */
-	VC_IMAGE_RGBX32       /* 32bpp like RGBA32 but with unused alpha */
-	VC_IMAGE_RGBX8888     /* 32bpp, corresponding to RGBA with unused alpha */
-	VC_IMAGE_BGRX8888     /* 32bpp, corresponding to BGRA with unused alpha */
-	VC_IMAGE_YUV420SP     /* Y as a plane, then UV byte interleaved in plane with with same pitch, half height */
-	VC_IMAGE_YUV444PLANAR /* Y, U, & V planes separately 4:4:4 */
-	VC_IMAGE_TF_U8        /* T-format 8-bit U - same as TF_Y8 buf from U plane */
-	VC_IMAGE_TF_V8        /* T-format 8-bit U - same as TF_Y8 buf from V plane */
+	/* ColorModel. We only list defaults for supported color models on the Raspberry Pi */
+	VC_IMAGE_RGB565 ColorModel = 1
+	VC_IMAGE_YUV420 ColorModel = 3
+	VC_IMAGE_RGB888 ColorModel = 5
+	VC_IMAGE_4BPP ColorModel = 7 // 4bpp palettised image
+	VC_IMAGE_RGBA32 ColorModel = 15 /* RGB888 0xAABBGGRR */
+	VC_IMAGE_YUV422 ColorModel = 16 /* a line of Y (32-byte padded), a line of U (16-byte padded), and a line of V (16-byte padded) */
+	VC_IMAGE_RGBA565 ColorModel = 17 /* RGB565 with a transparent patch */
+	VC_IMAGE_RGBA16 ColorModel = 18        /* Compressed (4444) version of RGBA32 */
+	VC_IMAGE_YUV_UV ColorModel = 19        /* VCIII codec format */
+	VC_IMAGE_TF_RGBA32 ColorModel = 20     /* VCIII T-format RGBA8888 */
+	VC_IMAGE_TF_RGBX32 ColorModel = 21     /* VCIII T-format RGBx8888 */
+	VC_IMAGE_TF_RGBA16 ColorModel = 23     /* VCIII T-format RGBA4444 */
+	VC_IMAGE_TF_RGB565 ColorModel = 25     /* VCIII T-format RGB565 */
 )
 
 const (
@@ -200,12 +158,12 @@ const (
 )
 
 const (
-	ELEMENT_CHANGE_LAYER uint32 = (1<<0)
-	ELEMENT_CHANGE_OPACITY uint32 =        (1<<1)
-	ELEMENT_CHANGE_DEST_RECT uint32 =      (1<<2)
-	ELEMENT_CHANGE_SRC_RECT uint32 =       (1<<3)
-	ELEMENT_CHANGE_MASK_RESOURCE uint32 =  (1<<4)
-	ELEMENT_CHANGE_TRANSFORM uint32 =      (1<<5)
+	ELEMENT_CHANGE_LAYER         uint32 = (1 << 0)
+	ELEMENT_CHANGE_OPACITY       uint32 = (1 << 1)
+	ELEMENT_CHANGE_DEST_RECT     uint32 = (1 << 2)
+	ELEMENT_CHANGE_SRC_RECT      uint32 = (1 << 3)
+	ELEMENT_CHANGE_MASK_RESOURCE uint32 = (1 << 4)
+	ELEMENT_CHANGE_TRANSFORM     uint32 = (1 << 5)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -220,6 +178,21 @@ var (
 		"forcelcd":   DISPMANX_ID_FORCE_LCD,
 		"forcetv":    DISPMANX_ID_FORCE_TV,
 		"forceother": DISPMANX_ID_FORCE_OTHER,
+	}
+	ImageFormats = map[ColorModel]string{
+		VC_IMAGE_RGB565:        "RGB565",
+		VC_IMAGE_YUV420:        "YUV420",
+		VC_IMAGE_RGB888:        "RGB888",
+		VC_IMAGE_4BPP:          "4BPP",
+		VC_IMAGE_RGBA32:        "RGBA32",
+		VC_IMAGE_YUV422:        "YUV422",
+		VC_IMAGE_RGBA565:       "RGBA565",
+		VC_IMAGE_RGBA16:        "RGBA16",
+		VC_IMAGE_YUV_UV:        "YUV_UV",
+		VC_IMAGE_TF_RGBA32:     "TF_RGBA32",
+		VC_IMAGE_TF_RGBX32:     "TF_RGBX32",
+		VC_IMAGE_TF_RGBA16:     "TF_RGBA16",
+		VC_IMAGE_TF_RGB565:     "TF_RGB565",
 	}
 )
 
@@ -245,18 +218,17 @@ func (rpi *RaspberryPi) NewVideoCore(display uint16) (*VideoCore, error) {
 	}
 
 	// Populate the structure
-	this.size = Size{ width, height }
+	this.size = Size{width, height}
 	this.handle = handle
 
 	// success
 	return this, nil
 }
 
-// Close unmaps GPIO memory
+// Close the display
 func (this *VideoCore) Close() error {
 	// Close display
-	err := displayClose(this.handle)
-	return err
+	return displayClose(this.handle)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -271,7 +243,7 @@ func (this *VideoCore) GetSize() Size {
 }
 
 func (this *VideoCore) GetFrame() *Rectangle {
-	return &Rectangle{ Point{ 0, 0 }, this.GetSize() }
+	return &Rectangle{Point{0, 0}, this.GetSize()}
 }
 
 func (this *VideoCore) GetModeInfo() (ModeInfo, error) {
@@ -298,8 +270,8 @@ func (this *VideoCore) SetBackgroundColor(handle UpdateHandle, color Color) erro
 ////////////////////////////////////////////////////////////////////////////////
 // RESOURCES
 
-func (this *VideoCore) CreateResource(format ImageType, size Size) (*Resource, error) {
-	handle, err := resourceCreate(format, size.Width, size.Height)
+func (this *VideoCore) CreateResource(model ColorModel, size Size) (*Resource, error) {
+	handle, err := resourceCreate(model, size.Width, size.Height)
 	if err != nil {
 		return nil, err
 	}
@@ -324,24 +296,41 @@ func (this *Resource) GetSize() Size {
 }
 
 func (this *Resource) GetFrame() *Rectangle {
-	return &Rectangle{ Point{ 0, 0 },this.GetSize() }
+	return &Rectangle{Point{0, 0}, this.GetSize()}
 }
 
-func (this *Resource) WriteData(format ImageType,src_pitch int,src_buffer []byte,dst_rect *Rectangle) error {
-	return resourceWriteData(this.handle,format,src_pitch,&src_buffer[0],dst_rect)
+func (this *Resource) WriteData(model ColorModel, src_pitch int, src_buffer []byte, dst_rect *Rectangle) error {
+	return resourceWriteData(this.handle, model, src_pitch, &src_buffer[0], dst_rect)
+}
+
+func (this *Resource) WritePixelRGBA(point Point,color Color,alpha uint8) error {
+	var src_buffer []byte = []byte{ color.Red, color.Green, color.Blue, alpha }
+	var dst_rect = &Rectangle{ point, Size{ 1, 1 } }
+	return resourceWriteData(this.handle,VC_IMAGE_RGBA32, 616, &src_buffer[0], dst_rect )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // RECTANGLES
 
-func (this *Rectangle) Set(point Point,size Size) {
-	C.vc_dispmanx_rect_set((*C.VC_RECT_T)(unsafe.Pointer(this)),C.uint32_t(point.X),C.uint32_t(point.Y),C.uint32_t(size.Width),C.uint32_t(size.Height))
+func (this *Rectangle) Set(point Point, size Size) {
+	C.vc_dispmanx_rect_set((*C.VC_RECT_T)(unsafe.Pointer(this)), C.uint32_t(point.X), C.uint32_t(point.Y), C.uint32_t(size.Width), C.uint32_t(size.Height))
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// POINT AND SIZE
+
+func (p Point) String() string {
+	return "<Point>(" + strconv.FormatInt(int64(p.X),10) + "," + strconv.FormatInt(int64(p.Y),10) + ")"
+}
+
+func (s Size) String() string {
+	return "<Size>(" + strconv.FormatUint(uint64(s.Width),10) + "," + strconv.FormatUint(uint64(s.Height),10) + ")"
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // ELEMENTS
 
-func (this *VideoCore) AddElement(update UpdateHandle,layer int32,dst_rect *Rectangle,src_resource *Resource,src_rect *Rectangle) (*Element, error) {
+func (this *VideoCore) AddElement(update UpdateHandle, layer int32, dst_rect *Rectangle, src_resource *Resource, src_rect *Rectangle) (*Element, error) {
 	var src_resource_handle ResourceHandle
 
 	// if there is a source resource, then set the handle
@@ -365,7 +354,7 @@ func (this *VideoCore) AddElement(update UpdateHandle,layer int32,dst_rect *Rect
 	alpha := Alpha{ DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS, 255, 0 }
 
 	// add element
-	handle, err := elementAdd(update,this.handle,layer,dst_rect,src_resource_handle,src_rect,DISPMANX_PROTECTION_NONE,&alpha,nil,0);
+	handle, err := elementAdd(update, this.handle, layer, dst_rect, src_resource_handle, src_rect, DISPMANX_PROTECTION_NONE, &alpha, nil, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -376,25 +365,25 @@ func (this *VideoCore) AddElement(update UpdateHandle,layer int32,dst_rect *Rect
 	element.layer = layer
 	element.frame = dst_rect
 
-	return element,nil
+	return element, nil
 }
 
-func (this *VideoCore) RemoveElement(update UpdateHandle,element *Element) error {
-	return elementRemove(update,element.handle)
+func (this *VideoCore) RemoveElement(update UpdateHandle, element *Element) error {
+	return elementRemove(update, element.handle)
 }
 
-func (this *VideoCore) ChangeElementSource(update UpdateHandle,element *Element,resource *Resource) error {
+func (this *VideoCore) ChangeElementSource(update UpdateHandle, element *Element, resource *Resource) error {
 	if element == nil || resource == nil {
 		return ErrorElement
 	}
-	return elementChangeSource(update,element.handle,resource.handle)
+	return elementChangeSource(update, element.handle, resource.handle)
 }
 
-func (this *VideoCore) ChangeElementLayer(update UpdateHandle,element *Element,layer int32) error {
+func (this *VideoCore) ChangeElementLayer(update UpdateHandle, element *Element, layer int32) error {
 	if element == nil {
 		return ErrorElement
 	}
-	err := elementChangeLayer(update,element.handle,layer)
+	err := elementChangeLayer(update, element.handle, layer)
 	if err != nil {
 		return err
 	}
@@ -402,11 +391,11 @@ func (this *VideoCore) ChangeElementLayer(update UpdateHandle,element *Element,l
 	return nil
 }
 
-func (this *VideoCore) ChangeElementFrame(update UpdateHandle,element *Element,frame *Rectangle) error {
+func (this *VideoCore) ChangeElementFrame(update UpdateHandle, element *Element, frame *Rectangle) error {
 	if element == nil {
 		return ErrorElement
 	}
-	err := elementChangeDestination(update,element.handle,frame)
+	err := elementChangeDestination(update, element.handle, frame)
 	if err != nil {
 		return err
 	}
@@ -489,7 +478,7 @@ func elementAdd(update UpdateHandle, display DisplayHandle, layer int32, dest_re
 }
 
 func elementRemove(update UpdateHandle, element ElementHandle) error {
-	if C.vc_dispmanx_element_remove(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element)) != DISPMANX_SUCCESS {
+	if C.vc_dispmanx_element_remove(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element)) != DISPMANX_SUCCESS {
 		return ErrorElement
 	}
 	// success
@@ -502,7 +491,7 @@ func elementModified(update UpdateHandle, element ElementHandle, rect Rectangle)
 }
 
 func elementChangeLayer(update UpdateHandle, element ElementHandle, layer int32) error {
-	if C.vc_dispmanx_element_change_layer(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element),C.int32_t(layer)) != DISPMANX_SUCCESS {
+	if C.vc_dispmanx_element_change_layer(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element), C.int32_t(layer)) != DISPMANX_SUCCESS {
 		return ErrorElement
 	}
 	// success
@@ -510,7 +499,7 @@ func elementChangeLayer(update UpdateHandle, element ElementHandle, layer int32)
 }
 
 func elementChangeSource(update UpdateHandle, element ElementHandle, resource ResourceHandle) error {
-	if C.vc_dispmanx_element_change_source(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element),C.DISPMANX_RESOURCE_HANDLE_T(resource)) != DISPMANX_SUCCESS {
+	if C.vc_dispmanx_element_change_source(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element), C.DISPMANX_RESOURCE_HANDLE_T(resource)) != DISPMANX_SUCCESS {
 		return ErrorElement
 	}
 	// success
@@ -522,12 +511,12 @@ func elementChangeDestination(update UpdateHandle, element ElementHandle, frame 
 		C.DISPMANX_UPDATE_HANDLE_T(update),
 		C.DISPMANX_ELEMENT_HANDLE_T(element),
 		C.uint32_t(ELEMENT_CHANGE_DEST_RECT),
-		C.int32_t(0), // layer
-		C.uint8_t(0), // opacity
+		C.int32_t(0),                          // layer
+		C.uint8_t(0),                          // opacity
 		(*C.VC_RECT_T)(unsafe.Pointer(frame)), // dest_rect
-		(*C.VC_RECT_T)(unsafe.Pointer(nil)), // src_rect
-		C.DISPMANX_RESOURCE_HANDLE_T(0), // mask
-		C.DISPMANX_TRANSFORM_T(0), // transform
+		(*C.VC_RECT_T)(unsafe.Pointer(nil)),   // src_rect
+		C.DISPMANX_RESOURCE_HANDLE_T(0),       // mask
+		C.DISPMANX_TRANSFORM_T(0),             // transform
 	) != DISPMANX_SUCCESS {
 		return ErrorElement
 	}
@@ -537,9 +526,9 @@ func elementChangeDestination(update UpdateHandle, element ElementHandle, frame 
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods - resources
 
-func resourceCreate(format ImageType, w, h uint32) (ResourceHandle, error) {
+func resourceCreate(model ColorModel, w, h uint32) (ResourceHandle, error) {
 	var ptr C.uint32_t
-	handle := C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(format), C.uint32_t(w), C.uint32_t(h), (*C.uint32_t)(unsafe.Pointer(&ptr)))
+	handle := C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(model), C.uint32_t(w), C.uint32_t(h), (*C.uint32_t)(unsafe.Pointer(&ptr)))
 	if handle == DISPMANX_NO_HANDLE {
 		return ResourceHandle(0), ErrorResource
 	}
@@ -553,10 +542,16 @@ func resourceDelete(handle ResourceHandle) error {
 	return nil
 }
 
-func resourceWriteData(handle ResourceHandle,format ImageType,src_pitch int,src_buffer *byte,dst_rect *Rectangle) error {
-	if C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle),C.VC_IMAGE_TYPE_T(format),C.int(src_pitch),unsafe.Pointer(src_buffer),(*C.VC_RECT_T)(unsafe.Pointer(dst_rect))) != DISPMANX_SUCCESS {
+func resourceWriteData(handle ResourceHandle, model ColorModel, src_pitch int, src_buffer *byte, dst_rect *Rectangle) error {
+	if C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), C.VC_IMAGE_TYPE_T(model), C.int(src_pitch), unsafe.Pointer(src_buffer), (*C.VC_RECT_T)(unsafe.Pointer(dst_rect))) != DISPMANX_SUCCESS {
 		return ErrorResource
 	}
 	return nil
 }
 
+func resourceReadData(handle ResourceHandle, src_rect *Rectangle, dst_buffer *byte, dst_pitch int) error {
+	if C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), (*C.VC_RECT_T)(unsafe.Pointer(src_rect)), unsafe.Pointer(dst_buffer), C.uint32_t(dst_pitch)) != DISPMANX_SUCCESS {
+		return ErrorResource
+	}
+	return nil
+}
