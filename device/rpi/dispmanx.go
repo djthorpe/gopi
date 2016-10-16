@@ -407,6 +407,10 @@ func (this *Element) GetFrame() *Rectangle {
 	return this.frame
 }
 
+func (this *Element) GetHandle() ElementHandle {
+	return this.handle
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods - display
 
