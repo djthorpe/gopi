@@ -9,8 +9,8 @@ package rpi
 import "C"
 
 import (
-	"unsafe"
 	"strconv"
+	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -109,19 +109,19 @@ const (
 
 const (
 	/* ColorModel. We only list defaults for supported color models on the Raspberry Pi */
-	VC_IMAGE_RGB565 ColorModel = 1
-	VC_IMAGE_YUV420 ColorModel = 3
-	VC_IMAGE_RGB888 ColorModel = 5
-	VC_IMAGE_4BPP ColorModel = 7 // 4bpp palettised image
-	VC_IMAGE_RGBA32 ColorModel = 15 /* RGB888 0xAABBGGRR */
-	VC_IMAGE_YUV422 ColorModel = 16 /* a line of Y (32-byte padded), a line of U (16-byte padded), and a line of V (16-byte padded) */
-	VC_IMAGE_RGBA565 ColorModel = 17 /* RGB565 with a transparent patch */
-	VC_IMAGE_RGBA16 ColorModel = 18        /* Compressed (4444) version of RGBA32 */
-	VC_IMAGE_YUV_UV ColorModel = 19        /* VCIII codec format */
-	VC_IMAGE_TF_RGBA32 ColorModel = 20     /* VCIII T-format RGBA8888 */
-	VC_IMAGE_TF_RGBX32 ColorModel = 21     /* VCIII T-format RGBx8888 */
-	VC_IMAGE_TF_RGBA16 ColorModel = 23     /* VCIII T-format RGBA4444 */
-	VC_IMAGE_TF_RGB565 ColorModel = 25     /* VCIII T-format RGB565 */
+	VC_IMAGE_RGB565    ColorModel = 1
+	VC_IMAGE_YUV420    ColorModel = 3
+	VC_IMAGE_RGB888    ColorModel = 5
+	VC_IMAGE_4BPP      ColorModel = 7  // 4bpp palettised image
+	VC_IMAGE_RGBA32    ColorModel = 15 /* RGB888 0xAABBGGRR */
+	VC_IMAGE_YUV422    ColorModel = 16 /* a line of Y (32-byte padded), a line of U (16-byte padded), and a line of V (16-byte padded) */
+	VC_IMAGE_RGBA565   ColorModel = 17 /* RGB565 with a transparent patch */
+	VC_IMAGE_RGBA16    ColorModel = 18 /* Compressed (4444) version of RGBA32 */
+	VC_IMAGE_YUV_UV    ColorModel = 19 /* VCIII codec format */
+	VC_IMAGE_TF_RGBA32 ColorModel = 20 /* VCIII T-format RGBA8888 */
+	VC_IMAGE_TF_RGBX32 ColorModel = 21 /* VCIII T-format RGBx8888 */
+	VC_IMAGE_TF_RGBA16 ColorModel = 23 /* VCIII T-format RGBA4444 */
+	VC_IMAGE_TF_RGB565 ColorModel = 25 /* VCIII T-format RGB565 */
 )
 
 const (
@@ -180,19 +180,19 @@ var (
 		"forceother": DISPMANX_ID_FORCE_OTHER,
 	}
 	ImageFormats = map[ColorModel]string{
-		VC_IMAGE_RGB565:        "RGB565",
-		VC_IMAGE_YUV420:        "YUV420",
-		VC_IMAGE_RGB888:        "RGB888",
-		VC_IMAGE_4BPP:          "4BPP",
-		VC_IMAGE_RGBA32:        "RGBA32",
-		VC_IMAGE_YUV422:        "YUV422",
-		VC_IMAGE_RGBA565:       "RGBA565",
-		VC_IMAGE_RGBA16:        "RGBA16",
-		VC_IMAGE_YUV_UV:        "YUV_UV",
-		VC_IMAGE_TF_RGBA32:     "TF_RGBA32",
-		VC_IMAGE_TF_RGBX32:     "TF_RGBX32",
-		VC_IMAGE_TF_RGBA16:     "TF_RGBA16",
-		VC_IMAGE_TF_RGB565:     "TF_RGB565",
+		VC_IMAGE_RGB565:    "RGB565",
+		VC_IMAGE_YUV420:    "YUV420",
+		VC_IMAGE_RGB888:    "RGB888",
+		VC_IMAGE_4BPP:      "4BPP",
+		VC_IMAGE_RGBA32:    "RGBA32",
+		VC_IMAGE_YUV422:    "YUV422",
+		VC_IMAGE_RGBA565:   "RGBA565",
+		VC_IMAGE_RGBA16:    "RGBA16",
+		VC_IMAGE_YUV_UV:    "YUV_UV",
+		VC_IMAGE_TF_RGBA32: "TF_RGBA32",
+		VC_IMAGE_TF_RGBX32: "TF_RGBX32",
+		VC_IMAGE_TF_RGBA16: "TF_RGBA16",
+		VC_IMAGE_TF_RGB565: "TF_RGB565",
 	}
 )
 
@@ -303,10 +303,10 @@ func (this *Resource) WriteData(model ColorModel, src_pitch int, src_buffer []by
 	return resourceWriteData(this.handle, model, src_pitch, &src_buffer[0], dst_rect)
 }
 
-func (this *Resource) WritePixelRGBA(point Point,color Color,alpha uint8) error {
-	var src_buffer []byte = []byte{ color.Red, color.Green, color.Blue, alpha }
-	var dst_rect = &Rectangle{ point, Size{ 1, 1 } }
-	return resourceWriteData(this.handle,VC_IMAGE_RGBA32, 616, &src_buffer[0], dst_rect )
+func (this *Resource) WritePixelRGBA(point Point, color Color, alpha uint8) error {
+	var src_buffer []byte = []byte{color.Red, color.Green, color.Blue, alpha}
+	var dst_rect = &Rectangle{point, Size{1, 1}}
+	return resourceWriteData(this.handle, VC_IMAGE_RGBA32, 616, &src_buffer[0], dst_rect)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -320,11 +320,11 @@ func (this *Rectangle) Set(point Point, size Size) {
 // POINT AND SIZE
 
 func (p Point) String() string {
-	return "<Point>(" + strconv.FormatInt(int64(p.X),10) + "," + strconv.FormatInt(int64(p.Y),10) + ")"
+	return "<Point>(" + strconv.FormatInt(int64(p.X), 10) + "," + strconv.FormatInt(int64(p.Y), 10) + ")"
 }
 
 func (s Size) String() string {
-	return "<Size>(" + strconv.FormatUint(uint64(s.Width),10) + "," + strconv.FormatUint(uint64(s.Height),10) + ")"
+	return "<Size>(" + strconv.FormatUint(uint64(s.Width), 10) + "," + strconv.FormatUint(uint64(s.Height), 10) + ")"
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -351,7 +351,7 @@ func (this *VideoCore) AddElement(update UpdateHandle, layer int32, dst_rect *Re
 
 	// set alpha to 255
 	// TODO: Allow Alpha to be set
-	alpha := Alpha{ DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS, 255, 0 }
+	alpha := Alpha{DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS, 255, 0}
 
 	// add element
 	handle, err := elementAdd(update, this.handle, layer, dst_rect, src_resource_handle, src_rect, DISPMANX_PROTECTION_NONE, &alpha, nil, 0)
@@ -405,6 +405,10 @@ func (this *VideoCore) ChangeElementFrame(update UpdateHandle, element *Element,
 
 func (this *Element) GetFrame() *Rectangle {
 	return this.frame
+}
+
+func (this *Element) GetSize() Size {
+	return this.frame.Size
 }
 
 func (this *Element) GetHandle() ElementHandle {

@@ -1,4 +1,4 @@
-package openvg
+package khronos
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ type Driver interface {
 // Opener interface
 
 // Open opens a connection to the touchscreen with the given driver.
-func Open(config Config) (Driver, error) {
+func Open2(config Config) (Driver, error) {
 	driver, err := config.Open()
 	if err != nil {
 		return nil, err
@@ -49,3 +49,5 @@ func (state *State) String() string {
 func (state *State) Close() error {
 	return state.driver.Close()
 }
+
+

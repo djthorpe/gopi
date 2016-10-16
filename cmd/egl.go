@@ -11,14 +11,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
-	"bufio"
+	"fmt"
 )
 
 import (
 	rpi "../device/rpi"
-	openvg "../openvg"
+	khronos "../khronos"
 	util "../util"
 )
 
@@ -46,7 +45,7 @@ func main() {
 	// Open up the RaspberryPi interface
 	pi, err := rpi.New()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error: ", err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
 	}
 	defer pi.Close()
@@ -59,16 +58,24 @@ func main() {
 	}
 	defer vc.Close()
 
-	// OpenVG
-	gfx,err := openvg.Open(&rpi.OpenVG{ VideoCore: vc, Logger: logger })
+	// EGL
+	egl, err := khronos.Open(&rpi.EGL{ vc, logger })
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error: ", err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
 	}
-	defer gfx.Close()
+	defer egl.Close()
 
-	fmt.Println("Press any key to exit...")
-	reader := bufio.NewReader(os.Stdin)
-    reader.ReadString('\n')
+	err = egl.BindAPI("OpenVG")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		return
+	}
 
+	fmt.Println(egl)
+
+	if err := egl.Do(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		return
+	}
 }
