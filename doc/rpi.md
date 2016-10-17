@@ -1,95 +1,68 @@
 
-# rpi
+## Appendix: Links
 
-The `rpi` package contains the interface to the Raspberry Pi. As well as
-providing you with information about the Raspberry Pi, you can create 
-GPIO and I2C interfaces.
+Please see the following locations for more information:
 
-## Creating a Raspberry Pi object
+  * [Building Go on your Raspberry Pi](http://dave.cheney.net/2015/09/04/building-go-1-5-on-the-raspberry-pi) to
+    get your Go environment set-up
+  * [How to write Go Code](http://golang.org/doc/code.html) in order to work out how to structure your Go folder
+ 
+## Appendix: Building golang
 
-In order to control the Raspberry Pi, you'll need to create a device object
-as follows:
+In order to get Go working on your Raspberry Pi, you'll need to "bootstrap" it from an existing Go binary, since
+the package is compiled using Go itself. You can use the following command line sequence:
 
-```go
-
-import "gopi/rpi"
-
-func main() {
-  device, err := rpi.New()
-  if err != nil {
-    fmt.Fprintln(os.Stderr, "Error: ", err)
-    os.Exit(-1)
-  }
-  defer device.Close()
-}
 ```
-You can then query the Raspberry Pi for various information, for example:
-
-```go
-  warranty, err := device.WarrantyBit()
-  product, err := device.Product() /* rpi.Product */
-  processor, err := device.Processor() /* rpi.Processor */
-  product_name, err := device.ProductName()
-  processor_name, err := device.ProcessorName()
-  peripheral_base, err := device.PeripheralBase()
-```
-
-Here are the current possible values for Product and Processor:
-
-```go
-	RPI_MODEL_UNKNOWN
-	RPI_MODEL_A
-	RPI_MODEL_B
-	RPI_MODEL_A_PLUS
-	RPI_MODEL_B_PLUS
-	RPI_MODEL_B_PI_2
-	RPI_MODEL_B_PI_3
-	RPI_MODEL_ALPHA
-	RPI_MODEL_COMPUTE_MODULE
-	RPI_MODEL_ZERO
-```
-
-```go
-	RPI_PROCESSOR_UNKNOWN
-	RPI_PROCESSOR_BCM2835
-	RPI_PROCESSOR_BCM2836
-	RPI_PROCESSOR_BCM2837
-```
-
-## Retreiving information from VideoCore
-
-You can retrieve information from the VideoCore using the `VCGenCmd` method
-and some utility functions:
-
-```go
-
-import "gopi/rpi"
-
-func main() {
-  device, err := rpi.New()
-  if err != nil {
-    fmt.Fprintln(os.Stderr, "Error: ", err)
-    os.Exit(-1)
-  }
-  defer device.Close()
+  export GO_ROOT="/opt/go"
   
-  response, err := device.VCGenCmd("otp_dump")
-  fmt.Println(response)
+  # set up the structure
+  install -d ${GO_ROOT}/build
+  cd ${GO_ROOT}/build
+  curl https://storage.googleapis.com/golang/go1.5.src.tar.gz | tar xz
+  ulimit -s 1024
+  export GO_TEST_TIMEOUT_SCALE=10
+  export GOROOT_BOOTSTRAP=${GO_ROOT}/build/go
+  cd ${GOROOT_BOOTSTRAP}/src
+  . ./all.bash
+```
+
+## Appendix: Building ffmpeg
+
+In order to build ffmpeg with libx264 for your Raspberry Pi, you can use the 
+following command line sequence:
+
+```  
+  export FFMPEG_ROOT="/opt/ffmpeg"
+  export PKG_CONFIG_PATH="${FFMPEG_ROOT}/lib/pkgconfig"
   
-}
+  # set up structure
+  sudo install -o $USER -d ${FFMPEG_ROOT}
+  install -d ${FFMPEG_ROOT}/src
+  cd ${FFMPEG_ROOT}/src
+
+  # download sources
+  curl ftp://ftp.videolan.org/pub/videolan/x264/snapshots/last_stable_x264.tar.bz2 | tar xj
+  curl https://ffmpeg.org/releases/ffmpeg-2.8.3.tar.gz | tar xz  
+  export X264_SRC=`ls -r ${FFMPEG_ROOT}/src | grep x264`
+  export FFMPEG_SRC=`ls -r ${FFMPEG_ROOT}/src | grep ffmpeg`
+
+  # build libx264
+  cd ${FFMPEG_ROOT}/src/${X264_SRC}
+  ./configure --host=arm-unknown-linux-gnueabi --enable-static --disable-opencl --extra-cflags="-fPIC" --prefix=${FFMPEG_ROOT}
+  make -j4 && make install
+
+  # build ffmpeg
+  cd ${FFMPEG_ROOT}/src/${FFMPEG_SRC}
+  ./configure --prefix=${FFMPEG_ROOT} --enable-nonfree --enable-gpl --enable-libx264 --enable-static --extra-cflags="-I${FFMPEG_ROOT}/include -fPIC" --extra-ldflags="-L${FFMPEG_ROOT}/lib"
+  make -j4 && make install
+  
 ```
 
-A list of all defined command names can be retrived using the `GetCommands`
-method, which returns an array of command strings. Additional utility functions 
-are defined as convenience methods:
+The resulting binaries and libraries will be under `/opt/ffmpeg` or wherever you
+indicated `${FFMPEG_ROOT}` should be. You'll then need to add the location to
+your `${PATH}` variable:
 
-  * `commands, err := device.GetCommands()`
-  * `temperature, err := device.GetCoreTemperatureCelcius()`
-  * `frequencies, err := device.GetClockFrequencyHertz()`
-  * `volts, err := device.GetVolts()`
-  * `codecs, err := device.GetCodecs()`
-  * `memory_size, err := device.GetMemoryMegabytes()`
-  * `memory, err := device.GetOTP()`
-  * `serial_number, err := device.GetSerial()`
-  * `revision, err := device.GetRevision()`
-  
+```
+  export FFMPEG_ROOT="/opt/ffmpeg"
+  export PATH="${PATH}:${FFMPEG_ROOT}/bin"
+```

@@ -14,6 +14,24 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
+// Size of something
+type EGLSize struct {
+	Width uint
+	Height uint
+}
+
+// Point on the screen (or off the screen)
+type EGLPoint struct {
+	X int
+	Y int
+}
+
+// Frame
+type EGLFrame struct {
+	EGLPoint
+	EGLSize
+}
+
 // Store state for the non-abstract input driver
 type EGLState struct {
 	driver EGLDriver
@@ -39,6 +57,18 @@ type EGLDriver interface {
 	// Return Bound API
 	QueryAPI() (string, error)
 
+	// Return display size
+	GetFrame() *EGLFrame
+
+	// Create Background
+	CreateBackground(api string) (EGLWindow,error)
+
+	// Create Window
+	CreateWindow(api string,origin *EGLPoint,size *EGLSize) (EGLWindow,error)
+
+	// Close window
+	CloseWindow(window EGLWindow) error
+
 	// Close closes the driver and frees the underlying resources
 	Close() error
 
@@ -51,6 +81,11 @@ type EGLDriver interface {
 type EGLConfig interface {
 	// Opens the driver from configuration, or returns error
 	Open() (EGLDriver, error)
+}
+
+// Abstract window
+type EGLWindow interface {
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,6 +141,21 @@ func (this *EGLState) BindAPI(api string) error {
 // Bound API
 func (this *EGLState) QueryAPI() (string, error) {
 	return this.driver.QueryAPI()
+}
+
+// Return size of display
+func (this *EGLState) GetFrame() *EGLFrame {
+	return this.driver.GetFrame()
+}
+
+// Create a window
+func (this *EGLState) CreateWindow(api string,origin *EGLPoint,size *EGLSize) (EGLWindow,error) {
+	return this.driver.CreateWindow(api,origin,size)
+}
+
+// Close a window
+func (this *EGLState) CloseWindow(window EGLWindow) error {
+	return this.driver.CloseWindow(window)
 }
 
 // Do stuff

@@ -14,18 +14,12 @@ package rpi
 */
 import "C"
 
+/*
 import (
 	"fmt"
 	"os"
 	"bufio"
 )
-
-type EGLWindow struct {
-	config EGLConfig
-	context EGLContext
-	surface EGLSurface
-	element *Element
-}
 
 type VGDraw struct {
 	state *EGLState
@@ -196,5 +190,6 @@ func (this *EGLState) Do() error {
 
 	return nil
 }
+*/
 
 

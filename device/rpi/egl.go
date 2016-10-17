@@ -5,6 +5,7 @@
 
 	For Licensing and Usage information, please see LICENSE.md
 */
+
 package rpi
 /*
   #cgo CFLAGS:   -I/opt/vc/include

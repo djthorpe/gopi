@@ -66,6 +66,16 @@ func main() {
 	}
 	defer egl.Close()
 
+	// Create a window
+	window, err := egl.CreateWindow("OpenVG",&khronos.EGLSize{ 100, 100 },&khronos.EGLPoint{})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		return
+	}
+
+	// DO SOMETHING HERE
+
+
 	if err := egl.Do(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
