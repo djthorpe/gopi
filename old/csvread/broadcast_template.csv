@@ -1,8 +1,0 @@
-Title,Description,Custom ID,Keywords,Category ID,Scheduled Start Time,Scheduled End Time or Duration,Stream Name,Privacy,Embedding,DVR,Match Policy,Usage Policy
-Day 1,Day 10-1 RodLaver,001,KEY|WORDS,10,2015-06-22T11:00:00.000+11:00,2 hours,DAGeZQreAXeIqv5U7bwrDQ1401712382553015,private,yes,yes,block,track
-Day 2,Day 10-1 RodLaver,002,KEY|WORDS,10,2015-06-22T11:00:00.000+11:00,,DAGeZQreAXeIqv5U7bwrDQ1401712382553015,unlisted,no,yes,block,track
-Day 3,Day 10-1 RodLaver,003,KEY|WORDS,10,2015-06-22T11:00:00.000+11:00,2 hours,DAGeZQreAXeIqv5U7bwrDQ1401712382553015,public,no,no,track,block
-Day 4,Day 10-1 RodLaver,004,KEY|WORDS,10,2015-06-22T11:00:00.000+11:00,2 hours,DAGeZQreAXeIqv5U7bwrDQ1401712382553015,unlisted,no,no,block,track
-Day 5,Day 10-1 RodLaver,005,KEY|WORDS,10,2015-06-22T11:00:00.000+11:00,2 hours,DAGeZQreAXeIqv5U7bwrDQ1401712382553015,public,yes,yes,track,track
-
-
