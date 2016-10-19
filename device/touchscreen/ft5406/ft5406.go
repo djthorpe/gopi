@@ -8,8 +8,14 @@
 
 // This package implements the concrete interface to the FT5406 device
 // for for Raspberry Pi. The FT5406 is the touchscreen which comes as
-// part of the official Raspberry Pi LCD screen
-package ft5406
+// part of the official Raspberry Pi LCD screen. In order to use it, you
+// need to open the touchscreen using the abstract instance:
+//
+//   touchscreen, err := input.Open(ft5406.Config{ })
+//   if err != nil { ... }
+//   defer touchscreen.Close()
+//
+package ft5406 // import "github.com/djthorpe/gopi/device/touchscreen/ft5406"
 
 // System imports
 import (

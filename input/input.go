@@ -111,9 +111,10 @@ const (
 )
 
 // Constants which define the type of input device. At the moment, only
-// touchscreen is defined
+// touchscreen & mouse
 const (
 	TYPE_TOUCHSCREEN DeviceType = iota
+	TYPE_MOUSE
 )
 
 // Constants which define the type of event.
@@ -230,7 +231,7 @@ func (device *Device) GetPosition() image.Point {
 
 // Processes touch events for touch devices, blocks when there are no
 // events to process. On error, returns
-func (device *Device) ProcessTouchEvents(callback TouchEventCallback) error {
+func (device *Device) ProcessEvents(callback TouchEventCallback) error {
 	if device.GetType() != TYPE_TOUCHSCREEN {
 		return errors.New("Invalid device type in call to ProcessTouchEvents")
 	}
