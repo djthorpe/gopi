@@ -47,12 +47,6 @@ type EGLState struct {
 	display      EGLDisplay
 }
 
-type EGLNativeWindow struct {
-	element ElementHandle
-	width   int
-	height  int
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
@@ -271,6 +265,7 @@ func (this *EGLState) String() string {
 		"vendor="+this.GetVendorString(),
 		"apis="+strings.Join(this.GetSupportedClientAPIs(), ","),
 		"extensions="+strings.Join(this.GetExtensions(), ","),
+		"display_frame="+this.GetFrame().String(),
 	)
 
 	api, err := this.QueryAPI()
@@ -289,6 +284,12 @@ func (this *EGLState) GetError() error {
 		return ErrorUnknown
 	}
 	return err
+}
+
+// Return framesize of the display
+func (this *EGLState) GetFrame() *khronos.EGLFrame {
+	size := this.vc.GetSize()
+	return &khronos.EGLFrame{ khronos.EGLPoint{ }, khronos.EGLSize{ uint(size.Width), uint(size.Height)  } }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -74,10 +74,13 @@ func main() {
 	}
 
 	// DO SOMETHING HERE
-
+	fmt.Println(window)
+/*
 
 	if err := egl.Do(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
 	}
+	*/
+
 }

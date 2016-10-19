@@ -64,16 +64,13 @@ type EGLDriver interface {
 	CreateBackground(api string) (EGLWindow,error)
 
 	// Create Window
-	CreateWindow(api string,origin *EGLPoint,size *EGLSize) (EGLWindow,error)
+	CreateWindow(api string,size *EGLSize,origin *EGLPoint) (EGLWindow,error)
 
 	// Close window
 	CloseWindow(window EGLWindow) error
 
 	// Close closes the driver and frees the underlying resources
 	Close() error
-
-	// Do Stuff
-	Do() error
 }
 
 // Abstract configuration which is used to open and return the
@@ -102,11 +99,6 @@ func Open(config EGLConfig) (EGLDriver, error) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Driver interface
-
-// Provides human-readable version
-func (this *EGLState) String() string {
-	return fmt.Sprintf("<EGLState>{%v}",this.driver)
-}
 
 // Closes the device and frees the resources
 func (this *EGLState) Close() error {
@@ -148,9 +140,14 @@ func (this *EGLState) GetFrame() *EGLFrame {
 	return this.driver.GetFrame()
 }
 
-// Create a window
-func (this *EGLState) CreateWindow(api string,origin *EGLPoint,size *EGLSize) (EGLWindow,error) {
-	return this.driver.CreateWindow(api,origin,size)
+// Create Window
+func (this *EGLState) CreateWindow(api string,size *EGLSize,origin *EGLPoint) (EGLWindow,error) {
+	return this.driver.CreateWindow(api,size,origin)
+}
+
+// Create Background
+func (this *EGLState) CreateBackground(api string) (EGLWindow,error) {
+	return this.driver.CreateBackground(api)
 }
 
 // Close a window
@@ -158,10 +155,23 @@ func (this *EGLState) CloseWindow(window EGLWindow) error {
 	return this.driver.CloseWindow(window)
 }
 
-// Do stuff
-func (this *EGLState) Do() error {
-	return this.driver.Do()
+////////////////////////////////////////////////////////////////////////////////
+// String() methods
+// Size of something
+
+func (this EGLSize) String() string {
+	return fmt.Sprintf("<EGLSize>{%v,%v}",this.Width,this.Height)
 }
 
+func (this EGLPoint) String() string {
+	return fmt.Sprintf("<EGLPoint>{%v,%v}",this.X,this.Y)
+}
 
+func (this EGLFrame) String() string {
+	return fmt.Sprintf("<EGLFrame>{%v,%v}",this.EGLPoint,this.EGLSize)
+}
+
+func (this *EGLState) String() string {
+	return fmt.Sprintf("<EGLState>{%v}",this.driver)
+}
 
