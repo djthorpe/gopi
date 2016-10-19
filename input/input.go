@@ -232,7 +232,7 @@ func (device *Device) GetPosition() image.Point {
 // Processes touch events for touch devices, blocks when there are no
 // events to process. On error, returns
 func (device *Device) ProcessEvents(callback TouchEventCallback) error {
-	if device.GetType() != TYPE_TOUCHSCREEN {
+	if device.GetType() != TYPE_TOUCHSCREEN && device.GetType() != TYPE_MOUSE {
 		return errors.New("Invalid device type in call to ProcessTouchEvents")
 	}
 	err := device.waitForEvents(func(event syscall.EpollEvent) error {
@@ -245,6 +245,7 @@ func (device *Device) ProcessEvents(callback TouchEventCallback) error {
 			if err != nil {
 				return err
 			}
+			fmt.Println(event)
 			err = device.processRawTouchEvent(&event,callback)
 			if err != nil {
 				return err
