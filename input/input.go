@@ -83,7 +83,7 @@ type TouchEvent struct {
 }
 
 // Event callback
-type TouchEventCallback func(*Device, *TouchEvent)
+type EventCallback func(*Device, *TouchEvent)
 
 // Type of input device
 type DeviceType int
@@ -231,9 +231,9 @@ func (device *Device) GetPosition() image.Point {
 
 // Processes touch events for touch devices, blocks when there are no
 // events to process. On error, returns
-func (device *Device) ProcessEvents(callback TouchEventCallback) error {
+func (device *Device) ProcessEvents(callback EventCallback) error {
 	if device.GetType() != TYPE_TOUCHSCREEN && device.GetType() != TYPE_MOUSE {
-		return errors.New("Invalid device type in call to ProcessTouchEvents")
+		return errors.New("Invalid device type in call to ProcessEvents")
 	}
 	err := device.waitForEvents(func(event syscall.EpollEvent) error {
 		for {
@@ -245,8 +245,7 @@ func (device *Device) ProcessEvents(callback TouchEventCallback) error {
 			if err != nil {
 				return err
 			}
-			fmt.Println(event)
-			err = device.processRawTouchEvent(&event,callback)
+			err = device.processRawEvent(&event,callback)
 			if err != nil {
 				return err
 			}
@@ -280,9 +279,16 @@ func (device *Device) waitForEvents(callback processEventsCallback) error {
 	return nil
 }
 
-func (device *Device) processRawTouchEvent(event *rawEvent,callback TouchEventCallback) error {
+func (event rawEvent) String() string {
+	ts := time.Duration(time.Duration(event.Second) * time.Second + time.Duration(event.Microsecond) * time.Microsecond)
+	return fmt.Sprintf("<rawEvent>{ ts=%v type=%X code=%x value=%v }",ts,event.Type,event.Code,event.Value)
+}
+
+func (device *Device) processRawEvent(event *rawEvent,callback EventCallback) error {
 	// Calculate timestamp
 	ts := time.Duration(time.Duration(event.Second) * time.Second + time.Duration(event.Microsecond) * time.Microsecond)
+
+	fmt.Println(event)
 
 	// Parse raw event data
 	switch {
