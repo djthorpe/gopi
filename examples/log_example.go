@@ -27,8 +27,6 @@ func Function(log *util.LoggerDevice) {
 	}
 }
 
-
-
 func main() {
 	logger, err := util.Logger(util.StderrLogger{ })
 	if err != nil {
