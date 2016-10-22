@@ -6,6 +6,7 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 package rpi
+
 /*
   #cgo CFLAGS:   -I/opt/vc/include
   #cgo LDFLAGS:  -L/opt/vc/lib -lEGL -lGLESv2
@@ -191,5 +192,3 @@ func (this *EGLState) Do() error {
 	return nil
 }
 */
-
-

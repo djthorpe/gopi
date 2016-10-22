@@ -7,11 +7,12 @@
 */
 
 // This package provides utility functions such as logging
-package util /* import "github.com/gopi/util" */
+package util /* import "github.com/djthorpe/gopi/util" */
 
 import (
 	"fmt"
 	"os"
+	"errors"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,13 +141,6 @@ func (this* LoggerDevice) Debug2(format string,v... interface{}) {
 	}
 }
 
-func (this* LoggerDevice) Error(format string,v... interface{}) {
-	message := fmt.Sprintf(format,v...)
-	if this.level <= LOG_ERROR || this.level==LOG_ANY {
-		this.driver.Log(LOG_ERROR,message)
-	}
-}
-
 func (this* LoggerDevice) Warn(format string,v... interface{}) {
 	message := fmt.Sprintf(format,v...)
 	if this.level <= LOG_WARN || this.level==LOG_ANY {
@@ -154,11 +148,20 @@ func (this* LoggerDevice) Warn(format string,v... interface{}) {
 	}
 }
 
-func (this* LoggerDevice) Fatal(format string,v... interface{}) {
+func (this* LoggerDevice) Error(format string,v... interface{}) error {
+	message := fmt.Sprintf(format,v...)
+	if this.level <= LOG_ERROR || this.level==LOG_ANY {
+		this.driver.Log(LOG_ERROR,message)
+	}
+	return errors.New(message)
+}
+
+func (this* LoggerDevice) Fatal(format string,v... interface{})  error {
 	message := fmt.Sprintf(format,v...)
 	if this.level <= LOG_FATAL || this.level==LOG_ANY {
 		this.driver.Log(LOG_FATAL,message)
 	}
+	return errors.New(message)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

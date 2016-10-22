@@ -7,6 +7,7 @@
 */
 
 package rpi
+
 /*
   #cgo CFLAGS:   -I/opt/vc/include
   #cgo LDFLAGS:  -L/opt/vc/lib -lEGL -lGLESv2
@@ -27,9 +28,9 @@ import (
 // TYPES
 
 type eglWindow struct {
-	config EGLConfig
+	config  EGLConfig
 	context EGLContext
-	surface EGLSurface	
+	surface EGLSurface
 	element *Element
 }
 
@@ -43,17 +44,17 @@ type eglNativeWindow struct {
 // PUBLIC METHODS
 
 // Create a window
-func (this *EGLState) CreateWindow(api string,size *khronos.EGLSize,origin *khronos.EGLPoint) (khronos.EGLWindow,error) {
+func (this *EGLState) CreateWindow(api string, size *khronos.EGLSize, origin *khronos.EGLPoint) (khronos.EGLWindow, error) {
 	window := new(eglWindow)
 
-	return window,errors.New("CreateWindow: NOT IMPLEMENTED")
+	return window, errors.New("CreateWindow: NOT IMPLEMENTED")
 }
 
 // Create Background
-func (this *EGLState) CreateBackground(api string) (khronos.EGLWindow,error) {
+func (this *EGLState) CreateBackground(api string) (khronos.EGLWindow, error) {
 	window := new(eglWindow)
 
-	return window,errors.New("CreateBackground: NOT IMPLEMENTED")
+	return window, errors.New("CreateBackground: NOT IMPLEMENTED")
 }
 
 // Close a window
@@ -111,4 +112,3 @@ func (this *EGLState) createWindow()
 	// Success
 	return window,nil
 */
-

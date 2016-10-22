@@ -7,6 +7,7 @@
 */
 
 package rpi
+
 /*
   #cgo CFLAGS:   -I/opt/vc/include
   #cgo LDFLAGS:  -L/opt/vc/lib -lEGL -lGLESv2
@@ -176,7 +177,7 @@ var (
 
 // Initialise the EGL interface
 func (config EGL) Open() (khronos.EGLDriver, error) {
-	this := &EGLState{vc: config.VideoCore }
+	this := &EGLState{vc: config.VideoCore}
 
 	// Get EGL Display
 	this.display = EGLDisplay(unsafe.Pointer(C.eglGetDisplay(EGL_DEFAULT_DISPLAY)))
@@ -286,7 +287,7 @@ func (this *EGLState) GetError() error {
 // Return framesize of the display
 func (this *EGLState) GetFrame() *khronos.EGLFrame {
 	size := this.vc.GetSize()
-	return &khronos.EGLFrame{ khronos.EGLPoint{ }, khronos.EGLSize{ uint(size.Width), uint(size.Height)  } }
+	return &khronos.EGLFrame{khronos.EGLPoint{}, khronos.EGLSize{uint(size.Width), uint(size.Height)}}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -389,10 +390,9 @@ func (this *EGLState) attachContextToSurface(context EGLContext, surface EGLSurf
 
 // Swap buffer
 func (this *EGLState) swapBuffer(surface EGLSurface) error {
-	result := C.eglSwapBuffers(this.display, surface);
+	result := C.eglSwapBuffers(this.display, surface)
 	if result == C.EGLBoolean(EGL_FALSE) {
 		return this.GetError()
 	}
 	return nil
 }
-
