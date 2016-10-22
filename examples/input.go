@@ -27,7 +27,7 @@ import (
 
 var (
 	flagTouchscreen = flag.Bool("touchscreen",false,"Bind input to touchscreen")
-	flagMouse = flag.Bool("mouse",false,"Bind input to touchscreen")
+	flagMouse = flag.String("mouse","","Mouse device name")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,7 +35,7 @@ var (
 func main() {
 	flag.Parse()
 
-	if *flagTouchscreen == *flagMouse {
+	if *flagTouchscreen == (*flagMouse != "") {
 		fmt.Println("Invalid: use either -touchscreen or -mouse")
 		os.Exit(-1)
 	}
@@ -44,8 +44,8 @@ func main() {
 	var err error
 	if *flagTouchscreen {
 		device, err = input.Open(ft5406.Config{})
-	} else if *flagMouse {
-		device, err = input.Open(mouse.Config{})
+	} else if *flagMouse != "" {
+		device, err = input.Open(mouse.Config{ *flagMouse })
 	}
 	if err != nil {
 		fmt.Println("Error: ",err)

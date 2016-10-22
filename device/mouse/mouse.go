@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"fmt"
 )
 
 // Local imports
@@ -35,7 +36,9 @@ import (
 
 // The configuration options for the mouse. Basically, there are no
 // configuration options for this device.
-type Config struct { }
+type Config struct {
+	Name string
+}
 
 // The driver state
 type Driver struct {
@@ -58,7 +61,7 @@ func (config Config) Open() (input.Driver, error) {
 	var err error
 
 	driver := new(Driver)
-	driver.name, driver.device, err = getDeviceNameAndPath()
+	driver.name, driver.device, err = getDeviceNameAndPath(&config)
 	if err != nil {
 		return nil, err
 	}
@@ -95,11 +98,14 @@ func (this *Driver) GetSlots() uint {
 	return 0
 }
 
+func (this *Driver) String() string {
+	return fmt.Sprintf("<device.Mouse>{ device=%v }",this.device)
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Private Methods
 
-func getDeviceNameAndPath() (string, string, error) {
+func getDeviceNameAndPath(config *Config) (string, string, error) {
 	files, err := filepath.Glob(PATH_INPUT_DEVICES)
 	if err != nil {
 		return "", "", err
@@ -109,7 +115,7 @@ func getDeviceNameAndPath() (string, string, error) {
 		if err != nil {
 			continue
 		}
-		if path.Base(file) == "event1" { // TODO
+		if path.Base(file) == config.Name {
 			return strings.TrimSpace(string(buf)), path.Join("/", "dev", "input", path.Base(file)), nil
 		}
 	}

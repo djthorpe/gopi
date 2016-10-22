@@ -24,13 +24,14 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 )
 
 // Local imports
 import (
-	"../../../input" /* Absolute: github.com/djthorpe/gopi/input */
+	"../../../input" /* import "github.com/djthorpe/gopi/input" */
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,6 +103,10 @@ func (this *Driver) GetFd() *os.File {
 
 func (this *Driver) GetSlots() uint {
 	return MAX_SLOTS
+}
+
+func (this *Driver) String() string {
+	return fmt.Sprintf("<device.touchscreen.ft5406>{ device=%v }",this.device)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
