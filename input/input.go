@@ -22,10 +22,8 @@ import (
 	"errors"
 	"syscall"
 	"encoding/binary"
-)
-
-import (
 	"fmt"
+	"strings"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,7 +37,7 @@ type Device struct {
 	position image.Point
 	last_position image.Point
 	slot uint32
-	slots []*TouchEvent
+	slots []*InputEvent
 }
 
 // Abstract configuration which is used to open and return the
@@ -67,29 +65,27 @@ type Driver interface {
 	Close() error
 }
 
-// Event
-type Event struct {
+// Type of input device
+type DeviceType int
+type EventType int
+type KeyType uint16
+
+// InputEvent structure
+type InputEvent struct {
 	Timestamp  time.Duration
 	Type       EventType
-}
-
-// TouchEvent
-type TouchEvent struct {
-	Event
 	Identifier int
 	Slot       uint32
 	Point      image.Point
 	LastPoint  image.Point
+	KeyCode    KeyType
 }
 
 // Event callback
-type EventCallback func(*Device, *TouchEvent)
-
-// Type of input device
-type DeviceType int
-type EventType int
+type EventCallback func(*Device, *InputEvent)
 
 // Non-exported raw event data structure sent over the wire
+// See /usr/include/linux/input.h input_event
 type rawEvent struct {
 	Second      uint32
 	Microsecond uint32
@@ -132,18 +128,28 @@ const (
 // See https://www.kernel.org/doc/Documentation/input/event-codes.txt for
 // more information
 const (
-	EV_SYN uint16 = 0x0000 // SYNC
+	EV_SYN uint16 = 0x0000 // SYN
 	EV_KEY uint16 = 0x0001 // KEY PRESS
+	EV_REL uint16 = 0x0002 // RELATIVE AXIS VALUE CHANGE
 	EV_ABS uint16 = 0x0003 // ABSOLUTE AXIS VALUE CHANGE
 )
 
-// Button touch, press, release (when EV_KEY code)
+// Touch actions (when EV_KEY code)
 // See https://www.kernel.org/doc/Documentation/input/event-codes.txt for
 // more information
 const (
-	BTN_TOUCH         uint16 = 0x014A
 	BTN_TOUCH_RELEASE uint32 = 0x00000000
 	BTN_TOUCH_PRESS   uint32 = 0x00000001
+)
+
+// Key codes (when EV_KEY code)
+// See https://www.kernel.org/doc/Documentation/input/event-codes.txt for
+// more information
+const (
+	BTN_TOUCH         KeyType = 0x014A
+	BTN_LEFT          KeyType = 0x0110
+	BTN_RIGHT         KeyType = 0x0111
+	BTN_MIDDLE        KeyType = 0x0112
 )
 
 // Multi-Touch Types
@@ -196,9 +202,9 @@ func Open(config Config) (*Device, error) {
 	if num_slots > 0 {
 		// set slot to zero, create the slots, set slot values
 		device.slot = 0
-		device.slots = make([]*TouchEvent, driver.GetSlots())
+		device.slots = make([]*InputEvent, driver.GetSlots())
 		for i, _ := range device.slots {
-			device.slots[i] = &TouchEvent{ Slot: uint32(i) }
+			device.slots[i] = &InputEvent{ Slot: uint32(i) }
 		}
 	}
 
@@ -224,9 +230,14 @@ func (device *Device) GetType() DeviceType {
 	return device.driver.GetType()
 }
 
-// Gets the mouse or touchscreen position
+// Get absolute position of the device
 func (device *Device) GetPosition() image.Point {
 	return device.position
+}
+
+// Set absolute position of the device
+func (device *Device) SetPosition(pt image.Point) {
+	device.position = pt
 }
 
 // Processes touch events for touch devices, blocks when there are no
@@ -255,6 +266,68 @@ func (device *Device) ProcessEvents(callback EventCallback) error {
 	return err
 }
 
+// Return human-readable information about the device
+func (device *Device) String() string {
+	return fmt.Sprintf("<input.Device>{name=%v type=%v position=%v num_slots=%v driver=%v}",device.GetName(),device.GetType(),device.GetPosition(),device.slot,device.driver)
+}
+
+// Return human-readable event type
+func (t EventType) String() string {
+	switch(t) {
+	case EVENT_BTN_PRESS:
+		return "EVENT_BTN_PRESS"
+	case EVENT_BTN_RELEASE:
+		return "EVENT_BTN_RELEASE"
+	case EVENT_MOVE:
+		return "EVENT_MOVE"
+	case EVENT_SLOT_PRESS:
+		return "EVENT_SLOT_PRESS"
+	case EVENT_SLOT_RELEASE:
+		return "EVENT_SLOT_RELEASE"
+	case EVENT_SLOT_MOVE:
+		return "EVENT_SLOT_MOVE"
+	default:
+		return "EVENT_UNKNOWN"
+	}
+}
+
+// Return human-readable key type
+func (t KeyType) String() string {
+	switch(t) {
+	case BTN_TOUCH:
+		return "BTN_TOUCH"
+	case BTN_LEFT:
+		return "BTN_LEFT"
+	case BTN_RIGHT:
+		return "BTN_RIGHT"
+	case BTN_MIDDLE:
+		return "BTN_MIDDLE"
+	default:
+		return "KEY_UNKNOWN"
+	}
+}
+
+
+// Return human-readable information about the input event
+func (event *InputEvent) String() string {
+	parts := make([]string,2)
+	parts[0] = fmt.Sprintf("ts=%v",event.Timestamp)
+	parts[1] = fmt.Sprintf("type=%v",event.Type)
+	if event.Type==EVENT_SLOT_MOVE || event.Type==EVENT_SLOT_PRESS || event.Type==EVENT_SLOT_RELEASE {
+		parts = append(parts,fmt.Sprintf("slot=%v",event.Slot))
+		parts = append(parts,fmt.Sprintf("id=%v",event.Identifier))
+	}
+	if event.Type==EVENT_MOVE || event.Type==EVENT_SLOT_MOVE {
+		parts = append(parts,fmt.Sprintf("%v->%v",event.LastPoint,event.Point))
+	} else if event.Type==EVENT_SLOT_MOVE {
+		parts = append(parts,fmt.Sprintf("%v",event.Point))
+	} else if event.Type==EVENT_BTN_PRESS || event.Type==EVENT_BTN_RELEASE || event.Type==EVENT_SLOT_PRESS || event.Type==EVENT_SLOT_RELEASE {
+		parts = append(parts,fmt.Sprintf("keycode=%v",event.KeyCode))
+	}
+
+	return fmt.Sprintf("<input.InputEvent>{%s}",strings.Join(parts," "))
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Private Device methods
 
@@ -279,16 +352,9 @@ func (device *Device) waitForEvents(callback processEventsCallback) error {
 	return nil
 }
 
-func (event rawEvent) String() string {
-	ts := time.Duration(time.Duration(event.Second) * time.Second + time.Duration(event.Microsecond) * time.Microsecond)
-	return fmt.Sprintf("<rawEvent>{ ts=%v type=%X code=%x value=%v }",ts,event.Type,event.Code,event.Value)
-}
-
 func (device *Device) processRawEvent(event *rawEvent,callback EventCallback) error {
 	// Calculate timestamp
 	ts := time.Duration(time.Duration(event.Second) * time.Second + time.Duration(event.Microsecond) * time.Microsecond)
-
-	fmt.Println(event)
 
 	// Parse raw event data
 	switch {
@@ -296,7 +362,7 @@ func (device *Device) processRawEvent(event *rawEvent,callback EventCallback) er
 
 		// Fire EVENT_MOVE
 		if device.position.Eq(device.last_position) == false {
-			callback(device,&TouchEvent{ Event{ Timestamp: ts, Type: EVENT_MOVE }, 0, 0, device.position, device.last_position })
+			callback(device,&InputEvent{ ts, EVENT_MOVE, 0, 0, device.position, device.last_position, 0 })
 		}
 		device.last_position = device.position
 
@@ -325,11 +391,23 @@ func (device *Device) processRawEvent(event *rawEvent,callback EventCallback) er
 		e.LastPoint = e.Point
 
 		return nil
-	case event.Type == EV_KEY && event.Code == BTN_TOUCH && event.Value == BTN_TOUCH_PRESS:
-		callback(device,&TouchEvent{ Event{ Timestamp: ts, Type: EVENT_BTN_PRESS }, 0, 0, device.position, image.ZP })
+	case event.Type == EV_KEY && KeyType(event.Code) == BTN_TOUCH && event.Value == BTN_TOUCH_PRESS:
+		callback(device,&InputEvent{ ts, EVENT_BTN_PRESS, 0, 0, device.position, image.ZP, KeyType(event.Code) })
 		return nil
-	case event.Type == EV_KEY && event.Code == BTN_TOUCH && event.Value == BTN_TOUCH_RELEASE:
-		callback(device,&TouchEvent{ Event{ Timestamp: ts, Type: EVENT_BTN_RELEASE }, 0, 0, device.position, image.ZP })
+	case event.Type == EV_KEY && KeyType(event.Code) == BTN_TOUCH && event.Value == BTN_TOUCH_RELEASE:
+		callback(device,&InputEvent{ ts, EVENT_BTN_RELEASE, 0, 0, device.position, image.ZP, KeyType(event.Code) })
+		return nil
+	case event.Type == EV_KEY && event.Value == BTN_TOUCH_PRESS:
+		callback(device,&InputEvent{ ts, EVENT_BTN_PRESS, 0, 0, device.position, image.ZP, KeyType(event.Code) })
+		return nil
+	case event.Type == EV_KEY && event.Value == BTN_TOUCH_RELEASE:
+		callback(device,&InputEvent{ ts, EVENT_BTN_RELEASE, 0, 0, device.position, image.ZP, KeyType(event.Code) })
+		return nil
+	case event.Type == EV_REL && event.Code == ABS_X:
+		device.position.X = device.position.X + int(int16(event.Value))
+		return nil
+	case event.Type == EV_REL && event.Code == ABS_Y:
+		device.position.Y = device.position.Y + int(int16(event.Value))
 		return nil
 	case event.Type == EV_ABS && event.Code == ABS_X:
 		device.position.X = int(event.Value)
@@ -354,6 +432,7 @@ func (device *Device) processRawEvent(event *rawEvent,callback EventCallback) er
 		id := int(int16(event.Value))
 		if id == -1 {
 			device.slots[device.slot].Type = EVENT_SLOT_RELEASE
+			device.slots[device.slot].KeyCode = BTN_TOUCH
 		} else {
 			device.slots[device.slot].Identifier = id
 		}
@@ -362,7 +441,10 @@ func (device *Device) processRawEvent(event *rawEvent,callback EventCallback) er
 	return errors.New(fmt.Sprintf("Invalid event with type: %v", event.Type))
 }
 
-
-
+// Return human-readable version of the input device
+func (event rawEvent) String() string {
+	ts := time.Duration(time.Duration(event.Second) * time.Second + time.Duration(event.Microsecond) * time.Microsecond)
+	return fmt.Sprintf("<rawEvent>{ ts=%v type=%X code=%x value=%v }",ts,event.Type,event.Code,event.Value)
+}
 
 

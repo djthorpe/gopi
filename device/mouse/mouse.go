@@ -47,7 +47,7 @@ type Driver struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	PATH_INPUT_DEVICES   = "/sys/class/input/mouse*"
+	PATH_INPUT_DEVICES   = "/sys/class/input/event*"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +109,7 @@ func getDeviceNameAndPath() (string, string, error) {
 		if err != nil {
 			continue
 		}
-		if path.Base(file) == "mouse0" { // TODO
+		if path.Base(file) == "event1" { // TODO
 			return strings.TrimSpace(string(buf)), path.Join("/", "dev", "input", path.Base(file)), nil
 		}
 	}

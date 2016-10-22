@@ -53,29 +53,10 @@ func main() {
 	}
 	defer device.Close()
 
-	fmt.Println("Device:",device.GetName())
+	fmt.Println("Device:",device)
 
-	err = device.ProcessEvents(func(dev *input.Device, evt *input.TouchEvent) {
-		switch {
-		case evt.Type==input.EVENT_BTN_PRESS:
-			//fmt.Println("PRESS:")
-			break
-		case evt.Type==input.EVENT_BTN_RELEASE:
-			//fmt.Println("RELEASE:")
-			break
-		case evt.Type==input.EVENT_MOVE:
-			//fmt.Println("MOVE:",evt.LastPoint,"->",evt.Point)
-			break
-		case evt.Type==input.EVENT_SLOT_MOVE:
-			fmt.Println("SLOT MOVE:",evt.Slot,evt.LastPoint,"->",evt.Point)
-			break
-		case evt.Type==input.EVENT_SLOT_PRESS:
-			fmt.Println("SLOT PRESS:",evt.Slot,evt.Point)
-			break
-		case evt.Type==input.EVENT_SLOT_RELEASE:
-			fmt.Println("SLOT RELEASE:",evt.Slot,evt.Point)
-			break
-		}
+	err = device.ProcessEvents(func(dev *input.Device, evt *input.InputEvent) {
+		fmt.Println(evt)
 	})
 	if err != nil {
 		fmt.Println("Error: ",err)
