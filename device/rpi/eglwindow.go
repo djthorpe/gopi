@@ -64,6 +64,7 @@ func (this *EGLState) CloseWindow(window khronos.EGLWindow) error {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
+/*
 func (this *EGLState) createWindow()
 	var err error
 
@@ -109,4 +110,5 @@ func (this *EGLState) createWindow()
 
 	// Success
 	return window,nil
+*/
 

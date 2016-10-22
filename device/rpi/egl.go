@@ -25,7 +25,6 @@ import (
 
 import (
 	khronos "../../khronos"
-	util "../../util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,13 +36,11 @@ type EGLConfig uintptr
 
 type EGL struct {
 	VideoCore *VideoCore
-	Logger    util.Logger
 }
 
 type EGLState struct {
 	major, minor int
 	vc           *VideoCore
-	logger       util.Logger
 	display      EGLDisplay
 }
 
@@ -179,7 +176,7 @@ var (
 
 // Initialise the EGL interface
 func (config EGL) Open() (khronos.EGLDriver, error) {
-	this := &EGLState{vc: config.VideoCore, logger: config.Logger}
+	this := &EGLState{vc: config.VideoCore }
 
 	// Get EGL Display
 	this.display = EGLDisplay(unsafe.Pointer(C.eglGetDisplay(EGL_DEFAULT_DISPLAY)))
@@ -363,7 +360,7 @@ func (this *EGLState) destroyContext(context EGLContext) error {
 }
 
 // Create surface
-func (this *EGLState) createSurface(config EGLConfig, window *EGLNativeWindow) (EGLSurface, error) {
+func (this *EGLState) createSurface(config EGLConfig, window *eglNativeWindow) (EGLSurface, error) {
 	// Create EGL window surface given a native window
 	surface := EGLSurface(C.eglCreateWindowSurface(this.display, C.EGLConfig(config), (*C.EGLNativeWindowType)(unsafe.Pointer(window)), nil))
 	if surface == EGL_NO_SURFACE {
