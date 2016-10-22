@@ -43,7 +43,7 @@ func main() {
 	var device *input.Device
 	var err error
 	if *flagTouchscreen {
-		device, err = input.Open(ft5406.Config{})
+		device, err = input.Open(ft5406.Config{ /* no configuration */ })
 	} else if *flagMouse != "" {
 		device, err = input.Open(mouse.Config{ *flagMouse })
 	}
