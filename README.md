@@ -78,6 +78,15 @@ The examples demonstrate various features of the `gopi` package. For example:
   * `log_example.go` Demonstates how to write your own logger class. In this case
       it logs to a file rather than to the console.
 
+# What's Next?
+
+Read the remaining documentation on the various functions of `gopi`. To read
+about getting general information about your device, read [DEVICE](doc/DEVICE.md).
+To read about input devices, read [INPUT](doc/INPUT.md). To read about opening
+displays, creating windows and resources, read [DX](doc/DX.md). To use OpenVG
+which provides you with Vector Graphics operations, read [OpenVG](doc/OpenVG.md).
+To use the GPIO peripheral port, read [GPIO](doc/GPIO.md).
+
 # License
 
 This repository is released under the BSD License. Please see the file
