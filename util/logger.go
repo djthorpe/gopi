@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"errors"
+	"strings"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,14 +43,24 @@ type LoggerInterface interface {
 	Close() error
 }
 
-// Concrete Stderr Logger Configuration
+// Concrete StderrLogger Configuration
 type StderrLogger struct {
 
 }
 
-// Concrete Stderr Logger Device
+// Concrete StderrLogger Device
 type StderrLoggerDevice struct {
 	device *os.File
+}
+
+// Concrete NullLogger Configuration
+type NullLogger struct {
+
+}
+
+// Concrete NullLogger Device
+type NullLoggerDevice struct {
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,6 +73,7 @@ const (
 	LOG_WARN
 	LOG_ERROR
 	LOG_FATAL
+	LOG_NONE
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,19 +114,53 @@ func (l LogLevel) String() string {
 	case LOG_FATAL:
 		return "FATAL"
 	default:
-		return "OTHER"
+		return "[Invalid LogLevel value]"
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get and set level
 
+// Get logging level
 func (this* LoggerDevice) GetLevel() LogLevel {
 	return this.level
 }
 
+// Set logging level from a LogLevel parameter
 func (this* LoggerDevice) SetLevel(level LogLevel) {
 	this.level = level
+}
+
+// Set logging level from a string parameter. Will return
+// an error if the string could not be parsed
+func (this* LoggerDevice) SetLevelFromString(level string) error {
+	switch(strings.ToLower(strings.TrimSpace(level))) {
+	case "debug2":
+		this.SetLevel(LOG_DEBUG2)
+		return nil
+	case "debug":
+		this.SetLevel(LOG_DEBUG)
+		return nil
+	case "info":
+		this.SetLevel(LOG_INFO)
+		return nil
+	case "warn", "warning":
+		this.SetLevel(LOG_WARN)
+		return nil
+	case "error", "err":
+		this.SetLevel(LOG_ERROR)
+		return nil
+	case "fatal":
+		this.SetLevel(LOG_FATAL)
+		return nil
+	case "any":
+		this.SetLevel(LOG_ANY)
+		return nil
+	case "none":
+		this.SetLevel(LOG_NONE)
+		return nil
+	}
+	return errors.New("Invalid level")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,9 +211,9 @@ func (this* LoggerDevice) Fatal(format string,v... interface{})  error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Stderr Open and Close logger
+// Stderr logger
 
-// Initialise the EGL interface
+// Initialise the logger
 func (config StderrLogger) Open() (LoggerInterface, error) {
 	this := new(StderrLoggerDevice)
 	this.device = os.Stderr
@@ -179,12 +225,27 @@ func (this *StderrLoggerDevice) Close() error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Output
-
 func (this *StderrLoggerDevice) Log(level LogLevel,message string) {
 	fmt.Fprintf(this.device,"[%v] %v\n",level,message)
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Null logger
+
+// Initialise the logger
+func (config NullLogger) Open() (LoggerInterface, error) {
+	return new(NullLoggerDevice), nil
+}
+
+// Close logger
+func (this *NullLoggerDevice) Close() error {
+	return nil
+}
+
+func (this *NullLoggerDevice) Log(level LogLevel,message string) {
+	// Do nothing in the Null Logger
+}
+
 
 
 

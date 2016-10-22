@@ -85,6 +85,12 @@ type DisplayConfig interface {
 
 // Open a driver - opens the concrete version given the config method
 func Open(config DeviceConfig,log *util.LoggerDevice) (HardwareDriver, error) {
+	if log==nil {
+		log, err := util.Logger(util.NullLogger{ })
+		if err != nil {
+			return nil, err
+		}
+	}
 	driver, err := config.Open(log)
 	if err != nil {
 		return nil, err

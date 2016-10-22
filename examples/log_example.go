@@ -17,7 +17,15 @@
 package main
 
 import (
+	"flag"
+)
+
+import (
 	"../util"
+)
+
+var (
+	flagLevel = flag.String("log","ANY","Logging level. Use ANY, NONE, FATAL, ERROR, WARN, INFO, DEBUG2, DEBUG")
 )
 
 func Function(log *util.LoggerDevice) {
@@ -28,11 +36,15 @@ func Function(log *util.LoggerDevice) {
 }
 
 func main() {
+	flag.Parse()
+
 	logger, err := util.Logger(util.StderrLogger{ })
 	if err != nil {
 		panic("Cannot open logger")
 	}
-	logger.SetLevel(util.LOG_ANY)
+	if err := logger.SetLevelFromString(*flagLevel); err != nil {
+		panic(err)
+	}
 
 	logger.Info("Hello, %v","World")
 	logger.Debug("Hello, again!")
