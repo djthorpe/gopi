@@ -60,13 +60,13 @@ type EGLDriver interface {
 	QueryAPI() (string, error)
 
 	// Return display size
-	GetFrame() *EGLFrame
+	GetFrame() EGLFrame
 
 	// Create Background
 	CreateBackground(api string) (EGLWindow,error)
 
 	// Create Window
-	CreateWindow(api string,size *EGLSize,origin *EGLPoint) (EGLWindow,error)
+	CreateWindow(api string,size EGLSize,origin EGLPoint,layer uint16) (EGLWindow,error)
 
 	// Close window
 	CloseWindow(window EGLWindow) error
@@ -78,61 +78,7 @@ type EGLWindow interface {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Driver interface
-
-// Return EGL version number
-func (this *gopi.State) GetVersion() (int, int) {
-	return this.driver.GetVersion()
-}
-
-// Return Vendor information
-func (this *gopi.State) GetVendorString() string {
-	return this.driver.GetVendorString()
-}
-
-// Return Extension information
-func (this *gopi.State) GetExtensions() []string {
-	return this.driver.GetExtensions()
-}
-
-// Return Client API information
-func (this *gopi.State) GetSupportedClientAPIs() []string {
-	return this.driver.GetSupportedClientAPIs()
-}
-
-// Bind to an API
-func (this *gopi.State) BindAPI(api string) error {
-	return this.driver.BindAPI(api)
-}
-
-// Bound API
-func (this *gopi.State) QueryAPI() (string, error) {
-	return this.driver.QueryAPI()
-}
-
-// Return size of display
-func (this *gopi.State) GetFrame() *EGLFrame {
-	return this.driver.GetFrame()
-}
-
-// Create Window
-func (this *gopi.State) CreateWindow(api string,size *EGLSize,origin *EGLPoint) (EGLWindow,error) {
-	return this.driver.CreateWindow(api,size,origin)
-}
-
-// Create Background
-func (this *gopi.State) CreateBackground(api string) (EGLWindow,error) {
-	return this.driver.CreateBackground(api)
-}
-
-// Close a window
-func (this *gopi.State) CloseWindow(window EGLWindow) error {
-	return this.driver.CloseWindow(window)
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // String() methods
-// Size of something
 
 func (this EGLSize) String() string {
 	return fmt.Sprintf("<EGLSize>{%v,%v}",this.Width,this.Height)
@@ -144,9 +90,5 @@ func (this EGLPoint) String() string {
 
 func (this EGLFrame) String() string {
 	return fmt.Sprintf("<EGLFrame>{%v,%v}",this.EGLPoint,this.EGLSize)
-}
-
-func (this *EGLState) String() string {
-	return fmt.Sprintf("<EGLState>{%v}",this.driver)
 }
 

@@ -94,15 +94,20 @@ func NewApp(config AppConfig) (*App, error) {
 	this.Device = device.(gopi.HardwareDriver)
 
 	// Open the display
-	this.Display, err = this.Device.Display(rpi.DXDisplayConfig{ config.Display })
+	display, err := gopi.Open(rpi.DXDisplayConfig{
+		Device: this.Device,
+		Display: config.Display,
+	},this.Logger)
 	if err != nil {
 		this.Device.Close()
 		this.Logger.Close()
 		return nil, err
 	}
+	// Convert device into a DisplayDriver
+	this.Display = display.(gopi.DisplayDriver)
 
 	// Create the EGL interface
-	egl, err := khronos.Open(rpi.EGL{ Display: this.Display },this.Logger)
+	egl, err := gopi.Open(rpi.EGL{ Display: this.Display },this.Logger)
 	if err != nil {
 		this.Display.Close()
 		this.Device.Close()
@@ -112,7 +117,7 @@ func NewApp(config AppConfig) (*App, error) {
 	// Convert device into a EGLDriver
 	this.EGL = egl.(khronos.EGLDriver)
 
-	this.Logger.Debug("<App> Open")
+	this.Logger.Debug("<App>Open")
 
 	// success
 	return this, nil
@@ -120,7 +125,7 @@ func NewApp(config AppConfig) (*App, error) {
 
 // Close the application
 func (this *App) Close() error {
-	this.Logger.Debug("<App> Close")
+	this.Logger.Debug("<App>Close")
 
 	if this.EGL != nil {
 		if err := this.EGL.Close(); err != nil {
@@ -147,7 +152,7 @@ func (this *App) Close() error {
 
 // Run the application with callback
 func (this *App) Run(callback AppCallback) error {
-	this.Logger.Debug("<App> Run")
+	this.Logger.Debug("<App>Run")
 	return callback(this)
 }
 
@@ -157,6 +162,15 @@ func RunLoop(app *App) error {
 	app.Logger.Debug("Device=%v",app.Device)
 	app.Logger.Debug("Display=%v",app.Display)
 	app.Logger.Debug("EGL=%v",app.EGL)
+
+	// Create a background
+	bg, err := app.EGL.CreateBackground("OpenVG")
+	if err != nil {
+		return app.Logger.Error("Error: %v",err)
+	}
+	defer app.EGL.CloseWindow(bg)
+
+	app.Logger.Debug("Background=%v",bg)
 
 	return nil
 }

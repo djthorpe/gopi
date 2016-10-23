@@ -29,12 +29,9 @@ import "C"
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type (
-	dxDisplayHandle  uint32
-)
-
 type DXDisplayConfig struct {
 	Display uint16
+	Device gopi.HardwareDriver
 }
 
 type DXDisplay struct {
@@ -52,6 +49,10 @@ type DXModeInfo struct {
 	handle      dxDisplayHandle
 }
 
+type (
+	dxDisplayHandle  uint32
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
@@ -60,29 +61,29 @@ const (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// DISPLAYS
+// OPEN AND CLOSE
 
 // Create new Display object, returns error if not possible
-func (this *DeviceState) Display(config gopi.DisplayConfig) (gopi.DisplayDriver, error) {
+func (config DXDisplayConfig) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+	log.Debug("<rpi.DXDisplay>Open display=%v",config.Display)
+
 	// create new display object
 	d := new(DXDisplay)
 
 	// Set logging
-	d.log = this.log
+	d.log = log
 
 	// get the display size
-	d.display = config.(DXDisplayConfig).Display
-	d.width, d.height = this.GetDisplaySize(d.display)
+	d.display = config.Display
+	d.width, d.height = config.Device.GetDisplaySize(d.display)
 
 	// open the display
 	d.handle = dxDisplayOpen(d.display)
 	if d.handle == DX_DISPLAY_NONE {
-		return nil, this.log.Error("Cannot open display %v",d.display)
+		return nil, d.log.Error("Cannot open display %v",d.display)
 	}
 
-
 	// success
-	this.log.Debug("<rpi.DXDisplay>Open %v",d.display)
 	return d, nil
 }
 
@@ -93,7 +94,7 @@ func (this *DXDisplay) Close() error {
 		return this.log.Error("dxDisplayClose error")
 	}
 	// Return success
-	this.log.Debug("<rpi.DXDisplay>Close %v",this.display)
+	this.log.Debug("<rpi.DXDisplay>Close display=%v",this.display)
 	return nil
 }
 
@@ -119,7 +120,7 @@ func (this *DXDisplay) Log() *util.LoggerDevice {
 
 // Human-readable version of the display
 func (this *DXDisplay) String() string {
-	return fmt.Sprintf("<rpi.DXDisplay>{ handle=%v display=%v size=%v", this.handle, this.display, this.GetSize())
+	return fmt.Sprintf("<rpi.DXDisplay>{ handle=%08X display=%v size=%v", this.handle, this.display, this.GetSize())
 }
 
 // Human-readable version of the modeInfo

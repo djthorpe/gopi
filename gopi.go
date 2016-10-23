@@ -12,7 +12,7 @@
 //
 // Start by creating a gopi object as follows:
 //
-//   import rpi "./device/rpi"
+//   import "github.com/djthorpe/gopi/device/rpi"
 //
 //   device, err := gopi.Open(rpi.Device{ /* configuration */ })
 //   if err != nil { /* handle error */ }
@@ -31,20 +31,11 @@
 package gopi // import "github.com/djthorpe/gopi"
 
 import (
-	"fmt"
-)
-
-import (
 	"./util" // import "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
-
-// Store state for the non-abstract input driver
-type State struct {
-	driver Driver
-}
 
 // Abstract driver interface
 type Driver interface {
@@ -60,8 +51,8 @@ type HardwareDriver interface {
 	// Enforces general driver
 	Driver
 
-	// Adds display
-	Display(DisplayConfig) (DisplayDriver,error)
+	// Return display size for nominated display number
+	GetDisplaySize(display uint16) (uint32, uint32)
 }
 
 // Abstract display interface
@@ -72,21 +63,16 @@ type DisplayDriver interface {
 
 // Abstract configuration which is used to open and return the
 // concrete driver
-type DeviceConfig interface {
+type Config interface {
 	// Opens the driver from configuration, or returns error
 	Open(*util.LoggerDevice) (Driver, error)
-}
-
-// Abstract display configuration
-type DisplayConfig interface {
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS: Config interface implementation
 
 // Open a driver - opens the concrete version given the config method
-func Open(config DeviceConfig,log *util.LoggerDevice) (Driver, error) {
+func Open(config Config,log *util.LoggerDevice) (Driver, error) {
 	var err error
 	
 	if log==nil {
@@ -99,33 +85,8 @@ func Open(config DeviceConfig,log *util.LoggerDevice) (Driver, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &State{ driver }, nil
+	return driver, nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS: State interface implementation
 
-// Provides human-readable version
-func (this *State) String() string {
-	return fmt.Sprintf("<gopi>{%v}",this.driver)
-}
-
-// Closes the device and frees the resources
-func (this *State) Close() error {
-	return this.driver.Close()
-}
-
-// Return the logging object
-func (this *State) Log() *util.LoggerDevice {
-	return this.driver.Log()
-}
-
-// Returns a display object
-func (this *State) Display(config DisplayConfig) (DisplayDriver,error) {
-	displaydriver, err := this.driver.(HardwareDriver).Display(config)
-	if err != nil {
-		return nil, err
-	}
-	return &State{ displaydriver }, nil
-}
 
