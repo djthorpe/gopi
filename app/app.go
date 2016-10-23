@@ -9,10 +9,10 @@
 package app /* import "github.com/djthorpe/gopi/app" */
 
 import (
+	gopi "../"           /* import "github.com/djthorpe/gopi" */
+	rpi "../device/rpi"  /* import "github.com/djthorpe/gopi/util" */
 	khronos "../khronos" /* import "github.com/djthorpe/gopi/khronos" */
-	util "../util" /* import "github.com/djthorpe/gopi/device/rpi" */
-	rpi "../device/rpi" /* import "github.com/djthorpe/gopi/util" */
-	gopi "../" /* import "github.com/djthorpe/gopi" */
+	util "../util"       /* import "github.com/djthorpe/gopi/device/rpi" */
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,9 +62,10 @@ type AppFlags uint
 
 const (
 	// Constants used to determine what features are needed
-	APP_DEVICE AppFlags = 0x01
+	APP_DEVICE  AppFlags = 0x01
 	APP_DISPLAY AppFlags = 0x02
-	APP_EGL AppFlags = 0x04
+	APP_EGL     AppFlags = 0x04
+	APP_OPENVG  AppFlags = 0x08
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,9 +79,9 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Create a logger - either log to file or to stderr
 	if len(config.LogFile) != 0 {
-		this.Logger, err = util.Logger(util.FileLogger{ Filename: config.LogFile, Append: config.LogAppend })
+		this.Logger, err = util.Logger(util.FileLogger{Filename: config.LogFile, Append: config.LogAppend})
 	} else {
-		this.Logger, err = util.Logger(util.StderrLogger{ })
+		this.Logger, err = util.Logger(util.StderrLogger{})
 	}
 	if err != nil {
 		return nil, err
@@ -91,14 +92,14 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Debugging
 	this.Logger.Debug("<App>Open device=%v display=%v egl=%v",
-		config.Features & (APP_DEVICE | APP_DISPLAY | APP_EGL) != 0,
-		config.Features & (APP_DISPLAY | APP_EGL) != 0,
-		config.Features & (APP_EGL) != 0,
+		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL) != 0,
+		config.Features&(APP_DISPLAY|APP_EGL) != 0,
+		config.Features&(APP_EGL) != 0,
 	)
 
 	// Create the device
-	if config.Features & (APP_DEVICE | APP_DISPLAY | APP_EGL) != 0 {
-		device, err := gopi.Open(rpi.Device{ },this.Logger)
+	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL) != 0 {
+		device, err := gopi.Open(rpi.Device{}, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err
@@ -108,11 +109,11 @@ func NewApp(config AppConfig) (*App, error) {
 	}
 
 	// Create the display
-	if config.Features & (APP_DISPLAY | APP_EGL) != 0 {
+	if config.Features&(APP_DISPLAY|APP_EGL) != 0 {
 		display, err := gopi.Open(rpi.DXDisplayConfig{
-			Device: this.Device,
+			Device:  this.Device,
 			Display: config.Display,
-		},this.Logger)
+		}, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err
@@ -122,8 +123,8 @@ func NewApp(config AppConfig) (*App, error) {
 	}
 
 	// Create the EGL interface
-	if config.Features & (APP_EGL) != 0 {
-		egl, err := gopi.Open(rpi.EGL{ Display: this.Display },this.Logger)
+	if config.Features&(APP_EGL) != 0 {
+		egl, err := gopi.Open(rpi.EGL{Display: this.Display}, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err

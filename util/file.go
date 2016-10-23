@@ -40,4 +40,3 @@ func isWritableFileAtPath(path string) error {
 func isExecutableFileAtPath(path string) error {
 	return syscall.Access(path, X_OK)
 }
-

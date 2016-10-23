@@ -10,9 +10,9 @@
 package util /* import "github.com/djthorpe/gopi/util" */
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"errors"
 	"strings"
 )
 
@@ -23,7 +23,7 @@ type LogLevel uint
 
 type LoggerDevice struct {
 	driver LoggerInterface
-	level LogLevel
+	level  LogLevel
 }
 
 // Abstract configuration which is used to open and return the
@@ -37,7 +37,7 @@ type LogConfig interface {
 type LoggerInterface interface {
 
 	// Perform logging
-	Log(level LogLevel,message string)
+	Log(level LogLevel, message string)
 
 	// Close the logging device
 	Close() error
@@ -45,12 +45,10 @@ type LoggerInterface interface {
 
 // Concrete StderrLogger Configuration
 type StderrLogger struct {
-
 }
 
 // Concrete NullLogger Configuration
 type NullLogger struct {
-
 }
 
 // Concrete FileLogger Configuration
@@ -90,7 +88,7 @@ func Logger(config LogConfig) (*LoggerDevice, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &LoggerDevice{ driver: logger, level: LOG_INFO }, nil
+	return &LoggerDevice{driver: logger, level: LOG_INFO}, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,7 +103,7 @@ func (this *LoggerDevice) Close() error {
 // Display log level
 
 func (l LogLevel) String() string {
-	switch(l) {
+	switch l {
 	case LOG_DEBUG2:
 		return "DEBUG"
 	case LOG_DEBUG:
@@ -127,19 +125,19 @@ func (l LogLevel) String() string {
 // Get and set level
 
 // Get logging level
-func (this* LoggerDevice) GetLevel() LogLevel {
+func (this *LoggerDevice) GetLevel() LogLevel {
 	return this.level
 }
 
 // Set logging level from a LogLevel parameter
-func (this* LoggerDevice) SetLevel(level LogLevel) {
+func (this *LoggerDevice) SetLevel(level LogLevel) {
 	this.level = level
 }
 
 // Set logging level from a string parameter. Will return
 // an error if the string could not be parsed
-func (this* LoggerDevice) SetLevelFromString(level string) error {
-	switch(strings.ToLower(strings.TrimSpace(level))) {
+func (this *LoggerDevice) SetLevelFromString(level string) error {
+	switch strings.ToLower(strings.TrimSpace(level)) {
 	case "debug2":
 		this.SetLevel(LOG_DEBUG2)
 		return nil
@@ -171,46 +169,46 @@ func (this* LoggerDevice) SetLevelFromString(level string) error {
 ////////////////////////////////////////////////////////////////////////////////
 // Methods to print out log information
 
-func (this* LoggerDevice) Info(format string,v... interface{}) {
-	message := fmt.Sprintf(format,v...)
-	if this.level <= LOG_INFO || this.level==LOG_ANY {
-		this.driver.Log(LOG_INFO,message)
+func (this *LoggerDevice) Info(format string, v ...interface{}) {
+	message := fmt.Sprintf(format, v...)
+	if this.level <= LOG_INFO || this.level == LOG_ANY {
+		this.driver.Log(LOG_INFO, message)
 	}
 }
 
-func (this* LoggerDevice) Debug(format string,v... interface{}) {
-	message := fmt.Sprintf(format,v...)
-	if this.level <= LOG_DEBUG || this.level==LOG_ANY {
-		this.driver.Log(LOG_DEBUG,message)
+func (this *LoggerDevice) Debug(format string, v ...interface{}) {
+	message := fmt.Sprintf(format, v...)
+	if this.level <= LOG_DEBUG || this.level == LOG_ANY {
+		this.driver.Log(LOG_DEBUG, message)
 	}
 }
 
-func (this* LoggerDevice) Debug2(format string,v... interface{}) {
-	message := fmt.Sprintf(format,v...)
-	if this.level <= LOG_DEBUG2 || this.level==LOG_ANY {
-		this.driver.Log(LOG_DEBUG2,message)
+func (this *LoggerDevice) Debug2(format string, v ...interface{}) {
+	message := fmt.Sprintf(format, v...)
+	if this.level <= LOG_DEBUG2 || this.level == LOG_ANY {
+		this.driver.Log(LOG_DEBUG2, message)
 	}
 }
 
-func (this* LoggerDevice) Warn(format string,v... interface{}) {
-	message := fmt.Sprintf(format,v...)
-	if this.level <= LOG_WARN || this.level==LOG_ANY {
-		this.driver.Log(LOG_WARN,message)
+func (this *LoggerDevice) Warn(format string, v ...interface{}) {
+	message := fmt.Sprintf(format, v...)
+	if this.level <= LOG_WARN || this.level == LOG_ANY {
+		this.driver.Log(LOG_WARN, message)
 	}
 }
 
-func (this* LoggerDevice) Error(format string,v... interface{}) error {
-	message := fmt.Sprintf(format,v...)
-	if this.level <= LOG_ERROR || this.level==LOG_ANY {
-		this.driver.Log(LOG_ERROR,message)
+func (this *LoggerDevice) Error(format string, v ...interface{}) error {
+	message := fmt.Sprintf(format, v...)
+	if this.level <= LOG_ERROR || this.level == LOG_ANY {
+		this.driver.Log(LOG_ERROR, message)
 	}
 	return errors.New(message)
 }
 
-func (this* LoggerDevice) Fatal(format string,v... interface{})  error {
-	message := fmt.Sprintf(format,v...)
-	if this.level <= LOG_FATAL || this.level==LOG_ANY {
-		this.driver.Log(LOG_FATAL,message)
+func (this *LoggerDevice) Fatal(format string, v ...interface{}) error {
+	message := fmt.Sprintf(format, v...)
+	if this.level <= LOG_FATAL || this.level == LOG_ANY {
+		this.driver.Log(LOG_FATAL, message)
 	}
 	return errors.New(message)
 }
@@ -239,7 +237,7 @@ func (config FileLogger) Open() (LoggerInterface, error) {
 	if config.Append {
 		flag |= os.O_APPEND
 	}
-	this.device, err = os.OpenFile(config.Filename,flag,0666)
+	this.device, err = os.OpenFile(config.Filename, flag, 0666)
 	if err != nil {
 		return nil, err
 	}
@@ -255,9 +253,8 @@ func (this *logger) Close() error {
 }
 
 // Output log message to device
-func (this *logger) Log(level LogLevel,message string) {
+func (this *logger) Log(level LogLevel, message string) {
 	if this.device != nil {
-		fmt.Fprintf(this.device,"[%v] %v\n",level,message)
+		fmt.Fprintf(this.device, "[%v] %v\n", level, message)
 	}
 }
-

@@ -8,8 +8,8 @@
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
-	"unsafe"
 	"fmt"
+	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,26 +35,25 @@ type DXResource struct {
 	buffer uintptr
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
-	DX_RESOURCE_NONE dxResourceHandle = 0
-	DX_RESOURCE_SUCCESS = DX_SUCCESS
+	DX_RESOURCE_NONE    dxResourceHandle = 0
+	DX_RESOURCE_SUCCESS                  = DX_SUCCESS
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func (this *DXDisplay) CreateResource(model DXColorModel,size DXSize) (*DXResource,error) {
+func (this *DXDisplay) CreateResource(model DXColorModel, size DXSize) (*DXResource, error) {
 	resource := new(DXResource)
 	resource.size = size
 	resource.model = model
-	resource.handle, resource.buffer = resourceCreate(model,size.Width,size.Height)
+	resource.handle, resource.buffer = resourceCreate(model, size.Width, size.Height)
 	if resource.handle == DX_RESOURCE_NONE {
-		return nil,this.log.Error("dxResourceCreate failed")
+		return nil, this.log.Error("dxResourceCreate failed")
 	}
-	return resource,nil
+	return resource, nil
 }
 
 func (this *DXDisplay) CloseResource(resource *DXResource) error {
@@ -66,16 +65,16 @@ func (this *DXDisplay) CloseResource(resource *DXResource) error {
 }
 
 func (this *DXResource) String() string {
-	return fmt.Sprintf("<rpi.DXResource>{ handle=%v model=%v size=%v buffer=%08X }",this.handle,this.model,this.size,this.buffer)
+	return fmt.Sprintf("<rpi.DXResource>{ handle=%v model=%v size=%v buffer=%08X }", this.handle, this.model, this.size, this.buffer)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods
 
-func resourceCreate(model DXColorModel, w, h uint32) (dxResourceHandle,uintptr) {
+func resourceCreate(model DXColorModel, w, h uint32) (dxResourceHandle, uintptr) {
 	var ptr C.uint32_t
 	handle := dxResourceHandle(C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(model), C.uint32_t(w), C.uint32_t(h), (*C.uint32_t)(unsafe.Pointer(&ptr))))
-	return handle,uintptr(ptr)
+	return handle, uintptr(ptr)
 }
 
 func resourceDelete(handle dxResourceHandle) bool {
@@ -89,4 +88,3 @@ func resourceWriteData(handle dxResourceHandle, model DXColorModel, src_pitch in
 func resourceReadData(handle dxResourceHandle, src_rect *DXFrame, dst_buffer uintptr, dst_pitch int) bool {
 	return C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), (*C.VC_RECT_T)(unsafe.Pointer(src_rect)), unsafe.Pointer(dst_buffer), C.uint32_t(dst_pitch)) == DX_RESOURCE_SUCCESS
 }
-

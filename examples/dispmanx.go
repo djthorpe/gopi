@@ -11,19 +11,19 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
-	"time"
 	"path"
-	"errors"
+	"time"
 )
 
 import (
 	"image"
 	_ "image/gif"
-	_ "image/png"
 	_ "image/jpeg"
+	_ "image/png"
 )
 
 import (
@@ -31,12 +31,12 @@ import (
 )
 
 var (
-	flagDisplay = flag.String("display", "lcd", "Display")
+	flagDisplay  = flag.String("display", "lcd", "Display")
 	flagFilename = flag.String("file", "", "Filename")
-	commands = map[string]func(*rpi.VideoCore)(error) {
-		"info": Info,
+	commands     = map[string]func(*rpi.VideoCore) error{
+		"info":    Info,
 		"squares": Squares,
-		"image": Image,
+		"image":   Image,
 	}
 )
 
@@ -49,10 +49,10 @@ func Info(vc *rpi.VideoCore) error {
 		return err
 	}
 
-	fmt.Println("Display ID:",vc.GetDisplayID())
-	fmt.Println("Display Size:",vc.GetSize())
-	fmt.Println("Display Frame:",vc.GetFrame())
-	fmt.Println("Mode Info:",modeInfo)
+	fmt.Println("Display ID:", vc.GetDisplayID())
+	fmt.Println("Display Size:", vc.GetSize())
+	fmt.Println("Display Frame:", vc.GetFrame())
+	fmt.Println("Mode Info:", modeInfo)
 
 	return nil
 }
@@ -76,11 +76,11 @@ func Image(vc *rpi.VideoCore) error {
 	}
 
 	colorModel := rpi.VC_IMAGE_RGBA32
-	fmt.Println("colormodel:",rpi.ImageFormats[colorModel])
+	fmt.Println("colormodel:", rpi.ImageFormats[colorModel])
 
 	// Now create a resource from the image
-	size := rpi.Size{ uint32(data.Bounds().Size().X), uint32(data.Bounds().Size().Y) }
-	resource, err := vc.CreateResource(colorModel,size)
+	size := rpi.Size{uint32(data.Bounds().Size().X), uint32(data.Bounds().Size().Y)}
+	resource, err := vc.CreateResource(colorModel, size)
 	if err != nil {
 		return err
 	}
@@ -91,10 +91,9 @@ func Image(vc *rpi.VideoCore) error {
 		fmt.Println(int32(size.Height) - y)
 		for x := int32(0); x < int32(size.Width); x++ {
 			r, g, b, a := data.At(int(x), int(y)).RGBA()
-			resource.WritePixelRGBA(rpi.Point{ x, y },rpi.Color{ uint8(r), uint8(g), uint8(b) }, uint8(a))
+			resource.WritePixelRGBA(rpi.Point{x, y}, rpi.Color{uint8(r), uint8(g), uint8(b)}, uint8(a))
 		}
 	}
-
 
 	// Place image in an element
 	update, err := vc.UpdateBegin()
@@ -110,7 +109,6 @@ func Image(vc *rpi.VideoCore) error {
 
 	return nil
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // SQUARES
@@ -242,7 +240,7 @@ func main() {
 	// Flags
 	flag.Parse()
 	if flag.NArg() != 1 {
-		fmt.Fprintln(os.Stderr, "Usage: ", path.Base(os.Args[0]),"[flags]","<command>")
+		fmt.Fprintln(os.Stderr, "Usage: ", path.Base(os.Args[0]), "[flags]", "<command>")
 		return
 	}
 
@@ -282,5 +280,3 @@ func main() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-

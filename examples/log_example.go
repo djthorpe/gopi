@@ -35,15 +35,15 @@ import (
 )
 
 var (
-	flagLevel = flag.String("level","ANY","Logging level. Use ANY, NONE, FATAL, ERROR, WARN, INFO, DEBUG, DEBUG2")
-	flagFile = flag.String("file","","Logging file. If empty, logs to stderr")
-	flagAppend = flag.Bool("append",false,"Append output to file")
+	flagLevel  = flag.String("level", "ANY", "Logging level. Use ANY, NONE, FATAL, ERROR, WARN, INFO, DEBUG, DEBUG2")
+	flagFile   = flag.String("file", "", "Logging file. If empty, logs to stderr")
+	flagAppend = flag.Bool("append", false, "Append output to file")
 )
 
 func Function(log *util.LoggerDevice) {
 	// do something here
 	for i := 0; i < 10; i++ {
-		log.Info("Counter = %v",i)
+		log.Info("Counter = %v", i)
 	}
 }
 
@@ -55,9 +55,9 @@ func main() {
 
 	// Open logger
 	if len(*flagFile) != 0 {
-		logger, err = util.Logger(util.FileLogger{ Filename: *flagFile, Append: *flagAppend })
+		logger, err = util.Logger(util.FileLogger{Filename: *flagFile, Append: *flagAppend})
 	} else {
-		logger, err = util.Logger(util.StderrLogger{ })
+		logger, err = util.Logger(util.StderrLogger{})
 	}
 	if err != nil {
 		panic("Cannot open logger: " + err.Error())
@@ -70,7 +70,7 @@ func main() {
 	}
 
 	// Generate log messages
-	logger.Info("Hello, %v","World")
+	logger.Info("Hello, %v", "World")
 	logger.Debug("Hello, again!")
 	logger.Error("Oops, hello!")
 

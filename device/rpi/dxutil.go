@@ -8,8 +8,8 @@
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
-	"unsafe"
 	"fmt"
+	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,10 +25,10 @@ import "C"
 // TYPES
 
 type (
-	DXInputFormat    uint32
-	DXTransform      int
-	DXColorModel     int
-	DXProtection     uint32
+	DXInputFormat uint32
+	DXTransform   int
+	DXColorModel  int
+	DXProtection  uint32
 )
 
 type DXPoint struct {
@@ -47,7 +47,7 @@ type DXFrame struct {
 }
 
 type (
-	dxClampMode      int
+	dxClampMode int
 )
 
 type dxClamp struct {
@@ -136,7 +136,7 @@ const (
 
 // Provide human-readable version of DXTransform value
 func (t DXTransform) String() string {
-	switch(t) {
+	switch t {
 	case DX_NO_ROTATE:
 		return "DX_NO_ROTATE"
 	case DX_ROTATE_90:
@@ -154,7 +154,7 @@ func (t DXTransform) String() string {
 // DXInputFormat
 
 func (f DXInputFormat) String() string {
-	switch(f) {
+	switch f {
 	case DX_INPUT_FORMAT_RGB888:
 		return "DX_INPUT_FORMAT_RGB888"
 	case DX_INPUT_FORMAT_RGB565:
@@ -172,14 +172,14 @@ func (this *DXFrame) Set(point DXPoint, size DXSize) {
 }
 
 func (this *DXFrame) String() string {
-	return fmt.Sprintf("<rpi.DXFrame>{%v,%v}",this.DXPoint,this.DXSize)
+	return fmt.Sprintf("<rpi.DXFrame>{%v,%v}", this.DXPoint, this.DXSize)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // DXColorModel
 
 func (m DXColorModel) String() string {
-	switch(m) {
+	switch m {
 	case DX_IMAGE_RGB565:
 		return "DX_IMAGE_RGB565"
 	case DX_IMAGE_YUV420:
@@ -210,6 +210,3 @@ func (m DXColorModel) String() string {
 		return "[Invalid DXColorModel value]"
 	}
 }
-
-
-

@@ -13,7 +13,7 @@ import (
 )
 
 import (
-	gopi "../.." /* import "github.com/djthorpe/gopi" */
+	gopi "../.."      /* import "github.com/djthorpe/gopi" */
 	util "../../util" /* import "github.com/djthorpe/gopi/util" */
 )
 
@@ -31,7 +31,7 @@ import "C"
 
 type DXDisplayConfig struct {
 	Display uint16
-	Device gopi.HardwareDriver
+	Device  gopi.HardwareDriver
 }
 
 type DXDisplay struct {
@@ -50,7 +50,7 @@ type DXModeInfo struct {
 }
 
 type (
-	dxDisplayHandle  uint32
+	dxDisplayHandle uint32
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ const (
 
 // Create new Display object, returns error if not possible
 func (config DXDisplayConfig) Open(log *util.LoggerDevice) (gopi.Driver, error) {
-	log.Debug("<rpi.DXDisplay>Open display=%v",config.Display)
+	log.Debug("<rpi.DXDisplay>Open display=%v", config.Display)
 
 	// create new display object
 	d := new(DXDisplay)
@@ -80,7 +80,7 @@ func (config DXDisplayConfig) Open(log *util.LoggerDevice) (gopi.Driver, error) 
 	// open the display
 	d.handle = dxDisplayOpen(d.display)
 	if d.handle == DX_DISPLAY_NONE {
-		return nil, d.log.Error("Cannot open display %v",d.display)
+		return nil, d.log.Error("Cannot open display %v", d.display)
 	}
 
 	// success
@@ -94,22 +94,22 @@ func (this *DXDisplay) Close() error {
 		return this.log.Error("dxDisplayClose error")
 	}
 	// Return success
-	this.log.Debug("<rpi.DXDisplay>Close display=%v",this.display)
+	this.log.Debug("<rpi.DXDisplay>Close display=%v", this.display)
 	return nil
 }
 
 // Return display size
 func (this *DXDisplay) GetSize() DXSize {
-	return DXSize{ this.width, this.height }
+	return DXSize{this.width, this.height}
 }
 
 // Return mode info
 func (this *DXDisplay) GetModeInfo() (*DXModeInfo, error) {
 	var modeInfo DXModeInfo
-	if dxDisplayGetInfo(this.handle,&modeInfo) != true {
-		return nil,this.log.Error("dxDisplayGetInfo error")
+	if dxDisplayGetInfo(this.handle, &modeInfo) != true {
+		return nil, this.log.Error("dxDisplayGetInfo error")
 	}
-	return &modeInfo,nil
+	return &modeInfo, nil
 }
 
 // Return logging object
@@ -124,12 +124,12 @@ func (this *DXDisplay) String() string {
 
 // Human-readable version of the modeInfo
 func (this *DXModeInfo) String() string {
-	return fmt.Sprintf("<rpi.DXModeInfo>{ size=%v transform=%v inputformat=%v }",this.Size, this.Transform, this.InputFormat)
+	return fmt.Sprintf("<rpi.DXModeInfo>{ size=%v transform=%v inputformat=%v }", this.Size, this.Transform, this.InputFormat)
 }
 
 // Human-readable version of the dxDisplayHandle
 func (d dxDisplayHandle) String() string {
-	return fmt.Sprintf("<rpi.dxDisplayHandle>{%08X}",uint32(d))
+	return fmt.Sprintf("<rpi.dxDisplayHandle>{%08X}", uint32(d))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,6 +146,3 @@ func dxDisplayClose(display dxDisplayHandle) bool {
 func dxDisplayGetInfo(display dxDisplayHandle, info *DXModeInfo) bool {
 	return C.vc_dispmanx_display_get_info(C.DISPMANX_DISPLAY_HANDLE_T(display), (*C.DISPMANX_MODEINFO_T)(unsafe.Pointer(info))) == DX_SUCCESS
 }
-
-
-

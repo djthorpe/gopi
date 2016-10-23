@@ -8,8 +8,8 @@
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
-	"unsafe"
 	"fmt"
+	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,18 +25,18 @@ import "C"
 // TYPES
 
 type (
-	dxElementHandle  uint32
+	dxElementHandle uint32
 )
 
 type DXElement struct {
 	handle dxElementHandle
-	frame *DXFrame
-	layer uint16
+	frame  *DXFrame
+	layer  uint16
 }
 
 const (
-	DX_ELEMENT_NONE dxElementHandle = DX_NO_HANDLE
-	DX_ELEMENT_SUCCESS = DX_SUCCESS
+	DX_ELEMENT_NONE    dxElementHandle = DX_NO_HANDLE
+	DX_ELEMENT_SUCCESS                 = DX_SUCCESS
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -48,12 +48,12 @@ func (this *DXDisplay) AddElement(update dxUpdateHandle, layer uint16, dst_rect 
 	// destination frame
 	if dst_rect == nil {
 		size := this.GetSize()
-		dst_rect = &DXFrame{ DXPoint{ 0, 0}, size }
+		dst_rect = &DXFrame{DXPoint{0, 0}, size}
 	}
 
 	// set alpha to 255
 	// TODO: Allow Alpha to be set
-	alpha := dxAlpha{ DX_FLAGS_ALPHA_FIXED_ALL_PIXELS, 255, 0}
+	alpha := dxAlpha{DX_FLAGS_ALPHA_FIXED_ALL_PIXELS, 255, 0}
 
 	// create element structure
 	element := new(DXElement)
@@ -84,11 +84,11 @@ func (this *DXElement) GetHandle() dxElementHandle {
 }
 
 func (this *DXElement) String() string {
-	return fmt.Sprintf("<rpi.DXElement>{ handle=%v frame=%v layer=%v }",this.handle,this.frame,this.layer)
+	return fmt.Sprintf("<rpi.DXElement>{ handle=%v frame=%v layer=%v }", this.handle, this.frame, this.layer)
 }
 
 func (h dxElementHandle) String() string {
-	return fmt.Sprintf("<rpi.dxElementHandle>{%08X}",uint32(h))
+	return fmt.Sprintf("<rpi.dxElementHandle>{%08X}", uint32(h))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,4 +101,3 @@ func dxElementAdd(update dxUpdateHandle, display dxDisplayHandle, layer uint16, 
 func dxElementRemove(update dxUpdateHandle, element dxElementHandle) bool {
 	return C.vc_dispmanx_element_remove(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element)) == DX_ELEMENT_SUCCESS
 }
-

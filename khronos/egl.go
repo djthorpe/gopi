@@ -20,7 +20,7 @@ import (
 
 // Size of something
 type EGLSize struct {
-	Width uint
+	Width  uint
 	Height uint
 }
 
@@ -42,7 +42,7 @@ type EGLDriver interface {
 	gopi.Driver
 
 	// Return Major and Minor version of EGL
-	GetVersion() (int,int)
+	GetVersion() (int, int)
 
 	// Return Vendor information
 	GetVendorString() string
@@ -63,10 +63,10 @@ type EGLDriver interface {
 	GetFrame() EGLFrame
 
 	// Create Background
-	CreateBackground(api string) (EGLWindow,error)
+	CreateBackground(api string) (EGLWindow, error)
 
 	// Create Window
-	CreateWindow(api string,size EGLSize,origin EGLPoint,layer uint16) (EGLWindow,error)
+	CreateWindow(api string, size EGLSize, origin EGLPoint, layer uint16) (EGLWindow, error)
 
 	// Close window
 	CloseWindow(window EGLWindow) error
@@ -81,14 +81,13 @@ type EGLWindow interface {
 // String() methods
 
 func (this EGLSize) String() string {
-	return fmt.Sprintf("<EGLSize>{%v,%v}",this.Width,this.Height)
+	return fmt.Sprintf("<EGLSize>{%v,%v}", this.Width, this.Height)
 }
 
 func (this EGLPoint) String() string {
-	return fmt.Sprintf("<EGLPoint>{%v,%v}",this.X,this.Y)
+	return fmt.Sprintf("<EGLPoint>{%v,%v}", this.X, this.Y)
 }
 
 func (this EGLFrame) String() string {
-	return fmt.Sprintf("<EGLFrame>{%v,%v}",this.EGLPoint,this.EGLSize)
+	return fmt.Sprintf("<EGLFrame>{%v,%v}", this.EGLPoint, this.EGLSize)
 }
-

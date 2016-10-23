@@ -18,5 +18,10 @@ import (
 type VGDriver interface {
 	// Inherit general driver interface
 	gopi.Driver
-}
 
+	// Start drawing
+	Begin(window khronos.EGLWindow) error
+
+	// Flush
+	Flush() error
+}

@@ -19,7 +19,7 @@ import "C"
 ////////////////////////////////////////////////////////////////////////////////
 
 type (
-	dxUpdateHandle  uint32
+	dxUpdateHandle   uint32
 	dxUpdatePriority int32
 )
 
@@ -32,7 +32,7 @@ const (
 func (this *DXDisplay) UpdateBegin() (dxUpdateHandle, error) {
 	handle := updateStart(dxUpdatePriority(0))
 	if handle == DX_UPDATE_NONE {
-		return handle,this.log.Error("dxUpdateStart failed")
+		return handle, this.log.Error("dxUpdateStart failed")
 	}
 	return handle, nil
 }

@@ -8,16 +8,16 @@
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
-	"strings"
 	"errors"
-	"unsafe"
 	"fmt"
+	"strings"
+	"unsafe"
 )
 
 import (
-	gopi "../.." /* import "github.com/djthorpe/gopi" */
+	gopi "../.."            /* import "github.com/djthorpe/gopi" */
 	khronos "../../khronos" /* import "github.com/djthorpe/gopi/khronos" */
-	util "../../util" /* import "github.com/djthorpe/gopi/util" */
+	util "../../util"       /* import "github.com/djthorpe/gopi/util" */
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,11 +156,11 @@ var (
 		EGL_BAD_SURFACE:         errors.New("EGL_BAD_SURFACE"),
 		EGL_CONTEXT_LOST:        errors.New("EGL_CONTEXT_LOST"),
 	}
-	EGLErrorUnknown = errors.New("Unknown EGL error")
-	EGLErrorInvalidDisplayDriver = errors.New("Invalid display driver parameter")
-	EGLErrorInvalidAPIBind = errors.New("Invalid EGL API binding parameter")
+	EGLErrorUnknown                  = errors.New("Unknown EGL error")
+	EGLErrorInvalidDisplayDriver     = errors.New("Invalid display driver parameter")
+	EGLErrorInvalidAPIBind           = errors.New("Invalid EGL API binding parameter")
 	EGLErrorInvalidFrameBufferConfig = errors.New("Invalid EGL framebuffer parameter")
-	EGLErrorInvalidParameter = errors.New("Invalid parameter")
+	EGLErrorInvalidParameter         = errors.New("Invalid parameter")
 )
 
 var (
@@ -178,7 +178,6 @@ var (
 		"OpenGL_ES": EGL_OPENGL_ES2_BIT,
 	}
 )
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -205,15 +204,15 @@ func (config EGL) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 
 	// DX
 	var ok bool
-	if(config.Display==nil) {
-		return nil,EGLErrorInvalidDisplayDriver
+	if config.Display == nil {
+		return nil, EGLErrorInvalidDisplayDriver
 	}
 	this.dx, ok = config.Display.(*DXDisplay)
 	if ok != true {
-		return nil,EGLErrorInvalidParameter
+		return nil, EGLErrorInvalidParameter
 	}
 
-	log.Debug2("<rpi.EGL>OpenEGL version=%v.%v",major,minor)
+	log.Debug2("<rpi.EGL>OpenEGL version=%v.%v", major, minor)
 
 	// Success
 	return this, nil
@@ -232,7 +231,7 @@ func (this *eglDriver) Close() error {
 
 // Return string version of the EGL interface
 func (this *eglDriver) String() string {
-	var parts = make([]string,0)
+	var parts = make([]string, 0)
 	parts = append(parts,
 		"version="+this.GetVersionString(),
 		"vendor="+this.GetVendorString(),
@@ -318,25 +317,24 @@ func (this *eglDriver) GetFrame() khronos.EGLFrame {
 	return khronos.EGLFrame{khronos.EGLPoint{}, khronos.EGLSize{uint(size.Width), uint(size.Height)}}
 }
 
-
 // Human-readable version of the eglDisplay
 func (h eglDisplay) String() string {
-	return fmt.Sprintf("<rpi.eglDisplay>{%08X}",uint32(h))
+	return fmt.Sprintf("<rpi.eglDisplay>{%08X}", uint32(h))
 }
 
 // Human-readable version of the eglContext
 func (h eglContext) String() string {
-	return fmt.Sprintf("<rpi.eglContext>{%08X}",uint32(h))
+	return fmt.Sprintf("<rpi.eglContext>{%08X}", uint32(h))
 }
 
 // Human-readable version of the eglSurface
 func (h eglSurface) String() string {
-	return fmt.Sprintf("<rpi.eglSurface>{%08X}",uint32(h))
+	return fmt.Sprintf("<rpi.eglSurface>{%08X}", uint32(h))
 }
 
 // Human-readable version of the eglSurface
 func (h eglConfig) String() string {
-	return fmt.Sprintf("<rpi.eglConfig>{%08X}",uint32(h))
+	return fmt.Sprintf("<rpi.eglConfig>{%08X}", uint32(h))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -445,5 +443,3 @@ func (this *eglDriver) swapBuffer(surface eglSurface) error {
 	}
 	return nil
 }
-
-
