@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	flagLevel = flag.String("level","ANY","Logging level. Use ANY, NONE, FATAL, ERROR, WARN, INFO, DEBUG2, DEBUG")
+	flagLevel = flag.String("level","ANY","Logging level. Use ANY, NONE, FATAL, ERROR, WARN, INFO, DEBUG, DEBUG2")
 	flagFile = flag.String("file","","Logging file. If empty, logs to stderr")
 	flagAppend = flag.Bool("append",false,"Append output to file")
 )
@@ -63,4 +63,7 @@ func main() {
 	logger.Info("Hello, %v","World")
 	logger.Debug("Hello, again!")
 	logger.Error("Oops, hello!")
+
+	// Call function
+	Function(logger)
 }
