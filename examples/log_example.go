@@ -6,13 +6,23 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-// This example shows you how the logging works for the gopi package, using
-// the concrete VideoCore logging mechanism as a logging output. You can
+// This example shows you how the logging works for the gopi package. You can
 // use the standard logger, which outputs logging information to stderr by
 // using:
 //
-//    logger := util.Logger(util.StderrLogger{ })
+//    logger, err := util.Logger(util.StderrLogger{ })
+//    defer logger.Close()
 //    logger.SetLevel(LOG_ANY)
+//
+// Or you can log to a file (with options to append to the file) using the
+// FileLogger:
+//
+//    logger, err := util.Logger(util.FileLogger{ Filename: file, Append: true })
+//    defer logger.Close()
+//
+// If you wish to develop your own logger, you need to implement the
+// util.LoggerInterface interface for your own logger. More information is
+// available in the repository for `gopi`.
 //
 package main
 
