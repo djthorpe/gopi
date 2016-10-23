@@ -39,6 +39,16 @@ const (
 	DX_ELEMENT_SUCCESS                 = DX_SUCCESS
 )
 
+
+const (
+	DX_ELEMENT_CHANGE_LAYER         uint32 = (1 << 0)
+	DX_ELEMENT_CHANGE_OPACITY       uint32 = (1 << 1)
+	DX_ELEMENT_CHANGE_DEST_RECT     uint32 = (1 << 2)
+	DX_ELEMENT_CHANGE_SRC_RECT      uint32 = (1 << 3)
+	DX_ELEMENT_CHANGE_MASK_RESOURCE uint32 = (1 << 4)
+	DX_ELEMENT_CHANGE_TRANSFORM     uint32 = (1 << 5)
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
@@ -79,6 +89,18 @@ func (this *DXDisplay) RemoveElement(update dxUpdateHandle, element *DXElement) 
 	return nil
 }
 
+func (this *DXDisplay) SetElementDestination(update dxUpdateHandle, element *DXElement,frame DXFrame) error {
+	if dxElementChangeDestinationFrame(update,element.handle,&frame) != true {
+		return this.log.Error("SetElementDestination failed")
+	}
+
+	// update frame
+	element.frame = &frame
+
+	// return success
+	return nil
+}
+
 func (this *DXElement) GetHandle() dxElementHandle {
 	return this.handle
 }
@@ -101,3 +123,18 @@ func dxElementAdd(update dxUpdateHandle, display dxDisplayHandle, layer uint16, 
 func dxElementRemove(update dxUpdateHandle, element dxElementHandle) bool {
 	return C.vc_dispmanx_element_remove(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element)) == DX_ELEMENT_SUCCESS
 }
+
+func dxElementChangeDestinationFrame(update dxUpdateHandle, element dxElementHandle, frame *DXFrame) bool {
+	return C.vc_dispmanx_element_change_attributes(
+		C.DISPMANX_UPDATE_HANDLE_T(update),
+		C.DISPMANX_ELEMENT_HANDLE_T(element),
+		C.uint32_t(DX_ELEMENT_CHANGE_DEST_RECT),
+		C.int32_t(0),                          // layer
+		C.uint8_t(0),                          // opacity
+		(*C.VC_RECT_T)(unsafe.Pointer(frame)), // dest_rect
+		(*C.VC_RECT_T)(unsafe.Pointer(nil)),   // src_rect
+		C.DISPMANX_RESOURCE_HANDLE_T(0),       // mask
+		C.DISPMANX_TRANSFORM_T(0),             // transform
+	) == DX_ELEMENT_SUCCESS
+}
+

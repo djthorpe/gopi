@@ -41,6 +41,8 @@ type eglWindow struct {
 	context eglContext
 	surface eglSurface
 	element *DXElement
+	origin  *khronos.EGLPoint
+	size    *khronos.EGLSize
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,9 +96,29 @@ func (this *eglDriver) FlushWindow(window khronos.EGLWindow) error {
 	return this.swapWindowBuffer(window.(*eglWindow))
 }
 
+// Move window origin relative to current origin
+func (this *eglDriver) MoveWindowOriginBy(window khronos.EGLWindow, rel khronos.EGLPoint) error {
+	return this.setWindowOrigin(window.(*eglWindow),window.GetOrigin().Add(rel))
+}
+
+// Set current context
+func (this *eglDriver) SetCurrentContext(window khronos.EGLWindow) error {
+	return this.setCurrentContext(window.(*eglWindow))
+}
+
 // Human-readble string for window
 func (window *eglWindow) String() string {
 	return fmt.Sprintf("<rpi.EGLWindow>{ config=%v context=%v surface=%v element=%v }", window.config, window.context, window.surface, window.element)
+}
+
+// Return window origin on screen compared to NW corner of screen
+func (window *eglWindow) GetOrigin() khronos.EGLPoint {
+	return *window.origin
+}
+
+// Return window size
+func (window *eglWindow) GetSize() khronos.EGLSize {
+	return *window.size
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,15 +127,15 @@ func (window *eglWindow) String() string {
 func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khronos.EGLPoint, layer uint16) (*eglWindow, error) {
 	var err error
 
-	this.log.Debug2("<rpi.EGL>createWindow api=%v size=%v origin=%v", api, size, origin)
-
 	// CREATE WINDOW
 	window := new(eglWindow)
+	window.origin = &origin
+	window.size = &size
 
 	// CHECK SIZE PARAMETERS
 	if uint32(size.Width) > EGL_WINDOW_SIZE_MAX || uint32(size.Height) > EGL_WINDOW_SIZE_MAX {
 		this.closeWindow(window)
-		return nil, EGLErrorInvalidParameter
+		return nil, this.log.Error("Invalid width or height parameters: %v",size)
 	}
 
 	// CREATE CONTEXT
@@ -153,8 +175,8 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 	}
 
 	// Attach context to surface
-	if err := this.attachContextToSurface(window.context, window.surface); err != nil {
-		this.destroyContext(window.context)
+	if err := this.setCurrentContext(window); err != nil {
+		this.closeWindow(window)
 		return nil, err
 	}
 
@@ -202,5 +224,27 @@ func (this *eglDriver) closeWindow(window *eglWindow) error {
 func (this *eglDriver) swapWindowBuffer(window *eglWindow) error {
 	return this.swapBuffer(window.surface)
 }
+
+func (this *eglDriver) setWindowOrigin(window *eglWindow,new_origin khronos.EGLPoint) error {
+	update, err := this.dx.UpdateBegin()
+	if err != nil {
+		return err
+	}
+	size := window.GetSize()
+	frame := DXFrame{ DXPoint{ int32(new_origin.X), int32(new_origin.Y) }, DXSize{ uint32(size.Width), uint32(size.Height) } }
+	if err := this.dx.SetElementDestination(update,window.element,frame); err != nil {
+		return err
+	}
+	window.origin = &new_origin
+	if err := this.dx.UpdateSubmit(update); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *eglDriver) setCurrentContext(window *eglWindow) error {
+	return this.makeCurrent(window.surface,window.context)
+}
+
 
 

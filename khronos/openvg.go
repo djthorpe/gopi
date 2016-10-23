@@ -25,13 +25,21 @@ type VGDriver interface {
 	// Flush
 	Flush() error
 
-	// Clear
+	// Clear window to color
 	Clear(color VGColor)
 
+	// Draw a line from one point to another
+	Line(a VGPoint,b VGPoint)
 }
 
 // Color with Alpha value
 type VGColor struct {
 	R,G,B,A float32
 }
+
+// Point
+type VGPoint struct {
+	X,Y float32
+}
+
 

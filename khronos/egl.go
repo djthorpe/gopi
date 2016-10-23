@@ -73,11 +73,21 @@ type EGLDriver interface {
 
 	// Flush window updates to screen
 	FlushWindow(window EGLWindow) error
+
+	// Set current window context
+	SetCurrentContext(window EGLWindow) error
+
+	// Move window origin relative to current origin
+	MoveWindowOriginBy(window EGLWindow, rel EGLPoint) error
 }
 
 // Abstract window
 type EGLWindow interface {
-	// Put in window functions here
+	// Return window origin (NW value)
+	GetOrigin() EGLPoint
+
+	// Return window size
+	GetSize() EGLSize
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,3 +104,12 @@ func (this EGLPoint) String() string {
 func (this EGLFrame) String() string {
 	return fmt.Sprintf("<EGLFrame>{%v,%v}", this.EGLPoint, this.EGLSize)
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Add methods
+
+func (this EGLPoint) Add(that EGLPoint) EGLPoint {
+	return EGLPoint{ this.X + that.X, this.Y + that.Y }
+}
+
+

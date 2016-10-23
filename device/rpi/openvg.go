@@ -89,19 +89,24 @@ func (this *vgDriver) String() string {
 // BEGIN AND END
 
 func (this *vgDriver) Begin(window khronos.EGLWindow) error {
+	this.log.Debug2("<rpi.OpenVG>Begin window=%v",window)
 	if this.window != nil {
-		this.log.Warn("<rpi.OpenVG> Begin() cannot be called without Flush()")
+		this.log.Warn("Begin() cannot be called without Flush()")
 		if err := this.Flush(); err != nil {
 			return err
 		}
+	}
+	if err := this.egl.SetCurrentContext(window); err != nil {
+		return err
 	}
 	this.window = window
 	return nil
 }
 
 func (this *vgDriver) Flush() error {
+	this.log.Debug2("<rpi.OpenVG>Flush window=%v",this.window)
 	if this.window == nil {
-		this.log.Warn("<rpi.OpenVG> Flush() cannot be called without Begin()")
+		this.log.Warn("Flush() cannot be called without Begin()")
 		return nil
 	}
 	C.vgFlush()
@@ -120,7 +125,22 @@ func (this *vgDriver) Clear(color khronos.VGColor) {
 		this.log.Warn("<rpi.OpenVG> Clear() cannot be called without Begin()")
 		return
 	}
+
+	size := this.window.GetSize()
 	C.vgSetfv(C.VGParamType(VG_CLEAR_COLOR),C.VGint(4),(*C.VGfloat)(unsafe.Pointer(&color)));
-	C.vgClear(C.VGint(0), C.VGint(0), C.VGint(100), C.VGint(100));
+	C.vgClear(C.VGint(0), C.VGint(0), C.VGint(size.Width), C.VGint(size.Height));
 }
+
+func (this *vgDriver) Line(p1 khronos.VGPoint,p2 khronos.VGPoint) {
+	if this.window == nil {
+		this.log.Warn("<rpi.OpenVG> Line() cannot be called without Begin()")
+		return
+	}
+/*
+	TODO
+	path := C.vgCreatePath(VG_PATH_FORMAT_STANDARD, VG_PATH_DATATYPE_F, 1.0, 0.0, 0, 0, VG_PATH_CAPABILITY_APPEND_TO)
+	this.log.Debug("path=%v",path)
+*/
+}
+
 

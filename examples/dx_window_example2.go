@@ -33,10 +33,10 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 
 func MyRunLoop(app *app.App) error {
-	app.Logger.Debug("Device=%v", app.Device)
-	app.Logger.Debug("Display=%v", app.Display)
-	app.Logger.Debug("EGL=%v", app.EGL)
-	app.Logger.Debug("OpenVG=%v", app.OpenVG)
+	app.Logger.Info("Device=%v", app.Device)
+	app.Logger.Info("Display=%v", app.Display)
+	app.Logger.Info("EGL=%v", app.EGL)
+	app.Logger.Info("OpenVG=%v", app.OpenVG)
 
 	// Create a background
 	bg, err := app.EGL.CreateBackground("OpenVG")
@@ -45,11 +45,31 @@ func MyRunLoop(app *app.App) error {
 	}
 	defer app.EGL.CloseWindow(bg)
 
-	// Clear to white
+	// Create a window
+	fg, err := app.EGL.CreateWindow("OpenVG",khronos.EGLSize{ 100, 100 },khronos.EGLPoint{ 100, 100 },1)
+	if err != nil {
+		return err
+	}
+	defer app.EGL.CloseWindow(fg)
+
 	gfx := app.OpenVG
-	gfx.Begin(bg)
+
+	// Clear background to white
+	if err := gfx.Begin(bg); err != nil {
+		return err
+	}
 	gfx.Clear(khronos.VGColor{ 1.0, 0.0, 0.0, 1.0 })
 	gfx.Flush()
+
+	// Clear foreground to green
+	gfx.Begin(fg)
+	gfx.Clear(khronos.VGColor{ 0.0, 1.0, 0.0, 1.0 })
+	gfx.Flush()
+
+	// Move window
+	for i := 0; i < 100; i++ {
+		app.EGL.MoveWindowOriginBy(fg,khronos.EGLPoint{ 1, 1 })
+	}
 
 	// wait for a key press
 	app.Logger.Info("Press a key to continue")

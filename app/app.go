@@ -192,5 +192,8 @@ func (this *App) Close() error {
 // Run the application with callback
 func (this *App) Run(callback AppCallback) error {
 	this.Logger.Debug("<App>Run")
-	return callback(this)
+	if err := callback(this); err != nil {
+		return this.Logger.Error("Error: %v",err)
+	}
+	return nil
 }
