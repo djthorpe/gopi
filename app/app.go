@@ -31,6 +31,9 @@ type App struct {
 
 	// The EGL driver
 	EGL khronos.EGLDriver
+
+	// The OpenVG driver
+	OpenVG khronos.VGDriver
 }
 
 // Application configuration
@@ -91,14 +94,15 @@ func NewApp(config AppConfig) (*App, error) {
 	this.Logger.SetLevel(config.LogLevel)
 
 	// Debugging
-	this.Logger.Debug("<App>Open device=%v display=%v egl=%v",
-		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL) != 0,
-		config.Features&(APP_DISPLAY|APP_EGL) != 0,
-		config.Features&(APP_EGL) != 0,
+	this.Logger.Debug("<App>Open device=%v display=%v egl=%v openvg=%v",
+		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG) != 0,
+		config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG) != 0,
+		config.Features&(APP_EGL|APP_OPENVG) != 0,
+		config.Features&(APP_OPENVG) != 0,
 	)
 
 	// Create the device
-	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL) != 0 {
+	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG) != 0 {
 		device, err := gopi.Open(rpi.Device{}, this.Logger)
 		if err != nil {
 			this.Close()
@@ -109,7 +113,7 @@ func NewApp(config AppConfig) (*App, error) {
 	}
 
 	// Create the display
-	if config.Features&(APP_DISPLAY|APP_EGL) != 0 {
+	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG) != 0 {
 		display, err := gopi.Open(rpi.DXDisplayConfig{
 			Device:  this.Device,
 			Display: config.Display,
@@ -123,7 +127,7 @@ func NewApp(config AppConfig) (*App, error) {
 	}
 
 	// Create the EGL interface
-	if config.Features&(APP_EGL) != 0 {
+	if config.Features&(APP_EGL|APP_OPENVG) != 0 {
 		egl, err := gopi.Open(rpi.EGL{Display: this.Display}, this.Logger)
 		if err != nil {
 			this.Close()
@@ -131,6 +135,17 @@ func NewApp(config AppConfig) (*App, error) {
 		}
 		// Convert device into a EGLDriver
 		this.EGL = egl.(khronos.EGLDriver)
+	}
+
+	// Create the OpenVG interface
+	if config.Features & (APP_OPENVG) != 0 {
+		openvg, err := gopi.Open(rpi.OpenVG{ EGL: this.EGL }, this.Logger)
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
+		// Convert device into a VGDriver
+		this.OpenVG = openvg.(khronos.VGDriver)
 	}
 
 	// success
@@ -141,25 +156,35 @@ func NewApp(config AppConfig) (*App, error) {
 func (this *App) Close() error {
 	this.Logger.Debug("<App>Close")
 
+	if this.OpenVG != nil {
+		if err := this.OpenVG.Close(); err != nil {
+			return err
+		}
+		this.OpenVG = nil
+	}
 	if this.EGL != nil {
 		if err := this.EGL.Close(); err != nil {
 			return err
 		}
+		this.EGL = nil
 	}
 	if this.Display != nil {
 		if err := this.Display.Close(); err != nil {
 			return err
 		}
+		this.Display = nil
 	}
 	if this.Device != nil {
 		if err := this.Device.Close(); err != nil {
 			return err
 		}
+		this.Device = nil
 	}
 	if this.Logger != nil {
 		if err := this.Logger.Close(); err != nil {
 			return err
 		}
+		this.Logger = nil
 	}
 	return nil
 }

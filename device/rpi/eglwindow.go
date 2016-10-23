@@ -89,6 +89,11 @@ func (this *eglDriver) CloseWindow(window khronos.EGLWindow) error {
 	return this.closeWindow(window.(*eglWindow))
 }
 
+// Flush window contents to screen
+func (this *eglDriver) FlushWindow(window khronos.EGLWindow) error {
+	return this.swapWindowBuffer(window.(*eglWindow))
+}
+
 // Human-readble string for window
 func (window *eglWindow) String() string {
 	return fmt.Sprintf("<rpi.EGLWindow>{ config=%v context=%v surface=%v element=%v }", window.config, window.context, window.surface, window.element)
@@ -193,3 +198,9 @@ func (this *eglDriver) closeWindow(window *eglWindow) error {
 	// return success
 	return nil
 }
+
+func (this *eglDriver) swapWindowBuffer(window *eglWindow) error {
+	return this.swapBuffer(window.surface)
+}
+
+

@@ -13,11 +13,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"bufio"
 )
 
 import (
 	app "../app"   /* import "github.com/djthorpe/gopi/app" */
 	util "../util" /* import "github.com/djthorpe/gopi/util" */
+	khronos "../khronos" /* import "github.com/djthorpe/gopi/khronos" */
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,6 +36,7 @@ func MyRunLoop(app *app.App) error {
 	app.Logger.Debug("Device=%v", app.Device)
 	app.Logger.Debug("Display=%v", app.Display)
 	app.Logger.Debug("EGL=%v", app.EGL)
+	app.Logger.Debug("OpenVG=%v", app.OpenVG)
 
 	// Create a background
 	bg, err := app.EGL.CreateBackground("OpenVG")
@@ -42,7 +45,15 @@ func MyRunLoop(app *app.App) error {
 	}
 	defer app.EGL.CloseWindow(bg)
 
-	app.Logger.Debug("Background=%v", bg)
+	// Clear to white
+	gfx := app.OpenVG
+	gfx.Begin(bg)
+	gfx.Clear(khronos.VGColor{ 1.0, 0.0, 0.0, 1.0 })
+	gfx.Flush()
+
+	// wait for a key press
+	app.Logger.Info("Press a key to continue")
+	bufio.NewReader(os.Stdin).ReadString('\n')
 
 	return nil
 }
@@ -63,7 +74,7 @@ func main() {
 
 	// Create the application
 	myapp, err := app.NewApp(app.AppConfig{
-		Features:  app.APP_EGL,
+		Features:  app.APP_OPENVG,
 		Display:   uint16(*flagDisplay),
 		LogFile:   *flagLogFile,
 		LogAppend: false,

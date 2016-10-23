@@ -70,6 +70,9 @@ type EGLDriver interface {
 
 	// Close window
 	CloseWindow(window EGLWindow) error
+
+	// Flush window updates to screen
+	FlushWindow(window EGLWindow) error
 }
 
 // Abstract window

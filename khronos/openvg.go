@@ -20,8 +20,18 @@ type VGDriver interface {
 	gopi.Driver
 
 	// Start drawing
-	Begin(window khronos.EGLWindow) error
+	Begin(window EGLWindow) error
 
 	// Flush
 	Flush() error
+
+	// Clear
+	Clear(color VGColor)
+
 }
+
+// Color with Alpha value
+type VGColor struct {
+	R,G,B,A float32
+}
+
