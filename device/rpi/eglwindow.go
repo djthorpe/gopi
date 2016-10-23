@@ -110,18 +110,31 @@ func (this *eglDriver) createWindow(api string,size khronos.EGLSize,origin khron
 	// CREATE SCREEN ELEMENT
 	update, err := this.dx.UpdateBegin()
 	if err != nil {
+		this.destroyContext(window.context)
 		return nil,err
 	}
-	// CREATE ELEMENT
-	source_frame := &Rectangle{}
-	source_frame.Set(Point{  0, 0 }, Size{ frame.Size.Width << 16, frame.Size.Height << 16})
-	window.element, err = this.vc.AddElement(update, 0, frame, nil, source_frame)
+	source_frame := &DXFrame{}
+	source_frame.Set(Point{  0, 0 }, Size{ size.Width << 16, size.Height << 16})
+	window.element, err = this.dx.AddElement(update, 0, frame, nil, source_frame)
+	if err != nil {
+		this.destroyContext(window.context)
+		return nil,err
+	}
+	if err := this.dx.UpdateSubmit(update); err != nil {
+		this.destroyContext(window.context)
+		return nil,err
+	}
+
+	// CREATE SURFACE
+	nativewindow := &eglNativeWindow{ window.element.GetHandle(), int(frame.Size.Width), int(frame.Size.Height)}
+	window.surface, err = this.createSurface(window.config, nativewindow)
 	if err != nil {
 		this.destroyContext(window.context)
 		return nil,err
 	}
 
-	if err := this.dx.UpdateSubmit(update); err != nil {
+	// Attach context to surface
+	if err := this.attachContextToSurface(window.context, window.surface); err != nil {
 		this.destroyContext(window.context)
 		return nil,err
 	}
@@ -131,12 +144,26 @@ func (this *eglDriver) createWindow(api string,size khronos.EGLSize,origin khron
 }
 
 func (this *eglDriver) closeWindow(window *eglWindow) error {
-	if window.context == EGL_NO_CONTEXT {
+
+	// TODO: remove element
+
+	// remove surface
+	if window.surface != EGL_NO_SURFACE {
+		if err := this.destroySurface(window.surface); err != nil {
+			return err
+		}
+	}
+	window.surface = EGL_NO_SURFACE
+
+	// remove context
+	if window.context != EGL_NO_CONTEXT {
 		if err := this.destroyContext(window.context); err != nil {
 			return err
 		}
 	}
 	window.context = EGL_NO_CONTEXT
+
+	// return success
 	return nil
 }
 
