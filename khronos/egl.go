@@ -5,10 +5,14 @@
 
 	For Licensing and Usage information, please see LICENSE.md
 */
-package khronos
+package khronos /* import "github.com/djthorpe/gopi/khronos" */
 
 import (
 	"fmt"
+)
+
+import (
+	gopi ".." /* import "github.com/djthorpe/gopi" */
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,13 +36,11 @@ type EGLFrame struct {
 	EGLSize
 }
 
-// Store state for the non-abstract input driver
-type EGLState struct {
-	driver EGLDriver
-}
-
 // Abstract driver interface
 type EGLDriver interface {
+	// Inherit general driver interface
+	gopi.Driver
+
 	// Return Major and Minor version of EGL
 	GetVersion() (int,int)
 
@@ -68,16 +70,6 @@ type EGLDriver interface {
 
 	// Close window
 	CloseWindow(window EGLWindow) error
-
-	// Close closes the driver and frees the underlying resources
-	Close() error
-}
-
-// Abstract configuration which is used to open and return the
-// concrete driver
-type EGLConfig interface {
-	// Opens the driver from configuration, or returns error
-	Open() (EGLDriver, error)
 }
 
 // Abstract window
@@ -86,72 +78,55 @@ type EGLWindow interface {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Opener interface
-
-// Open opens a connection EGL
-func Open(config EGLConfig) (EGLDriver, error) {
-	driver, err := config.Open()
-	if err != nil {
-		return nil, err
-	}
-	return &EGLState{ driver }, nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // Driver interface
 
-// Closes the device and frees the resources
-func (this *EGLState) Close() error {
-	return this.driver.Close()
-}
-
 // Return EGL version number
-func (this *EGLState) GetVersion() (int, int) {
+func (this *gopi.State) GetVersion() (int, int) {
 	return this.driver.GetVersion()
 }
 
 // Return Vendor information
-func (this *EGLState) GetVendorString() string {
+func (this *gopi.State) GetVendorString() string {
 	return this.driver.GetVendorString()
 }
 
 // Return Extension information
-func (this *EGLState) GetExtensions() []string {
+func (this *gopi.State) GetExtensions() []string {
 	return this.driver.GetExtensions()
 }
 
 // Return Client API information
-func (this *EGLState) GetSupportedClientAPIs() []string {
+func (this *gopi.State) GetSupportedClientAPIs() []string {
 	return this.driver.GetSupportedClientAPIs()
 }
 
 // Bind to an API
-func (this *EGLState) BindAPI(api string) error {
+func (this *gopi.State) BindAPI(api string) error {
 	return this.driver.BindAPI(api)
 }
 
 // Bound API
-func (this *EGLState) QueryAPI() (string, error) {
+func (this *gopi.State) QueryAPI() (string, error) {
 	return this.driver.QueryAPI()
 }
 
 // Return size of display
-func (this *EGLState) GetFrame() *EGLFrame {
+func (this *gopi.State) GetFrame() *EGLFrame {
 	return this.driver.GetFrame()
 }
 
 // Create Window
-func (this *EGLState) CreateWindow(api string,size *EGLSize,origin *EGLPoint) (EGLWindow,error) {
+func (this *gopi.State) CreateWindow(api string,size *EGLSize,origin *EGLPoint) (EGLWindow,error) {
 	return this.driver.CreateWindow(api,size,origin)
 }
 
 // Create Background
-func (this *EGLState) CreateBackground(api string) (EGLWindow,error) {
+func (this *gopi.State) CreateBackground(api string) (EGLWindow,error) {
 	return this.driver.CreateBackground(api)
 }
 
 // Close a window
-func (this *EGLState) CloseWindow(window EGLWindow) error {
+func (this *gopi.State) CloseWindow(window EGLWindow) error {
 	return this.driver.CloseWindow(window)
 }
 

@@ -55,6 +55,7 @@ type Driver interface {
 	Close() error
 }
 
+// Abstract hardware interface
 type HardwareDriver interface {
 	// Enforces general driver
 	Driver
@@ -63,6 +64,7 @@ type HardwareDriver interface {
 	Display(DisplayConfig) (DisplayDriver,error)
 }
 
+// Abstract display interface
 type DisplayDriver interface {
 	// Enforces general driver
 	Driver
@@ -84,9 +86,11 @@ type DisplayConfig interface {
 // PUBLIC METHODS: Config interface implementation
 
 // Open a driver - opens the concrete version given the config method
-func Open(config DeviceConfig,log *util.LoggerDevice) (HardwareDriver, error) {
+func Open(config DeviceConfig,log *util.LoggerDevice) (Driver, error) {
+	var err error
+	
 	if log==nil {
-		log, err := util.Logger(util.NullLogger{ })
+		log, err = util.Logger(util.NullLogger{ })
 		if err != nil {
 			return nil, err
 		}
