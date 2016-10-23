@@ -11,6 +11,7 @@ import (
 	"strings"
 	"errors"
 	"unsafe"
+	"fmt"
 )
 
 import (
@@ -315,6 +316,27 @@ func (this *eglDriver) GetError() error {
 func (this *eglDriver) GetFrame() khronos.EGLFrame {
 	size := this.dx.GetSize()
 	return khronos.EGLFrame{khronos.EGLPoint{}, khronos.EGLSize{uint(size.Width), uint(size.Height)}}
+}
+
+
+// Human-readable version of the eglDisplay
+func (h eglDisplay) String() string {
+	return fmt.Sprintf("<rpi.eglDisplay>{%08X}",uint32(h))
+}
+
+// Human-readable version of the eglContext
+func (h eglContext) String() string {
+	return fmt.Sprintf("<rpi.eglContext>{%08X}",uint32(h))
+}
+
+// Human-readable version of the eglSurface
+func (h eglSurface) String() string {
+	return fmt.Sprintf("<rpi.eglSurface>{%08X}",uint32(h))
+}
+
+// Human-readable version of the eglSurface
+func (h eglConfig) String() string {
+	return fmt.Sprintf("<rpi.eglConfig>{%08X}",uint32(h))
 }
 
 ////////////////////////////////////////////////////////////////////////////////

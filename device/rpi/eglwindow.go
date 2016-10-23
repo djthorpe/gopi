@@ -9,6 +9,7 @@ package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
 	"fmt"
+	"errors"
 )
 
 import (
@@ -38,6 +39,8 @@ type eglNativeWindow struct {
 type eglWindow struct {
 	config eglConfig
 	context eglContext
+	surface eglSurface
+	element *DXElement
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -47,6 +50,7 @@ const (
 	EGL_LAYER_BG  uint16 = 0x0000
 	EGL_LAYER_MIN uint16 = 0x0001
 	EGL_LAYER_MAX uint16 = 0xFFFE
+	EGL_WINDOW_SIZE_MAX uint32 = 0xFFFF
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -86,8 +90,8 @@ func (this *eglDriver) CloseWindow(window khronos.EGLWindow) error {
 }
 
 // Human-readble string for window
-func (window eglWindow) String() string {
-	return fmt.Sprintf("<rpi.EGLWindow>{ config=%08X context=%08X }",window.config,window.context)
+func (window *eglWindow) String() string {
+	return fmt.Sprintf("<rpi.EGLWindow>{ config=%v context=%v surface=%v element=%v }",window.config,window.context,window.surface,window.element)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,35 +105,46 @@ func (this *eglDriver) createWindow(api string,size khronos.EGLSize,origin khron
 	// CREATE WINDOW
 	window := new(eglWindow)
 
+	// CHECK SIZE PARAMETERS
+	if uint32(size.Width) > EGL_WINDOW_SIZE_MAX || uint32(size.Height) > EGL_WINDOW_SIZE_MAX {
+		this.closeWindow(window)
+		return nil,EGLErrorInvalidParameter
+	}
+
+
 	// CREATE CONTEXT
 	window.config, window.context, err = this.createContext(api)
 	if err != nil {
+		this.closeWindow(window)
 		return nil,err
 	}
 
 	// CREATE SCREEN ELEMENT
 	update, err := this.dx.UpdateBegin()
 	if err != nil {
-		this.destroyContext(window.context)
+		this.closeWindow(window)
 		return nil,err
 	}
+
 	source_frame := &DXFrame{}
-	source_frame.Set(Point{  0, 0 }, Size{ size.Width << 16, size.Height << 16})
-	window.element, err = this.dx.AddElement(update, 0, frame, nil, source_frame)
+	window_frame := &DXFrame{}
+	source_frame.Set(DXPoint{  0, 0 }, DXSize{ uint32(size.Width) << 16, uint32(size.Height) << 16})
+	window_frame.Set(DXPoint{ int32(origin.X), int32(origin.Y) }, DXSize{ uint32(size.Width), uint32(size.Height) })
+	window.element, err = this.dx.AddElement(update,layer,window_frame,source_frame)
 	if err != nil {
-		this.destroyContext(window.context)
+		this.closeWindow(window)
 		return nil,err
 	}
 	if err := this.dx.UpdateSubmit(update); err != nil {
-		this.destroyContext(window.context)
+		this.closeWindow(window)
 		return nil,err
 	}
 
 	// CREATE SURFACE
-	nativewindow := &eglNativeWindow{ window.element.GetHandle(), int(frame.Size.Width), int(frame.Size.Height)}
+	nativewindow := &eglNativeWindow{ window.element.GetHandle(), int(window_frame.Width), int(window_frame.Height)}
 	window.surface, err = this.createSurface(window.config, nativewindow)
 	if err != nil {
-		this.destroyContext(window.context)
+		this.closeWindow(window)
 		return nil,err
 	}
 
@@ -145,7 +160,20 @@ func (this *eglDriver) createWindow(api string,size khronos.EGLSize,origin khron
 
 func (this *eglDriver) closeWindow(window *eglWindow) error {
 
-	// TODO: remove element
+	// remove element
+	if window.element != nil {
+		update, err := this.dx.UpdateBegin()
+		if err != nil {
+			return err
+		}
+		if err := this.dx.RemoveElement(update,window.element); err != nil {
+			return err
+		}
+		if err := this.dx.UpdateSubmit(update); err != nil {
+			return err
+		}
+	}
+	window.element = nil
 
 	// remove surface
 	if window.surface != EGL_NO_SURFACE {

@@ -59,13 +59,6 @@ const (
 	GENCMD_OTP_DUMP_REVISION = 30
 )
 
-// DISPMANX constants
-const (
-	/* Success and failure conditions */
-	DX_SUCCESS   = 0
-	DX_INVALID   = -1
-)
-
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 

@@ -12,6 +12,8 @@ import (
 	"fmt"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+
 /*
     #cgo CFLAGS: -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host
     #cgo LDFLAGS:  -L/opt/vc/lib -lbcm_host
@@ -26,6 +28,7 @@ type (
 	DXInputFormat    uint32
 	DXTransform      int
 	DXColorModel     int
+	DXProtection     uint32
 )
 
 type DXPoint struct {
@@ -43,8 +46,32 @@ type DXFrame struct {
 	DXSize
 }
 
+type (
+	dxClampMode      int
+)
+
+type dxClamp struct {
+	Mode    dxClampMode
+	Flags   int
+	Opacity uint32
+	Mask    dxResourceHandle
+}
+
+type dxAlpha struct {
+	Flags   uint32
+	Opacity uint32
+	Mask    dxResourceHandle
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
+
+const (
+	/* Success and failure conditions */
+	DX_SUCCESS   = 0
+	DX_INVALID   = -1
+	DX_NO_HANDLE = 0
+)
 
 const (
 	// DXTransform values
@@ -79,6 +106,30 @@ const (
 	DX_IMAGE_TF_RGB565 DXColorModel = 25 /* VCIII T-format RGB565 */
 )
 
+const (
+	/* Alpha flags */
+	DX_FLAGS_ALPHA_FROM_SOURCE       uint32 = 0 /* Bottom 2 bits sets the alpha mode */
+	DX_FLAGS_ALPHA_FIXED_ALL_PIXELS  uint32 = 1
+	DX_FLAGS_ALPHA_FIXED_NON_ZERO    uint32 = 2
+	DX_FLAGS_ALPHA_FIXED_EXCEED_0X07 uint32 = 3
+	DX_FLAGS_ALPHA_PREMULT           uint32 = 1 << 16
+	DX_FLAGS_ALPHA_MIX               uint32 = 1 << 17
+)
+
+const (
+	/* Clamp values */
+	DX_FLAGS_CLAMP_NONE               dxClampMode = 0
+	DX_FLAGS_CLAMP_LUMA_TRANSPARENT   dxClampMode = 1
+	DX_FLAGS_CLAMP_TRANSPARENT        dxClampMode = 2
+	DX_FLAGS_CLAMP_CHROMA_TRANSPARENT dxClampMode = 2
+	DX_FLAGS_CLAMP_REPLACE            dxClampMode = 3
+)
+
+const (
+	/* Protection values */
+	DX_PROTECTION_NONE DXProtection = 0
+	DX_PROTECTION_HDCP DXProtection = 11
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // DXTransform
@@ -121,7 +172,7 @@ func (this *DXFrame) Set(point DXPoint, size DXSize) {
 }
 
 func (this *DXFrame) String() string {
-	return fmt.Sprintf("<rpi.DXFrame>{ <Origin>{%v,%v} <Size>{%v,%v} }",this.DXPoint,this.DXSize)
+	return fmt.Sprintf("<rpi.DXFrame>{%v,%v}",this.DXPoint,this.DXSize)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

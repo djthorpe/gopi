@@ -1,0 +1,170 @@
+/*
+	Go Language Raspberry Pi Interface
+	(c) Copyright David Thorpe 2016
+	All Rights Reserved
+
+	For Licensing and Usage information, please see LICENSE.md
+*/
+
+package app /* import "github.com/djthorpe/gopi/app" */
+
+import (
+	khronos "../khronos" /* import "github.com/djthorpe/gopi/khronos" */
+	util "../util" /* import "github.com/djthorpe/gopi/device/rpi" */
+	rpi "../device/rpi" /* import "github.com/djthorpe/gopi/util" */
+	gopi "../" /* import "github.com/djthorpe/gopi" */
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
+// The application
+type App struct {
+	// The logger
+	Logger *util.LoggerDevice
+
+	// The hardware device
+	Device gopi.HardwareDriver
+
+	// The opened display
+	Display gopi.DisplayDriver
+
+	// The EGL driver
+	EGL khronos.EGLDriver
+}
+
+// Application configuration
+type AppConfig struct {
+	// Application features
+	Features AppFlags
+
+	// The display number to open
+	Display uint16
+
+	// The file to log information to
+	LogFile string
+
+	// The level of logging
+	LogLevel util.LogLevel
+
+	// Whether to append to the log file
+	LogAppend bool
+}
+
+// Run callback
+type AppCallback func(*App) error
+
+// Application flags
+type AppFlags uint
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	// Constants used to determine what features are needed
+	APP_DEVICE AppFlags = 0x01
+	APP_DISPLAY AppFlags = 0x02
+	APP_EGL AppFlags = 0x04
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// Public Functions
+
+func NewApp(config AppConfig) (*App, error) {
+	var err error
+
+	// Create application
+	this := new(App)
+
+	// Create a logger - either log to file or to stderr
+	if len(config.LogFile) != 0 {
+		this.Logger, err = util.Logger(util.FileLogger{ Filename: config.LogFile, Append: config.LogAppend })
+	} else {
+		this.Logger, err = util.Logger(util.StderrLogger{ })
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Set logging level
+	this.Logger.SetLevel(config.LogLevel)
+
+	// Debugging
+	this.Logger.Debug("<App>Open device=%v display=%v egl=%v",
+		config.Features & (APP_DEVICE | APP_DISPLAY | APP_EGL) != 0,
+		config.Features & (APP_DISPLAY | APP_EGL) != 0,
+		config.Features & (APP_EGL) != 0,
+	)
+
+	// Create the device
+	if config.Features & (APP_DEVICE | APP_DISPLAY | APP_EGL) != 0 {
+		device, err := gopi.Open(rpi.Device{ },this.Logger)
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
+		// Convert device into a HardwareDriver
+		this.Device = device.(gopi.HardwareDriver)
+	}
+
+	// Create the display
+	if config.Features & (APP_DISPLAY | APP_EGL) != 0 {
+		display, err := gopi.Open(rpi.DXDisplayConfig{
+			Device: this.Device,
+			Display: config.Display,
+		},this.Logger)
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
+		// Convert device into a DisplayDriver
+		this.Display = display.(gopi.DisplayDriver)
+	}
+
+	// Create the EGL interface
+	if config.Features & (APP_EGL) != 0 {
+		egl, err := gopi.Open(rpi.EGL{ Display: this.Display },this.Logger)
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
+		// Convert device into a EGLDriver
+		this.EGL = egl.(khronos.EGLDriver)
+	}
+
+	// success
+	return this, nil
+}
+
+// Close the application
+func (this *App) Close() error {
+	this.Logger.Debug("<App>Close")
+
+	if this.EGL != nil {
+		if err := this.EGL.Close(); err != nil {
+			return err
+		}
+	}
+	if this.Display != nil {
+		if err := this.Display.Close(); err != nil {
+			return err
+		}
+	}
+	if this.Device != nil {
+		if err := this.Device.Close(); err != nil {
+			return err
+		}
+	}
+	if this.Logger != nil {
+		if err := this.Logger.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Run the application with callback
+func (this *App) Run(callback AppCallback) error {
+	this.Logger.Debug("<App>Run")
+	return callback(this)
+}

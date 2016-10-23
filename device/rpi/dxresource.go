@@ -41,6 +41,7 @@ type DXResource struct {
 
 const (
 	DX_RESOURCE_NONE dxResourceHandle = 0
+	DX_RESOURCE_SUCCESS = DX_SUCCESS
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,14 +79,14 @@ func resourceCreate(model DXColorModel, w, h uint32) (dxResourceHandle,uintptr) 
 }
 
 func resourceDelete(handle dxResourceHandle) bool {
-	return C.vc_dispmanx_resource_delete(C.DISPMANX_RESOURCE_HANDLE_T(handle)) == DX_SUCCESS
+	return C.vc_dispmanx_resource_delete(C.DISPMANX_RESOURCE_HANDLE_T(handle)) == DX_RESOURCE_SUCCESS
 }
 
 func resourceWriteData(handle dxResourceHandle, model DXColorModel, src_pitch int, src_buffer uintptr, dst_rect *DXFrame) bool {
-	return C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), C.VC_IMAGE_TYPE_T(model), C.int(src_pitch), unsafe.Pointer(src_buffer), (*C.VC_RECT_T)(unsafe.Pointer(dst_rect))) == DX_SUCCESS
+	return C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), C.VC_IMAGE_TYPE_T(model), C.int(src_pitch), unsafe.Pointer(src_buffer), (*C.VC_RECT_T)(unsafe.Pointer(dst_rect))) == DX_RESOURCE_SUCCESS
 }
 
 func resourceReadData(handle dxResourceHandle, src_rect *DXFrame, dst_buffer uintptr, dst_pitch int) bool {
-	return C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), (*C.VC_RECT_T)(unsafe.Pointer(src_rect)), unsafe.Pointer(dst_buffer), C.uint32_t(dst_pitch)) == DX_SUCCESS
+	return C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), (*C.VC_RECT_T)(unsafe.Pointer(src_rect)), unsafe.Pointer(dst_buffer), C.uint32_t(dst_pitch)) == DX_RESOURCE_SUCCESS
 }
 

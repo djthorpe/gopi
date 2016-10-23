@@ -74,7 +74,7 @@ type EGLDriver interface {
 
 // Abstract window
 type EGLWindow interface {
-
+	// Put in window functions here
 }
 
 ////////////////////////////////////////////////////////////////////////////////

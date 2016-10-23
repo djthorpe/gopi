@@ -117,15 +117,19 @@ func (this *DXDisplay) Log() *util.LoggerDevice {
 	return this.log
 }
 
-
 // Human-readable version of the display
 func (this *DXDisplay) String() string {
-	return fmt.Sprintf("<rpi.DXDisplay>{ handle=%08X display=%v size=%v", this.handle, this.display, this.GetSize())
+	return fmt.Sprintf("<rpi.DXDisplay>{ handle=%v display=%v size=%v", this.handle, this.display, this.GetSize())
 }
 
 // Human-readable version of the modeInfo
 func (this *DXModeInfo) String() string {
 	return fmt.Sprintf("<rpi.DXModeInfo>{ size=%v transform=%v inputformat=%v }",this.Size, this.Transform, this.InputFormat)
+}
+
+// Human-readable version of the dxDisplayHandle
+func (d dxDisplayHandle) String() string {
+	return fmt.Sprintf("<rpi.dxDisplayHandle>{%08X}",uint32(d))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
