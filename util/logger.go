@@ -48,19 +48,24 @@ type StderrLogger struct {
 
 }
 
-// Concrete StderrLogger Device
-type StderrLoggerDevice struct {
-	device *os.File
-}
-
 // Concrete NullLogger Configuration
 type NullLogger struct {
 
 }
 
-// Concrete NullLogger Device
-type NullLoggerDevice struct {
+// Concrete FileLogger Configuration
+type FileLogger struct {
+	// File filename to write the log to. File will be created if
+	// it doesn't already exist
+	Filename string
 
+	// Whether to append to the existing file if it already exists
+	Append bool
+}
+
+// Concrete Logger Device
+type logger struct {
+	device *os.File
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -211,43 +216,48 @@ func (this* LoggerDevice) Fatal(format string,v... interface{})  error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Stderr logger
+// Open Logger
 
-// Initialise the logger
+// Initialise the StderrLogger
 func (config StderrLogger) Open() (LoggerInterface, error) {
-	this := new(StderrLoggerDevice)
+	this := new(logger)
 	this.device = os.Stderr
 	return this, nil
 }
 
-// Close logger
-func (this *StderrLoggerDevice) Close() error {
-	return nil
-}
-
-func (this *StderrLoggerDevice) Log(level LogLevel,message string) {
-	fmt.Fprintf(this.device,"[%v] %v\n",level,message)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Null logger
-
-// Initialise the logger
+// Initialise the NullLogger
 func (config NullLogger) Open() (LoggerInterface, error) {
-	return new(NullLoggerDevice), nil
+	return new(logger), nil
+}
+
+// Initialise the FileLogger
+func (config FileLogger) Open() (LoggerInterface, error) {
+	var err error
+
+	this := new(logger)
+	flag := os.O_RDWR | os.O_CREATE
+	if config.Append {
+		flag |= os.O_APPEND
+	}
+	this.device, err = os.OpenFile(config.Filename,flag,0666)
+	if err != nil {
+		return nil, err
+	}
+	return this, nil
 }
 
 // Close logger
-func (this *NullLoggerDevice) Close() error {
+func (this *logger) Close() error {
+	if this.device != nil {
+		return this.device.Close()
+	}
 	return nil
 }
 
-func (this *NullLoggerDevice) Log(level LogLevel,message string) {
-	// Do nothing in the Null Logger
+// Output log message to device
+func (this *logger) Log(level LogLevel,message string) {
+	if this.device != nil {
+		fmt.Fprintf(this.device,"[%v] %v\n",level,message)
+	}
 }
-
-
-
-
-
 

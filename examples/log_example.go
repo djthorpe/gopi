@@ -25,7 +25,9 @@ import (
 )
 
 var (
-	flagLevel = flag.String("log","ANY","Logging level. Use ANY, NONE, FATAL, ERROR, WARN, INFO, DEBUG2, DEBUG")
+	flagLevel = flag.String("level","ANY","Logging level. Use ANY, NONE, FATAL, ERROR, WARN, INFO, DEBUG2, DEBUG")
+	flagFile = flag.String("file","","Logging file. If empty, logs to stderr")
+	flagAppend = flag.Bool("append",false,"Append output to file")
 )
 
 func Function(log *util.LoggerDevice) {
@@ -38,17 +40,27 @@ func Function(log *util.LoggerDevice) {
 func main() {
 	flag.Parse()
 
-	logger, err := util.Logger(util.StderrLogger{ })
-	if err != nil {
-		panic("Cannot open logger")
+	var logger *util.LoggerDevice
+	var err error
+
+	// Open logger
+	if len(*flagFile) != 0 {
+		logger, err = util.Logger(util.FileLogger{ Filename: *flagFile, Append: *flagAppend })
+	} else {
+		logger, err = util.Logger(util.StderrLogger{ })
 	}
+	if err != nil {
+		panic("Cannot open logger: " + err.Error())
+	}
+	defer logger.Close()
+
+	// Set logging level
 	if err := logger.SetLevelFromString(*flagLevel); err != nil {
-		panic(err)
+		panic("Cannot set log level: " + err.Error())
 	}
 
+	// Generate log messages
 	logger.Info("Hello, %v","World")
 	logger.Debug("Hello, again!")
 	logger.Error("Oops, hello!")
-
-	defer logger.Close()
 }
