@@ -14,12 +14,23 @@ import (
 
 import (
 	app "../app"   /* import "github.com/djthorpe/gopi/app" */
+	util "../util" /* import "github.com/djthorpe/gopi/util" */
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func HelloWorld(app *app.App) error {
-	app.Logger.Info("Hello, World")
+
+	// Get Serial Number of the Raspberry Pi
+	serial_number, err := app.Device.GetSerialNumber()
+	if err != nil {
+		return err
+	}
+
+	// Output information to logging
+	app.Logger.Info("Hello, %v",serial_number)
+
+	// Return success
 	return nil
 }
 
@@ -30,6 +41,7 @@ func main() {
 	// Create the application
 	myapp, err := app.NewApp(app.AppConfig{
 		Features:  app.APP_DEVICE,
+		LogLevel: util.LOG_INFO,
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)

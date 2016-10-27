@@ -46,13 +46,16 @@ type Driver interface {
 	Close() error
 }
 
-// Abstract hardware interface
+// Abstract hardware interface - this assumes the hardware has a display
 type HardwareDriver interface {
 	// Enforces general driver
 	Driver
 
 	// Return display size for nominated display number
 	GetDisplaySize(display uint16) (uint32, uint32)
+
+	// Return serial number of hardware
+	GetSerialNumber() (uint64, error)
 }
 
 // Abstract display interface
