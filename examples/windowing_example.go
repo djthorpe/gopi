@@ -38,8 +38,8 @@ func MyRunLoop(app *app.App) error {
 	app.Logger.Info("EGL=%v", app.EGL)
 	app.Logger.Info("OpenVG=%v", app.OpenVG)
 
-	// Create a background with opacity 0.5
-	bg, err := app.EGL.CreateBackground("OpenVG", 0.5)
+	// Create a background with opacity 0.9
+	bg, err := app.EGL.CreateBackground("OpenVG", 0.9)
 	if err != nil {
 		return app.Logger.Error("Error: %v", err)
 	}
@@ -51,6 +51,13 @@ func MyRunLoop(app *app.App) error {
 		return err
 	}
 	defer app.EGL.CloseSurface(fg)
+
+	// Add a DX window on surface 2 with full opacity
+	fg2, err := app.EGL.CreateSurface("DX",khronos.EGLSize{ 200, 200 },khronos.EGLPoint{ 50, 50 },2,0.5)
+	if err != nil {
+		return err
+	}
+	defer app.EGL.CloseSurface(fg2)
 
 	gfx := app.OpenVG
 
@@ -67,9 +74,10 @@ func MyRunLoop(app *app.App) error {
 	gfx.Line(khronos.VGPoint{0.0, 0.0}, khronos.VGPoint{100.0, 100.0})
 	gfx.Flush()
 
-	// Move surface
+	// Move surfaces
 	for i := 0; i < 100; i++ {
-		app.EGL.MoveSurfaceOriginBy(fg, khronos.EGLPoint{1, 1})
+		app.EGL.MoveSurfaceOriginBy(fg, khronos.EGLPoint{0, 1})
+		app.EGL.MoveSurfaceOriginBy(fg2, khronos.EGLPoint{1, 0})
 	}
 
 	// wait for a key press
