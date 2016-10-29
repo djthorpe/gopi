@@ -5,14 +5,14 @@ The EGL layer roughly translates into the part of the system which creates
 "surfaces" on the device display, and allows you to draw on them. The actual
 drawing is performed by a higher-level API such as OpenVG or OpenGL.
 
-In order to use the EGL layer, you'll need to create a "display" and then
-For example:
+In order to use the EGL layer, you'll need to create a "display" and then an
+EGL object. For example:
 
 ```go
 	// Create the display
     display, err := gopi.Open(rpi.DXDisplayConfig{
-			Device:  this.Device,
-			Display: config.Display,
+		Device:  this.Device,
+		Display: config.Display,
 	}, logger)
 	if err != nil { /* handle error */ }
 	defer display.Close()
@@ -24,6 +24,9 @@ For example:
 	/* do things here */
 ```
 
+As shown in this example, once you've finished using your display, you will need
+to `Close()` both the `egl` and `display` objects.
+
 ## Creating Surfaces
 
 Once you have an EGL object, you can create surfaces on which you can draw. These
@@ -33,9 +36,9 @@ a normal surface (which can be positioned above the background).
 When creating the surface, you'll need to specify the API you wish to "bind"
 the drawing surface to. Typical values will be:
 
-  * "DX" when you want to draw pixels onto the surface
-  * "OpenVG" when you want to use 2D vector graphics
-  * "OpenGL" when you want to use 3D vector graphics
+  * `"DX"` when you want to draw pixels onto the surface
+  * `"OpenVG"` when you want to use 2D vector graphics
+  * `"OpenGL"` when you want to use 3D vector graphics
   
 Here's an example where you create a background and set the pixels in the
 background to red. After every change of the bitmap, you'll need to "flush" the
