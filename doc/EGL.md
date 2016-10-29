@@ -73,6 +73,10 @@ can be between 0.0 and 1.0:
 	defer egl.DestroySurface(surface)
 ```
 
+As shown in these examples, you should call the `DestroySurface()` method when
+you're done with the surfaces. This will remove the surface from the screen and
+release any resources associated with it.
+
 ## Changing Layers and Opacity
 
 Surfaces which are not the background surface can have their layer changed using
