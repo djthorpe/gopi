@@ -160,6 +160,7 @@ var (
 	EGLErrorInvalidDisplayDriver     = errors.New("Invalid display driver parameter")
 	EGLErrorInvalidAPIBind           = errors.New("Invalid EGL API binding parameter")
 	EGLErrorInvalidFrameBufferConfig = errors.New("Invalid EGL framebuffer parameter")
+	EGLErrorNoBitmap                 = errors.New("No bitmap")
 	EGLErrorInvalidParameter         = errors.New("Invalid parameter")
 )
 
@@ -377,6 +378,11 @@ func (this *eglDriver) getFrameBufferConfiguration() (eglConfig, error) {
 
 // Create EGL Context with API value
 func (this *eglDriver) createContext(api string) (eglConfig, eglContext, error) {
+	// If api is DIPMANX, then return nil, nil, nil
+	if api==DISPMANX_API_STRING {
+		return EGL_NO_CONFIG, EGL_NO_CONTEXT, nil
+	}
+
 	// Bind API
 	err := this.BindAPI(api)
 	if err != nil {

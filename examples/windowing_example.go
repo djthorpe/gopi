@@ -43,21 +43,26 @@ func MyRunLoop(app *app.App) error {
 	if err != nil {
 		return app.Logger.Error("Error: %v", err)
 	}
-	defer app.EGL.CloseSurface(bg)
+	defer app.EGL.DestroySurface(bg)
 
 	// Create a surface on layer 1 with full opacity
 	fg, err := app.EGL.CreateSurface("OpenVG", khronos.EGLSize{100, 100}, khronos.EGLPoint{100, 100}, 1, 1.0)
 	if err != nil {
 		return err
 	}
-	defer app.EGL.CloseSurface(fg)
+	defer app.EGL.DestroySurface(fg)
 
-	// Add a DX window on surface 2 with full opacity
+	// Add a DX window on surface 2 with 0.5 opacity
 	fg2, err := app.EGL.CreateSurface("DX",khronos.EGLSize{ 200, 200 },khronos.EGLPoint{ 50, 50 },2,0.5)
 	if err != nil {
 		return err
 	}
-	defer app.EGL.CloseSurface(fg2)
+	defer app.EGL.DestroySurface(fg2)
+
+	app.Logger.Info("fg=%v", fg)
+	app.Logger.Info("fg2=%v", fg2)
+
+	// SURFACE 1
 
 	gfx := app.OpenVG
 
@@ -74,7 +79,16 @@ func MyRunLoop(app *app.App) error {
 	gfx.Line(khronos.VGPoint{0.0, 0.0}, khronos.VGPoint{100.0, 100.0})
 	gfx.Flush()
 
-	// Move surfaces
+	// SURFACE 2
+	bm, err := fg2.GetBitmap()
+	if err != nil {
+		return err
+	}
+	app.Logger.Info("fg2 bm=%v", bm)
+	bm.SetPixel(khronos.EGLPoint{ 0,0 })
+	app.EGL.FlushSurface(fg2)
+	
+	// MOVE SURFACES
 	for i := 0; i < 100; i++ {
 		app.EGL.MoveSurfaceOriginBy(fg, khronos.EGLPoint{0, 1})
 		app.EGL.MoveSurfaceOriginBy(fg2, khronos.EGLPoint{1, 0})

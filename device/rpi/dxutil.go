@@ -74,6 +74,11 @@ const (
 )
 
 const (
+	// String to use when binding surface only to dispmanx API
+	DISPMANX_API_STRING = "DX"
+)
+
+const (
 	// DXTransform values
 	DX_NO_ROTATE DXTransform = iota
 	DX_ROTATE_90
@@ -129,6 +134,17 @@ const (
 	/* Protection values */
 	DX_PROTECTION_NONE DXProtection = 0
 	DX_PROTECTION_HDCP DXProtection = 11
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// GLOBAL VARIABLES
+
+var (
+	// The zero point
+	DXZeroPoint = DXPoint{ 0, 0 }
+
+	// The zero size
+	DXZeroSize = DXSize{ 0, 0 }
 )
 
 ////////////////////////////////////////////////////////////////////////////////

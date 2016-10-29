@@ -12,6 +12,10 @@ import (
 	"unsafe"
 )
 
+import (
+	khronos "../../khronos"      /* import "github.com/djthorpe/gopi/khronos" */
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -30,9 +34,9 @@ type (
 
 type DXResource struct {
 	handle dxResourceHandle
-	model  DXColorModel
-	size   DXSize
-	buffer uintptr
+	model  DXColorModel // color model, which should be RGBA32 (4 bytes per pixel)
+	size   khronos.EGLSize // size of the bitmap
+	stride uint32 // number of bytes per row rounded up to 16-byte boundaries
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,19 +49,22 @@ const (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func (this *DXDisplay) CreateResource(model DXColorModel, size DXSize) (*DXResource, error) {
+func (this *DXDisplay) CreateResource(model DXColorModel, size khronos.EGLSize) (*DXResource, error) {
 	resource := new(DXResource)
 	resource.size = size
 	resource.model = model
-	resource.handle, resource.buffer = resourceCreate(model, size.Width, size.Height)
+	resource.stride = dxAlignUp(uint32(size.Width),uint32(16)) * 4
+	this.log.Debug2("<rpi.DX>CreateResource model=%v size=%v stride=%v",model,size)
+	resource.handle = dxResourceCreate(model, size.Width, size.Height)
 	if resource.handle == DX_RESOURCE_NONE {
 		return nil, this.log.Error("dxResourceCreate failed")
 	}
 	return resource, nil
 }
 
-func (this *DXDisplay) CloseResource(resource *DXResource) error {
-	if resourceDelete(resource.handle) != true {
+func (this *DXDisplay) DestroyResource(resource *DXResource) error {
+	this.log.Debug2("<rpi.DX>DestroyResource")
+	if dxResourceDelete(resource.handle) != true {
 		return this.log.Error("dxResourceDelete failed")
 	}
 	resource.handle = DX_RESOURCE_NONE
@@ -65,26 +72,71 @@ func (this *DXDisplay) CloseResource(resource *DXResource) error {
 }
 
 func (this *DXResource) String() string {
-	return fmt.Sprintf("<rpi.DXResource>{ handle=%v model=%v size=%v buffer=%08X }", this.handle, this.model, this.size, this.buffer)
+	return fmt.Sprintf("<rpi.DXResource>{ handle=%v model=%v size=%v stride=%v }", this.handle, this.model, this.size, this.stride)
 }
+
+func (h dxResourceHandle) String() string {
+	return fmt.Sprintf("<rpi.DXResourceHandle>{%08X}",uint32(h))
+}
+
+func (this *DXResource) GetSize() khronos.EGLSize {
+	return this.size
+}
+
+func (this *DXResource) GetHandle() dxResourceHandle {
+	return this.handle
+}
+
+func (this *DXResource) SetPixel(pt khronos.EGLPoint) error {
+
+	// Load image
+	/*
+	reader, err := os.Open("/home/djt/missamerica.png")
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	m, _, err := image.Decode(reader)
+	if err != nil {
+		return err
+	}
+	bounds := m.Bounds()
+
+	*/
+
+	source := make([]uint32,32)
+	source[0] = uint32(0xFF0000FF)
+	source[1] = uint32(0xFF00FFFF)
+	source[16] = uint32(0xFFFF0000)
+	source[17] = uint32(0xFF00FF00)
+	dst_frame := DXFrame{ DXPoint{ int32(0), int32(0) }, DXSize{ uint32(this.size.Width), uint32(this.size.Height) } }
+	fmt.Println("WRITE",this.handle,this.model,source,dst_frame)
+	dxResourceWriteData(this.handle,this.model,this.stride,unsafe.Pointer(&source[0]),&dst_frame)
+	return nil
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods
 
-func resourceCreate(model DXColorModel, w, h uint32) (dxResourceHandle, uintptr) {
-	var ptr C.uint32_t
-	handle := dxResourceHandle(C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(model), C.uint32_t(w), C.uint32_t(h), (*C.uint32_t)(unsafe.Pointer(&ptr))))
-	return handle, uintptr(ptr)
+func dxResourceCreate(model DXColorModel, w, h uint) dxResourceHandle {
+	var dummy C.uint32_t
+	return dxResourceHandle(C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(model), C.uint32_t(w), C.uint32_t(h), (*C.uint32_t)(unsafe.Pointer(&dummy))))
 }
 
-func resourceDelete(handle dxResourceHandle) bool {
+func dxResourceDelete(handle dxResourceHandle) bool {
 	return C.vc_dispmanx_resource_delete(C.DISPMANX_RESOURCE_HANDLE_T(handle)) == DX_RESOURCE_SUCCESS
 }
 
-func resourceWriteData(handle dxResourceHandle, model DXColorModel, src_pitch int, src_buffer uintptr, dst_rect *DXFrame) bool {
-	return C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), C.VC_IMAGE_TYPE_T(model), C.int(src_pitch), unsafe.Pointer(src_buffer), (*C.VC_RECT_T)(unsafe.Pointer(dst_rect))) == DX_RESOURCE_SUCCESS
+func dxResourceWriteData(handle dxResourceHandle, model DXColorModel, src_pitch uint32, src_buffer unsafe.Pointer, dst_rect *DXFrame) bool {
+	return C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), C.VC_IMAGE_TYPE_T(model), C.int(src_pitch), src_buffer, (*C.VC_RECT_T)(unsafe.Pointer(dst_rect))) == DX_RESOURCE_SUCCESS
 }
 
-func resourceReadData(handle dxResourceHandle, src_rect *DXFrame, dst_buffer uintptr, dst_pitch int) bool {
+func dxResourceReadData(handle dxResourceHandle, src_rect *DXFrame, dst_buffer uintptr, dst_pitch int) bool {
 	return C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), (*C.VC_RECT_T)(unsafe.Pointer(src_rect)), unsafe.Pointer(dst_buffer), C.uint32_t(dst_pitch)) == DX_RESOURCE_SUCCESS
 }
+
+func dxAlignUp(value,alignment uint32) uint32 {
+	return ((value - 1) & ^(alignment - 1)) + alignment;
+}
+

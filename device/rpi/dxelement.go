@@ -51,23 +51,38 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// TODO: Allow DXResource to be set
-func (this *DXDisplay) AddElement(update dxUpdateHandle, layer uint16, opacity uint32, dst_rect *DXFrame, src_rect *DXFrame) (*DXElement, error) {
+func (this *DXDisplay) AddElement(update dxUpdateHandle, layer uint16, opacity uint32, dst_rect *DXFrame, src_resource *DXResource) (*DXElement, error) {
 
-	// destination frame
+	// destination frame - if nil, then cover whole frame
 	if dst_rect == nil {
 		size := this.GetSize()
-		dst_rect = &DXFrame{DXPoint{0, 0}, size}
+		dst_rect = &DXFrame{ DXZeroPoint, size}
+	}
+
+	// source frame size
+	var src_size DXSize
+	if src_resource != nil {
+		src_size.Width = uint32(src_resource.GetSize().Width)
+		src_size.Height = uint32(src_resource.GetSize().Height)
+	} else {
+		src_size.Width = dst_rect.Width
+		src_size.Height = dst_rect.Height
 	}
 
 	// set alpha
 	alpha := dxAlpha{DX_FLAGS_ALPHA_FIXED_ALL_PIXELS, opacity, 0}
 
+	// set resource handle
+	src_resource_handle := DX_RESOURCE_NONE
+	if src_resource != nil {
+		src_resource_handle = src_resource.GetHandle()
+	}
+
 	// create element structure
 	element := new(DXElement)
 
 	// add element
-	element.handle = dxElementAdd(update, this.handle, layer, dst_rect, DX_RESOURCE_NONE, src_rect, DX_PROTECTION_NONE, &alpha, nil, 0)
+	element.handle = dxElementAdd(update, this.handle, layer, dst_rect, src_resource_handle, src_size, DX_PROTECTION_NONE, &alpha, nil, 0)
 	if element.handle == DX_ELEMENT_NONE {
 		return nil, this.log.Error("dxElementAdd failed")
 	}
@@ -99,12 +114,24 @@ func (this *DXDisplay) SetElementDestination(update dxUpdateHandle, element *DXE
 	return nil
 }
 
+func (this *DXDisplay) SetElementModified(update dxUpdateHandle, element *DXElement, frame DXFrame) error {
+	if dxElementModified(update, element.handle, &frame) != true {
+		return this.log.Error("dxElementModified failed")
+	}
+	// return success
+	return nil
+}
+
 func (this *DXElement) GetHandle() dxElementHandle {
 	return this.handle
 }
 
 func (this *DXElement) GetLayer() uint16 {
 	return this.layer
+}
+
+func (this *DXElement) GetFrame() DXFrame {
+	return DXFrame{ DXPoint{ this.frame.X, this.frame.Y }, DXSize{ this.frame.Width, this.frame.Height } }
 }
 
 func (this *DXElement) String() string {
@@ -118,12 +145,17 @@ func (h dxElementHandle) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func dxElementAdd(update dxUpdateHandle, display dxDisplayHandle, layer uint16, dest_rect *DXFrame, src_resource dxResourceHandle, src_rect *DXFrame, protection DXProtection, alpha *dxAlpha, clamp *dxClamp, transform DXTransform) dxElementHandle {
-	return dxElementHandle(C.vc_dispmanx_element_add(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_DISPLAY_HANDLE_T(display), C.int32_t(layer), (*C.VC_RECT_T)(unsafe.Pointer(dest_rect)), C.DISPMANX_RESOURCE_HANDLE_T(src_resource), (*C.VC_RECT_T)(unsafe.Pointer(src_rect)), C.DISPMANX_PROTECTION_T(protection), (*C.VC_DISPMANX_ALPHA_T)(unsafe.Pointer(alpha)), (*C.DISPMANX_CLAMP_T)(unsafe.Pointer(clamp)), C.DISPMANX_TRANSFORM_T(transform)))
+func dxElementAdd(update dxUpdateHandle, display dxDisplayHandle, layer uint16, dest_frame *DXFrame, src_resource dxResourceHandle, src_size DXSize, protection DXProtection, alpha *dxAlpha, clamp *dxClamp, transform DXTransform) dxElementHandle {
+	src_frame := &DXFrame{ DXPoint{ 0, 0 }, DXSize{ uint32(src_size.Width) << 16, uint32(src_size.Height) << 16 } }
+	return dxElementHandle(C.vc_dispmanx_element_add(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_DISPLAY_HANDLE_T(display), C.int32_t(layer), (*C.VC_RECT_T)(unsafe.Pointer(dest_frame)), C.DISPMANX_RESOURCE_HANDLE_T(src_resource), (*C.VC_RECT_T)(unsafe.Pointer(src_frame)), C.DISPMANX_PROTECTION_T(protection), (*C.VC_DISPMANX_ALPHA_T)(unsafe.Pointer(alpha)), (*C.DISPMANX_CLAMP_T)(unsafe.Pointer(clamp)), C.DISPMANX_TRANSFORM_T(transform)))
 }
 
 func dxElementRemove(update dxUpdateHandle, element dxElementHandle) bool {
 	return C.vc_dispmanx_element_remove(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element)) == DX_ELEMENT_SUCCESS
+}
+
+func dxElementModified(update dxUpdateHandle, element dxElementHandle,frame *DXFrame) bool {
+	return C.vc_dispmanx_element_modified(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element),(*C.VC_RECT_T)(unsafe.Pointer(frame))) == DX_ELEMENT_SUCCESS
 }
 
 func dxElementChangeDestinationFrame(update dxUpdateHandle, element dxElementHandle, frame *DXFrame) bool {

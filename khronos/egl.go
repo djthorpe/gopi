@@ -68,17 +68,17 @@ type EGLDriver interface {
 	// Create Surface
 	CreateSurface(api string, size EGLSize, origin EGLPoint, layer uint16, opacity float32) (EGLSurface, error)
 
-	// Close Surface
-	CloseSurface(surface EGLSurface) error
+	// Destroy Surface
+	DestroySurface(surface EGLSurface) error
+
+	// Move surface origin relative to current origin
+	MoveSurfaceOriginBy(surface EGLSurface, rel EGLPoint) error
 
 	// Flush surface updates to screen
 	FlushSurface(surface EGLSurface) error
 
 	// Set current surface context
 	SetCurrentContext(surface EGLSurface) error
-
-	// Move surface origin relative to current origin
-	MoveSurfaceOriginBy(surface EGLSurface, rel EGLPoint) error
 }
 
 // Abstract drawable surface
@@ -94,6 +94,10 @@ type EGLSurface interface {
 
 	// Return layer the surface is on
 	GetLayer() uint16
+
+	// Return the bitmap associated with the surface (if the
+	// surface represents a bitmap resource)
+	GetBitmap() (EGLBitmap, error)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

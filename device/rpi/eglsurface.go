@@ -37,10 +37,12 @@ type eglNativeWindow struct {
 
 // Internal window structure
 type eglWindow struct {
+	api     string
 	config  eglConfig
 	context eglContext
 	surface eglSurface
 	element *DXElement
+	resource *DXResource
 	origin  *khronos.EGLPoint
 	size    *khronos.EGLSize
 }
@@ -89,14 +91,18 @@ func (this *eglDriver) CreateSurface(api string, size khronos.EGLSize, origin kh
 }
 
 // Destroy a surface
-func (this *eglDriver) CloseSurface(surface khronos.EGLSurface) error {
-	this.log.Debug2("<rpi.EGL>CloseSurface")
+func (this *eglDriver) DestroySurface(surface khronos.EGLSurface) error {
+	this.log.Debug2("<rpi.EGL>DestroySurface")
 	return this.closeWindow(surface.(*eglWindow))
 }
 
 // Flush surface contents to screen
 func (this *eglDriver) FlushSurface(surface khronos.EGLSurface) error {
-	return this.swapWindowBuffer(surface.(*eglWindow))
+	if surface.(*eglWindow).api == DISPMANX_API_STRING {
+		return this.setElementUpdated(surface.(*eglWindow))
+	} else {
+		return this.swapWindowBuffer(surface.(*eglWindow))
+	}
 }
 
 // Move surface origin relative to current origin
@@ -111,7 +117,11 @@ func (this *eglDriver) SetCurrentContext(surface khronos.EGLSurface) error {
 
 // Human-readble string for window
 func (surface *eglWindow) String() string {
-	return fmt.Sprintf("<rpi.EGLSurface>{ config=%v context=%v surface=%v element=%v }", surface.config, surface.context, surface.surface, surface.element)
+	if surface.api == DISPMANX_API_STRING {
+		return fmt.Sprintf("<rpi.EGLSurface>{ api=%v resource=%v element=%v  }", surface.api, surface.resource, surface.element)
+	} else {
+		return fmt.Sprintf("<rpi.EGLSurface>{ api=%v config=%v context=%v surface=%v element=%v }", surface.api, surface.config, surface.context, surface.surface, surface.element)
+	}
 }
 
 // Return window origin on screen compared to NW corner of screen
@@ -134,6 +144,15 @@ func (surface *eglWindow) GetLayer() uint16 {
 	return surface.element.GetLayer()
 }
 
+// Return the bitmap associated with the surface, or
+// will return an error otherwise
+func (surface *eglWindow) GetBitmap() (khronos.EGLBitmap, error) {
+	if surface.resource == nil {
+		return nil, EGLErrorNoBitmap
+	}
+	return surface.resource, nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS: Windows
 
@@ -144,6 +163,7 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 	window := new(eglWindow)
 	window.origin = &origin
 	window.size = &size
+	window.api = api
 
 	// CHECK SIZE PARAMETERS
 	if uint32(size.Width) > EGL_WINDOW_SIZE_MAX || uint32(size.Height) > EGL_WINDOW_SIZE_MAX {
@@ -165,11 +185,26 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 		return nil, err
 	}
 
+	// If DISPMANX then create a 2x2 resource
+	if api == DISPMANX_API_STRING {
+		window.resource, err = this.dx.CreateResource(DX_IMAGE_RGBA32,khronos.EGLSize{ uint(2), uint(2) })
+		if err != nil {
+			this.closeWindow(window)
+			return nil, err
+		}
+	}
+
 	source_frame := &DXFrame{}
 	window_frame := &DXFrame{}
-	source_frame.Set(DXPoint{0, 0}, DXSize{uint32(size.Width) << 16, uint32(size.Height) << 16})
+	// if there is a resource, set from that
+	if window.resource != nil {
+		source_size := window.resource.GetSize()
+		source_frame.Set(DXPoint{0, 0}, DXSize{ uint32(source_size.Width), uint32(source_size.Height) })
+	} else {
+		source_frame.Set(DXPoint{0, 0}, DXSize{ uint32(size.Width), uint32(size.Height) })
+	}
 	window_frame.Set(DXPoint{int32(origin.X), int32(origin.Y)}, DXSize{uint32(size.Width), uint32(size.Height)})
-	window.element, err = this.dx.AddElement(update, layer, uint32(opacity*255.0), window_frame, source_frame)
+	window.element, err = this.dx.AddElement(update, layer, uint32(opacity*255.0), window_frame, window.resource)
 	if err != nil {
 		this.closeWindow(window)
 		return nil, err
@@ -177,6 +212,11 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 	if err := this.dx.UpdateSubmit(update); err != nil {
 		this.closeWindow(window)
 		return nil, err
+	}
+
+	// return window if no context
+	if window.context == EGL_NO_CONTEXT {
+		return window, nil
 	}
 
 	// CREATE SURFACE
@@ -214,6 +254,14 @@ func (this *eglDriver) closeWindow(window *eglWindow) error {
 	}
 	window.element = nil
 
+	// remove resource
+	if window.resource != nil {
+		if err := this.dx.DestroyResource(window.resource); err != nil {
+			return err
+		}
+	}
+	window.resource = nil
+
 	// remove surface
 	if window.surface != EGL_NO_SURFACE {
 		if err := this.destroySurface(window.surface); err != nil {
@@ -236,6 +284,21 @@ func (this *eglDriver) closeWindow(window *eglWindow) error {
 
 func (this *eglDriver) swapWindowBuffer(window *eglWindow) error {
 	return this.swapBuffer(window.surface)
+}
+
+func (this *eglDriver) setElementUpdated(window *eglWindow) error {
+	update, err := this.dx.UpdateBegin()
+	if err != nil {
+		return err
+	}
+	if err = this.dx.SetElementModified(update,window.element,window.element.GetFrame()); err != nil {
+		return err
+	}
+	if err = this.dx.UpdateSubmit(update); err != nil {
+		return err
+	}
+	// success
+	return nil
 }
 
 func (this *eglDriver) setWindowOrigin(window *eglWindow, new_origin khronos.EGLPoint) error {
