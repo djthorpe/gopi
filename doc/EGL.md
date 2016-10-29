@@ -77,11 +77,16 @@ As shown in these examples, you should call the `DestroySurface()` method when
 you're done with the surfaces. This will remove the surface from the screen and
 release any resources associated with it.
 
-## Changing Layers and Opacity
+## Changing layer and opacity
 
 Surfaces which are not the background surface can have their layer changed using
 the following method:
 
 TODO
+
+## Moving the surface on the display
+
+TODO
+
 
 
