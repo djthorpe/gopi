@@ -408,7 +408,7 @@ func (this *eglDriver) destroyContext(context eglContext) error {
 }
 
 // Set current EGL Context
-func (this *eglDriver) makeCurrent(surface eglSurface,context eglContext) error {
+func (this *eglDriver) makeCurrent(surface eglSurface, context eglContext) error {
 	result := C.eglMakeCurrent(this.display, C.EGLSurface(surface), C.EGLSurface(surface), C.EGLContext(context))
 	if result == C.EGLBoolean(EGL_FALSE) {
 		return this.GetError()
@@ -418,7 +418,7 @@ func (this *eglDriver) makeCurrent(surface eglSurface,context eglContext) error 
 
 // Create surface
 func (this *eglDriver) createSurface(config eglConfig, window *eglNativeWindow) (eglSurface, error) {
-	// Create EGL window surface given a native window
+	// Create EGL surface given a native window
 	surface := eglSurface(C.eglCreateWindowSurface(this.display, C.EGLConfig(config), (*C.EGLNativeWindowType)(unsafe.Pointer(window)), nil))
 	if surface == EGL_NO_SURFACE {
 		return EGL_NO_SURFACE, this.GetError()

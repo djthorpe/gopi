@@ -59,72 +59,85 @@ const (
 // PUBLIC FUNCTIONS: Windows
 
 // Create a background
-func (this *eglDriver) CreateBackground(api string) (khronos.EGLWindow, error) {
-	this.log.Debug2("<rpi.EGL>CreateBackground api=%v", api)
-
+func (this *eglDriver) CreateBackground(api string, opacity float32) (khronos.EGLSurface, error) {
+	this.log.Debug2("<rpi.EGL>CreateBackground api=%v opacity=%v", api, opacity)
 	frame := this.GetFrame()
-
-	return this.createWindow(api, khronos.EGLSize{frame.Width, frame.Height}, khronos.EGLPoint{frame.X, frame.Y}, EGL_LAYER_BG)
+	return this.createWindow(api, khronos.EGLSize{frame.Width, frame.Height}, khronos.EGLPoint{frame.X, frame.Y}, EGL_LAYER_BG, opacity)
 }
 
-// Create a window
-func (this *eglDriver) CreateWindow(api string, size khronos.EGLSize, origin khronos.EGLPoint, layer uint16) (khronos.EGLWindow, error) {
-	this.log.Debug2("<rpi.EGL>CreateWindow api=%v size=%v origin=%v layer=%v", api, size, origin, layer)
+// Create a surface
+func (this *eglDriver) CreateSurface(api string, size khronos.EGLSize, origin khronos.EGLPoint, layer uint16, opacity float32) (khronos.EGLSurface, error) {
+	this.log.Debug2("<rpi.EGL>CreateSurface api=%v size=%v origin=%v layer=%v opacity=%v", api, size, origin, layer, opacity)
 
 	// Check layer is not background or topmost (which will be for the pointer)
 	if layer < EGL_LAYER_MIN || layer > EGL_LAYER_MAX {
 		return nil, errors.New("Invalid layer parameter")
 	}
 
-	window, err := this.createWindow(api, size, origin, layer)
+	// Check opacity
+	if opacity < 0.0 || opacity > 1.0 {
+		return nil, errors.New("Invalid opacity parameter")
+	}
+
+	surface, err := this.createWindow(api, size, origin, layer, opacity)
 	if err != nil {
 		return nil, err
 	}
 
 	// success
-	return khronos.EGLWindow(window), nil
+	return khronos.EGLSurface(surface), nil
 }
 
-// Close a window
-func (this *eglDriver) CloseWindow(window khronos.EGLWindow) error {
-	this.log.Debug2("<rpi.EGL>CloseWindow")
-	return this.closeWindow(window.(*eglWindow))
+// Destroy a surface
+func (this *eglDriver) CloseSurface(surface khronos.EGLSurface) error {
+	this.log.Debug2("<rpi.EGL>CloseSurface")
+	return this.closeWindow(surface.(*eglWindow))
 }
 
-// Flush window contents to screen
-func (this *eglDriver) FlushWindow(window khronos.EGLWindow) error {
-	return this.swapWindowBuffer(window.(*eglWindow))
+// Flush surface contents to screen
+func (this *eglDriver) FlushSurface(surface khronos.EGLSurface) error {
+	return this.swapWindowBuffer(surface.(*eglWindow))
 }
 
-// Move window origin relative to current origin
-func (this *eglDriver) MoveWindowOriginBy(window khronos.EGLWindow, rel khronos.EGLPoint) error {
-	return this.setWindowOrigin(window.(*eglWindow),window.GetOrigin().Add(rel))
+// Move surface origin relative to current origin
+func (this *eglDriver) MoveSurfaceOriginBy(surface khronos.EGLSurface, rel khronos.EGLPoint) error {
+	return this.setWindowOrigin(surface.(*eglWindow), surface.GetOrigin().Add(rel))
 }
 
 // Set current context
-func (this *eglDriver) SetCurrentContext(window khronos.EGLWindow) error {
-	return this.setCurrentContext(window.(*eglWindow))
+func (this *eglDriver) SetCurrentContext(surface khronos.EGLSurface) error {
+	return this.setCurrentContext(surface.(*eglWindow))
 }
 
 // Human-readble string for window
-func (window *eglWindow) String() string {
-	return fmt.Sprintf("<rpi.EGLWindow>{ config=%v context=%v surface=%v element=%v }", window.config, window.context, window.surface, window.element)
+func (surface *eglWindow) String() string {
+	return fmt.Sprintf("<rpi.EGLSurface>{ config=%v context=%v surface=%v element=%v }", surface.config, surface.context, surface.surface, surface.element)
 }
 
 // Return window origin on screen compared to NW corner of screen
-func (window *eglWindow) GetOrigin() khronos.EGLPoint {
-	return *window.origin
+func (surface *eglWindow) GetOrigin() khronos.EGLPoint {
+	return *surface.origin
 }
 
 // Return window size
-func (window *eglWindow) GetSize() khronos.EGLSize {
-	return *window.size
+func (surface *eglWindow) GetSize() khronos.EGLSize {
+	return *surface.size
+}
+
+// Is surface the background surface?
+func (surface *eglWindow) IsBackgroundSurface() bool {
+	return surface.GetLayer() == EGL_LAYER_BG
+}
+
+// Return layer the surface is on
+func (surface *eglWindow) GetLayer() uint16 {
+	return surface.element.GetLayer()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS: Windows
 
-func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khronos.EGLPoint, layer uint16) (*eglWindow, error) {
+func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khronos.EGLPoint, layer uint16, opacity float32) (*eglWindow, error) {
 	var err error
 
 	// CREATE WINDOW
@@ -135,7 +148,7 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 	// CHECK SIZE PARAMETERS
 	if uint32(size.Width) > EGL_WINDOW_SIZE_MAX || uint32(size.Height) > EGL_WINDOW_SIZE_MAX {
 		this.closeWindow(window)
-		return nil, this.log.Error("Invalid width or height parameters: %v",size)
+		return nil, this.log.Error("Invalid width or height parameters: %v", size)
 	}
 
 	// CREATE CONTEXT
@@ -156,7 +169,7 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 	window_frame := &DXFrame{}
 	source_frame.Set(DXPoint{0, 0}, DXSize{uint32(size.Width) << 16, uint32(size.Height) << 16})
 	window_frame.Set(DXPoint{int32(origin.X), int32(origin.Y)}, DXSize{uint32(size.Width), uint32(size.Height)})
-	window.element, err = this.dx.AddElement(update, layer, window_frame, source_frame)
+	window.element, err = this.dx.AddElement(update, layer, uint32(opacity*255.0), window_frame, source_frame)
 	if err != nil {
 		this.closeWindow(window)
 		return nil, err
@@ -225,14 +238,14 @@ func (this *eglDriver) swapWindowBuffer(window *eglWindow) error {
 	return this.swapBuffer(window.surface)
 }
 
-func (this *eglDriver) setWindowOrigin(window *eglWindow,new_origin khronos.EGLPoint) error {
+func (this *eglDriver) setWindowOrigin(window *eglWindow, new_origin khronos.EGLPoint) error {
 	update, err := this.dx.UpdateBegin()
 	if err != nil {
 		return err
 	}
 	size := window.GetSize()
-	frame := DXFrame{ DXPoint{ int32(new_origin.X), int32(new_origin.Y) }, DXSize{ uint32(size.Width), uint32(size.Height) } }
-	if err := this.dx.SetElementDestination(update,window.element,frame); err != nil {
+	frame := DXFrame{DXPoint{int32(new_origin.X), int32(new_origin.Y)}, DXSize{uint32(size.Width), uint32(size.Height)}}
+	if err := this.dx.SetElementDestination(update, window.element, frame); err != nil {
 		return err
 	}
 	window.origin = &new_origin
@@ -243,8 +256,5 @@ func (this *eglDriver) setWindowOrigin(window *eglWindow,new_origin khronos.EGLP
 }
 
 func (this *eglDriver) setCurrentContext(window *eglWindow) error {
-	return this.makeCurrent(window.surface,window.context)
+	return this.makeCurrent(window.surface, window.context)
 }
-
-
-

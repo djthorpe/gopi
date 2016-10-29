@@ -63,31 +63,37 @@ type EGLDriver interface {
 	GetFrame() EGLFrame
 
 	// Create Background
-	CreateBackground(api string) (EGLWindow, error)
+	CreateBackground(api string, opacity float32) (EGLSurface, error)
 
-	// Create Window
-	CreateWindow(api string, size EGLSize, origin EGLPoint, layer uint16) (EGLWindow, error)
+	// Create Surface
+	CreateSurface(api string, size EGLSize, origin EGLPoint, layer uint16, opacity float32) (EGLSurface, error)
 
-	// Close window
-	CloseWindow(window EGLWindow) error
+	// Close Surface
+	CloseSurface(surface EGLSurface) error
 
-	// Flush window updates to screen
-	FlushWindow(window EGLWindow) error
+	// Flush surface updates to screen
+	FlushSurface(surface EGLSurface) error
 
-	// Set current window context
-	SetCurrentContext(window EGLWindow) error
+	// Set current surface context
+	SetCurrentContext(surface EGLSurface) error
 
-	// Move window origin relative to current origin
-	MoveWindowOriginBy(window EGLWindow, rel EGLPoint) error
+	// Move surface origin relative to current origin
+	MoveSurfaceOriginBy(surface EGLSurface, rel EGLPoint) error
 }
 
-// Abstract window
-type EGLWindow interface {
-	// Return window origin (NW value)
+// Abstract drawable surface
+type EGLSurface interface {
+	// Return origin (NW value)
 	GetOrigin() EGLPoint
 
 	// Return window size
 	GetSize() EGLSize
+
+	// Is the surface the background?
+	IsBackgroundSurface() bool
+
+	// Return layer the surface is on
+	GetLayer() uint16
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,10 +112,9 @@ func (this EGLFrame) String() string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Add methods
+// Point, Size and Frame methods
 
+// Return the result of adding two points
 func (this EGLPoint) Add(that EGLPoint) EGLPoint {
-	return EGLPoint{ this.X + that.X, this.Y + that.Y }
+	return EGLPoint{this.X + that.X, this.Y + that.Y}
 }
-
-

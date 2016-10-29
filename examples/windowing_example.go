@@ -10,16 +10,16 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
-	"bufio"
 )
 
 import (
-	app "../app"   /* import "github.com/djthorpe/gopi/app" */
-	util "../util" /* import "github.com/djthorpe/gopi/util" */
+	app "../app"         /* import "github.com/djthorpe/gopi/app" */
 	khronos "../khronos" /* import "github.com/djthorpe/gopi/khronos" */
+	util "../util"       /* import "github.com/djthorpe/gopi/util" */
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,19 +38,19 @@ func MyRunLoop(app *app.App) error {
 	app.Logger.Info("EGL=%v", app.EGL)
 	app.Logger.Info("OpenVG=%v", app.OpenVG)
 
-	// Create a background
-	bg, err := app.EGL.CreateBackground("OpenVG")
+	// Create a background with opacity 0.5
+	bg, err := app.EGL.CreateBackground("OpenVG", 0.5)
 	if err != nil {
 		return app.Logger.Error("Error: %v", err)
 	}
-	defer app.EGL.CloseWindow(bg)
+	defer app.EGL.CloseSurface(bg)
 
-	// Create a window
-	fg, err := app.EGL.CreateWindow("OpenVG",khronos.EGLSize{ 100, 100 },khronos.EGLPoint{ 100, 100 },1)
+	// Create a surface on layer 1 with full opacity
+	fg, err := app.EGL.CreateSurface("OpenVG", khronos.EGLSize{100, 100}, khronos.EGLPoint{100, 100}, 1, 1.0)
 	if err != nil {
 		return err
 	}
-	defer app.EGL.CloseWindow(fg)
+	defer app.EGL.CloseSurface(fg)
 
 	gfx := app.OpenVG
 
@@ -58,17 +58,18 @@ func MyRunLoop(app *app.App) error {
 	if err := gfx.Begin(bg); err != nil {
 		return err
 	}
-	gfx.Clear(khronos.VGColor{ 1.0, 0.0, 0.0, 1.0 })
+	gfx.Clear(khronos.VGColorDarkGrey)
 	gfx.Flush()
 
-	// Clear foreground to green
+	// Clear foreground to yellow
 	gfx.Begin(fg)
-	gfx.Clear(khronos.VGColor{ 0.0, 1.0, 0.0, 1.0 })
+	gfx.Clear(khronos.VGColorYellow)
+	gfx.Line(khronos.VGPoint{0.0, 0.0}, khronos.VGPoint{100.0, 100.0})
 	gfx.Flush()
 
-	// Move window
+	// Move surface
 	for i := 0; i < 100; i++ {
-		app.EGL.MoveWindowOriginBy(fg,khronos.EGLPoint{ 1, 1 })
+		app.EGL.MoveSurfaceOriginBy(fg, khronos.EGLPoint{1, 1})
 	}
 
 	// wait for a key press

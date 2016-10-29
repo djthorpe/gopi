@@ -39,7 +39,6 @@ const (
 	DX_ELEMENT_SUCCESS                 = DX_SUCCESS
 )
 
-
 const (
 	DX_ELEMENT_CHANGE_LAYER         uint32 = (1 << 0)
 	DX_ELEMENT_CHANGE_OPACITY       uint32 = (1 << 1)
@@ -52,8 +51,8 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// TODO: Allow DXResource and alphas to be set
-func (this *DXDisplay) AddElement(update dxUpdateHandle, layer uint16, dst_rect *DXFrame, src_rect *DXFrame) (*DXElement, error) {
+// TODO: Allow DXResource to be set
+func (this *DXDisplay) AddElement(update dxUpdateHandle, layer uint16, opacity uint32, dst_rect *DXFrame, src_rect *DXFrame) (*DXElement, error) {
 
 	// destination frame
 	if dst_rect == nil {
@@ -61,9 +60,8 @@ func (this *DXDisplay) AddElement(update dxUpdateHandle, layer uint16, dst_rect 
 		dst_rect = &DXFrame{DXPoint{0, 0}, size}
 	}
 
-	// set alpha to 255
-	// TODO: Allow Alpha to be set
-	alpha := dxAlpha{DX_FLAGS_ALPHA_FIXED_ALL_PIXELS, 255, 0}
+	// set alpha
+	alpha := dxAlpha{DX_FLAGS_ALPHA_FIXED_ALL_PIXELS, opacity, 0}
 
 	// create element structure
 	element := new(DXElement)
@@ -89,8 +87,8 @@ func (this *DXDisplay) RemoveElement(update dxUpdateHandle, element *DXElement) 
 	return nil
 }
 
-func (this *DXDisplay) SetElementDestination(update dxUpdateHandle, element *DXElement,frame DXFrame) error {
-	if dxElementChangeDestinationFrame(update,element.handle,&frame) != true {
+func (this *DXDisplay) SetElementDestination(update dxUpdateHandle, element *DXElement, frame DXFrame) error {
+	if dxElementChangeDestinationFrame(update, element.handle, &frame) != true {
 		return this.log.Error("SetElementDestination failed")
 	}
 
@@ -103,6 +101,10 @@ func (this *DXDisplay) SetElementDestination(update dxUpdateHandle, element *DXE
 
 func (this *DXElement) GetHandle() dxElementHandle {
 	return this.handle
+}
+
+func (this *DXElement) GetLayer() uint16 {
+	return this.layer
 }
 
 func (this *DXElement) String() string {
@@ -137,4 +139,3 @@ func dxElementChangeDestinationFrame(update dxUpdateHandle, element dxElementHan
 		C.DISPMANX_TRANSFORM_T(0),             // transform
 	) == DX_ELEMENT_SUCCESS
 }
-
