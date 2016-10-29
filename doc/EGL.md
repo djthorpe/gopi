@@ -27,7 +27,11 @@ EGL object. For example:
 As shown in this example, once you've finished using your display, you will need
 to `Close()` both the `egl` and `display` objects.
 
-## Creating Surfaces
+## Creating surfaces
+
+A surface is a drawable region on the display which can be moved around. Surfaces
+also have a layer (which defines which surfaces are drawn above the others) and
+opacity (which defines how transparent the surface is).
 
 Once you have an EGL object, you can create surfaces on which you can draw. These
 can either be a background (which covers the whole of the display screen) or
