@@ -82,11 +82,30 @@ release any resources associated with it.
 Surfaces which are not the background surface can have their layer changed using
 the following method:
 
-TODO
+```go
+	err := egl.SetSurfaceLayer(surface,surface.GetLayer() + 1)
+	if err != nil { /* handle error */ }
+```
+
+Similarly for opacity (which also works for backgrounds):
+
+```go
+	err := egl.SetSurfaceOpacity(surface,surface.GetOpacity() + 0.1)
+	if err != nil { /* handle error */ }
+```
+
 
 ## Moving the surface on the display
 
-TODO
+You can move a surface on the display using `MoveSurfaceOriginBy` if the
+surface is not a background. The example here moves the origin towards down 
+and right:
 
+```go
+	err := egl.MoveSurfaceOriginBy(surface,khronos.EGLPoint{ 10, 10 })
+	if err != nil { /* handle error */ }
+```
+
+Negative values can be used to move the surface left or up.
 
 
