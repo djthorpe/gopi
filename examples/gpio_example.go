@@ -5,6 +5,12 @@
 
 	For Licensing and Usage information, please see LICENSE.md
 */
+
+// This sample program shows how you can interact with the GPIO device on
+// your Raspberry Pi. Firstly it enumerates all the pins (showing both
+// physical pin number and logical name) with the state of those pins, then
+// it can blink an LED on/off if the LED is connected to physical pin 40
+// in series with a resistor to pin 39 or any 0V pin
 package main
 
 import (
