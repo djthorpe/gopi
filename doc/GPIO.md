@@ -11,13 +11,14 @@ to create an object given the device. For example:
 		Device: my_device
 	}, logger)
 	if err != nil { /* handle error */ }
-	defer gpio()
+	defer gpio.Close()
 	
 	/* do things here */
 ```
 
 You can interact with GPIO "logical pins" by setting their mode to be `INPUT`
-or `OUTPUT` and reading the pin level. For example,
+or `OUTPUT` and reading the pin level. For example here is a way to set the
+pin GPIO21 to output and set the output to high:
 
 ```go
 	// Return a logical pin from a physical pin and set the mode to output
