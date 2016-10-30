@@ -48,7 +48,7 @@ function:
   }
 ```
 
-## Setting the pin mode and internal resistor mode
+## Setting the pin and pull-up internal resistor mode
 
 Pins can be in one of several modes, but it's likely most pins will be in
 `INPUT` or `OUTPUT` mode (there are also `ALT0`..`ALT5`). You can set the
