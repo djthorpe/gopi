@@ -42,7 +42,7 @@ function:
 ```go
   for _, logical := range gpio.Pins() {
 	if physical := gpio.PhysicalPinForPin(pin); physical != 0 {
-		fmt.Printf("Logical Pin=%v, Physical Pin=%\n",logical,physical)
+		fmt.Printf("Logical Pin=%v, Physical Pin=%v\n",logical,physical)
 	}
   }
 ```
@@ -52,7 +52,26 @@ function:
 Pins can be in one of several modes, but it's likely most pins will be in
 `INPUT` or `OUTPUT` mode (there are also `ALT0`..`ALT5`). You can set the
 pin mode (or query the state of the current mode) using the functions
-`SetPinMode` and `GetPinMode`.
+`SetPinMode` and `GetPinMode`. For example,
+
+```go
+	// Return a logical pin from a physical pin and set the mode to output
+	pin := gpio.PhysicalPin(40) // GPIO21
+	if pin != gopi.GPIO_PIN_NONE {
+		gpio.SetPinMode(pin,gopi.GPIO_OUTPUT)
+	}
+	
+	// Print out the current pin mode
+	mode := gpio.GetPinMode(pin)
+	fmt.Println(pin,"is in mode",mode)
+```
+
+The Raspberry Pi also allows you to set the internal pull-up resistor mode to
+either `OFF`, `DOWN` or `UP`.
+
+TODO
+
+
 
 
 
