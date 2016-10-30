@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strings"
 	"unsafe"
-
 	"strconv"
 )
 
@@ -244,69 +243,5 @@ func (this *RaspberryPi) GetMemoryMegabytes() (map[string]uint64, error) {
 	return memories, nil
 }
 
-// Return OTP memory
-func (this *RaspberryPi) GetOTP() (map[byte]uint32, error) {
-	// retrieve OTP
-	value, err := this.VCGenCmd(GENCMD_OTPDUMP)
-	if err != nil {
-		return nil, err
-	}
 
-	// find matches in the text
-	matches := REGEXP_OTP.FindAllStringSubmatch(value, -1)
-	if len(matches) == 0 {
-		return nil, ErrorResponse
-	}
-	otp := make(map[byte]uint32, len(matches))
-	for _, match := range matches {
-		if len(match) != 3 {
-			return nil, ErrorResponse
-		}
-		index, err := strconv.ParseUint(match[1], 10, 8)
-		if err != nil {
-			return nil, err
-		}
-		value, err := strconv.ParseUint(match[2], 16, 32)
-		if err != nil {
-			return nil, err
-		}
-		otp[byte(index)] = uint32(value)
-	}
 
-	return otp, nil
-}
-
-// Return serial number as a uint64 value
-func (this *RaspberryPi) GetSerial() (uint64, error) {
-	// Return cached version
-	if this.serial != 0 {
-		return this.serial, nil
-	}
-
-	// Get embedded memory
-	otp, err := this.GetOTP()
-	if err != nil {
-		return 0, err
-	}
-	// Cache and return serial number
-	this.serial = uint64(otp[GENCMD_OTPDUMP_SERIAL])
-	return this.serial, nil
-}
-
-// Return hardware revision number as a uint32 value
-func (this *RaspberryPi) GetRevision() (uint32, error) {
-	// Return cached version
-	if this.revision != 0 {
-		return this.revision, nil
-	}
-
-	// Get embedded memory
-	otp, err := this.GetOTP()
-	if err != nil {
-		return 0, err
-	}
-
-	// Cache and return revision number
-	this.revision = uint32(otp[GENCMD_OTPDUMP_REVISION])
-	return this.revision, nil
-}
