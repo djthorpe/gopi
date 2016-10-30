@@ -107,10 +107,11 @@ type (
 	GPIOPin uint8
 	GPIOState uint8
 	GPIOMode uint8
+	GPIOPull uint8
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// CONSTANTS
+// GPIO CONSTANTS
 
 const (
 	GPIO_PIN_NONE GPIOPin = 0xFF
@@ -130,6 +131,12 @@ const (
 	GPIO_ALT1
 	GPIO_ALT2
 	GPIO_ALT3
+)
+
+const (
+	GPIO_PULL_OFF GPIOPull = iota
+	GPIO_PULL_DOWN
+	GPIO_PULL_UP
 )
 
 ////////////////////////////////////////////////////////////////////////////////
