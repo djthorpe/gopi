@@ -42,8 +42,11 @@ the drawing surface to. Typical values will be:
 
   * `"DX"` when you want to draw pixels onto the surface
   * `"OpenVG"` when you want to use 2D vector graphics
-  * `"OpenGL"` when you want to use 3D vector graphics
+  * `"OpenGL_ES"` when you want to use 3D vector graphics
   
+You can use the function `GetSupportedClientAPIs()` in order to get an array
+of values which can be used.
+
 Here's an example where you create a background and set the pixels in the
 background to red. After every change of the bitmap, you'll need to "flush" the
 surface to indiate the surface contents have changed:

@@ -275,7 +275,9 @@ func (this *eglDriver) GetExtensions() []string {
 
 // Return API's information
 func (this *eglDriver) GetSupportedClientAPIs() []string {
-	return strings.Split(C.GoString(C.eglQueryString(this.display, C.EGLint(EGL_CLIENT_APIS))), " ")
+	// we hack in the DX client API
+	supported := DISPMANX_API_STRING + " " + C.GoString(C.eglQueryString(this.display, C.EGLint(EGL_CLIENT_APIS)))
+	return strings.Split(supported," ")
 }
 
 // Bind API

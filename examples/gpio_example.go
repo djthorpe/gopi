@@ -1,0 +1,72 @@
+/*
+	Go Language Raspberry Pi Interface
+	(c) Copyright David Thorpe 2016
+	All Rights Reserved
+
+	For Licensing and Usage information, please see LICENSE.md
+*/
+package main
+
+import (
+	"fmt"
+	"os"
+	"time"
+)
+
+
+import (
+	gopi "../"         /* import "github.com/djthorpe/gopi" */
+	app "../app"         /* import "github.com/djthorpe/gopi/app" */
+	util "../util"       /* import "github.com/djthorpe/gopi/util" */
+)
+
+////////////////////////////////////////////////////////////////////////////////
+
+func RunLoop(app *app.App) error {
+
+	// Get pin states
+	gpio := app.GPIO
+
+	for _, logical := range(gpio.Pins()) {
+		if physical := gpio.PhysicalPinForPin(logical); physical != 0 {
+			app.Logger.Info("%v [Pin %v] => %v %v",logical,physical,gpio.ReadPin(logical),gpio.GetPinMode(logical))
+		}
+	}
+
+	led_pin := gpio.PhysicalPin(40)
+	gpio.SetPinMode(led_pin,gopi.GPIO_OUTPUT)
+
+	for {
+		gpio.WritePin(led_pin,gopi.GPIO_LOW)
+		app.Logger.Info("%v => %v %v",led_pin,gpio.ReadPin(led_pin),gpio.GetPinMode(led_pin))
+		time.Sleep(1.0 * time.Second)
+		gpio.WritePin(led_pin,gopi.GPIO_HIGH)
+		app.Logger.Info("%v => %v %v",led_pin,gpio.ReadPin(led_pin),gpio.GetPinMode(led_pin))
+		time.Sleep(1.0 * time.Second)
+	}
+
+	// Return success
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func main() {
+
+	// Create the application
+	myapp, err := app.NewApp(app.AppConfig{
+		Features: app.APP_GPIO | app.APP_I2C,
+		LogLevel: util.LOG_ANY,
+	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		return
+	}
+	defer myapp.Close()
+
+	// Run the application
+	if err := myapp.Run(RunLoop); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		return
+	}
+}

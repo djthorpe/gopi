@@ -34,6 +34,9 @@ type App struct {
 
 	// The OpenVG driver
 	OpenVG khronos.VGDriver
+
+	// The GPIO driver
+	GPIO gopi.GPIODriver
 }
 
 // Application configuration
@@ -65,10 +68,13 @@ type AppFlags uint
 
 const (
 	// Constants used to determine what features are needed
-	APP_DEVICE  AppFlags = 0x01
-	APP_DISPLAY AppFlags = 0x02
-	APP_EGL     AppFlags = 0x04
-	APP_OPENVG  AppFlags = 0x08
+	APP_DEVICE     AppFlags = 0x0001
+	APP_DISPLAY    AppFlags = 0x0002
+	APP_EGL        AppFlags = 0x0004
+	APP_OPENVG     AppFlags = 0x0008
+	APP_GPIO       AppFlags = 0x0010
+	APP_I2C        AppFlags = 0x0020
+	APP_OPENGL_ES  AppFlags = 0x0040
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,15 +100,18 @@ func NewApp(config AppConfig) (*App, error) {
 	this.Logger.SetLevel(config.LogLevel)
 
 	// Debugging
-	this.Logger.Debug("<App>Open device=%v display=%v egl=%v openvg=%v",
-		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG) != 0,
+	this.Logger.Debug("<App>Open device=%v display=%v egl=%v openvg=%v opengl_es=%v gpio=%v i2c=%v",
+		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_GPIO|APP_I2C) != 0,
 		config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG) != 0,
-		config.Features&(APP_EGL|APP_OPENVG) != 0,
+		config.Features&(APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0,
 		config.Features&(APP_OPENVG) != 0,
+		config.Features&(APP_OPENGL_ES) != 0,
+		config.Features&(APP_GPIO) != 0,
+		config.Features&(APP_I2C) != 0,
 	)
 
 	// Create the device
-	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG) != 0 {
+	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_GPIO|APP_I2C) != 0 {
 		device, err := gopi.Open(rpi.Device{}, this.Logger)
 		if err != nil {
 			this.Close()
@@ -148,6 +157,17 @@ func NewApp(config AppConfig) (*App, error) {
 		this.OpenVG = openvg.(khronos.VGDriver)
 	}
 
+	// Create the GPIO interface
+	if config.Features & (APP_GPIO) != 0 {
+		openvg, err := gopi.Open(rpi.GPIO{ Device: this.Device }, this.Logger)
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
+		// Convert device into a GPIODriver
+		this.GPIO = openvg.(gopi.GPIODriver)
+	}
+
 	// success
 	return this, nil
 }
@@ -156,6 +176,12 @@ func NewApp(config AppConfig) (*App, error) {
 func (this *App) Close() error {
 	this.Logger.Debug("<App>Close")
 
+	if this.GPIO != nil {
+		if err := this.GPIO.Close(); err != nil {
+			return err
+		}
+		this.GPIO = nil
+	}
 	if this.OpenVG != nil {
 		if err := this.OpenVG.Close(); err != nil {
 			return err
@@ -193,7 +219,7 @@ func (this *App) Close() error {
 func (this *App) Run(callback AppCallback) error {
 	this.Logger.Debug("<App>Run")
 	if err := callback(this); err != nil {
-		return this.Logger.Error("Error: %v",err)
+		return this.Logger.Error("%v",err)
 	}
 	return nil
 }

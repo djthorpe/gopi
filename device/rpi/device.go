@@ -94,11 +94,10 @@ func (this *DeviceState) Close() error {
 func (this *DeviceState) String() string {
 	serial, _ := this.GetSerialNumber()
 	revision, _ := this.GetRevision()
-	return fmt.Sprintf("<rpi.Device>{ serial_number=%08X revision=%04X peripheral base=%08X size=%08X }", serial, revision, this.GetPeripheralAddress(), this.GetPeripheralSize())
-}
-
-func (this *DeviceState) Log() *util.LoggerDevice {
-	return this.log
+	model, pcb, _ := this.GetModel()
+	processor, _ := this.GetProcessor()
+	warranty_bit, _ := this.GetWarrantyBit()
+	return fmt.Sprintf("<rpi.Device>{ serial_number=%08X revision=%04X model=%v pcb=%v processor=%v warranty_bit=%v }", serial, revision, model, pcb, processor, warranty_bit)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
