@@ -197,3 +197,18 @@ func (m GPIOMode) String() string {
 	}
 }
 
+func (p GPIOPull) String() string {
+	switch(p) {
+	case GPIO_PULL_OFF:
+		return "PULL_OFF"
+	case GPIO_PULL_DOWN:
+		return "PULL_DOWN"
+	case GPIO_PULL_UP:
+		return "PULL_UP"
+	default:
+		return "[??? Invalid GPIOPull value]"
+	}
+}
+
+
+

@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"reflect"
 	"unsafe"
+	"time"
 )
 
 import (
@@ -63,6 +64,26 @@ const (
 	GPIO_GPFSEL3 = 0x000C // Pin modes for GPIO30-GPIO39
 	GPIO_GPFSEL4 = 0x0010 // Pin modes for GPIO40-GPIO49
 	GPIO_GPFSEL5 = 0x0014 // Pin modes for GPIO50-GPIO53
+    GPIO_GPPUD     = 0x0094 // GPIO Pin Pull-up/down Enable
+    GPIO_GPPUDCLK0 = 0x0098 // GPIO Pin Pull-up/down Enable Clock 0
+    GPIO_GPPUDCLK1 = 0x009c // GPIO Pin Pull-up/down Enable Clock 1
+
+/*
+	GPIO_GPEDS0    = 0x0040 // GPIO Pin Event Detect Status 0
+    GPIO_GPEDS1    = 0x0044 // GPIO Pin Event Detect Status 1
+    GPIO_GPREN0    = 0x004c // GPIO Pin Rising Edge Detect Enable 0
+    GPIO_GPREN1    = 0x0050 // GPIO Pin Rising Edge Detect Enable 1
+    GPIO_GPFEN0    = 0x0048 // GPIO Pin Falling Edge Detect Enable 0
+    GPIO_GPFEN1    = 0x005c // GPIO Pin Falling Edge Detect Enable 1
+    GPIO_GPHEN0    = 0x0064 // GPIO Pin High Detect Enable 0
+    GPIO_GPHEN1    = 0x0068 // GPIO Pin High Detect Enable 1
+    GPIO_GPLEN0    = 0x0070 // GPIO Pin Low Detect Enable 0
+    GPIO_GPLEN1    = 0x0074 // GPIO Pin Low Detect Enable 1
+    GPIO_GPAREN0   = 0x007c // GPIO Pin Async. Rising Edge Detect 0
+    GPIO_GPAREN1   = 0x0080 // GPIO Pin Async. Rising Edge Detect 1
+    GPIO_GPAFEN0   = 0x0088 // GPIO Pin Async. Falling Edge Detect 0
+    GPIO_GPAFEN1   = 0x008c // GPIO Pin Async. Falling Edge Detect 1
+*/
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -292,6 +313,35 @@ func (this *GPIODriver) SetPinMode(pin gopi.GPIOPin,mode gopi.GPIOMode) {
 	defer this.memlock.Unlock()
 
 	this.mem32[register >> 2] = (this.mem32[register >> 2] &^ (7 << shift)) | (uint32(mode) << shift)
+}
+
+// Set Pull Mode - TODO: this code has not yet been properly tested
+func (this *GPIODriver) SetPullMode(pin gopi.GPIOPin,pull gopi.GPIOPull) {
+
+	var register, shift uint
+
+	if uint8(pin) <= uint8(31) {
+		register = GPIO_GPPUDCLK0
+		shift = uint(pin)
+	} else {
+		register = GPIO_GPPUDCLK1
+		shift = uint(pin) - 32
+	}
+
+	this.memlock.Lock()
+	defer this.memlock.Unlock()
+
+	// Put the mode into GPPUD, wait for a microsecond and then clock into right register
+	this.mem32[GPIO_GPPUD >> 2] = uint32(pull)
+	time.Sleep(time.Microsecond)
+	this.mem32[register >> 2] = (this.mem32[register >> 2] &^ (1 << shift)) | (1 << shift)
+	time.Sleep(time.Microsecond)
+
+	// Clear clock and register
+	this.mem32[GPIO_GPPUD >> 2] = uint32(0)
+	time.Sleep(time.Microsecond)
+	this.mem32[register >> 2] = uint32(0)
+	time.Sleep(time.Microsecond)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
