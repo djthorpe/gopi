@@ -77,6 +77,9 @@ The examples demonstrate various features of the `gopi` package. For example:
   * `helloworld_example.go` Simply displays the canonical simplest program in Go
   * `log_example.go` Demonstates how to write your own logger class. In this case
       it logs to a file rather than to the console.
+  * `windowing_example.go` Demonstates how to draw onto the screen using the
+      GPU.
+  * `gpio_example.go` Demonstrates how to use the GPIO interface on the Raspberry Pi.
 
 # What's Next?
 
