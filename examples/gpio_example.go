@@ -33,6 +33,9 @@ func RunLoop(app *app.App) error {
 	// Get pin states
 	gpio := app.GPIO
 
+	app.Logger.Debug("Device=%v",app.Device)
+	app.Logger.Debug("GPIO=%v",gpio)
+
 	for _, logical := range(gpio.Pins()) {
 		if physical := gpio.PhysicalPinForPin(logical); physical != 0 {
 			app.Logger.Info("%v [Pin %v] => %v %v",logical,physical,gpio.ReadPin(logical),gpio.GetPinMode(logical))
