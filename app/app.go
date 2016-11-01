@@ -9,10 +9,10 @@
 package app /* import "github.com/djthorpe/gopi/app" */
 
 import (
-	gopi "../"           /* import "github.com/djthorpe/gopi" */
-	rpi "../device/rpi"  /* import "github.com/djthorpe/gopi/util" */
-	khronos "../khronos" /* import "github.com/djthorpe/gopi/khronos" */
-	util "../util"       /* import "github.com/djthorpe/gopi/device/rpi" */
+	gopi "github.com/djthorpe/gopi"
+	rpi "github.com/djthorpe/gopi/device/rpi"
+	khronos "github.com/djthorpe/gopi/khronos"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -68,13 +68,13 @@ type AppFlags uint
 
 const (
 	// Constants used to determine what features are needed
-	APP_DEVICE     AppFlags = 0x0001
-	APP_DISPLAY    AppFlags = 0x0002
-	APP_EGL        AppFlags = 0x0004
-	APP_OPENVG     AppFlags = 0x0008
-	APP_GPIO       AppFlags = 0x0010
-	APP_I2C        AppFlags = 0x0020
-	APP_OPENGL_ES  AppFlags = 0x0040
+	APP_DEVICE    AppFlags = 0x0001
+	APP_DISPLAY   AppFlags = 0x0002
+	APP_EGL       AppFlags = 0x0004
+	APP_OPENVG    AppFlags = 0x0008
+	APP_GPIO      AppFlags = 0x0010
+	APP_I2C       AppFlags = 0x0020
+	APP_OPENGL_ES AppFlags = 0x0040
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,8 +147,8 @@ func NewApp(config AppConfig) (*App, error) {
 	}
 
 	// Create the OpenVG interface
-	if config.Features & (APP_OPENVG) != 0 {
-		openvg, err := gopi.Open(rpi.OpenVG{ EGL: this.EGL }, this.Logger)
+	if config.Features&(APP_OPENVG) != 0 {
+		openvg, err := gopi.Open(rpi.OpenVG{EGL: this.EGL}, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err
@@ -158,8 +158,8 @@ func NewApp(config AppConfig) (*App, error) {
 	}
 
 	// Create the GPIO interface
-	if config.Features & (APP_GPIO) != 0 {
-		openvg, err := gopi.Open(rpi.GPIO{ Device: this.Device }, this.Logger)
+	if config.Features&(APP_GPIO) != 0 {
+		openvg, err := gopi.Open(rpi.GPIO{Device: this.Device}, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err
@@ -219,7 +219,7 @@ func (this *App) Close() error {
 func (this *App) Run(callback AppCallback) error {
 	this.Logger.Debug("<App>Run")
 	if err := callback(this); err != nil {
-		return this.Logger.Error("%v",err)
+		return this.Logger.Error("%v", err)
 	}
 	return nil
 }

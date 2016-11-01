@@ -19,11 +19,10 @@ import (
 	"time"
 )
 
-
 import (
-	gopi "../"         /* import "github.com/djthorpe/gopi" */
-	app "../app"         /* import "github.com/djthorpe/gopi/app" */
-	util "../util"       /* import "github.com/djthorpe/gopi/util" */
+	gopi "github.com/djthorpe/gopi"
+	app "github.com/djthorpe/gopi/app"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,24 +32,24 @@ func RunLoop(app *app.App) error {
 	// Get pin states
 	gpio := app.GPIO
 
-	app.Logger.Debug("Device=%v",app.Device)
-	app.Logger.Debug("GPIO=%v",gpio)
+	app.Logger.Debug("Device=%v", app.Device)
+	app.Logger.Debug("GPIO=%v", gpio)
 
-	for _, logical := range(gpio.Pins()) {
+	for _, logical := range gpio.Pins() {
 		if physical := gpio.PhysicalPinForPin(logical); physical != 0 {
-			app.Logger.Info("%v [Pin %v] => %v %v",logical,physical,gpio.ReadPin(logical),gpio.GetPinMode(logical))
+			app.Logger.Info("%v [Pin %v] => %v %v", logical, physical, gpio.ReadPin(logical), gpio.GetPinMode(logical))
 		}
 	}
 
 	led_pin := gpio.PhysicalPin(40)
-	gpio.SetPinMode(led_pin,gopi.GPIO_OUTPUT)
+	gpio.SetPinMode(led_pin, gopi.GPIO_OUTPUT)
 
 	for {
-		gpio.WritePin(led_pin,gopi.GPIO_LOW)
-		app.Logger.Info("%v => %v %v",led_pin,gpio.ReadPin(led_pin),gpio.GetPinMode(led_pin))
+		gpio.WritePin(led_pin, gopi.GPIO_LOW)
+		app.Logger.Info("%v => %v %v", led_pin, gpio.ReadPin(led_pin), gpio.GetPinMode(led_pin))
 		time.Sleep(1.0 * time.Second)
-		gpio.WritePin(led_pin,gopi.GPIO_HIGH)
-		app.Logger.Info("%v => %v %v",led_pin,gpio.ReadPin(led_pin),gpio.GetPinMode(led_pin))
+		gpio.WritePin(led_pin, gopi.GPIO_HIGH)
+		app.Logger.Info("%v => %v %v", led_pin, gpio.ReadPin(led_pin), gpio.GetPinMode(led_pin))
 		time.Sleep(1.0 * time.Second)
 	}
 

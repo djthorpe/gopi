@@ -17,9 +17,9 @@ import (
 )
 
 import (
-	app "../app"         /* import "github.com/djthorpe/gopi/app" */
-	khronos "../khronos" /* import "github.com/djthorpe/gopi/khronos" */
-	util "../util"       /* import "github.com/djthorpe/gopi/util" */
+	app "github.com/djthorpe/gopi/app"
+	khronos "github.com/djthorpe/gopi/khronos"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ func MyRunLoop(app *app.App) error {
 	defer app.EGL.DestroySurface(fg)
 
 	// Add a DX window on surface 2 with 0.5 opacity
-	fg2, err := app.EGL.CreateSurface("DX",khronos.EGLSize{ 200, 200 },khronos.EGLPoint{ 50, 50 },2,0.5)
+	fg2, err := app.EGL.CreateSurface("DX", khronos.EGLSize{200, 200}, khronos.EGLPoint{50, 50}, 2, 0.5)
 	if err != nil {
 		return err
 	}
@@ -85,9 +85,9 @@ func MyRunLoop(app *app.App) error {
 		return err
 	}
 	app.Logger.Info("fg2 bm=%v", bm)
-	bm.SetPixel(khronos.EGLPoint{ 0,0 })
+	bm.SetPixel(khronos.EGLPoint{0, 0})
 	app.EGL.FlushSurface(fg2)
-	
+
 	// MOVE SURFACES
 	for i := 0; i < 100; i++ {
 		app.EGL.MoveSurfaceOriginBy(fg, khronos.EGLPoint{0, 1})

@@ -31,7 +31,7 @@ import (
 )
 
 import (
-	"../util"
+	"github.com/djthorpe/gopi/util"
 )
 
 var (

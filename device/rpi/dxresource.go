@@ -13,7 +13,7 @@ import (
 )
 
 import (
-	khronos "../../khronos"      /* import "github.com/djthorpe/gopi/khronos" */
+	khronos "github.com/djthorpe/gopi/khronos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,9 +34,9 @@ type (
 
 type DXResource struct {
 	handle dxResourceHandle
-	model  DXColorModel // color model, which should be RGBA32 (4 bytes per pixel)
+	model  DXColorModel    // color model, which should be RGBA32 (4 bytes per pixel)
 	size   khronos.EGLSize // size of the bitmap
-	stride uint32 // number of bytes per row rounded up to 16-byte boundaries
+	stride uint32          // number of bytes per row rounded up to 16-byte boundaries
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,8 +53,8 @@ func (this *DXDisplay) CreateResource(model DXColorModel, size khronos.EGLSize) 
 	resource := new(DXResource)
 	resource.size = size
 	resource.model = model
-	resource.stride = dxAlignUp(uint32(size.Width),uint32(16)) * 4
-	this.log.Debug2("<rpi.DX>CreateResource model=%v size=%v stride=%v",model,size)
+	resource.stride = dxAlignUp(uint32(size.Width), uint32(16)) * 4
+	this.log.Debug2("<rpi.DX>CreateResource model=%v size=%v stride=%v", model, size)
 	resource.handle = dxResourceCreate(model, size.Width, size.Height)
 	if resource.handle == DX_RESOURCE_NONE {
 		return nil, this.log.Error("dxResourceCreate failed")
@@ -76,7 +76,7 @@ func (this *DXResource) String() string {
 }
 
 func (h dxResourceHandle) String() string {
-	return fmt.Sprintf("<rpi.DXResourceHandle>{%08X}",uint32(h))
+	return fmt.Sprintf("<rpi.DXResourceHandle>{%08X}", uint32(h))
 }
 
 func (this *DXResource) GetSize() khronos.EGLSize {
@@ -91,30 +91,29 @@ func (this *DXResource) SetPixel(pt khronos.EGLPoint) error {
 
 	// Load image
 	/*
-	reader, err := os.Open("/home/djt/missamerica.png")
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-	m, _, err := image.Decode(reader)
-	if err != nil {
-		return err
-	}
-	bounds := m.Bounds()
+		reader, err := os.Open("/home/djt/missamerica.png")
+		if err != nil {
+			return err
+		}
+		defer reader.Close()
+		m, _, err := image.Decode(reader)
+		if err != nil {
+			return err
+		}
+		bounds := m.Bounds()
 
 	*/
 
-	source := make([]uint32,32)
+	source := make([]uint32, 32)
 	source[0] = uint32(0xFF0000FF)
 	source[1] = uint32(0xFF00FFFF)
 	source[16] = uint32(0xFFFF0000)
 	source[17] = uint32(0xFF00FF00)
-	dst_frame := DXFrame{ DXPoint{ int32(0), int32(0) }, DXSize{ uint32(this.size.Width), uint32(this.size.Height) } }
-	fmt.Println("WRITE",this.handle,this.model,source,dst_frame)
-	dxResourceWriteData(this.handle,this.model,this.stride,unsafe.Pointer(&source[0]),&dst_frame)
+	dst_frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(this.size.Width), uint32(this.size.Height)}}
+	fmt.Println("WRITE", this.handle, this.model, source, dst_frame)
+	dxResourceWriteData(this.handle, this.model, this.stride, unsafe.Pointer(&source[0]), &dst_frame)
 	return nil
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods
@@ -136,7 +135,6 @@ func dxResourceReadData(handle dxResourceHandle, src_rect *DXFrame, dst_buffer u
 	return C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), (*C.VC_RECT_T)(unsafe.Pointer(src_rect)), unsafe.Pointer(dst_buffer), C.uint32_t(dst_pitch)) == DX_RESOURCE_SUCCESS
 }
 
-func dxAlignUp(value,alignment uint32) uint32 {
-	return ((value - 1) & ^(alignment - 1)) + alignment;
+func dxAlignUp(value, alignment uint32) uint32 {
+	return ((value - 1) & ^(alignment - 1)) + alignment
 }
-

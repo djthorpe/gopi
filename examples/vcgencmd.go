@@ -27,7 +27,7 @@ import (
 )
 
 import (
-	rpi "../device/rpi"
+	rpi "github.com/djthorpe/gopi/device/rpi"
 )
 
 ////////////////////////////////////////////////////////////////////////////

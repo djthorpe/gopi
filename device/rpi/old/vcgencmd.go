@@ -9,9 +9,9 @@ package rpi
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"unsafe"
-	"strconv"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -242,6 +242,3 @@ func (this *RaspberryPi) GetMemoryMegabytes() (map[string]uint64, error) {
 
 	return memories, nil
 }
-
-
-

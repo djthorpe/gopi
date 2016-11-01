@@ -8,7 +8,7 @@
 package khronos /* import "github.com/djthorpe/gopi/khronos" */
 
 import (
-	gopi ".." /* import "github.com/djthorpe/gopi" */
+	gopi "github.com/djthorpe/gopi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

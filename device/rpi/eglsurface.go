@@ -13,7 +13,7 @@ import (
 )
 
 import (
-	khronos "../../khronos" /* import "github.com/djthorpe/gopi/khronos" */
+	khronos "github.com/djthorpe/gopi/khronos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,14 +37,14 @@ type eglNativeWindow struct {
 
 // Internal window structure
 type eglWindow struct {
-	api     string
-	config  eglConfig
-	context eglContext
-	surface eglSurface
-	element *DXElement
+	api      string
+	config   eglConfig
+	context  eglContext
+	surface  eglSurface
+	element  *DXElement
 	resource *DXResource
-	origin  *khronos.EGLPoint
-	size    *khronos.EGLSize
+	origin   *khronos.EGLPoint
+	size     *khronos.EGLSize
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 
 	// If DISPMANX then create a 2x2 resource
 	if api == DISPMANX_API_STRING {
-		window.resource, err = this.dx.CreateResource(DX_IMAGE_RGBA32,khronos.EGLSize{ uint(2), uint(2) })
+		window.resource, err = this.dx.CreateResource(DX_IMAGE_RGBA32, khronos.EGLSize{uint(2), uint(2)})
 		if err != nil {
 			this.closeWindow(window)
 			return nil, err
@@ -199,9 +199,9 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 	// if there is a resource, set from that
 	if window.resource != nil {
 		source_size := window.resource.GetSize()
-		source_frame.Set(DXPoint{0, 0}, DXSize{ uint32(source_size.Width), uint32(source_size.Height) })
+		source_frame.Set(DXPoint{0, 0}, DXSize{uint32(source_size.Width), uint32(source_size.Height)})
 	} else {
-		source_frame.Set(DXPoint{0, 0}, DXSize{ uint32(size.Width), uint32(size.Height) })
+		source_frame.Set(DXPoint{0, 0}, DXSize{uint32(size.Width), uint32(size.Height)})
 	}
 	window_frame.Set(DXPoint{int32(origin.X), int32(origin.Y)}, DXSize{uint32(size.Width), uint32(size.Height)})
 	window.element, err = this.dx.AddElement(update, layer, uint32(opacity*255.0), window_frame, window.resource)
@@ -291,7 +291,7 @@ func (this *eglDriver) setElementUpdated(window *eglWindow) error {
 	if err != nil {
 		return err
 	}
-	if err = this.dx.SetElementModified(update,window.element,window.element.GetFrame()); err != nil {
+	if err = this.dx.SetElementModified(update, window.element, window.element.GetFrame()); err != nil {
 		return err
 	}
 	if err = this.dx.UpdateSubmit(update); err != nil {

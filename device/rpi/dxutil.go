@@ -141,10 +141,10 @@ const (
 
 var (
 	// The zero point
-	DXZeroPoint = DXPoint{ 0, 0 }
+	DXZeroPoint = DXPoint{0, 0}
 
 	// The zero size
-	DXZeroSize = DXSize{ 0, 0 }
+	DXZeroSize = DXSize{0, 0}
 )
 
 ////////////////////////////////////////////////////////////////////////////////

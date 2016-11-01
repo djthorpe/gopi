@@ -14,8 +14,8 @@ import (
 )
 
 import (
-	gopi "../" // import "github.com/djthorpe/gopi"
-	util "../util" // import "github.com/djthorpe/gopi/util"
+	gopi "github.com/djthorpe/gopi"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,14 +41,13 @@ type GPIODriver interface {
 	ReadPin(GPIOPin) GPIOState
 
 	// Write pin state
-	WritePin(GPIOPin,GPIOState)
+	WritePin(GPIOPin, GPIOState)
 
 	// Get pin mode
 	GetPinMode(GPIOPin) GPIOMode
 
 	// Set pin mode
-	SetPinMode(GPIOPin,GPIOMode)
-
+	SetPinMode(GPIOPin, GPIOMode)
 }
 
 // GPIO types
@@ -100,11 +99,11 @@ const (
 // PUBLIC METHODS
 
 func (p GPIOPin) String() string {
-	return fmt.Sprintf("GPIO%v",uint8(p))
+	return fmt.Sprintf("GPIO%v", uint8(p))
 }
 
 func (s GPIOState) String() string {
-	switch(s) {
+	switch s {
 	case GPIO_LOW:
 		return "LOW"
 	case GPIO_HIGH:
@@ -115,7 +114,7 @@ func (s GPIOState) String() string {
 }
 
 func (m GPIOMode) String() string {
-	switch(m) {
+	switch m {
 	case GPIO_INPUT:
 		return "INPUT"
 	case GPIO_OUTPUT:
@@ -138,7 +137,7 @@ func (m GPIOMode) String() string {
 }
 
 func (p GPIOPull) String() string {
-	switch(p) {
+	switch p {
 	case GPIO_PULL_OFF:
 		return "PULL_OFF"
 	case GPIO_PULL_DOWN:
@@ -149,6 +148,3 @@ func (p GPIOPull) String() string {
 		return "[??? Invalid GPIOPull value]"
 	}
 }
-
-
-

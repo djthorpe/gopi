@@ -15,8 +15,8 @@ import (
 // TYPES
 
 type (
-	Model uint32
-	Processor uint32
+	Model       uint32
+	Processor   uint32
 	PCBRevision uint32
 )
 
@@ -34,16 +34,16 @@ const (
 )
 
 const (
-	RPI_MODEL_A Model = (0 << 4)
-	RPI_MODEL_B Model = (1 << 4)
-	RPI_MODEL_A_PLUS Model = (2 << 4)
-	RPI_MODEL_B_PLUS Model = (3 << 4)
-	RPI_MODEL_B_PI_2 Model = (4 << 4)
-	RPI_MODEL_ALPHA Model = (5 << 4)
+	RPI_MODEL_A              Model = (0 << 4)
+	RPI_MODEL_B              Model = (1 << 4)
+	RPI_MODEL_A_PLUS         Model = (2 << 4)
+	RPI_MODEL_B_PLUS         Model = (3 << 4)
+	RPI_MODEL_B_PI_2         Model = (4 << 4)
+	RPI_MODEL_ALPHA          Model = (5 << 4)
 	RPI_MODEL_COMPUTE_MODULE Model = (6 << 4)
-	RPI_MODEL_UNKNOWN Model = (7 << 4)
-	RPI_MODEL_B_PI_3 Model = (8 << 4)
-	RPI_MODEL_ZERO Model = (9 << 4)
+	RPI_MODEL_UNKNOWN        Model = (7 << 4)
+	RPI_MODEL_B_PI_3         Model = (8 << 4)
+	RPI_MODEL_ZERO           Model = (9 << 4)
 )
 
 const (
@@ -99,7 +99,6 @@ var (
 		0x14: PCBRevision(1),
 		0x15: PCBRevision(1),
 	}
-
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -118,7 +117,7 @@ func (this *DeviceState) GetWarrantyBit() (bool, error) {
 }
 
 // Return product model and PCB revision information
-func (this *DeviceState) GetModel() (Model,PCBRevision,error) {
+func (this *DeviceState) GetModel() (Model, PCBRevision, error) {
 	revision, err := this.GetRevision()
 	if err != nil {
 		return RPI_MODEL_UNKNOWN, RPI_PCB_UNKNOWN, err
@@ -149,7 +148,7 @@ func (this *DeviceState) GetModel() (Model,PCBRevision,error) {
 	return model, pcb, nil
 }
 
-func (this *DeviceState) GetProcessor() (Processor,error) {
+func (this *DeviceState) GetProcessor() (Processor, error) {
 	revision, err := this.GetRevision()
 	if err != nil {
 		return RPI_PROCESSOR_UNKNOWN, err
@@ -166,9 +165,8 @@ func (this *DeviceState) GetProcessor() (Processor,error) {
 	}
 }
 
-
 func (m Model) String() string {
-	switch(m) {
+	switch m {
 	case RPI_MODEL_A:
 		return "RPI_MODEL_A"
 	case RPI_MODEL_B:
@@ -193,7 +191,7 @@ func (m Model) String() string {
 }
 
 func (p Processor) String() string {
-	switch(p) {
+	switch p {
 	case RPI_PROCESSOR_BCM2835:
 		return "RPI_PROCESSOR_BCM2835"
 	case RPI_PROCESSOR_BCM2836:
@@ -209,6 +207,5 @@ func (p PCBRevision) String() string {
 	if p == RPI_PCB_UNKNOWN {
 		return "[?? Unknwon PCBRevision value]"
 	}
-	return fmt.Sprintf("RPI_PCB_V%v",uint(p))
+	return fmt.Sprintf("RPI_PCB_V%v", uint(p))
 }
-

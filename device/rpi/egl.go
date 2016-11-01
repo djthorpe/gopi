@@ -15,9 +15,9 @@ import (
 )
 
 import (
-	gopi "../.."            /* import "github.com/djthorpe/gopi" */
-	khronos "../../khronos" /* import "github.com/djthorpe/gopi/khronos" */
-	util "../../util"       /* import "github.com/djthorpe/gopi/util" */
+	gopi "github.com/djthorpe/gopi"
+	khronos "github.com/djthorpe/gopi/khronos"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -277,7 +277,7 @@ func (this *eglDriver) GetExtensions() []string {
 func (this *eglDriver) GetSupportedClientAPIs() []string {
 	// we hack in the DX client API
 	supported := DISPMANX_API_STRING + " " + C.GoString(C.eglQueryString(this.display, C.EGLint(EGL_CLIENT_APIS)))
-	return strings.Split(supported," ")
+	return strings.Split(supported, " ")
 }
 
 // Bind API
@@ -381,7 +381,7 @@ func (this *eglDriver) getFrameBufferConfiguration() (eglConfig, error) {
 // Create EGL Context with API value
 func (this *eglDriver) createContext(api string) (eglConfig, eglContext, error) {
 	// If api is DIPMANX, then return nil, nil, nil
-	if api==DISPMANX_API_STRING {
+	if api == DISPMANX_API_STRING {
 		return EGL_NO_CONFIG, EGL_NO_CONTEXT, nil
 	}
 

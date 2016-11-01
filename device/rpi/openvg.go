@@ -14,9 +14,9 @@ import (
 )
 
 import (
-	gopi "../.."            /* import "github.com/djthorpe/gopi" */
-	khronos "../../khronos" /* import "github.com/djthorpe/gopi/khronos" */
-	util "../../util"       /* import "github.com/djthorpe/gopi/util" */
+	gopi "github.com/djthorpe/gopi"
+	khronos "github.com/djthorpe/gopi/khronos"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -13,8 +13,8 @@ import (
 )
 
 import (
-	app "../app"   /* import "github.com/djthorpe/gopi/app" */
-	util "../util" /* import "github.com/djthorpe/gopi/util" */
+	app "github.com/djthorpe/gopi/app"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -19,17 +19,17 @@ package mouse // import "github.com/djthorpe/gopi/device/mouse"
 // System imports
 import (
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
-	"fmt"
 )
 
 // Local imports
 import (
-	"../../input" /* Absolute: github.com/djthorpe/gopi/input */
+	"github.com/djthorpe/gopi/input"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ type Driver struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	PATH_INPUT_DEVICES   = "/sys/class/input/event*"
+	PATH_INPUT_DEVICES = "/sys/class/input/event*"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ func (this *Driver) GetSlots() uint {
 }
 
 func (this *Driver) String() string {
-	return fmt.Sprintf("<device.Mouse>{ device=%v }",this.device)
+	return fmt.Sprintf("<device.Mouse>{ device=%v }", this.device)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -121,5 +121,3 @@ func getDeviceNameAndPath(config *Config) (string, string, error) {
 	}
 	return "", "", errors.New("Device not found")
 }
-
-

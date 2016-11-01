@@ -19,9 +19,9 @@ import (
 )
 
 import (
-	"../device/mouse"
-	"../device/touchscreen/ft5406"
-	"../input"
+	"github.com/djthorpe/gopi/device/mouse"
+	"github.com/djthorpe/gopi/device/touchscreen/ft5406"
+	"github.com/djthorpe/gopi/input"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

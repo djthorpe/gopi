@@ -12,7 +12,7 @@ import (
 )
 
 import (
-	gopi ".." /* import "github.com/djthorpe/gopi" */
+	gopi "github.com/djthorpe/gopi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

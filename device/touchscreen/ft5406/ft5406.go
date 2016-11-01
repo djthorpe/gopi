@@ -20,25 +20,25 @@ package ft5406 // import "github.com/djthorpe/gopi/device/touchscreen/ft5406"
 // System imports
 import (
 	"errors"
-	"os"
-	"path"
-	"regexp"
-	"strings"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 // Local imports
 import (
-	"../../../input" /* import "github.com/djthorpe/gopi/input" */
+	"github.com/djthorpe/gopi/input"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // The configuration options for the FT5406. Basically, there are no
 // configuration options for this device.
-type Config struct { }
+type Config struct{}
 
 // The driver state
 type Driver struct {
@@ -50,8 +50,8 @@ type Driver struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	PATH_INPUT_DEVICES   = "/sys/class/input/event*"
-	MAX_SLOTS uint       = 10
+	PATH_INPUT_DEVICES      = "/sys/class/input/event*"
+	MAX_SLOTS          uint = 10
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ func (this *Driver) GetSlots() uint {
 }
 
 func (this *Driver) String() string {
-	return fmt.Sprintf("<device.touchscreen.ft5406>{ device=%v }",this.device)
+	return fmt.Sprintf("<device.touchscreen.ft5406>{ device=%v }", this.device)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

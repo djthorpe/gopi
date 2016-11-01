@@ -13,8 +13,8 @@ import (
 )
 
 import (
-	gopi "../.."      /* import "github.com/djthorpe/gopi" */
-	util "../../util" /* import "github.com/djthorpe/gopi/util" */
+	gopi "github.com/djthorpe/gopi"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

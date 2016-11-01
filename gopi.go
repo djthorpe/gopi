@@ -35,7 +35,7 @@ import (
 )
 
 import (
-	"./util" // import "github.com/djthorpe/gopi/util"
+	"github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,11 +76,11 @@ type Config interface {
 // PUBLIC METHODS: Config interface implementation
 
 // Open a driver - opens the concrete version given the config method
-func Open(config Config,log *util.LoggerDevice) (Driver, error) {
+func Open(config Config, log *util.LoggerDevice) (Driver, error) {
 	var err error
-	
-	if log==nil {
-		log, err = util.Logger(util.NullLogger{ })
+
+	if log == nil {
+		log, err = util.Logger(util.NullLogger{})
 		if err != nil {
 			return nil, err
 		}
@@ -91,4 +91,3 @@ func Open(config Config,log *util.LoggerDevice) (Driver, error) {
 	}
 	return driver, nil
 }
-

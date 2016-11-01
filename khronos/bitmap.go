@@ -18,6 +18,4 @@ type EGLBitmap interface {
 
 	// Set Pixel
 	SetPixel(pt EGLPoint) error
-
 }
-
