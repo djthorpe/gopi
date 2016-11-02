@@ -20,8 +20,8 @@ import (
 )
 
 import (
-	hw "github.com/djthorpe/gopi/hw"
 	app "github.com/djthorpe/gopi/app"
+	hw "github.com/djthorpe/gopi/hw"
 	util "github.com/djthorpe/gopi/util"
 )
 
