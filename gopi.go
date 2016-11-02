@@ -31,10 +31,6 @@
 package gopi // import "github.com/djthorpe/gopi"
 
 import (
-	"fmt"
-)
-
-import (
 	"github.com/djthorpe/gopi/util"
 )
 

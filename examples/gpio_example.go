@@ -20,7 +20,7 @@ import (
 )
 
 import (
-	gopi "github.com/djthorpe/gopi"
+	hw "github.com/djthorpe/gopi/hw"
 	app "github.com/djthorpe/gopi/app"
 	util "github.com/djthorpe/gopi/util"
 )
@@ -42,13 +42,13 @@ func RunLoop(app *app.App) error {
 	}
 
 	led_pin := gpio.PhysicalPin(40)
-	gpio.SetPinMode(led_pin, gopi.GPIO_OUTPUT)
+	gpio.SetPinMode(led_pin, hw.GPIO_OUTPUT)
 
 	for {
-		gpio.WritePin(led_pin, gopi.GPIO_LOW)
+		gpio.WritePin(led_pin, hw.GPIO_LOW)
 		app.Logger.Info("%v => %v %v", led_pin, gpio.ReadPin(led_pin), gpio.GetPinMode(led_pin))
 		time.Sleep(1.0 * time.Second)
-		gpio.WritePin(led_pin, gopi.GPIO_HIGH)
+		gpio.WritePin(led_pin, hw.GPIO_HIGH)
 		app.Logger.Info("%v => %v %v", led_pin, gpio.ReadPin(led_pin), gpio.GetPinMode(led_pin))
 		time.Sleep(1.0 * time.Second)
 	}

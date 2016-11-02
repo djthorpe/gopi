@@ -8,11 +8,18 @@
 
 package app /* import "github.com/djthorpe/gopi/app" */
 
+// import abstract drivers
 import (
 	gopi "github.com/djthorpe/gopi"
-	rpi "github.com/djthorpe/gopi/device/rpi"
+	hw "github.com/djthorpe/gopi/hw"
 	khronos "github.com/djthorpe/gopi/khronos"
 	util "github.com/djthorpe/gopi/util"
+)
+
+// import rpi drivers
+import (
+	rpi "github.com/djthorpe/gopi/device/rpi"
+
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +43,7 @@ type App struct {
 	OpenVG khronos.VGDriver
 
 	// The GPIO driver
-	GPIO gopi.GPIODriver
+	GPIO hw.GPIODriver
 }
 
 // Application configuration
@@ -159,13 +166,13 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Create the GPIO interface
 	if config.Features&(APP_GPIO) != 0 {
-		openvg, err := gopi.Open(rpi.GPIO{Device: this.Device}, this.Logger)
+		gpio, err := gopi.Open(rpi.GPIO{Device: this.Device}, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err
 		}
 		// Convert device into a GPIODriver
-		this.GPIO = openvg.(gopi.GPIODriver)
+		this.GPIO = gpio.(hw.GPIODriver)
 	}
 
 	// success

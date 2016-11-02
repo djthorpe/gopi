@@ -15,7 +15,6 @@ import (
 
 import (
 	gopi "github.com/djthorpe/gopi"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -24,7 +23,7 @@ import (
 // Abstract GPIO interface
 type GPIODriver interface {
 	// Enforces general driver
-	Driver
+	gopi.Driver
 
 	// Return array of available logical pins
 	Pins() []GPIOPin
