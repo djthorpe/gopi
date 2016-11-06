@@ -8,6 +8,13 @@
 
 package app /* import "github.com/djthorpe/gopi/app" */
 
+// import
+import (
+	"flag"
+	"os"
+	"path"
+)
+
 // import abstract drivers
 import (
 	gopi "github.com/djthorpe/gopi"
@@ -29,6 +36,9 @@ type App struct {
 	// The logger
 	Logger *util.LoggerDevice
 
+	// Command-line flags
+	FlagSet *flag.FlagSet
+
 	// The hardware device
 	Device gopi.HardwareDriver
 
@@ -47,6 +57,9 @@ type App struct {
 
 // Application configuration
 type AppConfig struct {
+	// Command-line flags
+	FlagSet *flag.FlagSet
+
 	// Application features
 	Features AppFlags
 
@@ -86,11 +99,38 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 
+func Config(flags AppFlags) AppConfig {
+	config := AppConfig{}
+
+	// create flagset and set appflags
+	config.FlagSet = flag.NewFlagSet(path.Base(os.Args[0]),flag.ContinueOnError)
+	config.Features = flags
+	config.LogLevel = util.LOG_ANY
+
+	// Add on -log flag for path to logfile
+	config.FlagSet.String("log","","File for logging")
+	config.FlagSet.Bool("verbose",true,"Log verbosely")
+	config.FlagSet.Bool("debug",false,"Trigger debugging support")
+
+	return config
+}
+
 func NewApp(config AppConfig) (*App, error) {
 	var err error
 
+	// Parse command-line flags
+	if config.FlagSet != nil {
+		// Parse command-line flags
+		if err := config.FlagSet.Parse(os.Args[1:]); err != nil {
+			return nil,err
+		}
+	}
+
 	// Create application
 	this := new(App)
+
+	// Set FlagSet
+	this.FlagSet = config.FlagSet
 
 	// Create a logger - either log to file or to stderr
 	if len(config.LogFile) != 0 {
