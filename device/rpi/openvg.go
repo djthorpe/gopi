@@ -129,11 +129,6 @@ func (this *vgDriver) Close() error {
 	return nil
 }
 
-// Return the logging object
-func (this *vgDriver) Log() *util.LoggerDevice {
-	return this.log
-}
-
 // Return human-readable form of driver
 func (this *vgDriver) String() string {
 	return fmt.Sprintf("<rpi.OpenVG>{ egl=%v surface=%v }", this.egl, this.surface)
