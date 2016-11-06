@@ -80,6 +80,8 @@ The examples demonstrate various features of the `gopi` package. For example:
   * `windowing_example.go` Demonstates how to draw onto the screen using the
       GPU.
   * `gpio_example.go` Demonstrates how to use the GPIO interface on the Raspberry Pi.
+  * `led_example.go` Demonstrates how to use the GPIO interface on the Raspberry Pi
+	to blink an LED.
 
 # What's Next?
 
@@ -90,6 +92,7 @@ Read the remaining documentation on the various functions of `gopi`:
   * To read about opening displays, creating windows and resources, read [EGL](doc/EGL.md).
   * To use OpenVG which provides you with Vector Graphics operations, read [OpenVG](doc/OpenVG.md).
   * To use the GPIO peripheral port, read [GPIO](doc/GPIO.md).
+  * The application framework can make it easy to write applications. Read [APP](doc/APP.md).
 
 # License
 
