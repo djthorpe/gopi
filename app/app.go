@@ -13,6 +13,8 @@ import (
 	"flag"
 	"os"
 	"path"
+	"syscall"
+	"os/signal"
 )
 
 // import abstract drivers
@@ -53,6 +55,12 @@ type App struct {
 
 	// The GPIO driver
 	GPIO hw.GPIODriver
+
+	// Signal channel on catching signals
+	signal_channel chan os.Signal
+
+	// Signal to finish
+	finish_channel chan bool
 }
 
 // Application configuration
@@ -99,6 +107,9 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 
+// Create a configuration based on the features you'd like in your application.
+// This will return a pre-filled AppConfig object, with appropriate command-line
+// flags also in place.
 func Config(flags AppFlags) AppConfig {
 	config := AppConfig{}
 
@@ -115,6 +126,11 @@ func Config(flags AppFlags) AppConfig {
 	return config
 }
 
+// Create a new application object. This will return the application object
+// or an error. If the error is flag.ErrHelp then the usage information for
+// the application is printed on stderr, and you should simply quit the
+// application. Other errors might occur depending what features have been
+// requests for the application.
 func NewApp(config AppConfig) (*App, error) {
 	var err error
 
@@ -155,6 +171,11 @@ func NewApp(config AppConfig) (*App, error) {
 		config.Features&(APP_GPIO) != 0,
 		config.Features&(APP_I2C) != 0,
 	)
+
+	// Signal handlers
+	this.signal_channel = make(chan os.Signal, 1)
+	this.finish_channel = make(chan bool, 1)
+	signal.Notify(this.signal_channel,syscall.SIGTERM, syscall.SIGINT)
 
 	// Create the device
 	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_GPIO|APP_I2C) != 0 {
@@ -218,7 +239,8 @@ func NewApp(config AppConfig) (*App, error) {
 	return this, nil
 }
 
-// Close the application
+// Close the application. This will free any resources opened. It will return
+// an error on unsuccessful, or nil otherwise.
 func (this *App) Close() error {
 	this.Logger.Debug("<App>Close")
 
@@ -263,9 +285,34 @@ func (this *App) Close() error {
 
 // Run the application with callback
 func (this *App) Run(callback AppCallback) error {
-	this.Logger.Debug("<App>Run")
+	this.Logger.Debug("<App>Run pid=%v",os.Getpid())
+
+	// Go routine to wait for signal, and send finish signal in that case
+	go func() {
+		signal := <-this.signal_channel
+		this.Logger.Debug("<App>Run: caught signal: %v",signal)
+		this.finish_channel <- true
+	}()
+
 	if err := callback(this); err != nil {
 		return this.Logger.Error("%v", err)
 	}
 	return nil
 }
+
+// Wait until the finish channel has an event on it
+func (this *App) WaitUntilDone() {
+	this.Logger.Debug("<App>WaitUntilDone")
+
+	// Runloop accepting events, until done
+	done := false
+	for done == false {
+		select {
+		case done = <-this.finish_channel:
+			done = true
+			break
+		}
+	}
+}
+
+

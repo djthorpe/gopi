@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -64,6 +65,7 @@ type FileLogger struct {
 // Concrete Logger Device
 type logger struct {
 	device *os.File
+	mutex  sync.Mutex	
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -255,6 +257,8 @@ func (this *logger) Close() error {
 // Output log message to device
 func (this *logger) Log(level LogLevel, message string) {
 	if this.device != nil {
+		this.mutex.Lock()
+		defer this.mutex.Unlock()
 		fmt.Fprintf(this.device, "[%v] %v\n", level, message)
 	}
 }

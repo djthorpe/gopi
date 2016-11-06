@@ -10,9 +10,8 @@
 package hw // import "github.com/djthorpe/gopi/hw"
 
 import (
-	"errors"
 	"fmt"
-	"time"
+	"errors"
 )
 
 import (
@@ -44,9 +43,6 @@ type LEDDriver interface {
 
 	// Stop LED. When no arguments are given, all pins are switched to off state
 	Off(index ...uint) error
-
-	// Blink LED. When no pins are speficied, all pins are set to blinking
-	Blink(mark, space time.Duration, index ...uint) error
 }
 
 // LED state
@@ -58,8 +54,6 @@ type LEDDevice struct {
 	done_channel   chan bool
 	on_channel     chan []GPIOPin
 	off_channel    chan []GPIOPin
-	mark_time      time.Duration
-	space_time     time.Duration
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -82,8 +76,6 @@ func (config LED) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	device.done_channel = make(chan bool)
 	device.on_channel = make(chan []GPIOPin)
 	device.off_channel = make(chan []GPIOPin)
-	device.mark_time = time.Duration(0)
-	device.space_time = time.Duration(0)
 
 	// Set pins to OUTPUT mode and set to OFF
 	for _, pin := range device.pins {
@@ -106,8 +98,8 @@ func (this *LEDDevice) Close() error {
 	<-this.done_channel
 
 	// Switch off
-	for _, pin := range device.pins {
-		device.gpio.WritePin(pin, GPIO_LOW)
+	for _, pin := range this.pins {
+		this.gpio.WritePin(pin, GPIO_LOW)
 	}
 
 	return nil
@@ -142,18 +134,6 @@ func (this *LEDDevice) Off(index ...uint) error {
 	return nil
 }
 
-func (this *LEDDevice) Blink(mark, space time.Duration, index ...uint) error {
-	pins, err := this.getPins(index)
-	if err != nil {
-		return err
-	}
-	this.on_channel <- pins
-	time.AfterFunc(mark,func() {
-		this.off_channel <- pins
-	})
-	return nil
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods
 
@@ -177,3 +157,8 @@ func (this *LEDDevice) runLoop() {
 	}
 	this.done_channel <- done
 }
+
+func (this *LEDDevice) getPins(pins []uint) ([]GPIOPin, error) {
+	return nil,errors.New("Invalid pins")
+}
+

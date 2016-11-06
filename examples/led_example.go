@@ -37,13 +37,19 @@ func RunLoop(app *app.App) error {
 
 	app.Logger.Info("LED=%v", led)
 
-	// Blink 100ms on/50ms off
-	for {
-		led.(hw.LEDDriver).On()
-		time.Sleep(100 * time.Millisecond)
-		led.(hw.LEDDriver).Off()
-		time.Sleep(50 * time.Millisecond)
-	}
+	go func() {
+		// Blink 100ms on/50ms off
+		for {
+			app.Logger.Debug("ON")
+			led.(hw.LEDDriver).On()
+			time.Sleep(100 * time.Millisecond)
+			app.Logger.Debug("OFF")
+			led.(hw.LEDDriver).Off()
+			time.Sleep(50 * time.Millisecond)
+		}
+	}()
+
+	app.WaitUntilDone()
 
 	// Return success
 	return nil
