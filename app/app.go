@@ -59,8 +59,12 @@ type App struct {
 	// Signal channel on catching signals
 	signal_channel chan os.Signal
 
-	// Signal to finish
+	// Signal to place a finish bool on
+	// to indicate application should end
 	finish_channel chan bool
+
+	// debug and verbose flags
+	debug, verbose bool
 }
 
 // Application configuration
@@ -104,6 +108,12 @@ const (
 	APP_OPENGL_ES AppFlags = 0x0040
 )
 
+const (
+	// Constants used to determine default flags
+	APP_DEFAULT_DEBUG  = false
+	APP_DEFAULT_VERBOSE = false
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 
@@ -116,12 +126,21 @@ func Config(flags AppFlags) AppConfig {
 	// create flagset and set appflags
 	config.FlagSet = flag.NewFlagSet(path.Base(os.Args[0]),flag.ContinueOnError)
 	config.Features = flags
-	config.LogLevel = util.LOG_ANY
 
 	// Add on -log flag for path to logfile
 	config.FlagSet.String("log","","File for logging")
 	config.FlagSet.Bool("verbose",true,"Log verbosely")
 	config.FlagSet.Bool("debug",false,"Trigger debugging support")
+
+	// Add -display
+	if config.Features & (APP_DISPLAY|APP_EGL|APP_OPENVG) != 0 {
+		config.FlagSet.Uint("display",0,"Display to use")
+	}
+
+	// Add -ppi
+	if config.Features & (APP_EGL|APP_OPENVG) != 0 {
+		config.FlagSet.String("ppi","","Pixels per inch (or screen size in mm)")
+	}
 
 	return config
 }
@@ -147,6 +166,23 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Set FlagSet
 	this.FlagSet = config.FlagSet
+
+	// Set Debug and Verbose
+	this.debug = this.getDebug()
+	this.verbose = this.getVerbose()
+
+	// Set log level
+	if config.LogLevel == util.LOG_ANY {
+		if this.debug && this.verbose {
+			config.LogLevel = util.LOG_DEBUG2
+		} else if this.debug {
+			config.LogLevel = util.LOG_DEBUG
+		} else if this.verbose {
+			config.LogLevel = util.LOG_INFO
+		} else {
+			config.LogLevel = util.LOG_WARN
+		}
+	}
 
 	// Create a logger - either log to file or to stderr
 	if len(config.LogFile) != 0 {
@@ -314,5 +350,41 @@ func (this *App) WaitUntilDone() {
 		}
 	}
 }
+
+// Return the debug flag
+func (this *App) GetDebug() bool {
+	return this.debug
+}
+
+// Return the verbose flag
+func (this *App) GetVerbose() bool {
+	return this.verbose
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Private Methods
+
+func (this *App) getDebug() bool {
+	if this.FlagSet == nil {
+		return APP_DEFAULT_DEBUG
+	}
+	debug := this.FlagSet.Lookup("debug")
+	if debug == nil {
+		return APP_DEFAULT_DEBUG
+	}
+	return debug.Value.(flag.Getter).Get().(bool)
+}
+
+func (this *App) getVerbose() bool {
+	if this.FlagSet == nil {
+		return APP_DEFAULT_VERBOSE
+	}
+	verbose := this.FlagSet.Lookup("verbose")
+	if verbose == nil {
+		return APP_DEFAULT_VERBOSE
+	}
+	return verbose.Value.(flag.Getter).Get().(bool)
+}
+
 
 

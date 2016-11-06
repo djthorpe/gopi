@@ -20,7 +20,6 @@ import (
 	gopi "github.com/djthorpe/gopi"
 	app "github.com/djthorpe/gopi/app"
 	hw "github.com/djthorpe/gopi/hw"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,11 +57,11 @@ func RunLoop(app *app.App) error {
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
+	// Configuration
+	config := app.Config(app.APP_GPIO)
+
 	// Create the application
-	myapp, err := app.NewApp(app.AppConfig{
-		Features: app.APP_GPIO,
-		LogLevel: util.LOG_ANY,
-	})
+	myapp, err := app.NewApp(config)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
