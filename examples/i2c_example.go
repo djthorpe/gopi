@@ -17,7 +17,7 @@ import (
 import (
 	gopi "github.com/djthorpe/gopi"
 	app "github.com/djthorpe/gopi/app"
-	rpi "github.com/djthorpe/gopi/device/rpi"
+	linux "github.com/djthorpe/gopi/device/linux"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,10 +25,11 @@ import (
 func RunLoop(app *app.App) error {
 
 	// Which I2C controller
-	master := app.FlagSet.Lookup("master").Value.(flag.Getter).Get().(uint)
+	bus := app.FlagSet.Lookup("bus").Value.(flag.Getter).Get().(uint)
+	slave := app.FlagSet.Lookup("slave").Value.(flag.Getter).Get().(uint)
 
 	// Create the Pimote interface
-	i2c, err := gopi.Open(rpi.I2C{ Device: app.Device, Master: master },app.Logger)
+	i2c, err := gopi.Open(linux.I2C{ Bus: bus, Slave: uint8(slave) },app.Logger)
 	if err != nil {
 		return err
 	}
@@ -46,7 +47,8 @@ func main() {
 	config := app.Config(app.APP_I2C)
 
 	// Add on command-line flags
-	config.FlagSet.Uint("master",0,"Master (0,1 or 2)")
+	config.FlagSet.Uint("bus",0,"Bus (0,1 or 2)")
+	config.FlagSet.Uint("slave",0,"Slave Address")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

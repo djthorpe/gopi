@@ -49,7 +49,6 @@ func RunLoop(app *app.App) error {
 	defer led.Close()
 
 	go func() {
-		// Blink 100ms on/50ms off
 		for {
 			led.(hw.LEDDriver).On()
 			time.Sleep(1 * time.Second)
