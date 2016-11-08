@@ -65,7 +65,7 @@ type FileLogger struct {
 // Concrete Logger Device
 type logger struct {
 	device *os.File
-	mutex  sync.Mutex	
+	mutex  sync.Mutex
 }
 
 ////////////////////////////////////////////////////////////////////////////////

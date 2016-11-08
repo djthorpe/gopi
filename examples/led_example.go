@@ -27,7 +27,7 @@ import (
 func RunLoop(app *app.App) error {
 
 	// Create the LED array
-	pins := []hw.GPIOPin{ app.GPIO.PhysicalPin(40),app.GPIO.PhysicalPin(38),app.GPIO.PhysicalPin(37),app.GPIO.PhysicalPin(36) }
+	pins := []hw.GPIOPin{app.GPIO.PhysicalPin(40), app.GPIO.PhysicalPin(38), app.GPIO.PhysicalPin(37), app.GPIO.PhysicalPin(36)}
 	led, err := gopi.Open(hw.LED{GPIO: app.GPIO, Pins: pins}, app.Logger)
 	if err != nil {
 		return err

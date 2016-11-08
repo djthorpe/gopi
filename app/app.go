@@ -12,9 +12,9 @@ package app /* import "github.com/djthorpe/gopi/app" */
 import (
 	"flag"
 	"os"
+	"os/signal"
 	"path"
 	"syscall"
-	"os/signal"
 )
 
 // import abstract drivers
@@ -110,7 +110,7 @@ const (
 
 const (
 	// Constants used to determine default flags
-	APP_DEFAULT_DEBUG  = false
+	APP_DEFAULT_DEBUG   = false
 	APP_DEFAULT_VERBOSE = false
 )
 
@@ -124,22 +124,22 @@ func Config(flags AppFlags) AppConfig {
 	config := AppConfig{}
 
 	// create flagset and set appflags
-	config.FlagSet = flag.NewFlagSet(path.Base(os.Args[0]),flag.ContinueOnError)
+	config.FlagSet = flag.NewFlagSet(path.Base(os.Args[0]), flag.ContinueOnError)
 	config.Features = flags
 
 	// Add on -log flag for path to logfile
-	config.FlagSet.String("log","","File for logging")
-	config.FlagSet.Bool("verbose",true,"Log verbosely")
-	config.FlagSet.Bool("debug",false,"Trigger debugging support")
+	config.FlagSet.String("log", "", "File for logging")
+	config.FlagSet.Bool("verbose", true, "Log verbosely")
+	config.FlagSet.Bool("debug", false, "Trigger debugging support")
 
 	// Add -display
-	if config.Features & (APP_DISPLAY|APP_EGL|APP_OPENVG) != 0 {
-		config.FlagSet.Uint("display",0,"Display to use")
+	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG) != 0 {
+		config.FlagSet.Uint("display", 0, "Display to use")
 	}
 
 	// Add -ppi
-	if config.Features & (APP_EGL|APP_OPENVG) != 0 {
-		config.FlagSet.String("ppi","","Pixels per inch (or screen size in mm)")
+	if config.Features&(APP_EGL|APP_OPENVG) != 0 {
+		config.FlagSet.String("ppi", "", "Pixels per inch (or screen size in mm)")
 	}
 
 	return config
@@ -157,7 +157,7 @@ func NewApp(config AppConfig) (*App, error) {
 	if config.FlagSet != nil {
 		// Parse command-line flags
 		if err := config.FlagSet.Parse(os.Args[1:]); err != nil {
-			return nil,err
+			return nil, err
 		}
 	}
 
@@ -211,7 +211,7 @@ func NewApp(config AppConfig) (*App, error) {
 	// Signal handlers
 	this.signal_channel = make(chan os.Signal, 1)
 	this.finish_channel = make(chan bool, 1)
-	signal.Notify(this.signal_channel,syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(this.signal_channel, syscall.SIGTERM, syscall.SIGINT)
 
 	// Create the device
 	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_GPIO|APP_I2C) != 0 {
@@ -321,12 +321,12 @@ func (this *App) Close() error {
 
 // Run the application with callback
 func (this *App) Run(callback AppCallback) error {
-	this.Logger.Debug("<App>Run pid=%v",os.Getpid())
+	this.Logger.Debug("<App>Run pid=%v", os.Getpid())
 
 	// Go routine to wait for signal, and send finish signal in that case
 	go func() {
 		signal := <-this.signal_channel
-		this.Logger.Debug("<App>Run: caught signal: %v",signal)
+		this.Logger.Debug("<App>Run: caught signal: %v", signal)
 		this.finish_channel <- true
 	}()
 
@@ -385,6 +385,3 @@ func (this *App) getVerbose() bool {
 	}
 	return verbose.Value.(flag.Getter).Get().(bool)
 }
-
-
-

@@ -17,9 +17,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
-	"flag"
 )
 
 import (
@@ -33,7 +33,7 @@ import (
 func RunLoop(app *app.App) error {
 
 	// Create the Pimote interface
-	pimote, err := gopi.Open(energenie.Pimote{ GPIO: app.GPIO },app.Logger)
+	pimote, err := gopi.Open(energenie.Pimote{GPIO: app.GPIO}, app.Logger)
 	if err != nil {
 		return err
 	}
@@ -71,9 +71,9 @@ func main() {
 	config := app.Config(app.APP_GPIO)
 
 	// Add on command-line flags
-	config.FlagSet.Uint("socket",0,"Socket number (1,2,3 or 4). If not specified, all sockets are controlled")
-	config.FlagSet.Bool("on",false,"Switch socket on")
-	config.FlagSet.Bool("off",false,"Switch socket off")
+	config.FlagSet.Uint("socket", 0, "Socket number (1,2,3 or 4). If not specified, all sockets are controlled")
+	config.FlagSet.Bool("on", false, "Switch socket on")
+	config.FlagSet.Bool("off", false, "Switch socket off")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

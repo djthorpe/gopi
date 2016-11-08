@@ -10,8 +10,8 @@
 package hw // import "github.com/djthorpe/gopi/hw"
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 )
 
 import (
@@ -146,12 +146,12 @@ func (this *LEDDevice) runLoop() {
 			done = true
 			break
 		case pins := <-this.on_channel:
-			for _,pin := range(pins) {
-				this.gpio.WritePin(pin,GPIO_HIGH)
+			for _, pin := range pins {
+				this.gpio.WritePin(pin, GPIO_HIGH)
 			}
 		case pins := <-this.off_channel:
-			for _,pin := range(pins) {
-				this.gpio.WritePin(pin,GPIO_LOW)
+			for _, pin := range pins {
+				this.gpio.WritePin(pin, GPIO_LOW)
 			}
 		}
 	}
@@ -159,6 +159,5 @@ func (this *LEDDevice) runLoop() {
 }
 
 func (this *LEDDevice) getPins(pins []uint) ([]GPIOPin, error) {
-	return nil,errors.New("Invalid pins")
+	return nil, errors.New("Invalid pins")
 }
-
