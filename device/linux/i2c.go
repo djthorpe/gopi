@@ -8,11 +8,12 @@
 package linux /* import "github.com/djthorpe/gopi/device/linux" */
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"syscall"
 	"unsafe"
-	"strings"
 )
 
 import (
@@ -38,12 +39,20 @@ type I2CDriver struct {
 
 type I2CFunction uint32
 
+type i2c_smbus_ioctl_data struct {
+	rw      uint8
+	command uint8
+	size    uint32
+	data    uintptr
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
-	I2C_DEV           = "/dev/i2c"
-	I2C_SLAVE_NONE uint8 = 0xFF
+	I2C_DEV                   = "/dev/i2c"
+	I2C_SLAVE_NONE      uint8 = 0xFF
+	I2C_SMBUS_BLOCK_MAX       = 32 /* As specified in SMBus standard */
 )
 
 const (
@@ -81,8 +90,32 @@ const (
 	I2C_FUNC_SMBUS_WRITE_I2C_BLOCK  I2CFunction = 0x08000000 /* w/ 1-byte reg. addr. */
 )
 
+const (
+	// i2c_smbus_xfer read or write markers
+	I2C_SMBUS_READ  uint8 = 0x01
+	I2C_SMBUS_WRITE uint8 = 0x00
+)
+
+const (
+	// SMBus transaction types
+	I2C_SMBUS_QUICK            uint8 = 0
+	I2C_SMBUS_BYTE             uint8 = 1
+	I2C_SMBUS_BYTE_DATA        uint8 = 2
+	I2C_SMBUS_WORD_DATA        uint8 = 3
+	I2C_SMBUS_PROC_CALL        uint8 = 4
+	I2C_SMBUS_BLOCK_DATA       uint8 = 5
+	I2C_SMBUS_I2C_BLOCK_BROKEN uint8 = 6
+	I2C_SMBUS_BLOCK_PROC_CALL  uint8 = 7
+	I2C_SMBUS_I2C_BLOCK_DATA   uint8 = 8
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // VARIABLES
+
+var (
+	ErrFunctionUnsupported = errors.New("Unsupported operation")
+	ErrNoAddress           = errors.New("No slave address")
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
@@ -133,7 +166,7 @@ func (this *I2CDriver) String() string {
 	flag := I2CFunction(I2C_FUNC_I2C)
 	funcs := ""
 	for {
-		if this.funcs & flag != I2CFunction(0) {
+		if this.funcs&flag != I2CFunction(0) {
 			funcs = funcs + flag.String() + ","
 		}
 		flag = flag << 1
@@ -141,16 +174,16 @@ func (this *I2CDriver) String() string {
 			break
 		}
 	}
-	slave := fmt.Sprintf("%02X",this.slave)
+	slave := fmt.Sprintf("%02X", this.slave)
 	if this.slave == I2C_SLAVE_NONE {
 		slave = "I2C_SLAVE_NONE"
 	}
-	return fmt.Sprintf("<linux.I2C>{ bus=%v slave=%v funcs={ %v } }", this.bus, slave, strings.TrimSuffix(funcs,","))
+	return fmt.Sprintf("<linux.I2C>{ bus=%v slave=%v funcs={ %v } }", this.bus, slave, strings.TrimSuffix(funcs, ","))
 }
 
 // Stringify I2CFuncs
 func (f I2CFunction) String() string {
-	switch(f) {
+	switch f {
 	case I2C_FUNC_I2C:
 		return "I2C_FUNC_I2C"
 	case I2C_FUNC_10BIT_ADDR:
@@ -199,7 +232,7 @@ func (this *I2CDriver) SetSlave(slave uint8) error {
 	if this.slave == slave {
 		return nil
 	}
-	if err := i2cIoctl(this.dev.Fd(), I2C_SLAVE, uintptr(slave)); err != nil {
+	if err := i2c_ioctl(this.dev.Fd(), I2C_SLAVE, uintptr(slave)); err != nil {
 		return err
 	}
 	this.slave = slave
@@ -212,33 +245,74 @@ func (this *I2CDriver) GetSlave() uint8 {
 	return this.slave
 }
 
-func (this *I2CDriver) DetectSlave(slave uint8) (bool,error) {
+func (this *I2CDriver) DetectSlave(slave uint8) (bool, error) {
 	// Store old slave address and set this one
 	old_slave := this.slave
 	if slave != old_slave {
-		if err := i2cIoctl(this.dev.Fd(), I2C_SLAVE, uintptr(slave)); err != nil {
-			return false,err
+		if err := i2c_ioctl(this.dev.Fd(), I2C_SLAVE, uintptr(slave)); err != nil {
+			return false, err
 		}
 	}
 
 	var detect bool
-	if this.funcs & I2C_FUNC_SMBUS_QUICK != 0 {
-		res = i2c_smbus_write_quick(this.dev.Fd(),I2C_SMBUS_WRITE)
-		detect := (res >= 0)
-	} else if this.funcs & I2C_FUNC_SMBUS_READ_BYTE != 0 {
-		res = i2c_smbus_read_byte(this.dev.Fd());
-		detect := (res >= 0)
+	if this.funcs&I2C_FUNC_SMBUS_QUICK != 0 {
+		err := this.i2c_smbus_write_quick(0)
+		if err == nil {
+			detect = true
+		} else {
+			detect = false
+		}
+	} else if this.funcs&I2C_FUNC_SMBUS_READ_BYTE != 0 {
+		_, err := this.i2c_smbus_read_byte()
+		if err == nil {
+			detect = true
+		} else {
+			detect = false
+		}
 	} else {
-		return false,errors.New("I2C bus does not support detection commands")
+		return false, ErrFunctionUnsupported
 	}
 
 	// Restore slave address
 	if old_slave != I2C_SLAVE_NONE {
-		if err := i2cIoctl(this.dev.Fd(), I2C_SLAVE, uintptr(old_slave)); err != nil {
-			return false,err
+		if err := i2c_ioctl(this.dev.Fd(), I2C_SLAVE, uintptr(old_slave)); err != nil {
+			return false, err
 		}
 	}
-	return detect,nil
+	return detect, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// READ/WRITE METHODS
+
+func (this *I2CDriver) WriteQuick(value uint8) error {
+	if this.slave == I2C_SLAVE_NONE {
+		return ErrNoAddress
+	}
+	if this.funcs & I2C_FUNC_SMBUS_QUICK == 0 {
+		return ErrFunctionUnsupported
+	}
+	return this.i2c_smbus_write_quick(value)
+}
+
+func (this *I2CDriver) ReadByte() (uint8,error) {
+	if this.slave == I2C_SLAVE_NONE {
+		return ErrNoAddress
+	}
+	if this.funcs & I2C_FUNC_SMBUS_READ_BYTE == 0 {
+		return ErrFunctionUnsupported
+	}
+	return this.i2c_smbus_read_byte()
+}
+
+func (this *I2CDriver) WriteByte(value uint8) error {
+	if this.slave == I2C_SLAVE_NONE {
+		return ErrNoAddress
+	}
+	if this.funcs & I2C_FUNC_SMBUS_WRITE_BYTE == 0 {
+		return ErrFunctionUnsupported
+	}
+	return this.i2c_smbus_write_byte(value)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -256,28 +330,42 @@ func i2cOpenDevice(bus uint) (*os.File, error) {
 
 func (this *I2CDriver) i2cFuncs() (I2CFunction, error) {
 	var funcs I2CFunction
-	if err := i2cIoctl(this.dev.Fd(), I2C_FUNCS, uintptr(unsafe.Pointer(&funcs))); err != nil {
+	if err := i2c_ioctl(this.dev.Fd(), I2C_FUNCS, uintptr(unsafe.Pointer(&funcs))); err != nil {
 		return funcs, err
 	}
 	return funcs, nil
 }
 
-func (this *I2CDriver) i2c_smbus_access(read_write uint8,command uint8,size int,data i2c_smbus_data) error {
-	struct i2c_smbus_ioctl_data args;
-	__s32 err;
-
-	args.read_write = read_write;
-	args.command = command;
-	args.size = size;
-	args.data = data;
-
-	err = ioctl(this.dev.Fd(),I2C_SMBUS, &args);
-	if (err == -1)
-		err = -errno;
-	return err;
+func (this *I2CDriver) i2c_smbus_access(rw uint8, command uint8, size uint32, data uintptr) error {
+	args := &i2c_smbus_ioctl_data{
+		rw:      rw,
+		command: command,
+		size:    size,
+		data:    data,
+	}
+	return i2c_ioctl(this.dev.Fd(), I2C_SMBUS, uintptr(unsafe.Pointer(args)))
 }
 
-func i2cIoctl(fd, cmd, arg uintptr) error {
+func (this *I2CDriver) i2c_smbus_write_quick(value uint8) error {
+	return this.i2c_smbus_access(I2C_SMBUS_WRITE, I2C_SMBUS_QUICK, 0, 0)
+}
+
+func (this *I2CDriver) i2c_smbus_read_byte() (uint8, error) {
+	var data uint8
+	if err := this.i2c_smbus_access(I2C_SMBUS_READ, I2C_SMBUS_BYTE, 0, uintptr(unsafe.Pointer(&data))); err != nil {
+		return 0, err
+	}
+	return data, nil
+}
+
+func (this *I2CDriver) i2c_smbus_write_byte(value uint8) error {
+	if err := this.i2c_smbus_access(I2C_SMBUS_WRITE, I2C_SMBUS_BYTE, 0, uintptr(unsafe.Pointer(&value))); err != nil {
+		return 0, err
+	}
+	return data, nil
+}
+
+func i2c_ioctl(fd, cmd, arg uintptr) error {
 	_, _, err := syscall.Syscall6(syscall.SYS_IOCTL, fd, cmd, arg, 0, 0, 0)
 	if err != 0 {
 		return err

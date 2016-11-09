@@ -87,30 +87,9 @@ func (this *DXResource) GetHandle() dxResourceHandle {
 	return this.handle
 }
 
-func (this *DXResource) SetPixel(pt khronos.EGLPoint) error {
-
-	// Load image
-	/*
-		reader, err := os.Open("/home/djt/missamerica.png")
-		if err != nil {
-			return err
-		}
-		defer reader.Close()
-		m, _, err := image.Decode(reader)
-		if err != nil {
-			return err
-		}
-		bounds := m.Bounds()
-
-	*/
-
-	source := make([]uint32, 32)
-	source[0] = uint32(0xFF0000FF)
-	source[1] = uint32(0xFF00FFFF)
-	source[16] = uint32(0xFFFF0000)
-	source[17] = uint32(0xFF00FF00)
-	dst_frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(this.size.Width), uint32(this.size.Height)}}
-	fmt.Println("WRITE", this.handle, this.model, source, dst_frame)
+func (this *DXResource) SetPixel(pt khronos.EGLPoint,r,g,b,a uint16) error {
+	dst_frame := DXFrame{ DXPoint{int32(0), int32(0)}, DXSize{uint32(1), uint32(1)} }
+	// TODO
 	dxResourceWriteData(this.handle, this.model, this.stride, unsafe.Pointer(&source[0]), &dst_frame)
 	return nil
 }

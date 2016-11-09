@@ -17,5 +17,6 @@ type EGLBitmap interface {
 	GetSize() EGLSize
 
 	// Set Pixel
-	SetPixel(pt EGLPoint) error
+	SetPixel(pt EGLPoint,r,g,b,a uint16) error
+
 }

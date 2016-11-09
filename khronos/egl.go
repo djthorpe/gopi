@@ -9,6 +9,7 @@ package khronos /* import "github.com/djthorpe/gopi/khronos" */
 
 import (
 	"fmt"
+	"io"
 )
 
 import (
@@ -71,6 +72,12 @@ type EGLDriver interface {
 	// Destroy Surface
 	DestroySurface(surface EGLSurface) error
 
+	// Create bitmap resource
+	CreateImage(r io.Reader) (EGLBitmap, error)
+
+	// Destroy bitmap resource
+	DestroyImage(bitmap EGLBitmap) error
+
 	// Move surface origin relative to current origin
 	MoveSurfaceOriginBy(surface EGLSurface, rel EGLPoint) error
 
@@ -79,6 +86,7 @@ type EGLDriver interface {
 
 	// Set current surface context
 	SetCurrentContext(surface EGLSurface) error
+
 }
 
 // Abstract drawable surface

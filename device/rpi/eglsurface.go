@@ -185,9 +185,9 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 		return nil, err
 	}
 
-	// If DISPMANX then create a 2x2 resource
+	// If DISPMANX then create a resource
 	if api == DISPMANX_API_STRING {
-		window.resource, err = this.dx.CreateResource(DX_IMAGE_RGBA32, khronos.EGLSize{uint(2), uint(2)})
+		window.resource, err = this.dx.CreateResource(DX_IMAGE_RGBA32, khronos.EGLSize{uint(size.Width), uint(size.Height)})
 		if err != nil {
 			this.closeWindow(window)
 			return nil, err
