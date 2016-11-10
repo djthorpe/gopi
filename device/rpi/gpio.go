@@ -190,7 +190,7 @@ func (this *GPIODriver) Close() error {
 
 // Strinfigy GPIO
 func (this *GPIODriver) String() string {
-	return fmt.Sprintf("<rpi.GOPI>{ %v }", this.pins)
+	return fmt.Sprintf("<rpi.GOPI>{ physical_pins=%v logical_pins=%v }", this.NumberOfPhysicalPins(), this.pins)
 }
 
 // Return logical pin for physical pin number. Will return
@@ -221,6 +221,16 @@ func (this *GPIODriver) PhysicalPin(pin uint) hw.GPIOPin {
 		return hw.GPIO_PIN_NONE
 	}
 	return logical_pin
+}
+
+// Return number of physical pins associated with the GPIO
+// interface
+func (this *GPIODriver) NumberOfPhysicalPins() uint {
+	if this.model == RPI_MODEL_A || this.model == RPI_MODEL_B {
+		return uint(26)
+	} else {
+		return uint(40)
+	}
 }
 
 // Return physical pin number for logical pin, or 0 if there is no

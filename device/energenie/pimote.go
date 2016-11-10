@@ -137,6 +137,7 @@ func (this *PimoteDriver) write(reg byte, state bool) {
 }
 
 func (this *PimoteDriver) send(socket uint, state bool) error {
+	/* TODO: Ultimately we should do this in a go routine, and use mutex locks */
 	switch {
 	case socket == 0:
 		this.write(0x3, state)

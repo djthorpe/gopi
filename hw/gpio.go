@@ -25,6 +25,9 @@ type GPIODriver interface {
 	// Enforces general driver
 	gopi.Driver
 
+	// Return number of physical pins
+	NumberOfPhysicalPins() uint
+
 	// Return array of available logical pins
 	Pins() []GPIOPin
 
