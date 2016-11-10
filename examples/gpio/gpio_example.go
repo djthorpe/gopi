@@ -16,13 +16,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 )
 
 import (
 	app "github.com/djthorpe/gopi/app"
-	hw "github.com/djthorpe/gopi/hw"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +38,8 @@ func RunLoop(app *app.App) error {
 		}
 	}
 
+/*
+
 	led_pin := gpio.PhysicalPin(40)
 	gpio.SetPinMode(led_pin, hw.GPIO_OUTPUT)
 
@@ -52,6 +51,7 @@ func RunLoop(app *app.App) error {
 		app.Logger.Info("%v => %v %v", led_pin, gpio.ReadPin(led_pin), gpio.GetPinMode(led_pin))
 		time.Sleep(1.0 * time.Second)
 	}
+*/
 
 	// Return success
 	return nil
@@ -60,12 +60,11 @@ func RunLoop(app *app.App) error {
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
+	// Configuration
+	config := app.Config(app.APP_GPIO)
 
 	// Create the application
-	myapp, err := app.NewApp(app.AppConfig{
-		Features: app.APP_GPIO | app.APP_I2C,
-		LogLevel: util.LOG_ANY,
-	})
+	myapp, err := app.NewApp(config)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return

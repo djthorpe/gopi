@@ -10,7 +10,6 @@ package app /* import "github.com/djthorpe/gopi/app" */
 
 // import
 import (
-	"flag"
 	"os"
 	"os/signal"
 	"path"
@@ -39,7 +38,7 @@ type App struct {
 	Logger *util.LoggerDevice
 
 	// Command-line flags
-	FlagSet *flag.FlagSet
+	FlagSet *Flags
 
 	// The hardware device
 	Device gopi.HardwareDriver
@@ -59,8 +58,7 @@ type App struct {
 	// Signal channel on catching signals
 	signal_channel chan os.Signal
 
-	// Signal to place a finish bool on
-	// to indicate application should end
+	// Signal to place a finish bool on to indicate application should end
 	finish_channel chan bool
 
 	// debug and verbose flags
@@ -70,7 +68,7 @@ type App struct {
 // Application configuration
 type AppConfig struct {
 	// Command-line flags
-	FlagSet *flag.FlagSet
+	FlagSet *Flags
 
 	// Application features
 	Features AppFlags
@@ -124,22 +122,27 @@ func Config(flags AppFlags) AppConfig {
 	config := AppConfig{}
 
 	// create flagset and set appflags
-	config.FlagSet = flag.NewFlagSet(path.Base(os.Args[0]), flag.ContinueOnError)
+	config.FlagSet = NewFlags(path.Base(os.Args[0]))
 	config.Features = flags
 
 	// Add on -log flag for path to logfile
 	config.FlagSet.String("log", "", "File for logging")
-	config.FlagSet.Bool("verbose", true, "Log verbosely")
-	config.FlagSet.Bool("debug", false, "Trigger debugging support")
+	config.FlagSet.Bool("verbose", APP_DEFAULT_VERBOSE, "Log verbosely")
+	config.FlagSet.Bool("debug", APP_DEFAULT_DEBUG, "Trigger debugging support")
 
 	// Add -display
-	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG) != 0 {
+	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0 {
 		config.FlagSet.Uint("display", 0, "Display to use")
 	}
 
 	// Add -ppi
-	if config.Features&(APP_EGL|APP_OPENVG) != 0 {
+	if config.Features&(APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0 {
 		config.FlagSet.String("ppi", "", "Pixels per inch (or screen size in mm)")
+	}
+
+	// Add -i2cbus
+	if config.Features&(APP_I2C) != 0 {
+		config.FlagSet.Uint("i2cbus", 1, "I2C Bus")
 	}
 
 	return config
@@ -271,6 +274,8 @@ func NewApp(config AppConfig) (*App, error) {
 		this.GPIO = gpio.(hw.GPIODriver)
 	}
 
+	// TODO: I2C
+
 	// success
 	return this, nil
 }
@@ -278,7 +283,9 @@ func NewApp(config AppConfig) (*App, error) {
 // Close the application. This will free any resources opened. It will return
 // an error on unsuccessful, or nil otherwise.
 func (this *App) Close() error {
-	this.Logger.Debug("<App>Close")
+	this.Logger.Debug2("<App>Close")
+
+	// TODO: I2C
 
 	if this.GPIO != nil {
 		if err := this.GPIO.Close(); err != nil {
@@ -321,7 +328,7 @@ func (this *App) Close() error {
 
 // Run the application with callback
 func (this *App) Run(callback AppCallback) error {
-	this.Logger.Debug("<App>Run pid=%v", os.Getpid())
+	this.Logger.Debug2("<App>Run pid=%v", os.Getpid())
 
 	// Go routine to wait for signal, and send finish signal in that case
 	go func() {
@@ -333,12 +340,15 @@ func (this *App) Run(callback AppCallback) error {
 	if err := callback(this); err != nil {
 		return this.Logger.Error("%v", err)
 	}
+
+	// TODO: Remove signal handlers
+
 	return nil
 }
 
 // Wait until the finish channel has an event on it
 func (this *App) WaitUntilDone() {
-	this.Logger.Debug("<App>WaitUntilDone")
+	this.Logger.Debug2("<App>WaitUntilDone")
 
 	// Runloop accepting events, until done
 	done := false
@@ -349,6 +359,12 @@ func (this *App) WaitUntilDone() {
 			break
 		}
 	}
+}
+
+// Set the Done signal which terminates the WaitUntilDone loop
+func (this *App) Done() {
+	this.Logger.Debug2("<App>Done")
+	this.finish_channel<-true
 }
 
 // Return the debug flag
@@ -368,20 +384,20 @@ func (this *App) getDebug() bool {
 	if this.FlagSet == nil {
 		return APP_DEFAULT_DEBUG
 	}
-	debug := this.FlagSet.Lookup("debug")
-	if debug == nil {
+	debug, exists := this.FlagSet.GetBool("debug")
+	if exists == false {
 		return APP_DEFAULT_DEBUG
 	}
-	return debug.Value.(flag.Getter).Get().(bool)
+	return debug
 }
 
 func (this *App) getVerbose() bool {
 	if this.FlagSet == nil {
 		return APP_DEFAULT_VERBOSE
 	}
-	verbose := this.FlagSet.Lookup("verbose")
-	if verbose == nil {
+	verbose, exists := this.FlagSet.GetBool("verbose")
+	if exists == false {
 		return APP_DEFAULT_VERBOSE
 	}
-	return verbose.Value.(flag.Getter).Get().(bool)
+	return verbose
 }
