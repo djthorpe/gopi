@@ -40,6 +40,7 @@ import (
 	"fmt"
 	"os"
 	"errors"
+	"strconv"
 )
 
 import (
@@ -58,11 +59,18 @@ func RunLoop(app *app.App) error {
 		return err
 	}
 
-	// Get pin states
-	gpio := app.GPIO
-
+	// Debugging output
 	app.Logger.Debug("Device=%v", app.Device)
-	app.Logger.Debug("GPIO=%v", gpio)
+	app.Logger.Debug("GPIO=%v", app.GPIO)
+
+	// Get pin
+	gpio := app.GPIO
+	pin, err := ParsePinFlag(app.GPIO,app.FlagSet)
+	if err != nil {
+		return err
+	}
+	app.Logger.Debug("Pin=%v", pin)
+
 
 	for _, logical := range gpio.Pins() {
 		if physical := gpio.PhysicalPinForPin(logical); physical != 0 {
@@ -102,15 +110,9 @@ func CheckFlags(flagset *app.Flags) error {
 		}
 	}
 
-	// Check for pin
-	pin, exists := flagset.GetString("pin")
-	if exists != true {
+	// Check for -pin argument
+	if flagset.HasFlag("pin") == false {
 		return errors.New("-pin flag required")
-	}
-
-	_, err := ParsePinValue(pin)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -118,7 +120,19 @@ func CheckFlags(flagset *app.Flags) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func ParsePinValue(name string) (hw.GPIOPin,error) {
+func ParsePinFlag(gpio hw.GPIODriver,flagset *app.Flags) (hw.GPIOPin,error) {
+	value, exists := flagset.GetString("pin")
+	if exists == false {
+		return hw.GPIO_PIN_NONE,nil
+	}
+	pin, err := strconv.ParseUint(value,10,32)
+	if err == nil {
+		logical := gpio.PhysicalPin(uint(pin))
+		if logical == hw.GPIO_PIN_NONE {
+			return logical,errors.New("Invalid pin")
+		}
+		return logical, nil
+	}
 	return hw.GPIO_PIN_NONE,errors.New("NOT IMPLEMENTED")
 }
 
