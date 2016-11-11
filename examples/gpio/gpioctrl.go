@@ -39,15 +39,24 @@ package main
 import (
 	"fmt"
 	"os"
+	"errors"
 )
 
 import (
 	app "github.com/djthorpe/gopi/app"
+	hw "github.com/djthorpe/gopi/hw"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func RunLoop(app *app.App) error {
+
+	// Check flags
+	app.Logger.Info("flags=%v",app.FlagSet)
+	err := CheckFlags(app.FlagSet)
+	if err != nil {
+		return err
+	}
 
 	// Get pin states
 	gpio := app.GPIO
@@ -67,16 +76,64 @@ func RunLoop(app *app.App) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+func CheckFlags(flagset *app.Flags) error {
+	// if no flags, then return OK
+	if len(flagset.Flags()) == 0 {
+		return nil
+	}
+
+	// Check for either: low, high, input or alt which are mutually
+	// exclusive flags
+	c := 0
+	for _,flag := range([]string{ "input","alt","low","high" }) {
+		if flagset.HasFlag(flag) {
+			c++
+		}
+	}
+	if c != 1 {
+		return errors.New("One of -low, -high, -input, or -alt required")
+	}
+
+	// check for alt being between 0 and 5
+	alt, exists := flagset.GetUint("alt")
+	if exists {
+		if alt > 5 {
+			return errors.New("-alt is required to be between 0 and 5")
+		}
+	}
+
+	// Check for pin
+	pin, exists := flagset.GetString("pin")
+	if exists != true {
+		return errors.New("-pin flag required")
+	}
+
+	_, err := ParsePinValue(pin)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func ParsePinValue(name string) (hw.GPIOPin,error) {
+	return hw.GPIO_PIN_NONE,errors.New("NOT IMPLEMENTED")
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 func main() {
 	// Configuration
 	config := app.Config(app.APP_GPIO)
 
 	// Set the flags
-	config.FlagSet.String("pin","","Physical Pin Number or name")
-	config.FlagSet.Bool("low",false,"Set pin to OUTPUT and set pin level LOW")
-	config.FlagSet.Bool("high",false,"Set pin to OUTPUT and set pin level HIGH")
-	config.FlagSet.Bool("input",false,"Set pin to INPUT")
-	config.FlagSet.Uint("alt",0,"Set pin to an alternate function 0-5")
+	config.FlagSet.FlagString("pin","","Physical Pin Number or name")
+	config.FlagSet.FlagBool("low",false,"Set pin to OUTPUT and set pin level LOW")
+	config.FlagSet.FlagBool("high",false,"Set pin to OUTPUT and set pin level HIGH")
+	config.FlagSet.FlagBool("input",false,"Set pin to INPUT")
+	config.FlagSet.FlagUint("alt",0,"Set pin to an alternate function 0-5")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

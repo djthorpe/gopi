@@ -126,23 +126,23 @@ func Config(flags AppFlags) AppConfig {
 	config.Features = flags
 
 	// Add on -log flag for path to logfile
-	config.FlagSet.String("log", "", "File for logging")
-	config.FlagSet.Bool("verbose", APP_DEFAULT_VERBOSE, "Log verbosely")
-	config.FlagSet.Bool("debug", APP_DEFAULT_DEBUG, "Trigger debugging support")
+	config.FlagSet.FlagString("log", "", "File for logging")
+	config.FlagSet.FlagBool("verbose", APP_DEFAULT_VERBOSE, "Log verbosely")
+	config.FlagSet.FlagBool("debug", APP_DEFAULT_DEBUG, "Trigger debugging support")
 
 	// Add -display
 	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0 {
-		config.FlagSet.Uint("display", 0, "Display to use")
+		config.FlagSet.FlagUint("display", 0, "Display to use")
 	}
 
 	// Add -ppi
 	if config.Features&(APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0 {
-		config.FlagSet.String("ppi", "", "Pixels per inch (or screen size in mm)")
+		config.FlagSet.FlagString("ppi", "", "Pixels per inch (or screen size in mm)")
 	}
 
 	// Add -i2cbus
 	if config.Features&(APP_I2C) != 0 {
-		config.FlagSet.Uint("i2cbus", 1, "I2C Bus")
+		config.FlagSet.FlagUint("i2cbus", 1, "I2C Bus")
 	}
 
 	return config
