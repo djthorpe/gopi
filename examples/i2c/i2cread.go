@@ -17,6 +17,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"errors"
+	"strconv"
 )
 
 import (
@@ -31,26 +33,66 @@ func RunLoop(app *app.App) error {
 	app.Logger.Debug("Device=%v", app.Device)
 	app.Logger.Debug("I2C=%v", app.I2C)
 
-	// Create 8 x 8 grid for detecting slaves
-	fmt.Fprintln(os.Stdout,"     -0 -1 -2 -3 -4 -5 -6 -7 -8 -9 -A -B -C -D -E -F")
-	for h := uint8(0x0); h <= uint8(0x7); h++ {
-		fmt.Fprintf(os.Stdout,"%01X- | ",h)
-		for l := uint8(0x0); l <= uint8(0xF); l++ {
-			slave := (h << 4) + l
-			detected, err := app.I2C.DetectSlave(slave)
-			if err != nil {
-				fmt.Fprint(os.Stdout,"??")
-			} else if detected {
-				fmt.Fprintf(os.Stdout,"%02X",slave)
-			} else {
-				fmt.Fprint(os.Stdout,"--")
-			}
-			fmt.Fprint(os.Stdout," ")
-		}
-		fmt.Fprint(os.Stdout,"\n")
+	addr, err := GetSlaveAddress(app.FlagSet)
+	if err != nil {
+		return err
 	}
 
+	reg, err := GetRegister(app.FlagSet)
+	if err != nil {
+		return err
+	}
+
+	// Detect slave
+	detected, err := app.I2C.DetectSlave(addr)
+	if err != nil {
+		return err
+	}
+	if detected == false {
+		return errors.New("No device detected at that slave address")
+	}
+
+	// Set slave
+	if err := app.I2C.SetSlave(addr); err != nil {
+		return err
+	}
+
+	// Read slave
+	byte, err := app.I2C.ReadByte(reg)
+	if err != nil {
+		return err
+	}
+
+	app.Logger.Info("Slave=%02X",addr)
+	app.Logger.Info("Byte=%02X",byte)
+
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func GetSlaveAddress(flags *app.Flags) (uint8,error) {
+	value, exists := flags.GetString("slave")
+	if exists == false {
+		return uint8(0),errors.New("Missing -slave parameter")
+	}
+	addr, err := strconv.ParseUint("0x" + value, 0, 64)
+	if err != nil || addr > 0x7F {
+		return uint8(0),errors.New("Invalid -slave parameter")
+	}
+	return uint8(addr),nil
+}
+
+func GetRegister(flags *app.Flags) (uint8,error) {
+	value, exists := flags.GetString("reg")
+	if exists == false {
+		return uint8(0),errors.New("Missing -reg parameter")
+	}
+	reg, err := strconv.ParseUint("0x" + value, 0, 64)
+	if err != nil || reg > 0xFF {
+		return uint8(0),errors.New("Invalid -reg parameter")
+	}
+	return uint8(reg),nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,7 +103,7 @@ func main() {
 
 	// Flags
 	config.FlagSet.FlagString("slave", "", "Slave address")
-
+	config.FlagSet.FlagString("reg", "", "Slave register")
 
 	// Create the application
 	myapp, err := app.NewApp(config)
