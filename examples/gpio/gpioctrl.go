@@ -57,16 +57,16 @@ import (
 
 func RunLoop(app *app.App) error {
 
+	// Debugging output
+	app.Logger.Debug("Device=%v", app.Device)
+	app.Logger.Debug("GPIO=%v", app.GPIO)
+
 	// Check flags
-	app.Logger.Info("flags=%v", app.FlagSet)
+	app.Logger.Debug("flags=%v", app.FlagSet)
 	err := CheckFlags(app.FlagSet)
 	if err != nil {
 		return err
 	}
-
-	// Debugging output
-	app.Logger.Debug("Device=%v", app.Device)
-	app.Logger.Debug("GPIO=%v", app.GPIO)
 
 	// Get pin
 	gpio := app.GPIO
