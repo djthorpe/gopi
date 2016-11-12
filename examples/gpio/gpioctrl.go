@@ -71,15 +71,46 @@ func RunLoop(app *app.App) error {
 	}
 	app.Logger.Debug("Pin=%v", pin)
 
-
-	for _, logical := range gpio.Pins() {
-		if physical := gpio.PhysicalPinForPin(logical); physical != 0 {
-			app.Logger.Info("%v [Pin %v] => %v %v", logical, physical, gpio.ReadPin(logical), gpio.GetPinMode(logical))
-		}
+	// If no pin, then print out the table of pin states
+	switch {
+	case pin == hw.GPIO_PIN_NONE:
+		return PrintPinTable(gpio,os.Stdout)
+	default:
+		return errors.New("NOT IMPLEMENTED")
 	}
 
 	// Return success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func PrintPinTable(gpio hw.GPIODriver,fd *os.File) error {
+
+	// print out pin table in two columns
+	rows := gpio.NumberOfPhysicalPins() / 2
+	header := "+----+----------+----+----------+ +----------+----+----------+----+"
+	format := "| %4s | %8s | %6s | %2s | | %-2s | %-6s | %-8s | %-4s |"
+
+	fmt.Fprintln(fd,header)
+
+	for i := uint(0); i < rows; i++ {
+		args := make([]interface{},8)
+		args[3],args[2],args[1],args[0] = PinStateAsString(gpio,(i * 2) + 1)
+		args[4],args[5],args[6],args[7] = PinStateAsString(gpio,(i * 2) + 2)
+		fmt.Fprintln(fd,fmt.Sprintf(format,args...))
+	}
+
+	fmt.Fprintln(fd,header)
+	return nil
+}
+
+func PinStateAsString(gpio hw.GPIODriver,physicalpin uint) (string,string,string,string) {
+	logicalpin := gpio.PhysicalPin(physicalpin)
+	if logicalpin == hw.GPIO_PIN_NONE {
+		return strconv.FormatUint(uint64(physicalpin),10),"","",""
+	}
+	return strconv.FormatUint(uint64(physicalpin),10),logicalpin.String(),gpio.GetPinMode(logicalpin).String(),gpio.ReadPin(logicalpin).String()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
