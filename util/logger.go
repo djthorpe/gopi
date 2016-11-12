@@ -248,7 +248,7 @@ func (config FileLogger) Open() (LoggerInterface, error) {
 
 // Close logger
 func (this *logger) Close() error {
-	if this.device != nil {
+	if this.device != nil && this.device != os.Stdout && this.device != os.Stderr {
 		return this.device.Close()
 	}
 	return nil

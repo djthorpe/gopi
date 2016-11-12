@@ -297,10 +297,10 @@ func (this *I2CDriver) WriteQuick(value uint8) error {
 
 func (this *I2CDriver) ReadByte() (uint8, error) {
 	if this.slave == I2C_SLAVE_NONE {
-		return ErrNoAddress
+		return uint8(0),ErrNoAddress
 	}
 	if this.funcs&I2C_FUNC_SMBUS_READ_BYTE == 0 {
-		return ErrFunctionUnsupported
+		return uint8(0),ErrFunctionUnsupported
 	}
 	return this.i2c_smbus_read_byte()
 }
@@ -360,9 +360,9 @@ func (this *I2CDriver) i2c_smbus_read_byte() (uint8, error) {
 
 func (this *I2CDriver) i2c_smbus_write_byte(value uint8) error {
 	if err := this.i2c_smbus_access(I2C_SMBUS_WRITE, I2C_SMBUS_BYTE, 0, uintptr(unsafe.Pointer(&value))); err != nil {
-		return 0, err
+		return err
 	}
-	return data, nil
+	return nil
 }
 
 func i2c_ioctl(fd, cmd, arg uintptr) error {

@@ -29,6 +29,11 @@ import (
 	rpi "github.com/djthorpe/gopi/device/rpi"
 )
 
+// import linux drivers
+import (
+	linux "github.com/djthorpe/gopi/device/linux"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -55,6 +60,9 @@ type App struct {
 	// The GPIO driver
 	GPIO hw.GPIODriver
 
+	// The I2C driver
+	I2C hw.I2CDriver
+
 	// Signal channel on catching signals
 	signal_channel chan os.Signal
 
@@ -75,6 +83,9 @@ type AppConfig struct {
 
 	// The display number to open
 	Display uint16
+
+	// The I2C bus
+	I2CBus uint
 
 	// The file to log information to
 	LogFile string
@@ -274,7 +285,20 @@ func NewApp(config AppConfig) (*App, error) {
 		this.GPIO = gpio.(hw.GPIODriver)
 	}
 
-	// TODO: I2C
+	// Create the I2C interface
+	if config.Features&(APP_I2C) != 0 {
+		bus, exists := this.FlagSet.GetUint("i2cbus")
+		if exists {
+			config.I2CBus = bus
+		}
+		i2c, err := gopi.Open(linux.I2C{Bus: config.I2CBus}, this.Logger)
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
+		// Convert device into a GPIODriver
+		this.I2C = i2c.(hw.I2CDriver)
+	}
 
 	// success
 	return this, nil
@@ -285,8 +309,12 @@ func NewApp(config AppConfig) (*App, error) {
 func (this *App) Close() error {
 	this.Logger.Debug2("<App>Close")
 
-	// TODO: I2C
-
+	if this.I2C != nil {
+		if err := this.I2C.Close(); err != nil {
+			return err
+		}
+		this.I2C = nil
+	}
 	if this.GPIO != nil {
 		if err := this.GPIO.Close(); err != nil {
 			return err
@@ -380,6 +408,7 @@ func (this *App) GetVerbose() bool {
 ////////////////////////////////////////////////////////////////////////////////
 // Private Methods
 
+// Return the debug flag
 func (this *App) getDebug() bool {
 	if this.FlagSet == nil {
 		return APP_DEFAULT_DEBUG
@@ -391,6 +420,7 @@ func (this *App) getDebug() bool {
 	return debug
 }
 
+// Return the verbose flag
 func (this *App) getVerbose() bool {
 	if this.FlagSet == nil {
 		return APP_DEFAULT_VERBOSE
