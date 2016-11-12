@@ -32,7 +32,10 @@
 //
 //  gpioctrl -pin <pin> -alt 0
 //
-// And so forth...
+// When setting -input it's also possible to set the pull up/down resistor
+// value:
+//
+// gpioctrl -pin <pin> -input -pull <off/up/down>
 //
 package main
 
@@ -85,6 +88,10 @@ func RunLoop(app *app.App) error {
 		return PrintPinTable(gpio,os.Stdout)
 	case app.FlagSet.HasFlag("input"):
 		gpio.SetPinMode(pin,hw.GPIO_INPUT)
+		pull, exists := app.FlagSet.GetString("pull")
+		if exists {
+			gpio.SetPullMode(pin,PullMode(pull))
+		}
 		return PrintPinTable(gpio,os.Stdout)
 	case app.FlagSet.HasFlag("alt"):
 		alt, _ := app.FlagSet.GetUint("alt")
@@ -114,6 +121,17 @@ func AltMode(alt uint) hw.GPIOMode {
 		return hw.GPIO_ALT5
 	default:
 		return hw.GPIO_INPUT
+	}
+}
+
+func PullMode(pull string) hw.GPIOPull {
+	switch(pull) {
+	case "up":
+		return hw.GPIO_PULL_UP
+	case "down":
+		return hw.GPIO_PULL_DOWN
+	default:
+		return hw.GPIO_PULL_OFF
 	}
 }
 
@@ -167,6 +185,16 @@ func CheckFlags(flagset *app.Flags) error {
 		return errors.New("One of -low, -high, -input, or -alt required")
 	}
 
+	// pull flag can only be used with -input
+	pull, exists := flagset.GetString("pull")
+	if exists && flagset.HasFlag("input") == false {
+		return errors.New("-pull can only be used when -input specified")
+	} else if exists {
+		if pull != "off" && pull != "up" && pull != "down" {
+			return errors.New("-pull can only be 'off' 'up' or 'down'")
+		}
+	}
+
 	// check for alt being between 0 and 5
 	alt, exists := flagset.GetUint("alt")
 	if exists {
@@ -190,6 +218,9 @@ func ParsePinFlag(gpio hw.GPIODriver,flagset *app.Flags) (hw.GPIOPin,error) {
 	if exists == false {
 		return hw.GPIO_PIN_NONE,nil
 	}
+
+
+	// Check for physical pin
 	pin, err := strconv.ParseUint(value,10,32)
 	if err == nil {
 		logical := gpio.PhysicalPin(uint(pin))
@@ -198,7 +229,15 @@ func ParsePinFlag(gpio hw.GPIODriver,flagset *app.Flags) (hw.GPIOPin,error) {
 		}
 		return logical, nil
 	}
-	return hw.GPIO_PIN_NONE,errors.New("NOT IMPLEMENTED")
+
+	// Check for logical pin
+	for _,pin := range gpio.Pins() {
+		if value == pin.String() {
+			return pin, nil
+		}
+	}
+
+	return hw.GPIO_PIN_NONE,errors.New("Unknown pin")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -212,6 +251,7 @@ func main() {
 	config.FlagSet.FlagBool("low",false,"Set pin to OUTPUT and set pin level LOW")
 	config.FlagSet.FlagBool("high",false,"Set pin to OUTPUT and set pin level HIGH")
 	config.FlagSet.FlagBool("input",false,"Set pin to INPUT")
+	config.FlagSet.FlagString("pull","off","Set pin pull resistor to 'up', 'down' or 'off'")
 	config.FlagSet.FlagUint("alt",0,"Set pin to an alternate function 0-5")
 
 	// Create the application

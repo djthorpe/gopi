@@ -50,6 +50,9 @@ type GPIODriver interface {
 
 	// Set pin mode
 	SetPinMode(GPIOPin, GPIOMode)
+
+	// Set pull mode
+	SetPullMode(GPIOPin, GPIOPull)
 }
 
 // GPIO types
