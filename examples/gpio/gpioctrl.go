@@ -75,12 +75,46 @@ func RunLoop(app *app.App) error {
 	switch {
 	case pin == hw.GPIO_PIN_NONE:
 		return PrintPinTable(gpio,os.Stdout)
+	case app.FlagSet.HasFlag("low"):
+		gpio.SetPinMode(pin,hw.GPIO_OUTPUT)
+		gpio.WritePin(pin,hw.GPIO_LOW)
+		return PrintPinTable(gpio,os.Stdout)
+	case app.FlagSet.HasFlag("high"):
+		gpio.SetPinMode(pin,hw.GPIO_OUTPUT)
+		gpio.WritePin(pin,hw.GPIO_HIGH)
+		return PrintPinTable(gpio,os.Stdout)
+	case app.FlagSet.HasFlag("input"):
+		gpio.SetPinMode(pin,hw.GPIO_INPUT)
+		return PrintPinTable(gpio,os.Stdout)
+	case app.FlagSet.HasFlag("alt"):
+		alt, _ := app.FlagSet.GetUint("alt")
+		gpio.SetPinMode(pin,AltMode(alt))
+		return PrintPinTable(gpio,os.Stdout)
 	default:
 		return errors.New("NOT IMPLEMENTED")
 	}
 
 	// Return success
 	return nil
+}
+
+func AltMode(alt uint) hw.GPIOMode {
+	switch(alt) {
+	case 0:
+		return hw.GPIO_ALT0
+	case 1:
+		return hw.GPIO_ALT1
+	case 2:
+		return hw.GPIO_ALT2
+	case 3:
+		return hw.GPIO_ALT3
+	case 4:
+		return hw.GPIO_ALT4
+	case 5:
+		return hw.GPIO_ALT5
+	default:
+		return hw.GPIO_INPUT
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
