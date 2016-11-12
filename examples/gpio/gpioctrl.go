@@ -6,6 +6,8 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
+// GPIOCTRL
+//
 // This sample program shows how you can get information from the GPIO
 // device, and set pins input, output, etc. To use the software, there are
 // some flags. To enumerate the pins on the device with their current status
@@ -30,19 +32,19 @@
 //
 // You can also set a pin mode to be alternate function:
 //
-//  gpioctrl -pin <pin> -alt 0
+//   gpioctrl -pin <pin> -alt 0
 //
 // When setting -input it's also possible to set the pull up/down resistor
 // value:
 //
-// gpioctrl -pin <pin> -input -pull <off/up/down>
+//   gpioctrl -pin <pin> -input -pull <off/up/down>
 //
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"errors"
 	"strconv"
 )
 
@@ -56,7 +58,7 @@ import (
 func RunLoop(app *app.App) error {
 
 	// Check flags
-	app.Logger.Info("flags=%v",app.FlagSet)
+	app.Logger.Info("flags=%v", app.FlagSet)
 	err := CheckFlags(app.FlagSet)
 	if err != nil {
 		return err
@@ -68,7 +70,7 @@ func RunLoop(app *app.App) error {
 
 	// Get pin
 	gpio := app.GPIO
-	pin, err := ParsePinFlag(app.GPIO,app.FlagSet)
+	pin, err := ParsePinFlag(app.GPIO, app.FlagSet)
 	if err != nil {
 		return err
 	}
@@ -77,26 +79,26 @@ func RunLoop(app *app.App) error {
 	// If no pin, then print out the table of pin states
 	switch {
 	case pin == hw.GPIO_PIN_NONE:
-		return PrintPinTable(gpio,os.Stdout)
+		return PrintPinTable(gpio, os.Stdout)
 	case app.FlagSet.HasFlag("low"):
-		gpio.SetPinMode(pin,hw.GPIO_OUTPUT)
-		gpio.WritePin(pin,hw.GPIO_LOW)
-		return PrintPinTable(gpio,os.Stdout)
+		gpio.SetPinMode(pin, hw.GPIO_OUTPUT)
+		gpio.WritePin(pin, hw.GPIO_LOW)
+		return PrintPinTable(gpio, os.Stdout)
 	case app.FlagSet.HasFlag("high"):
-		gpio.SetPinMode(pin,hw.GPIO_OUTPUT)
-		gpio.WritePin(pin,hw.GPIO_HIGH)
-		return PrintPinTable(gpio,os.Stdout)
+		gpio.SetPinMode(pin, hw.GPIO_OUTPUT)
+		gpio.WritePin(pin, hw.GPIO_HIGH)
+		return PrintPinTable(gpio, os.Stdout)
 	case app.FlagSet.HasFlag("input"):
-		gpio.SetPinMode(pin,hw.GPIO_INPUT)
+		gpio.SetPinMode(pin, hw.GPIO_INPUT)
 		pull, exists := app.FlagSet.GetString("pull")
 		if exists {
-			gpio.SetPullMode(pin,PullMode(pull))
+			gpio.SetPullMode(pin, PullMode(pull))
 		}
-		return PrintPinTable(gpio,os.Stdout)
+		return PrintPinTable(gpio, os.Stdout)
 	case app.FlagSet.HasFlag("alt"):
 		alt, _ := app.FlagSet.GetUint("alt")
-		gpio.SetPinMode(pin,AltMode(alt))
-		return PrintPinTable(gpio,os.Stdout)
+		gpio.SetPinMode(pin, AltMode(alt))
+		return PrintPinTable(gpio, os.Stdout)
 	default:
 		return errors.New("NOT IMPLEMENTED")
 	}
@@ -106,7 +108,7 @@ func RunLoop(app *app.App) error {
 }
 
 func AltMode(alt uint) hw.GPIOMode {
-	switch(alt) {
+	switch alt {
 	case 0:
 		return hw.GPIO_ALT0
 	case 1:
@@ -125,7 +127,7 @@ func AltMode(alt uint) hw.GPIOMode {
 }
 
 func PullMode(pull string) hw.GPIOPull {
-	switch(pull) {
+	switch pull {
 	case "up":
 		return hw.GPIO_PULL_UP
 	case "down":
@@ -137,32 +139,32 @@ func PullMode(pull string) hw.GPIOPull {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func PrintPinTable(gpio hw.GPIODriver,fd *os.File) error {
+func PrintPinTable(gpio hw.GPIODriver, fd *os.File) error {
 
 	// print out pin table in two columns
 	rows := gpio.NumberOfPhysicalPins() / 2
 	header := "+----+----------+----+----------+ +----------+----+----------+----+"
 	format := "| %4s | %8s | %6s | %2s | | %-2s | %-6s | %-8s | %-4s |"
 
-	fmt.Fprintln(fd,header)
+	fmt.Fprintln(fd, header)
 
 	for i := uint(0); i < rows; i++ {
-		args := make([]interface{},8)
-		args[3],args[2],args[1],args[0] = PinStateAsString(gpio,(i * 2) + 1)
-		args[4],args[5],args[6],args[7] = PinStateAsString(gpio,(i * 2) + 2)
-		fmt.Fprintln(fd,fmt.Sprintf(format,args...))
+		args := make([]interface{}, 8)
+		args[3], args[2], args[1], args[0] = PinStateAsString(gpio, (i*2)+1)
+		args[4], args[5], args[6], args[7] = PinStateAsString(gpio, (i*2)+2)
+		fmt.Fprintln(fd, fmt.Sprintf(format, args...))
 	}
 
-	fmt.Fprintln(fd,header)
+	fmt.Fprintln(fd, header)
 	return nil
 }
 
-func PinStateAsString(gpio hw.GPIODriver,physicalpin uint) (string,string,string,string) {
+func PinStateAsString(gpio hw.GPIODriver, physicalpin uint) (string, string, string, string) {
 	logicalpin := gpio.PhysicalPin(physicalpin)
 	if logicalpin == hw.GPIO_PIN_NONE {
-		return strconv.FormatUint(uint64(physicalpin),10),"","",""
+		return strconv.FormatUint(uint64(physicalpin), 10), "", "", ""
 	}
-	return strconv.FormatUint(uint64(physicalpin),10),logicalpin.String(),gpio.GetPinMode(logicalpin).String(),gpio.ReadPin(logicalpin).String()
+	return strconv.FormatUint(uint64(physicalpin), 10), logicalpin.String(), gpio.GetPinMode(logicalpin).String(), gpio.ReadPin(logicalpin).String()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -176,7 +178,7 @@ func CheckFlags(flagset *app.Flags) error {
 	// Check for either: low, high, input or alt which are mutually
 	// exclusive flags
 	c := 0
-	for _,flag := range([]string{ "input","alt","low","high" }) {
+	for _, flag := range []string{"input", "alt", "low", "high"} {
 		if flagset.HasFlag(flag) {
 			c++
 		}
@@ -213,31 +215,30 @@ func CheckFlags(flagset *app.Flags) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func ParsePinFlag(gpio hw.GPIODriver,flagset *app.Flags) (hw.GPIOPin,error) {
+func ParsePinFlag(gpio hw.GPIODriver, flagset *app.Flags) (hw.GPIOPin, error) {
 	value, exists := flagset.GetString("pin")
 	if exists == false {
-		return hw.GPIO_PIN_NONE,nil
+		return hw.GPIO_PIN_NONE, nil
 	}
 
-
 	// Check for physical pin
-	pin, err := strconv.ParseUint(value,10,32)
+	pin, err := strconv.ParseUint(value, 10, 32)
 	if err == nil {
 		logical := gpio.PhysicalPin(uint(pin))
 		if logical == hw.GPIO_PIN_NONE {
-			return logical,errors.New("Invalid pin")
+			return logical, errors.New("Invalid pin")
 		}
 		return logical, nil
 	}
 
 	// Check for logical pin
-	for _,pin := range gpio.Pins() {
+	for _, pin := range gpio.Pins() {
 		if value == pin.String() {
 			return pin, nil
 		}
 	}
 
-	return hw.GPIO_PIN_NONE,errors.New("Unknown pin")
+	return hw.GPIO_PIN_NONE, errors.New("Unknown pin")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -247,12 +248,12 @@ func main() {
 	config := app.Config(app.APP_GPIO)
 
 	// Set the flags
-	config.FlagSet.FlagString("pin","","Physical Pin Number or name")
-	config.FlagSet.FlagBool("low",false,"Set pin to OUTPUT and set pin level LOW")
-	config.FlagSet.FlagBool("high",false,"Set pin to OUTPUT and set pin level HIGH")
-	config.FlagSet.FlagBool("input",false,"Set pin to INPUT")
-	config.FlagSet.FlagString("pull","off","Set pin pull resistor to 'up', 'down' or 'off'")
-	config.FlagSet.FlagUint("alt",0,"Set pin to an alternate function 0-5")
+	config.FlagSet.FlagString("pin", "", "Physical Pin Number or name")
+	config.FlagSet.FlagBool("low", false, "Set pin to OUTPUT and set pin level LOW")
+	config.FlagSet.FlagBool("high", false, "Set pin to OUTPUT and set pin level HIGH")
+	config.FlagSet.FlagBool("input", false, "Set pin to INPUT")
+	config.FlagSet.FlagString("pull", "off", "Set pin pull resistor to 'up', 'down' or 'off'")
+	config.FlagSet.FlagUint("alt", 0, "Set pin to an alternate function 0-5")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

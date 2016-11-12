@@ -6,7 +6,48 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-// This package file implements the abstract hardware interfaces for GPIO
+// GPIO
+//
+// The abstract GPIO hardware interface can be used for interfacing a
+// variety of external devices which use simple digital inputs and outputs.
+// In order to use, construct a GPIO driver object. For the Raspberry Pi,
+// you can acheive this using a rpi.GPIO object. For example,
+//
+//   gpio := gopi.Open(rpi.GPIO{ ... })
+//   defer gpio.Close()
+//
+// When you have finished using the driver, use the Close method which will
+// free up any resources. The pins on your GPIO connector have a physical
+// pin value and a logical pin name. In order to convert from the physical
+// pin number and vice-versa, use the following methods:
+//
+//   logical := gpio.PhysicalPin(40)
+//   physical := gpio.PhysicalPinForPin(logical) // should be 40
+//
+// This will return GPIO_PIN_NONE when no logical pin is available at this
+// physical pin position. You can also get a list of all logical pins and
+// the number of physical pins on your GPIO connector using the following
+// methods:
+//
+//  pins := gpio.Pins() // returns an array of logical pins
+//  number_of_physical_pins := gpio.NumberOfPhysicalPins()
+//
+// You can read or write a pin to LOW or HIGH state using the following
+// methods:
+//
+//  state := GPIO_HIGH
+//  gpio.WritePin(logical,state)
+//  state = gpio.ReadPin(logical) // Should be GPIO_HIGH
+//
+// And set a pin to INPUT or OUTPUT, and set resistor pull-up or pull-down:
+//
+//  gpio.SetPinMode(logical,GPIO_INPUT)
+//  gpio.SetPullMode(logical,GPIO_PULL_UP)
+//
+// On the Raspberry Pi, you can also set pins to "alternate" modes. For example,
+//
+//  gpio.SetPinMode(logical,GPIO_ALT0)
+//
 package hw // import "github.com/djthorpe/gopi/hw"
 
 import (

@@ -86,7 +86,6 @@ type EGLDriver interface {
 
 	// Set current surface context
 	SetCurrentContext(surface EGLSurface) error
-
 }
 
 // Abstract drawable surface

@@ -11,8 +11,8 @@ package app /* import "github.com/djthorpe/gopi/app" */
 // import
 import (
 	"flag"
-	"time"
 	"fmt"
+	"time"
 )
 
 type Flags struct {
@@ -62,11 +62,11 @@ func (this *Flags) Args() []string {
 // Return array of flags which were set on the command line
 func (this *Flags) Flags() []string {
 	if this.flagmap == nil {
-		return []string{ }
+		return []string{}
 	}
-	flags := make([]string,0)
-	for k,_ := range(this.flagmap) {
-		flags = append(flags,k)
+	flags := make([]string, 0)
+	for k, _ := range this.flagmap {
+		flags = append(flags, k)
 	}
 	return flags
 }
@@ -76,13 +76,13 @@ func (this *Flags) HasFlag(name string) bool {
 	if this.flagmap == nil {
 		return false
 	}
-	_,exists := this.flagmap[name]
+	_, exists := this.flagmap[name]
 	return exists
 }
 
 // Return human-readable form of the Flags object
 func (this *Flags) String() string {
-	return fmt.Sprintf("<app.Flags>{ flags=%v args=%v }",this.Flags(),this.Args())
+	return fmt.Sprintf("<app.Flags>{ flags=%v args=%v }", this.Flags(), this.Args())
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -90,27 +90,27 @@ func (this *Flags) String() string {
 
 // Define string flag and return pointer to the flag value
 func (this *Flags) FlagString(name string, value string, usage string) *string {
-	return this.flagset.String(name,value,usage)
+	return this.flagset.String(name, value, usage)
 }
 
 // Define boolean flag and return pointer to the flag value
 func (this *Flags) FlagBool(name string, value bool, usage string) *bool {
-	return this.flagset.Bool(name,value,usage)
+	return this.flagset.Bool(name, value, usage)
 }
 
 // Define duration flag and return pointer to the flag value
 func (this *Flags) FlagDuration(name string, value time.Duration, usage string) *time.Duration {
-	return this.flagset.Duration(name,value,usage)
+	return this.flagset.Duration(name, value, usage)
 }
 
 // Define integer flag and return pointer to the flag value
 func (this *Flags) FlagInt(name string, value int, usage string) *int {
-	return this.flagset.Int(name,value,usage)
+	return this.flagset.Int(name, value, usage)
 }
 
 // Define unsigned integer flag and return pointer to the flag value
 func (this *Flags) FlagUint(name string, value uint, usage string) *uint {
-	return this.flagset.Uint(name,value,usage)
+	return this.flagset.Uint(name, value, usage)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,4 +165,3 @@ func (this *Flags) GetUint(name string) (uint, bool) {
 	}
 	return value.Value.(flag.Getter).Get().(uint), this.HasFlag(name)
 }
-

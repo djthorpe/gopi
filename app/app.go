@@ -364,7 +364,7 @@ func (this *App) WaitUntilDone() {
 // Set the Done signal which terminates the WaitUntilDone loop
 func (this *App) Done() {
 	this.Logger.Debug2("<App>Done")
-	this.finish_channel<-true
+	this.finish_channel <- true
 }
 
 // Return the debug flag

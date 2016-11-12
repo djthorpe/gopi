@@ -68,7 +68,6 @@ const (
 	MMAL_COMPONENT_DEFAULT_CAMERA_INFO     MMComponent = "vc.camera_info"
 )
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
 
@@ -96,14 +95,10 @@ func (this *MMDriver) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // CREATE AND DESTROY COMPONENT
 
-func (this *MMDriver) CreateComponent(component MMComponent) (*mmComponent,error) {
-	return nil,errors.New("NOT IMPLEMENTED")
+func (this *MMDriver) CreateComponent(component MMComponent) (*mmComponent, error) {
+	return nil, errors.New("NOT IMPLEMENTED")
 }
 
 func (this *MMDriver) DestroyComponent(component *mmComponent) error {
 	return errors.New("NOT IMPLEMENTED")
 }
-
-
-
-

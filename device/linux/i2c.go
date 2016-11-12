@@ -289,17 +289,17 @@ func (this *I2CDriver) WriteQuick(value uint8) error {
 	if this.slave == I2C_SLAVE_NONE {
 		return ErrNoAddress
 	}
-	if this.funcs & I2C_FUNC_SMBUS_QUICK == 0 {
+	if this.funcs&I2C_FUNC_SMBUS_QUICK == 0 {
 		return ErrFunctionUnsupported
 	}
 	return this.i2c_smbus_write_quick(value)
 }
 
-func (this *I2CDriver) ReadByte() (uint8,error) {
+func (this *I2CDriver) ReadByte() (uint8, error) {
 	if this.slave == I2C_SLAVE_NONE {
 		return ErrNoAddress
 	}
-	if this.funcs & I2C_FUNC_SMBUS_READ_BYTE == 0 {
+	if this.funcs&I2C_FUNC_SMBUS_READ_BYTE == 0 {
 		return ErrFunctionUnsupported
 	}
 	return this.i2c_smbus_read_byte()
@@ -309,7 +309,7 @@ func (this *I2CDriver) WriteByte(value uint8) error {
 	if this.slave == I2C_SLAVE_NONE {
 		return ErrNoAddress
 	}
-	if this.funcs & I2C_FUNC_SMBUS_WRITE_BYTE == 0 {
+	if this.funcs&I2C_FUNC_SMBUS_WRITE_BYTE == 0 {
 		return ErrFunctionUnsupported
 	}
 	return this.i2c_smbus_write_byte(value)

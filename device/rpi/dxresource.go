@@ -87,7 +87,7 @@ func (this *DXResource) GetHandle() dxResourceHandle {
 	return this.handle
 }
 
-func (this *DXResource) SetPixel(pt khronos.EGLPoint,r,g,b,a uint16) error {
+func (this *DXResource) SetPixel(pt khronos.EGLPoint, r, g, b, a uint16) error {
 	// TODO
 	// dst_frame := DXFrame{ DXPoint{int32(0), int32(0)}, DXSize{uint32(1), uint32(1)} }
 	// dxResourceWriteData(this.handle, this.model, this.stride, unsafe.Pointer(&source[0]), &dst_frame)

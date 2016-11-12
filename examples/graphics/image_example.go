@@ -10,10 +10,10 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
-	"errors"
 )
 
 import (

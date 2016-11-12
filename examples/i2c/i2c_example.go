@@ -40,9 +40,9 @@ func RunLoop(app *app.App) error {
 	for slave := uint8(0); slave <= 0x7F; slave++ {
 		detect, err := i2c.(*linux.I2CDriver).DetectSlave(slave)
 		if err != nil {
-			app.Logger.Error("Error: Slave Address: %02X: %v",slave,err)
+			app.Logger.Error("Error: Slave Address: %02X: %v", slave, err)
 		} else {
-			app.Logger.Info("%02X => %v",slave,detect)
+			app.Logger.Info("%02X => %v", slave, detect)
 		}
 	}
 
