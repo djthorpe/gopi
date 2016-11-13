@@ -37,6 +37,14 @@ type EGLFrame struct {
 	EGLSize
 }
 
+// EGLColorRGBA32
+type EGLColorRGBA32 struct {
+	R uint8
+	G uint8
+	B uint8
+	A uint8
+}
+
 // Abstract driver interface
 type EGLDriver interface {
 	// Inherit general driver interface
@@ -63,12 +71,11 @@ type EGLDriver interface {
 	// Return display size
 	GetFrame() EGLFrame
 
-	// Create Background
+	// Create Background & Surfaces
 	CreateBackground(api string, opacity float32) (EGLSurface, error)
-
-	// Create Surface
 	CreateSurface(api string, size EGLSize, origin EGLPoint, layer uint16, opacity float32) (EGLSurface, error)
-
+	CreateSurfaceWithBitmap(bitmap EGLBitmap, origin EGLPoint, layer uint16, opacity float32) (EGLSurface, error)
+	
 	// Destroy Surface
 	DestroySurface(surface EGLSurface) error
 
@@ -122,6 +129,10 @@ func (this EGLFrame) String() string {
 	return fmt.Sprintf("<EGLFrame>{%v,%v}", this.EGLPoint, this.EGLSize)
 }
 
+func (this EGLColorRGBA32) String() string {
+	return fmt.Sprintf("<EGLColorRGBA32>{r=%02X g=%02X b=%02X a=%02X}",this.R,this.G,this.B,this.A)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Point, Size and Frame methods
 
@@ -129,3 +140,11 @@ func (this EGLFrame) String() string {
 func (this EGLPoint) Add(that EGLPoint) EGLPoint {
 	return EGLPoint{this.X + that.X, this.Y + that.Y}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Color methods
+
+func (color EGLColorRGBA32) Uint32() uint32 {
+	return uint32(color.A) << 24 + uint32(color.B) << 16 + uint32(color.G) << 8 + uint32(color.R)
+}
+

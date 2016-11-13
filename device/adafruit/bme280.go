@@ -276,7 +276,7 @@ func (this *BME280Driver) readCalibration() (*BME280Calibation, error) {
 		return nil, err
 	}
 
-	calibration.H4 = int16(h41) << 4 | int16(h42) & 0xF
+	calibration.H4 = (int16(h41) << 4) | (int16(h42) & 0x0F)
 	calibration.H5 = ((int16(h51) & 0xF0) >> 4) | int16(h52 << 4)
 
 	if calibration.H6, err = this.i2c.ReadInt8(BME280_REGISTER_DIG_H6); err != nil {
@@ -412,49 +412,49 @@ func (this *BME280Driver) readHumidity(t_fine float64) (float64, error) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func (this *BME280Driver) readTemperatureRaw() (uint32, error) {
+func (this *BME280Driver) readTemperatureRaw() (int32, error) {
 	msb, err := this.i2c.ReadUint8(BME280_REGISTER_TEMPDATA)
 	if err != nil {
-		return uint32(0),err
+		return int32(0),err
 	}
 	lsb, err := this.i2c.ReadUint8(BME280_REGISTER_TEMPDATA + 1)
 	if err != nil {
-		return uint32(0),err
+		return int32(0),err
 	}
 	xlsb, err := this.i2c.ReadUint8(BME280_REGISTER_TEMPDATA + 2)
 	if err != nil {
-		return uint32(0),err
+		return int32(0),err
 	}
-	return ((uint32(msb) << 16) | (uint32(lsb) << 8) | uint32(xlsb)) >> 4, nil
+	return ((int32(msb) << 16) | (int32(lsb) << 8) | int32(xlsb)) >> 4, nil
 }
 
-func (this *BME280Driver) readPressureRaw() (uint32, error) {
+func (this *BME280Driver) readPressureRaw() (int32, error) {
 	// Assumes temperature has already been read
 	msb, err := this.i2c.ReadUint8(BME280_REGISTER_PRESSUREDATA)
 	if err != nil {
-		return uint32(0),err
+		return int32(0),err
 	}
 	lsb, err := this.i2c.ReadUint8(BME280_REGISTER_PRESSUREDATA + 1)
 	if err != nil {
-		return uint32(0),err
+		return int32(0),err
 	}
 	xlsb, err := this.i2c.ReadUint8(BME280_REGISTER_PRESSUREDATA + 2)
 	if err != nil {
-		return uint32(0),err
+		return int32(0),err
 	}
-	return ((uint32(msb) << 16) | (uint32(lsb) << 8) | uint32(xlsb)) >> 4, nil
+	return ((int32(msb) << 16) | (int32(lsb) << 8) | int32(xlsb)) >> 4, nil
 }
 
-func (this *BME280Driver) readHumidityRaw() (uint32, error) {
+func (this *BME280Driver) readHumidityRaw() (int32, error) {
 	// Assumes temperature has already been read
 	msb, err := this.i2c.ReadUint8(BME280_REGISTER_HUMIDDATA)
 	if err != nil {
-		return uint32(0),err
+		return int32(0),err
 	}
 	lsb, err := this.i2c.ReadUint8(BME280_REGISTER_HUMIDDATA + 1)
 	if err != nil {
-		return uint32(0),err
+		return int32(0),err
 	}
-	return (uint32(msb) << 8) | uint32(lsb), nil
+	return (int32(msb) << 8) | int32(lsb), nil
 }
 

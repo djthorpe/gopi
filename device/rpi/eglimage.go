@@ -34,18 +34,21 @@ func (this *eglDriver) CreateImage(r io.Reader) (khronos.EGLBitmap, error) {
 	}
 
 	bounds := bitmap.Bounds()
-	resource, err := this.dx.CreateResource(DX_IMAGE_RGBA16, khronos.EGLSize{uint(bounds.Dx()), uint(bounds.Dy())})
+	resource, err := this.dx.CreateResource(DX_IMAGE_RGBA32, khronos.EGLSize{uint(bounds.Dx()), uint(bounds.Dy())})
 	if err != nil {
 		return nil, err
 	}
 
+	this.log.Debug("resource=%v bitmap=%v",resource,bitmap)
+
+/*
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, a := bitmap.At(x, y).RGBA()
-			resource.SetPixel(khronos.EGLPoint{x, y}, uint16(r), uint16(g), uint16(b), uint16(a))
+			resource.SetPixel(khronos.EGLPoint{x, y},khronos.EGLColorRGBA32{ uint8(r), uint8(g), uint8(b), uint8(a))
 		}
 	}
-
+*/
 	return resource, nil
 }
 

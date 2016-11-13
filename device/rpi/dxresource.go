@@ -87,7 +87,19 @@ func (this *DXResource) GetHandle() dxResourceHandle {
 	return this.handle
 }
 
-func (this *DXResource) SetPixel(pt khronos.EGLPoint, r, g, b, a uint16) error {
+func (this *DXResource) ClearToColor(color khronos.EGLColorRGBA32) error {
+	data := make([]uint32,uint(this.stride / 4) * uint(this.size.Height))
+	value := color.Uint32()
+	fmt.Printf("v=%08X\n",value)
+	for i := 0; i < len(data); i++ {
+		data[i] = value
+	}
+	dst_frame := DXFrame{ DXPoint{ int32(0), int32(0) }, DXSize{ uint32(this.size.Width), uint32(this.size.Height) } }
+	dxResourceWriteData(this.handle, this.model, this.stride, unsafe.Pointer(&data[0]), &dst_frame)
+	return nil
+}
+
+func (this *DXResource) SetPixel(pt khronos.EGLPoint,color khronos.EGLColorRGBA32) error {
 	// TODO
 	// dst_frame := DXFrame{ DXPoint{int32(0), int32(0)}, DXSize{uint32(1), uint32(1)} }
 	// dxResourceWriteData(this.handle, this.model, this.stride, unsafe.Pointer(&source[0]), &dst_frame)

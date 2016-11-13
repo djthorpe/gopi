@@ -43,6 +43,7 @@ type eglWindow struct {
 	surface  eglSurface
 	element  *DXElement
 	resource *DXResource
+	destroy_resource_on_close bool
 	origin   *khronos.EGLPoint
 	size     *khronos.EGLSize
 }
@@ -64,7 +65,7 @@ const (
 func (this *eglDriver) CreateBackground(api string, opacity float32) (khronos.EGLSurface, error) {
 	this.log.Debug2("<rpi.EGL>CreateBackground api=%v opacity=%v", api, opacity)
 	frame := this.GetFrame()
-	return this.createWindow(api, khronos.EGLSize{frame.Width, frame.Height}, khronos.EGLPoint{frame.X, frame.Y}, EGL_LAYER_BG, opacity)
+	return this.createWindow(api, khronos.EGLSize{frame.Width, frame.Height}, khronos.EGLPoint{frame.X, frame.Y}, EGL_LAYER_BG, opacity, nil)
 }
 
 // Create a surface
@@ -81,13 +82,37 @@ func (this *eglDriver) CreateSurface(api string, size khronos.EGLSize, origin kh
 		return nil, errors.New("Invalid opacity parameter")
 	}
 
-	surface, err := this.createWindow(api, size, origin, layer, opacity)
+	surface, err := this.createWindow(api, size, origin, layer, opacity, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// success
 	return khronos.EGLSurface(surface), nil
+}
+
+// Create a surface with an EGLBitmap
+func (this *eglDriver) CreateSurfaceWithBitmap(bitmap khronos.EGLBitmap, origin khronos.EGLPoint, layer uint16, opacity float32) (khronos.EGLSurface, error) {
+	this.log.Debug2("<rpi.EGL>CreateSurfaceWithBitmap bitmap=%v origin=%v layer=%v opacity=%v", bitmap, origin, layer, opacity)
+
+	// Check layer is not background or topmost (which will be for the pointer)
+	if layer < EGL_LAYER_MIN || layer > EGL_LAYER_MAX {
+		return nil, errors.New("Invalid layer parameter")
+	}
+
+	// Check opacity
+	if opacity < 0.0 || opacity > 1.0 {
+		return nil, errors.New("Invalid opacity parameter")
+	}
+
+	surface, err := this.createWindow("DX", bitmap.GetSize(), origin, layer, opacity, bitmap.(*DXResource))
+	if err != nil {
+		return nil, err
+	}
+
+	// success
+	return khronos.EGLSurface(surface), nil
+
 }
 
 // Destroy a surface
@@ -156,7 +181,7 @@ func (surface *eglWindow) GetBitmap() (khronos.EGLBitmap, error) {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS: Windows
 
-func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khronos.EGLPoint, layer uint16, opacity float32) (*eglWindow, error) {
+func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khronos.EGLPoint, layer uint16, opacity float32,resource *DXResource) (*eglWindow, error) {
 	var err error
 
 	// CREATE WINDOW
@@ -164,12 +189,6 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 	window.origin = &origin
 	window.size = &size
 	window.api = api
-
-	// CHECK SIZE PARAMETERS
-	if uint32(size.Width) > EGL_WINDOW_SIZE_MAX || uint32(size.Height) > EGL_WINDOW_SIZE_MAX {
-		this.closeWindow(window)
-		return nil, this.log.Error("Invalid width or height parameters: %v", size)
-	}
 
 	// CREATE CONTEXT
 	window.config, window.context, err = this.createContext(api)
@@ -187,7 +206,13 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 
 	// If DISPMANX then create a resource
 	if api == DISPMANX_API_STRING {
-		window.resource, err = this.dx.CreateResource(DX_IMAGE_RGBA32, khronos.EGLSize{uint(size.Width), uint(size.Height)})
+		if resource != nil {
+			window.resource = resource
+			window.destroy_resource_on_close = false
+		} else {
+			window.resource, err = this.dx.CreateResource(DX_IMAGE_RGBA32, khronos.EGLSize{uint(size.Width), uint(size.Height)})
+			window.destroy_resource_on_close = true
+		}
 		if err != nil {
 			this.closeWindow(window)
 			return nil, err
@@ -204,7 +229,7 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 		source_frame.Set(DXPoint{0, 0}, DXSize{uint32(size.Width), uint32(size.Height)})
 	}
 	window_frame.Set(DXPoint{int32(origin.X), int32(origin.Y)}, DXSize{uint32(size.Width), uint32(size.Height)})
-	window.element, err = this.dx.AddElement(update, layer, uint32(opacity*255.0), window_frame, window.resource)
+	window.element, err = this.dx.AddElement(update, layer, uint32(opacity * 255.0), window_frame, window.resource)
 	if err != nil {
 		this.closeWindow(window)
 		return nil, err
@@ -255,7 +280,7 @@ func (this *eglDriver) closeWindow(window *eglWindow) error {
 	window.element = nil
 
 	// remove resource
-	if window.resource != nil {
+	if window.resource != nil && window.destroy_resource_on_close {
 		if err := this.dx.DestroyResource(window.resource); err != nil {
 			return err
 		}

@@ -18,6 +18,7 @@ import (
 
 import (
 	app "github.com/djthorpe/gopi/app"
+	khronos "github.com/djthorpe/gopi/khronos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -28,7 +29,7 @@ func MyRunLoop(app *app.App) error {
 	app.Logger.Info("EGL=%v", app.EGL)
 
 	// Fetch image filename flag
-	filename := app.FlagSet.Lookup("image").Value.(flag.Getter).Get().(string)
+	filename, _ := app.FlagSet.GetString("image")
 	if filename == "" {
 		return errors.New("Missing -image flag")
 	}
@@ -45,7 +46,20 @@ func MyRunLoop(app *app.App) error {
 	}
 	defer app.EGL.DestroyImage(image)
 
+	image.ClearToColor(khronos.EGLColorRGBA32{ 0, 255, 0, 255 })
+
 	app.Logger.Info("Image=%v", image)
+
+	// Create window with image
+	surface, err := app.EGL.CreateSurfaceWithBitmap(image, khronos.EGLPoint{50, 50}, 2, 0.9)
+	if err != nil {
+		return err
+	}
+	defer app.EGL.DestroySurface(surface)
+
+	app.Logger.Info("Surface=%v", surface)
+
+
 
 	// Wait until done
 	app.WaitUntilDone()
@@ -60,7 +74,7 @@ func main() {
 	config := app.Config(app.APP_EGL)
 
 	// Add on command-line flags
-	config.FlagSet.String("image", "", "Image filename")
+	config.FlagSet.FlagString("image", "", "Image filename")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

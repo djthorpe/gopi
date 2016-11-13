@@ -17,5 +17,8 @@ type EGLBitmap interface {
 	GetSize() EGLSize
 
 	// Set Pixel
-	SetPixel(pt EGLPoint, r, g, b, a uint16) error
+	SetPixel(pt EGLPoint, color EGLColorRGBA32) error
+
+	// Clear bitmap to one color
+	ClearToColor(color EGLColorRGBA32) error
 }
