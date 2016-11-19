@@ -36,4 +36,5 @@ var (
 	EGLErrorNoBitmap                 = errors.New("No bitmap")
 	EGLErrorInvalidParameter         = errors.New("Invalid parameter")
 	ErrInvalidMasterParam = errors.New("Invalid I2C master number")
+	ErrNotImplemented = errors.New("Not Implemented")
 )

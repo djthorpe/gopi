@@ -39,16 +39,11 @@ func (this *eglDriver) CreateImage(r io.Reader) (khronos.EGLBitmap, error) {
 		return nil, err
 	}
 
-	this.log.Debug("resource=%v bitmap=%v",resource,bitmap)
-
-/*
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			r, g, b, a := bitmap.At(x, y).RGBA()
-			resource.SetPixel(khronos.EGLPoint{x, y},khronos.EGLColorRGBA32{ uint8(r), uint8(g), uint8(b), uint8(a))
-		}
+	if err := resource.PaintImage(khronos.EGLZeroPoint, bitmap); err != nil {
+		this.dx.DestroyResource(resource)
+		return nil, err
 	}
-*/
+
 	return resource, nil
 }
 

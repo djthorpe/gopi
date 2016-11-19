@@ -7,6 +7,10 @@
 */
 package khronos /* import "github.com/djthorpe/gopi/khronos" */
 
+import (
+	"image"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -16,8 +20,8 @@ type EGLBitmap interface {
 	// Return window size
 	GetSize() EGLSize
 
-	// Set Pixel
-	SetPixel(pt EGLPoint, color EGLColorRGBA32) error
+	// Paint an image into the bitmap
+	PaintImage(pt EGLPoint,bitmap image.Image) error
 
 	// Clear bitmap to one color
 	ClearToColor(color EGLColorRGBA32) error

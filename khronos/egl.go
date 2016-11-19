@@ -115,6 +115,19 @@ type EGLSurface interface {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Variables
+
+var (
+	EGLZeroPoint = EGLPoint{ 0, 0 }
+	EGLWhiteColor = EGLColorRGBA32{ 0xFF, 0xFF, 0xFF, 0xFF }
+	EGLRedColor = EGLColorRGBA32{ 0xFF, 0x00, 0x00, 0xFF }
+	EGLGreenColor = EGLColorRGBA32{ 0x00, 0xFF, 0x00, 0xFF }
+	EGLBlueColor = EGLColorRGBA32{ 0x00, 0x00, 0xFF, 0xFF }
+	EGLBlackColor = EGLColorRGBA32{ 0x00, 0x00, 0x00, 0xFF }
+	EGLGreyColor = EGLColorRGBA32{ 0x80, 0x80, 0x80, 0xFF }
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // String() methods
 
 func (this EGLSize) String() string {
@@ -139,6 +152,17 @@ func (this EGLColorRGBA32) String() string {
 // Return the result of adding two points
 func (this EGLPoint) Add(that EGLPoint) EGLPoint {
 	return EGLPoint{this.X + that.X, this.Y + that.Y}
+}
+
+// Return if equals
+func (this EGLPoint) Equals(that EGLPoint) bool {
+	if this.X != that.X {
+		return false
+	}
+	if this.Y != that.Y {
+		return false
+	}
+	return true
 }
 
 ////////////////////////////////////////////////////////////////////////////////

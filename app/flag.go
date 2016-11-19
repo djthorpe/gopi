@@ -113,6 +113,11 @@ func (this *Flags) FlagUint(name string, value uint, usage string) *uint {
 	return this.flagset.Uint(name, value, usage)
 }
 
+// Define float64 flag and return pointer to the flag value
+func (this *Flags) FlagFloat64(name string, value float64, usage string) *float64 {
+	return this.flagset.Float64(name, value, usage)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // GET FLAGS
 
@@ -165,3 +170,15 @@ func (this *Flags) GetUint(name string) (uint, bool) {
 	}
 	return value.Value.(flag.Getter).Get().(uint), this.HasFlag(name)
 }
+
+// Get float64 value for a flag, and a boolean which indicates if
+// the flag was set
+func (this *Flags) GetFloat64(name string) (float64, bool) {
+	value := this.flagset.Lookup(name)
+	if value == nil {
+		return 0.0, false
+	}
+	return value.Value.(flag.Getter).Get().(float64), this.HasFlag(name)
+}
+
+
