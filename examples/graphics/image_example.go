@@ -45,24 +45,33 @@ func MyRunLoop(app *app.App) error {
 		return err
 	}
 	defer app.EGL.DestroyImage(image)
+
 	app.Logger.Info("Image=%v", image)
 
 	// Check for background
 	bg, exists := app.FlagSet.GetString("bg")
 	if exists {
+		// Get color
 		color, err := GetBackgroundColor(bg)
 		if err != nil {
 			return err
 		}
+
+		// Create surface
 		bgsurface, err := app.EGL.CreateBackground("DX",1.0)
 		if err != nil {
 			return err
 		}
+		defer app.EGL.DestroySurface(bgsurface)
+
+		// Clear background to color
 		bgbitmap, err := bgsurface.GetBitmap()
 		if err != nil {
 			return err
 		}
 		bgbitmap.ClearToColor(color)
+
+		app.Logger.Info("Background=%v", bgsurface)
 	}
 
 	// Create window with image - set opacity
