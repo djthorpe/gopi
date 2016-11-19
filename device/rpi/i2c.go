@@ -8,7 +8,6 @@
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -144,7 +143,7 @@ func i2cOpenDevice(device *DeviceState, master uint) (*os.File, uint32, uint32, 
 		peripheral_base = peripheral_base + I2C_BASE_M2
 		break
 	default:
-		return nil, 0, 0, errors.New("Invalid I2C master number")
+		return nil, 0, 0, ErrInvalidMasterParam
 	}
 
 	// open memory

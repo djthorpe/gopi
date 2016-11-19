@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"unsafe"
+	"strings"
 )
 
 import (
@@ -65,6 +66,7 @@ const (
 	GENCMD_OTP_DUMP          = "otp_dump"
 	GENCMD_OTP_DUMP_SERIAL   = 28
 	GENCMD_OTP_DUMP_REVISION = 30
+	GENCMD_COMMANDS         = "commands"	
 	GENCMD_MEASURE_TEMP     = "measure_temp"
 	GENCMD_MEASURE_CLOCK    = "measure_clock arm core h264 isp v3d uart pwm emmc pixel vec hdmi dpi"
 	GENCMD_MEASURE_VOLTS    = "measure_volts core sdram_c sdram_i sdram_p"
@@ -82,6 +84,7 @@ var (
 	REGEXP_VOLTAGE  *regexp.Regexp = regexp.MustCompile("volt=(\\d*\\.?\\d*)V")
 	REGEXP_CODEC    *regexp.Regexp = regexp.MustCompile("(\\w+)=(enabled|disabled)")
 	REGEXP_MEMORY   *regexp.Regexp = regexp.MustCompile("(\\w+)=(\\d+)M")
+	REGEXP_COMMANDS *regexp.Regexp = regexp.MustCompile("commands=\"([^\"]+)\"")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -263,6 +266,158 @@ func (this *DeviceState) GetCoreTemperatureCelcius() (float64, error) {
 	return value2, nil
 }
 
+// Get Commands
+func (this *DeviceState) GetCommands() ([]string, error) {
+	// retrieve value as text
+	value, err := this.GeneralCommand(GENCMD_COMMANDS)
+	if err != nil {
+		return []string{}, err
+	}
+
+	// Find values within text
+	match := REGEXP_COMMANDS.FindStringSubmatch(value)
+	if len(match) != 2 {
+		return []string{}, this.log.Error("Bad Response from %v", GENCMD_COMMANDS)
+	}
+
+	// Split commands
+	commands := strings.Split(match[1], ",")
+	for i, command := range commands {
+		commands[i] = strings.TrimSpace(command)
+	}
+	// return commands
+	return commands, nil
+}
+
+// Return clock frequencies of various components
+func (this *DeviceState) GetClockFrequencyHertz() (map[string]uint64, error) {
+	// retrieve values as text
+	command := strings.Split(GENCMD_MEASURE_CLOCK," ")
+	clocks := make(map[string]uint64, len(command))
+	for _, name := range command[1:] {
+
+		// Retrieve clock value
+		value, err := this.GeneralCommand(command[0] + " " + name)
+		if err != nil {
+			return nil, err
+		}
+
+		// Find value within text
+		match := REGEXP_CLOCK.FindStringSubmatch(value)
+		if len(match) != 3 {
+			return nil, this.log.Error("Bad Response from %v", command[0])
+		}
+
+		// Convert to uint64
+		value2, err := strconv.ParseUint(match[2], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		// Set value
+		clocks[name] = value2
+	}
+
+	return clocks, nil
+}
+
+// Return voltage of various components
+func (this *DeviceState) GetVolts() (map[string]float64, error) {
+	// retrieve values as text
+	command := strings.Split(GENCMD_MEASURE_VOLTS, " ")
+	volts := make(map[string]float64, len(command))
+	for _, name := range command[1:] {
+
+		// Retrieve volt value
+		value, err := this.GeneralCommand(command[0] + " " + name)
+		if err != nil {
+			return nil, err
+		}
+
+		// Find value within text
+		match := REGEXP_VOLTAGE.FindStringSubmatch(value)
+		if len(match) != 2 {
+			return nil, this.log.Error("Bad Response from %v", command[0])
+		}
+
+		// Convert to uint64
+		value2, err := strconv.ParseFloat(match[1], 64)
+		if err != nil {
+			return nil, err
+		}
+
+		// Set value
+		volts[name] = value2
+	}
+
+	return volts, nil
+}
+
+// Return set of codecs supported and/or not supported
+func (this *DeviceState) GetCodecs() (map[string]bool, error) {
+	// retrieve values as text
+	command := strings.Split(GENCMD_CODEC_ENABLED, " ")
+	codecs := make(map[string]bool, len(command))
+	for _, name := range command[1:] {
+
+		// Retrieve volt value
+		value, err := this.GeneralCommand(command[0] + " " + name)
+		if err != nil {
+			return nil, err
+		}
+
+		// Find value within text
+		match := REGEXP_CODEC.FindStringSubmatch(value)
+		if len(match) != 3 {
+			return nil, this.log.Error("Bad Response from %v", command[0])
+		}
+
+		// Convert to bool
+		if match[2] == "enabled" {
+			codecs[name] = true
+		} else {
+			codecs[name] = false
+		}
+	}
+
+	return codecs, nil
+}
+
+// Return core and GPU memory sizes
+func (this *DeviceState) GetMemoryMegabytes() (map[string]uint64, error) {
+	// retrieve values as text
+	command := strings.Split(GENCMD_MEMORY, " ")
+	memories := make(map[string]uint64, len(command))
+	for _, name := range command[1:] {
+
+		// Retrieve memory value
+		value, err := this.GeneralCommand(command[0] + " " + name)
+		if err != nil {
+			return nil, err
+		}
+
+		// Find value within text
+		match := REGEXP_MEMORY.FindStringSubmatch(value)
+		if len(match) != 3 {
+			return nil, this.log.Error("Bad Response from %v", command[0])
+		}
+
+		// Convert to uint64
+		value2, err := strconv.ParseUint(match[2], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		// Set value
+		memories[name] = value2
+	}
+
+	return memories, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Hardware Capabilities
+
 // Return all capabilities
 func (this *DeviceState) makeCapabilities() []gopi.Tuple {
 	tuples := make([]gopi.Tuple,8)
@@ -278,9 +433,6 @@ func (this *DeviceState) makeCapabilities() []gopi.Tuple {
 
 	return tuples
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// Hardware Capabilities
 
 func (tuple *Tuple) GetKey() gopi.Capability {
 	return tuple.Key

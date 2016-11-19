@@ -8,7 +8,6 @@
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -74,12 +73,12 @@ func (this *eglDriver) CreateSurface(api string, size khronos.EGLSize, origin kh
 
 	// Check layer is not background or topmost (which will be for the pointer)
 	if layer < EGL_LAYER_MIN || layer > EGL_LAYER_MAX {
-		return nil, errors.New("Invalid layer parameter")
+		return nil, EGLErrorInvalidParameter
 	}
 
 	// Check opacity
 	if opacity < 0.0 || opacity > 1.0 {
-		return nil, errors.New("Invalid opacity parameter")
+		return nil, EGLErrorInvalidParameter
 	}
 
 	surface, err := this.createWindow(api, size, origin, layer, opacity, nil)
@@ -97,12 +96,12 @@ func (this *eglDriver) CreateSurfaceWithBitmap(bitmap khronos.EGLBitmap, origin 
 
 	// Check layer is not background or topmost (which will be for the pointer)
 	if layer < EGL_LAYER_MIN || layer > EGL_LAYER_MAX {
-		return nil, errors.New("Invalid layer parameter")
+		return nil, EGLErrorInvalidParameter
 	}
 
 	// Check opacity
 	if opacity < 0.0 || opacity > 1.0 {
-		return nil, errors.New("Invalid opacity parameter")
+		return nil, EGLErrorInvalidParameter
 	}
 
 	surface, err := this.createWindow("DX", bitmap.GetSize(), origin, layer, opacity, bitmap.(*DXResource))

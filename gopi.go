@@ -78,6 +78,7 @@ type Capability uint
 // Abstract set of key/value pairs
 type Tuple interface {
 	GetKey() Capability
+	String() string
 }
 
 
