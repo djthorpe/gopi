@@ -35,11 +35,19 @@ import "C"
 
 type Device struct{}
 
+type tupleCallback func (key gopi.Capability) string
+
+type Tuple struct {
+	Key gopi.Capability
+	Func tupleCallback
+}
+
 type DeviceState struct {
 	log      *util.LoggerDevice // logger
 	service  int                // service number
 	serial   uint64
 	revision uint32
+	capabilities []gopi.Tuple
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,6 +65,11 @@ const (
 	GENCMD_OTP_DUMP          = "otp_dump"
 	GENCMD_OTP_DUMP_SERIAL   = 28
 	GENCMD_OTP_DUMP_REVISION = 30
+	GENCMD_MEASURE_TEMP     = "measure_temp"
+	GENCMD_MEASURE_CLOCK    = "measure_clock arm core h264 isp v3d uart pwm emmc pixel vec hdmi dpi"
+	GENCMD_MEASURE_VOLTS    = "measure_volts core sdram_c sdram_i sdram_p"
+	GENCMD_CODEC_ENABLED    = "codec_enabled H264 MPG2 WVC1 MPG4 MJPG WMV9 VP8"
+	GENCMD_MEMORY           = "get_mem arm gpu"	
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -64,6 +77,11 @@ const (
 
 var (
 	REGEXP_OTP_DUMP *regexp.Regexp = regexp.MustCompile("(\\d\\d):([0123456789abcdefABCDEF]{8})")
+	REGEXP_TEMP     *regexp.Regexp = regexp.MustCompile("temp=(\\d+\\.?\\d*)")
+	REGEXP_CLOCK    *regexp.Regexp = regexp.MustCompile("frequency\\((\\d+)\\)=(\\d+)")
+	REGEXP_VOLTAGE  *regexp.Regexp = regexp.MustCompile("volt=(\\d*\\.?\\d*)V")
+	REGEXP_CODEC    *regexp.Regexp = regexp.MustCompile("(\\w+)=(enabled|disabled)")
+	REGEXP_MEMORY   *regexp.Regexp = regexp.MustCompile("(\\w+)=(\\d+)M")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,7 +92,15 @@ func (config Device) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	if err := bcmHostInit(); err != nil {
 		return nil, err
 	}
-	return &DeviceState{log, GENCMD_SERVICE_NONE, GENCMD_SERIAL_NONE, GENCMD_REVISION_NONE}, nil
+
+	this := new(DeviceState)
+	this.log = log
+	this.service = GENCMD_SERVICE_NONE
+	this.serial = GENCMD_SERIAL_NONE
+	this.revision = GENCMD_REVISION_NONE
+	this.capabilities = this.makeCapabilities()
+
+	return this, nil
 }
 
 func (this *DeviceState) Close() error {
@@ -100,6 +126,7 @@ func (this *DeviceState) String() string {
 	return fmt.Sprintf("<rpi.Device>{ serial_number=%08X revision=%04X model=%v pcb=%v processor=%v warranty_bit=%v }", serial, revision, model, pcb, processor, warranty_bit)
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Get Device Information
 
@@ -109,6 +136,11 @@ func (this *DeviceState) GetPeripheralAddress() uint32 {
 
 func (this *DeviceState) GetPeripheralSize() uint32 {
 	return bcmHostGetPeripheralSize()
+}
+
+// Return set of capabilities for this device
+func (this *DeviceState) GetCapabilities() []gopi.Tuple {
+	return this.capabilities
 }
 
 // Return the 64-bit serial number for the device
@@ -205,6 +237,96 @@ func (this *DeviceState) GetOTP() (map[byte]uint32, error) {
 	}
 
 	return otp, nil
+}
+
+// Get the core temperature in celcius
+func (this *DeviceState) GetCoreTemperatureCelcius() (float64, error) {
+	// retrieve value as text
+	value, err := this.GeneralCommand(GENCMD_MEASURE_TEMP)
+	if err != nil {
+		return 0.0, err
+	}
+
+	// Find value within text
+	match := REGEXP_TEMP.FindStringSubmatch(value)
+	if len(match) != 2 {
+		return 0.0, this.log.Error("Bad Response from %v", GENCMD_MEASURE_TEMP)
+	}
+
+	// Convert to float64
+	value2, err := strconv.ParseFloat(match[1], 64)
+	if err != nil {
+		return 0.0, err
+	}
+
+	// Return value as float64
+	return value2, nil
+}
+
+// Return all capabilities
+func (this *DeviceState) makeCapabilities() []gopi.Tuple {
+	tuples := make([]gopi.Tuple,8)
+
+	tuples[0] = &Tuple{ Key: gopi.CAP_HW_SERIAL, Func: this.getCapSerial }
+	tuples[1] = &Tuple{ Key: gopi.CAP_HW_PLATFORM, Func: this.getCapPlatform }
+	tuples[2] = &Tuple{ Key: gopi.CAP_HW_MODEL, Func: this.getCapModel }
+	tuples[3] = &Tuple{ Key: gopi.CAP_HW_REVISION, Func: this.getCapRevision }
+	tuples[4] = &Tuple{ Key: gopi.CAP_HW_PCB, Func: this.getCapPCB }
+	tuples[5] = &Tuple{ Key: gopi.CAP_HW_WARRANTY, Func: this.getCapWarranty }
+	tuples[6] = &Tuple{ Key: gopi.CAP_HW_PROCESSOR_NAME, Func: this.getCapProcessor }
+	tuples[7] = &Tuple{ Key: gopi.CAP_HW_PROCESSOR_TEMP, Func: this.getCapCoreTemperature }
+
+	return tuples
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Hardware Capabilities
+
+func (tuple *Tuple) GetKey() gopi.Capability {
+	return tuple.Key
+}
+
+func (tuple *Tuple) String() string {
+	return fmt.Sprint(tuple.Func(tuple.Key))
+}
+
+func (this *DeviceState) getCapPlatform(key gopi.Capability) string {
+	return "RPI"
+}
+
+func (this *DeviceState) getCapSerial(key gopi.Capability) string {
+	serial, _ := this.GetSerialNumber()
+	return fmt.Sprintf("%016X",serial)
+}
+
+func (this *DeviceState) getCapModel(key gopi.Capability) string {
+	model, _, _ := this.GetModel()
+	return fmt.Sprintf("%s",model)
+}
+
+func (this *DeviceState) getCapPCB(key gopi.Capability) string {
+	_, pcb, _ := this.GetModel()
+	return fmt.Sprintf("%s",pcb)
+}
+
+func (this *DeviceState) getCapRevision(key gopi.Capability) string {
+	revision, _ := this.GetRevision()
+	return fmt.Sprintf("%s",revision)
+}
+
+func (this *DeviceState) getCapProcessor(key gopi.Capability) string {
+	processor, _ := this.GetProcessor()
+	return fmt.Sprintf("%s",processor)
+}
+
+func (this *DeviceState) getCapWarranty(key gopi.Capability) string {
+	warranty, _ := this.GetWarrantyBit()
+	return fmt.Sprintf("%s",warranty)
+}
+
+func (this *DeviceState) getCapCoreTemperature(key gopi.Capability) string {
+	temp, _ := this.GetCoreTemperatureCelcius()
+	return fmt.Sprintf("%s",temp)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

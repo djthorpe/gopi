@@ -44,6 +44,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 )
 
 import (
@@ -67,7 +68,10 @@ type BME280Driver struct {
 	slave       uint8
 	chipid      uint8
 	calibration *BME280Calibation
-	oversample  BME280Oversample
+	osrs_t      BME280Oversample
+	osrs_h      BME280Oversample
+	osrs_p      BME280Oversample
+	mode        BME280Mode
 	log         *util.LoggerDevice
 }
 
@@ -87,6 +91,9 @@ type BME280Calibation struct {
 // Oversampling type
 type BME280Oversample uint8
 
+// Mode
+type BME280Mode uint8
+
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
@@ -96,13 +103,20 @@ const (
 )
 
 const (
-	// Oversampling mode
-	BME280_OVERSAMPLE_NONE BME280Oversample = iota
-	BME280_OVERSAMPLE_1
-	BME280_OVERSAMPLE_2
-	BME280_OVERSAMPLE_4
-	BME280_OVERSAMPLE_8
-	BME280_OVERSAMPLE_16
+	// Oversampling
+	BME280_OVERSAMPLE_NONE BME280Oversample = 0x00
+	BME280_OVERSAMPLE_1 BME280Oversample = 0x01
+	BME280_OVERSAMPLE_2 BME280Oversample = 0x02
+	BME280_OVERSAMPLE_4 BME280Oversample = 0x03
+	BME280_OVERSAMPLE_8 BME280Oversample = 0x04
+	BME280_OVERSAMPLE_16 BME280Oversample = 0x05
+)
+
+const (
+	// Mode
+	BME280_MODE_SLEEP BME280Mode = 0x00
+	BME280_MODE_FORCED BME280Mode = 0x01
+	BME280_MODE_NORMAL BME280Mode = 0x03
 )
 
 const (
@@ -176,22 +190,19 @@ func (config BME280) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 		return nil, err
 	}
 	this.chipid = chipid
+	this.osrs_h = BME280_OVERSAMPLE_1
+	this.osrs_p = BME280_OVERSAMPLE_1
+	this.osrs_t = BME280_OVERSAMPLE_1
+	this.mode = BME280_MODE_FORCED
+
+	// Set oversampling and mode
+	if _, err := this.setOversamplingMode(); err != nil {
+		return nil, err
+	}
 
 	// Load calibration values
 	this.calibration, err = this.readCalibration()
 	if err != nil {
-		return nil, err
-	}
-
-	// Set Mode
-
-	// 16x oversampling
-	if err := this.i2c.WriteUint8(BME280_REGISTER_CONTROLHUMID, 0x05); err != nil {
-		return nil, err
-	}
-
-	// 16x oversampling, normal mode
-	if err := this.i2c.WriteUint8(BME280_REGISTER_CONTROL, 0xB7); err != nil {
 		return nil, err
 	}
 
@@ -203,6 +214,20 @@ func (this *BME280Driver) Close() error {
 	// No resources need to be freed
 	return nil
 }
+
+// Device is reset using the complete power-on-reset procedure
+func (this *BME280Driver) SoftReset() error {
+	if err := this.i2c.WriteUint8(BME280_REGISTER_SOFTRESET,BME280_SOFTRESET_VALUE); err != nil {
+		return err
+	}
+	// Set mode
+	_, err := this.setOversamplingMode()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 
 func (this *BME280Driver) readCalibration() (*BME280Calibation, error) {
 	var err error
@@ -287,22 +312,21 @@ func (this *BME280Driver) readCalibration() (*BME280Calibation, error) {
 	return calibration, nil
 }
 
-// Device is reset using the complete power-on-reset procedure
-func (this *BME280Driver) SoftReset() error {
-	return this.i2c.WriteUint8(BME280_REGISTER_SOFTRESET,BME280_SOFTRESET_VALUE)
-}
-
-// Set oversampling value
-func (this *BME280Driver) SetOversampleMode(value BME280Oversample) {
-	this.oversample = value
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 // Read compensated values and return them. The units for each are
 // C, hPa and %RH. Error is returned if the data could not
 // be returned
 func (this *BME280Driver) ReadValues() (float64, float64, float64, error) {
+	if this.mode == BME280_MODE_FORCED {
+		// Set mode
+		sleep_time_ms, err := this.setOversamplingMode()
+		if err != nil {
+			return 0,0,0,err
+		}
+		time.Sleep(sleep_time_ms * time.Microsecond)
+	}
+	// Read values
 	temp, t_fine, err := this.readTemperature()
 	if err != nil {
 		return 0,0,0,err
@@ -328,7 +352,7 @@ func (this *BME280Driver) AltitudeForPressure(atmospheric,sealevel float64) floa
 ////////////////////////////////////////////////////////////////////////////////
 
 func (this *BME280Driver) String() string {
-	return fmt.Sprintf("<adafruit.BME280>{ slave=%02X chipid=%02X calibration=%v oversample=%v }", this.slave, this.chipid, this.calibration, this.oversample)
+	return fmt.Sprintf("<adafruit.BME280>{ slave=%02X chipid=%02X calibration=%v osrs_t=%v osrs_h=%v osrs_p=%v mode=%v }", this.slave, this.chipid, this.calibration, this.osrs_t, this.osrs_h, this.osrs_p, this.mode)
 }
 
 func (this *BME280Calibation) String() string {
@@ -351,6 +375,36 @@ func (o BME280Oversample) String() string {
 		return "BME280_OVERSAMPLE_16"
 	default:
 		return "[?? Invalid BME280Oversampling value]"
+	}
+}
+
+func (m BME280Mode) String() string {
+	switch(m) {
+	case BME280_MODE_SLEEP:
+		return "BME280_MODE_SLEEP"
+	case BME280_MODE_FORCED:
+		return "BME280_MODE_FORCED"
+	case BME280_MODE_NORMAL:
+		return "BME280_MODE_NORMAL"
+	default:
+		return "[?? Invalid BME280Mode value]"
+	}
+}
+
+func (o BME280Oversample) Uint() uint {
+	switch(o) {
+	case BME280_OVERSAMPLE_1:
+		return 1
+	case BME280_OVERSAMPLE_2:
+		return 2
+	case BME280_OVERSAMPLE_4:
+		return 4
+	case BME280_OVERSAMPLE_8:
+		return 8
+	case BME280_OVERSAMPLE_16:
+		return 16
+	default:
+		return 0
 	}
 }
 
@@ -411,6 +465,19 @@ func (this *BME280Driver) readHumidity(t_fine float64) (float64, error) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+// Set the oversampling values and the mode, then sleep for the required
+// amount of time
+func (this *BME280Driver) setOversamplingMode() (time.Duration,error) {
+	if err := this.i2c.WriteUint8(BME280_REGISTER_CONTROLHUMID,uint8(this.osrs_h)); err != nil {
+		return time.Duration(0),err
+	}
+	if err := this.i2c.WriteUint8(BME280_REGISTER_CONTROL,((uint8(this.osrs_t) & 0x7) << 5) | ((uint8(this.osrs_p) & 0x7) << 2) | (uint8(this.mode) & 0x3)); err != nil {
+		return time.Duration(0),err
+	}
+    sleep_time_ms := time.Duration(1.25 + (2 * 0.575) + 2.3 * float64(this.osrs_t.Uint() + this.osrs_p.Uint() + this.osrs_h.Uint()))
+	return sleep_time_ms,nil
+}
 
 func (this *BME280Driver) readTemperatureRaw() (int32, error) {
 	msb, err := this.i2c.ReadUint8(BME280_REGISTER_TEMPDATA)

@@ -112,11 +112,6 @@ func (this *DXDisplay) GetModeInfo() (*DXModeInfo, error) {
 	return &modeInfo, nil
 }
 
-// Return logging object
-func (this *DXDisplay) Log() *util.LoggerDevice {
-	return this.log
-}
-
 // Human-readable version of the display
 func (this *DXDisplay) String() string {
 	return fmt.Sprintf("<rpi.DXDisplay>{ handle=%v display=%v size=%v", this.handle, this.display, this.GetSize())

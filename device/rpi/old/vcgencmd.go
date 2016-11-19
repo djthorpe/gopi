@@ -1,32 +1,3 @@
-/*
-	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016
-	All Rights Reserved
-
-	For Licensing and Usage information, please see LICENSE.md
-*/
-package rpi
-
-import (
-	"regexp"
-	"strconv"
-	"strings"
-	"unsafe"
-)
-
-////////////////////////////////////////////////////////////////////////////////
-
-/*
-    #cgo CFLAGS: -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host -I/opt/vc/include/interface/vmcs_host/linux -I/opt/vc/include/interface/vcos/pthreads
-    #cgo LDFLAGS: -L/opt/vc/lib -lbcm_host
-    #include "bcm_host.h"
-	#include "vc_vchi_gencmd.h"
-
-	int vc_gencmd_wrapper(char* response,int maxlen,const char* command) {
-		return vc_gencmd(response,maxlen,command);
-	}
-*/
-import "C"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -57,19 +28,6 @@ var (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// See http://elinux.org/RPI_vcgencmd_usage for some example usage
-func (this *RaspberryPi) VCGenCmd(command string) (string, error) {
-	ccommand := C.CString(command)
-	defer C.free(unsafe.Pointer(ccommand))
-	cbuffer := make([]byte, GENCMD_BUFFER_SIZE)
-	if int(C.vc_gencmd_wrapper((*C.char)(unsafe.Pointer(&cbuffer[0])), C.int(GENCMD_BUFFER_SIZE), (*C.char)(unsafe.Pointer(ccommand)))) != 0 {
-		return "", ErrorGenCmd
-	}
-	return string(cbuffer), nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 // Get a list of commands that can be executed
 func (this *RaspberryPi) GetCommands() ([]string, error) {
 	// retrieve value as text
@@ -91,30 +49,6 @@ func (this *RaspberryPi) GetCommands() ([]string, error) {
 	}
 	// return commands
 	return commands, nil
-}
-
-// Get the core temperature in celcius
-func (this *RaspberryPi) GetCoreTemperatureCelcius() (float64, error) {
-	// retrieve value as text
-	value, err := this.VCGenCmd(GENCMD_MEASURE_TEMP)
-	if err != nil {
-		return 0.0, err
-	}
-
-	// Find value within text
-	match := REGEXP_TEMP.FindStringSubmatch(value)
-	if len(match) != 2 {
-		return 0.0, ErrorResponse
-	}
-
-	// Convert to float64
-	value2, err := strconv.ParseFloat(match[1], 64)
-	if err != nil {
-		return 0.0, err
-	}
-
-	// Return value as float64
-	return value2, nil
 }
 
 // Return clock frequencies of various components
