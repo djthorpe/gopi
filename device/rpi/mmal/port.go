@@ -88,7 +88,7 @@ func (t PortType) String() string {
 }
 
 func (this *Port) String() string {
-	return fmt.Sprintf("<mmal.Port>{ name=%v type=%v index=%v enabled=%v }", this.Name(), this.Type(), this.Index(), this.IsEnabled())
+	return fmt.Sprintf("<mmal.Port>{ name=%v type=%v index=%v enabled=%v format=%v }", this.Name(), this.Type(), this.Index(), this.IsEnabled(), this.FormatType())
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -110,10 +110,30 @@ func (this *Port) Disable() error {
 	return nil
 }
 
-func (this *Port) FormatCommit() error {
+////////////////////////////////////////////////////////////////////////////////
+// PORT FORMAT
+
+func (this *Port) FormatType() FormatType {
+	format := this.handle.format
+	return FormatType(format._type)
+}
+
+func (this *Port) GetFormat() (Format, error) {
+	t := this.FormatType()
+	switch(t) {
+	case MMAL_ES_TYPE_AUDIO:
+	case MMAL_ES_TYPE_VIDEO:
+	case MMAL_ES_TYPE_SUBPICTURE:
+
+}
+
+
+func (this *Port) SetFormat(format Format) error {
 	ret := status(C.mmal_port_format_commit(unsafe.Pointer(this.handle)))
 	if ret != MMAL_SUCCESS {
 		return ret.Error()
 	}
 	return nil
 }
+
+
