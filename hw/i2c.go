@@ -48,8 +48,8 @@ type I2CDriver interface {
 	ReadBlock(reg, length uint8) ([]byte, error)
 
 	// Write Byte (8-bits) & Word (16-bits) to registers
-	WriteUint8(reg,value uint8) error
+	WriteUint8(reg, value uint8) error
 	WriteInt8(reg uint8, value int8) error
-	WriteUint16(reg uint8,value uint16) error
-	WriteInt16(reg uint8,value int16) error
+	WriteUint16(reg uint8, value uint16) error
+	WriteInt16(reg uint8, value int16) error
 }

@@ -15,9 +15,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"errors"
 	"strconv"
 )
 
@@ -63,36 +63,36 @@ func RunLoop(app *app.App) error {
 		return err
 	}
 
-	app.Logger.Info("Slave=%02X",addr)
-	app.Logger.Info("Byte=%02X",byte)
+	app.Logger.Info("Slave=%02X", addr)
+	app.Logger.Info("Byte=%02X", byte)
 
 	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func GetSlaveAddress(flags *app.Flags) (uint8,error) {
+func GetSlaveAddress(flags *app.Flags) (uint8, error) {
 	value, exists := flags.GetString("slave")
 	if exists == false {
-		return uint8(0),errors.New("Missing -slave parameter")
+		return uint8(0), errors.New("Missing -slave parameter")
 	}
-	addr, err := strconv.ParseUint("0x" + value, 0, 64)
+	addr, err := strconv.ParseUint("0x"+value, 0, 64)
 	if err != nil || addr > 0x7F {
-		return uint8(0),errors.New("Invalid -slave parameter")
+		return uint8(0), errors.New("Invalid -slave parameter")
 	}
-	return uint8(addr),nil
+	return uint8(addr), nil
 }
 
-func GetRegister(flags *app.Flags) (uint8,error) {
+func GetRegister(flags *app.Flags) (uint8, error) {
 	value, exists := flags.GetString("reg")
 	if exists == false {
-		return uint8(0),errors.New("Missing -reg parameter")
+		return uint8(0), errors.New("Missing -reg parameter")
 	}
-	reg, err := strconv.ParseUint("0x" + value, 0, 64)
+	reg, err := strconv.ParseUint("0x"+value, 0, 64)
 	if err != nil || reg > 0xFF {
-		return uint8(0),errors.New("Invalid -reg parameter")
+		return uint8(0), errors.New("Invalid -reg parameter")
 	}
-	return uint8(reg),nil
+	return uint8(reg), nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

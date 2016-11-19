@@ -180,5 +180,3 @@ func (this *Flags) GetFloat64(name string) (float64, bool) {
 	}
 	return value.Value.(flag.Getter).Get().(float64), this.HasFlag(name)
 }
-
-

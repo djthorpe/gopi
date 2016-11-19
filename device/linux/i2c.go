@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 	"unsafe"
-	"sync"
 )
 
 import (
@@ -302,42 +302,42 @@ func (this *I2CDriver) WriteQuick(value uint8) error {
 
 func (this *I2CDriver) ReadUint8(reg uint8) (uint8, error) {
 	if this.slave == I2C_SLAVE_NONE {
-		return uint8(0),ErrNoAddress
+		return uint8(0), ErrNoAddress
 	}
 	if this.funcs&I2C_FUNC_SMBUS_READ_BYTE_DATA == 0 {
-		return uint8(0),ErrFunctionUnsupported
+		return uint8(0), ErrFunctionUnsupported
 	}
 	return this.i2c_smbus_read_byte_data(reg)
 }
 
 func (this *I2CDriver) ReadInt8(reg uint8) (int8, error) {
 	v, e := this.ReadUint8(reg)
-	return int8(v),e
+	return int8(v), e
 }
 
 func (this *I2CDriver) ReadUint16(reg uint8) (uint16, error) {
 	if this.slave == I2C_SLAVE_NONE {
-		return uint16(0),ErrNoAddress
+		return uint16(0), ErrNoAddress
 	}
 	if this.funcs&I2C_FUNC_SMBUS_READ_WORD_DATA == 0 {
-		return uint16(0),ErrFunctionUnsupported
+		return uint16(0), ErrFunctionUnsupported
 	}
 	return this.i2c_smbus_read_word_data(reg)
 }
 
 func (this *I2CDriver) ReadInt16(reg uint8) (int16, error) {
 	v, e := this.ReadUint16(reg)
-	return int16(v),e
+	return int16(v), e
 }
 
 func (this *I2CDriver) ReadBlock(reg, length uint8) ([]byte, error) {
 	if this.slave == I2C_SLAVE_NONE {
-		return nil,ErrNoAddress
+		return nil, ErrNoAddress
 	}
 	if this.funcs&I2C_FUNC_SMBUS_READ_I2C_BLOCK == 0 {
-		return nil,ErrFunctionUnsupported
+		return nil, ErrFunctionUnsupported
 	}
-	return this.i2c_smbus_read_i2c_block_data(reg,length)
+	return this.i2c_smbus_read_i2c_block_data(reg, length)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -350,25 +350,25 @@ func (this *I2CDriver) WriteUint8(reg, value uint8) error {
 	if this.funcs&I2C_FUNC_SMBUS_WRITE_BYTE_DATA == 0 {
 		return ErrFunctionUnsupported
 	}
-	return this.i2c_smbus_write_byte_data(reg,value)
+	return this.i2c_smbus_write_byte_data(reg, value)
 }
 
-func (this *I2CDriver) WriteInt8(reg uint8,value int8) error {
-	return this.WriteUint8(reg,uint8(value))
+func (this *I2CDriver) WriteInt8(reg uint8, value int8) error {
+	return this.WriteUint8(reg, uint8(value))
 }
 
-func (this *I2CDriver) WriteUint16(reg uint8,value uint16) error {
+func (this *I2CDriver) WriteUint16(reg uint8, value uint16) error {
 	if this.slave == I2C_SLAVE_NONE {
 		return ErrNoAddress
 	}
 	if this.funcs&I2C_FUNC_SMBUS_WRITE_WORD_DATA == 0 {
 		return ErrFunctionUnsupported
 	}
-	return this.i2c_smbus_write_word_data(reg,value)
+	return this.i2c_smbus_write_word_data(reg, value)
 }
 
-func (this *I2CDriver) WriteInt16(reg uint8,value int16) error {
-	return this.WriteUint16(reg,uint16(value))
+func (this *I2CDriver) WriteInt16(reg uint8, value int16) error {
+	return this.WriteUint16(reg, uint16(value))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -458,14 +458,14 @@ func (this *I2CDriver) i2c_smbus_read_word_data(command uint8) (uint16, error) {
 	return data, nil
 }
 
-func (this *I2CDriver) i2c_smbus_write_word_data(command uint8,value uint16) error {
+func (this *I2CDriver) i2c_smbus_write_word_data(command uint8, value uint16) error {
 	if err := this.i2c_smbus_access(I2C_SMBUS_WRITE, command, I2C_SMBUS_WORD_DATA, uintptr(unsafe.Pointer(&value))); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (this *I2CDriver) i2c_smbus_process_call(command uint8,value uint16) (uint16, error) {
+func (this *I2CDriver) i2c_smbus_process_call(command uint8, value uint16) (uint16, error) {
 	if err := this.i2c_smbus_access(I2C_SMBUS_WRITE, command, I2C_SMBUS_PROC_CALL, uintptr(unsafe.Pointer(&value))); err != nil {
 		return value, err
 	}
@@ -477,9 +477,9 @@ func (this *I2CDriver) i2c_smbus_read_block_data(command uint8) ([]byte, error) 
 	if err := this.i2c_smbus_access(I2C_SMBUS_READ, command, I2C_SMBUS_BLOCK_DATA, uintptr(unsafe.Pointer(&data))); err != nil {
 		return nil, err
 	}
-	block := make([]byte,data[0])
+	block := make([]byte, data[0])
 	for i := uint8(0); i < data[0]; i++ {
-		block[i] = data[i + 2]
+		block[i] = data[i+2]
 	}
 	return block, nil
 }
@@ -496,13 +496,9 @@ func (this *I2CDriver) i2c_smbus_read_i2c_block_data(command uint8, length uint8
 	if err := this.i2c_smbus_access(I2C_SMBUS_READ, command, size, uintptr(unsafe.Pointer(&data))); err != nil {
 		return nil, err
 	}
-	block := make([]byte,data[0])
+	block := make([]byte, data[0])
 	for i := uint8(0); i < data[0]; i++ {
-		block[i] = data[i + 1]
+		block[i] = data[i+1]
 	}
 	return block, nil
 }
-
-
-
-

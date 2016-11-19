@@ -58,7 +58,7 @@ func MyRunLoop(app *app.App) error {
 		}
 
 		// Create surface
-		bgsurface, err := app.EGL.CreateBackground("DX",1.0)
+		bgsurface, err := app.EGL.CreateBackground("DX", 1.0)
 		if err != nil {
 			return err
 		}
@@ -92,7 +92,7 @@ func MyRunLoop(app *app.App) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func GetBackgroundColor(color string) (khronos.EGLColorRGBA32,error) {
+func GetBackgroundColor(color string) (khronos.EGLColorRGBA32, error) {
 	switch {
 	case color == "white":
 		return khronos.EGLWhiteColor, nil
@@ -107,7 +107,7 @@ func GetBackgroundColor(color string) (khronos.EGLColorRGBA32,error) {
 	case color == "grey":
 		return khronos.EGLGreyColor, nil
 	default:
-		return khronos.EGLBlackColor,errors.New("Unknown color value")
+		return khronos.EGLBlackColor, errors.New("Unknown color value")
 	}
 }
 
@@ -120,7 +120,7 @@ func main() {
 	// Add on command-line flags
 	config.FlagSet.FlagString("image", "", "Image filename")
 	config.FlagSet.FlagString("bg", "", "Background color. One of red, green, blue, black, white, grey")
-	config.FlagSet.FlagFloat64("opacity",1.0, "Image opacity, 0.0 -> 1.0")
+	config.FlagSet.FlagFloat64("opacity", 1.0, "Image opacity, 0.0 -> 1.0")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

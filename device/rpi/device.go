@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"unsafe"
 	"strings"
+	"unsafe"
 )
 
 import (
@@ -34,22 +34,25 @@ import "C"
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Device struct{}
+// Configuration for the Raspberry Pi
+type Hardware struct{}
 
-type tupleCallback func (key gopi.Capability) string
+type Device struct {
+	log          *util.LoggerDevice // logger
+	service      int                // service number
+	serial       uint64
+	revision     uint32
+	capabilities []gopi.Tuple
+}
 
+// Capabilities
 type Tuple struct {
-	Key gopi.Capability
+	Key  gopi.Capability
 	Func tupleCallback
 }
 
-type DeviceState struct {
-	log      *util.LoggerDevice // logger
-	service  int                // service number
-	serial   uint64
-	revision uint32
-	capabilities []gopi.Tuple
-}
+// Capabilities
+type tupleCallback func(key gopi.Capability) string
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -66,12 +69,12 @@ const (
 	GENCMD_OTP_DUMP          = "otp_dump"
 	GENCMD_OTP_DUMP_SERIAL   = 28
 	GENCMD_OTP_DUMP_REVISION = 30
-	GENCMD_COMMANDS         = "commands"	
-	GENCMD_MEASURE_TEMP     = "measure_temp"
-	GENCMD_MEASURE_CLOCK    = "measure_clock arm core h264 isp v3d uart pwm emmc pixel vec hdmi dpi"
-	GENCMD_MEASURE_VOLTS    = "measure_volts core sdram_c sdram_i sdram_p"
-	GENCMD_CODEC_ENABLED    = "codec_enabled H264 MPG2 WVC1 MPG4 MJPG WMV9 VP8"
-	GENCMD_MEMORY           = "get_mem arm gpu"	
+	GENCMD_COMMANDS          = "commands"
+	GENCMD_MEASURE_TEMP      = "measure_temp"
+	GENCMD_MEASURE_CLOCK     = "measure_clock arm core h264 isp v3d uart pwm emmc pixel vec hdmi dpi"
+	GENCMD_MEASURE_VOLTS     = "measure_volts core sdram_c sdram_i sdram_p"
+	GENCMD_CODEC_ENABLED     = "codec_enabled H264 MPG2 WVC1 MPG4 MJPG WMV9 VP8"
+	GENCMD_MEMORY            = "get_mem arm gpu"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -90,13 +93,13 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // Open and close device
 
-func (config Device) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config Hardware) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	log.Debug2("<rpi.Device>Open")
 	if err := bcmHostInit(); err != nil {
 		return nil, err
 	}
 
-	this := new(DeviceState)
+	this := new(Device)
 	this.log = log
 	this.service = GENCMD_SERVICE_NONE
 	this.serial = GENCMD_SERIAL_NONE
@@ -106,7 +109,7 @@ func (config Device) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	return this, nil
 }
 
-func (this *DeviceState) Close() error {
+func (this *Device) Close() error {
 	this.log.Debug2("<rpi.Device>Close")
 	if this.service != GENCMD_SERVICE_NONE {
 		if err := vcGencmdTerminate(); err != nil {
@@ -120,7 +123,7 @@ func (this *DeviceState) Close() error {
 	return nil
 }
 
-func (this *DeviceState) String() string {
+func (this *Device) String() string {
 	serial, _ := this.GetSerialNumber()
 	revision, _ := this.GetRevision()
 	model, pcb, _ := this.GetModel()
@@ -129,25 +132,24 @@ func (this *DeviceState) String() string {
 	return fmt.Sprintf("<rpi.Device>{ serial_number=%08X revision=%04X model=%v pcb=%v processor=%v warranty_bit=%v }", serial, revision, model, pcb, processor, warranty_bit)
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Get Device Information
 
-func (this *DeviceState) GetPeripheralAddress() uint32 {
+func (this *Device) GetPeripheralAddress() uint32 {
 	return bcmHostGetPeripheralAddress()
 }
 
-func (this *DeviceState) GetPeripheralSize() uint32 {
+func (this *Device) GetPeripheralSize() uint32 {
 	return bcmHostGetPeripheralSize()
 }
 
 // Return set of capabilities for this device
-func (this *DeviceState) GetCapabilities() []gopi.Tuple {
+func (this *Device) GetCapabilities() []gopi.Tuple {
 	return this.capabilities
 }
 
 // Return the 64-bit serial number for the device
-func (this *DeviceState) GetSerialNumber() (uint64, error) {
+func (this *Device) GetSerialNumber() (uint64, error) {
 	// Return cached version
 	if this.serial != GENCMD_SERIAL_NONE {
 		return this.serial, nil
@@ -164,7 +166,7 @@ func (this *DeviceState) GetSerialNumber() (uint64, error) {
 }
 
 // Return the 32-bit revision code for the device
-func (this *DeviceState) GetRevision() (uint32, error) {
+func (this *Device) GetRevision() (uint32, error) {
 	// Return cached version
 	if this.revision != GENCMD_REVISION_NONE {
 		return this.revision, nil
@@ -182,7 +184,7 @@ func (this *DeviceState) GetRevision() (uint32, error) {
 }
 
 // Return the size of a particular display
-func (this *DeviceState) GetDisplaySize(display uint16) (uint32, uint32) {
+func (this *Device) GetDisplaySize(display uint16) (uint32, uint32) {
 	return bcmGHostGetDisplaySize(display)
 }
 
@@ -192,7 +194,7 @@ func (this *DeviceState) GetDisplaySize(display uint16) (uint32, uint32) {
 // Execute a VideoCore "General Command" and return the results of
 // that command. See http://elinux.org/RPI_vcgencmd_usage for some example
 // usage
-func (this *DeviceState) GeneralCommand(command string) (string, error) {
+func (this *Device) GeneralCommand(command string) (string, error) {
 	if this.service == GENCMD_SERVICE_NONE {
 		var err error
 		this.service, err = vcGencmdInit(this.log)
@@ -211,7 +213,7 @@ func (this *DeviceState) GeneralCommand(command string) (string, error) {
 }
 
 // Return OTP memory
-func (this *DeviceState) GetOTP() (map[byte]uint32, error) {
+func (this *Device) GetOTP() (map[byte]uint32, error) {
 	// retrieve OTP
 	value, err := this.GeneralCommand(GENCMD_OTP_DUMP)
 	if err != nil {
@@ -243,7 +245,7 @@ func (this *DeviceState) GetOTP() (map[byte]uint32, error) {
 }
 
 // Get the core temperature in celcius
-func (this *DeviceState) GetCoreTemperatureCelcius() (float64, error) {
+func (this *Device) GetCoreTemperatureCelcius() (float64, error) {
 	// retrieve value as text
 	value, err := this.GeneralCommand(GENCMD_MEASURE_TEMP)
 	if err != nil {
@@ -267,7 +269,7 @@ func (this *DeviceState) GetCoreTemperatureCelcius() (float64, error) {
 }
 
 // Get Commands
-func (this *DeviceState) GetCommands() ([]string, error) {
+func (this *Device) GetCommands() ([]string, error) {
 	// retrieve value as text
 	value, err := this.GeneralCommand(GENCMD_COMMANDS)
 	if err != nil {
@@ -290,9 +292,9 @@ func (this *DeviceState) GetCommands() ([]string, error) {
 }
 
 // Return clock frequencies of various components
-func (this *DeviceState) GetClockFrequencyHertz() (map[string]uint64, error) {
+func (this *Device) GetClockFrequencyHertz() (map[string]uint64, error) {
 	// retrieve values as text
-	command := strings.Split(GENCMD_MEASURE_CLOCK," ")
+	command := strings.Split(GENCMD_MEASURE_CLOCK, " ")
 	clocks := make(map[string]uint64, len(command))
 	for _, name := range command[1:] {
 
@@ -322,7 +324,7 @@ func (this *DeviceState) GetClockFrequencyHertz() (map[string]uint64, error) {
 }
 
 // Return voltage of various components
-func (this *DeviceState) GetVolts() (map[string]float64, error) {
+func (this *Device) GetVolts() (map[string]float64, error) {
 	// retrieve values as text
 	command := strings.Split(GENCMD_MEASURE_VOLTS, " ")
 	volts := make(map[string]float64, len(command))
@@ -354,7 +356,7 @@ func (this *DeviceState) GetVolts() (map[string]float64, error) {
 }
 
 // Return set of codecs supported and/or not supported
-func (this *DeviceState) GetCodecs() (map[string]bool, error) {
+func (this *Device) GetCodecs() (map[string]bool, error) {
 	// retrieve values as text
 	command := strings.Split(GENCMD_CODEC_ENABLED, " ")
 	codecs := make(map[string]bool, len(command))
@@ -384,7 +386,7 @@ func (this *DeviceState) GetCodecs() (map[string]bool, error) {
 }
 
 // Return core and GPU memory sizes
-func (this *DeviceState) GetMemoryMegabytes() (map[string]uint64, error) {
+func (this *Device) GetMemoryMegabytes() (map[string]uint64, error) {
 	// retrieve values as text
 	command := strings.Split(GENCMD_MEMORY, " ")
 	memories := make(map[string]uint64, len(command))
@@ -419,17 +421,17 @@ func (this *DeviceState) GetMemoryMegabytes() (map[string]uint64, error) {
 // Hardware Capabilities
 
 // Return all capabilities
-func (this *DeviceState) makeCapabilities() []gopi.Tuple {
-	tuples := make([]gopi.Tuple,8)
+func (this *Device) makeCapabilities() []gopi.Tuple {
+	tuples := make([]gopi.Tuple, 8)
 
-	tuples[0] = &Tuple{ Key: gopi.CAP_HW_SERIAL, Func: this.getCapSerial }
-	tuples[1] = &Tuple{ Key: gopi.CAP_HW_PLATFORM, Func: this.getCapPlatform }
-	tuples[2] = &Tuple{ Key: gopi.CAP_HW_MODEL, Func: this.getCapModel }
-	tuples[3] = &Tuple{ Key: gopi.CAP_HW_REVISION, Func: this.getCapRevision }
-	tuples[4] = &Tuple{ Key: gopi.CAP_HW_PCB, Func: this.getCapPCB }
-	tuples[5] = &Tuple{ Key: gopi.CAP_HW_WARRANTY, Func: this.getCapWarranty }
-	tuples[6] = &Tuple{ Key: gopi.CAP_HW_PROCESSOR_NAME, Func: this.getCapProcessor }
-	tuples[7] = &Tuple{ Key: gopi.CAP_HW_PROCESSOR_TEMP, Func: this.getCapCoreTemperature }
+	tuples[0] = &Tuple{Key: gopi.CAP_HW_SERIAL, Func: this.getCapSerial}
+	tuples[1] = &Tuple{Key: gopi.CAP_HW_PLATFORM, Func: this.getCapPlatform}
+	tuples[2] = &Tuple{Key: gopi.CAP_HW_MODEL, Func: this.getCapModel}
+	tuples[3] = &Tuple{Key: gopi.CAP_HW_REVISION, Func: this.getCapRevision}
+	tuples[4] = &Tuple{Key: gopi.CAP_HW_PCB, Func: this.getCapPCB}
+	tuples[5] = &Tuple{Key: gopi.CAP_HW_WARRANTY, Func: this.getCapWarranty}
+	tuples[6] = &Tuple{Key: gopi.CAP_HW_PROCESSOR_NAME, Func: this.getCapProcessor}
+	tuples[7] = &Tuple{Key: gopi.CAP_HW_PROCESSOR_TEMP, Func: this.getCapCoreTemperature}
 
 	return tuples
 }
@@ -442,43 +444,43 @@ func (tuple *Tuple) String() string {
 	return fmt.Sprint(tuple.Func(tuple.Key))
 }
 
-func (this *DeviceState) getCapPlatform(key gopi.Capability) string {
+func (this *Device) getCapPlatform(key gopi.Capability) string {
 	return "RPI"
 }
 
-func (this *DeviceState) getCapSerial(key gopi.Capability) string {
+func (this *Device) getCapSerial(key gopi.Capability) string {
 	serial, _ := this.GetSerialNumber()
-	return fmt.Sprintf("%016X",serial)
+	return fmt.Sprintf("%016X", serial)
 }
 
-func (this *DeviceState) getCapModel(key gopi.Capability) string {
+func (this *Device) getCapModel(key gopi.Capability) string {
 	model, _, _ := this.GetModel()
-	return fmt.Sprintf("%s",model)
+	return fmt.Sprintf("%s", model)
 }
 
-func (this *DeviceState) getCapPCB(key gopi.Capability) string {
+func (this *Device) getCapPCB(key gopi.Capability) string {
 	_, pcb, _ := this.GetModel()
-	return fmt.Sprintf("%s",pcb)
+	return fmt.Sprintf("%s", pcb)
 }
 
-func (this *DeviceState) getCapRevision(key gopi.Capability) string {
+func (this *Device) getCapRevision(key gopi.Capability) string {
 	revision, _ := this.GetRevision()
-	return fmt.Sprintf("%s",revision)
+	return fmt.Sprintf("%s", revision)
 }
 
-func (this *DeviceState) getCapProcessor(key gopi.Capability) string {
+func (this *Device) getCapProcessor(key gopi.Capability) string {
 	processor, _ := this.GetProcessor()
-	return fmt.Sprintf("%s",processor)
+	return fmt.Sprintf("%s", processor)
 }
 
-func (this *DeviceState) getCapWarranty(key gopi.Capability) string {
+func (this *Device) getCapWarranty(key gopi.Capability) string {
 	warranty, _ := this.GetWarrantyBit()
-	return fmt.Sprintf("%s",warranty)
+	return fmt.Sprintf("%s", warranty)
 }
 
-func (this *DeviceState) getCapCoreTemperature(key gopi.Capability) string {
+func (this *Device) getCapCoreTemperature(key gopi.Capability) string {
 	temp, _ := this.GetCoreTemperatureCelcius()
-	return fmt.Sprintf("%s",temp)
+	return fmt.Sprintf("%s", temp)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

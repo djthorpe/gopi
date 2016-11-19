@@ -36,15 +36,15 @@ type eglNativeWindow struct {
 
 // Internal window structure
 type eglWindow struct {
-	api      string
-	config   eglConfig
-	context  eglContext
-	surface  eglSurface
-	element  *DXElement
-	resource *DXResource
+	api                       string
+	config                    eglConfig
+	context                   eglContext
+	surface                   eglSurface
+	element                   *DXElement
+	resource                  *DXResource
 	destroy_resource_on_close bool
-	origin   *khronos.EGLPoint
-	size     *khronos.EGLSize
+	origin                    *khronos.EGLPoint
+	size                      *khronos.EGLSize
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ func (surface *eglWindow) GetBitmap() (khronos.EGLBitmap, error) {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS: Windows
 
-func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khronos.EGLPoint, layer uint16, opacity float32,resource *DXResource) (*eglWindow, error) {
+func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khronos.EGLPoint, layer uint16, opacity float32, resource *DXResource) (*eglWindow, error) {
 	var err error
 
 	// CREATE WINDOW
@@ -228,7 +228,7 @@ func (this *eglDriver) createWindow(api string, size khronos.EGLSize, origin khr
 		source_frame.Set(DXPoint{0, 0}, DXSize{uint32(size.Width), uint32(size.Height)})
 	}
 	window_frame.Set(DXPoint{int32(origin.X), int32(origin.Y)}, DXSize{uint32(size.Width), uint32(size.Height)})
-	window.element, err = this.dx.AddElement(update, layer, uint32(opacity * 255.0), window_frame, window.resource)
+	window.element, err = this.dx.AddElement(update, layer, uint32(opacity*255.0), window_frame, window.resource)
 	if err != nil {
 		this.closeWindow(window)
 		return nil, err

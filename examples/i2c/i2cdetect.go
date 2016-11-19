@@ -26,22 +26,22 @@ func RunLoop(app *app.App) error {
 	app.Logger.Debug("I2C=%v", app.I2C)
 
 	// Create 8 x 8 grid for detecting slaves
-	fmt.Fprintln(os.Stdout,"     -0 -1 -2 -3 -4 -5 -6 -7 -8 -9 -A -B -C -D -E -F")
+	fmt.Fprintln(os.Stdout, "     -0 -1 -2 -3 -4 -5 -6 -7 -8 -9 -A -B -C -D -E -F")
 	for h := uint8(0x0); h <= uint8(0x7); h++ {
-		fmt.Fprintf(os.Stdout,"%01X- | ",h)
+		fmt.Fprintf(os.Stdout, "%01X- | ", h)
 		for l := uint8(0x0); l <= uint8(0xF); l++ {
 			slave := (h << 4) + l
 			detected, err := app.I2C.DetectSlave(slave)
 			if err != nil {
-				fmt.Fprint(os.Stdout,"??")
+				fmt.Fprint(os.Stdout, "??")
 			} else if detected {
-				fmt.Fprintf(os.Stdout,"%02X",slave)
+				fmt.Fprintf(os.Stdout, "%02X", slave)
 			} else {
-				fmt.Fprint(os.Stdout,"--")
+				fmt.Fprint(os.Stdout, "--")
 			}
-			fmt.Fprint(os.Stdout," ")
+			fmt.Fprint(os.Stdout, " ")
 		}
-		fmt.Fprint(os.Stdout,"\n")
+		fmt.Fprint(os.Stdout, "\n")
 	}
 
 	return nil

@@ -9,8 +9,8 @@ package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
 	"fmt"
-	"unsafe"
 	"image"
+	"unsafe"
 )
 
 import (
@@ -89,22 +89,22 @@ func (this *DXResource) GetHandle() dxResourceHandle {
 }
 
 func (this *DXResource) ClearToColor(color khronos.EGLColorRGBA32) error {
-	data := make([]uint32,uint(this.stride / 4) * uint(this.size.Height))
+	data := make([]uint32, uint(this.stride/4)*uint(this.size.Height))
 	value := color.Uint32()
 	for i := 0; i < len(data); i++ {
 		data[i] = value
 	}
-	dst_frame := DXFrame{ DXPoint{ int32(0), int32(0) }, DXSize{ uint32(this.size.Width), uint32(this.size.Height) } }
+	dst_frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(this.size.Width), uint32(this.size.Height)}}
 	dxResourceWriteData(this.handle, this.model, this.stride, unsafe.Pointer(&data[0]), &dst_frame)
 	return nil
 }
 
-func (this *DXResource) PaintImage(pt khronos.EGLPoint,bitmap image.Image) error {
-	data := make([]uint32,uint(this.stride / 4) * uint(this.size.Height))
+func (this *DXResource) PaintImage(pt khronos.EGLPoint, bitmap image.Image) error {
+	data := make([]uint32, uint(this.stride/4)*uint(this.size.Height))
 	bounds := bitmap.Bounds()
 	for i := uint(0); i < uint(len(data)); i++ {
-		dx := i % uint(this.stride >> 2)
-		dy := i / uint(this.stride >> 2)
+		dx := i % uint(this.stride>>2)
+		dy := i / uint(this.stride>>2)
 		if dx >= this.size.Width || dy >= this.size.Height {
 			continue
 		}
@@ -113,10 +113,10 @@ func (this *DXResource) PaintImage(pt khronos.EGLPoint,bitmap image.Image) error
 		if sx > bounds.Dx() || sy > bounds.Dy() {
 			continue
 		}
-		r,g,b,a := bitmap.At(int(sx),int(sy)).RGBA()
+		r, g, b, a := bitmap.At(int(sx), int(sy)).RGBA()
 		data[i] = ((r & 0xFF00) >> 8) | (g & 0xFF00) | ((b & 0xFF00) << 8) | ((a & 0xFF00) << 16)
 	}
-	dst_frame := DXFrame{ DXPoint{ int32(0), int32(0) }, DXSize{ uint32(this.size.Width), uint32(this.size.Height) } }
+	dst_frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(this.size.Width), uint32(this.size.Height)}}
 	dxResourceWriteData(this.handle, this.model, this.stride, unsafe.Pointer(&data[0]), &dst_frame)
 	return nil
 }

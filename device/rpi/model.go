@@ -105,7 +105,7 @@ var (
 // PUBLIC METHODS
 
 // Returns the value of the warranty bit
-func (this *DeviceState) GetWarrantyBit() (bool, error) {
+func (this *Device) GetWarrantyBit() (bool, error) {
 	revision, err := this.GetRevision()
 	if err != nil {
 		return false, err
@@ -117,7 +117,7 @@ func (this *DeviceState) GetWarrantyBit() (bool, error) {
 }
 
 // Return product model and PCB revision information
-func (this *DeviceState) GetModel() (Model, PCBRevision, error) {
+func (this *Device) GetModel() (Model, PCBRevision, error) {
 	revision, err := this.GetRevision()
 	if err != nil {
 		return RPI_MODEL_UNKNOWN, RPI_PCB_UNKNOWN, err
@@ -148,7 +148,7 @@ func (this *DeviceState) GetModel() (Model, PCBRevision, error) {
 	return model, pcb, nil
 }
 
-func (this *DeviceState) GetProcessor() (Processor, error) {
+func (this *Device) GetProcessor() (Processor, error) {
 	revision, err := this.GetRevision()
 	if err != nil {
 		return RPI_PROCESSOR_UNKNOWN, err

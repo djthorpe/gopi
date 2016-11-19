@@ -85,7 +85,7 @@ func (config I2C) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	defer this.memlock.Unlock()
 
 	// Open the /dev/mem and provide offset & size for accessing memory
-	file, peripheral_base, peripheral_size, err := i2cOpenDevice(config.Device.(*DeviceState), config.Master)
+	file, peripheral_base, peripheral_size, err := i2cOpenDevice(config.Device.(*Device), config.Master)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (this *I2CDriver) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func i2cOpenDevice(device *DeviceState, master uint) (*os.File, uint32, uint32, error) {
+func i2cOpenDevice(device *Device, master uint) (*os.File, uint32, uint32, error) {
 	var file *os.File
 	var err error
 

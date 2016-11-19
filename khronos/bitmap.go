@@ -21,7 +21,7 @@ type EGLBitmap interface {
 	GetSize() EGLSize
 
 	// Paint an image into the bitmap
-	PaintImage(pt EGLPoint,bitmap image.Image) error
+	PaintImage(pt EGLPoint, bitmap image.Image) error
 
 	// Clear bitmap to one color
 	ClearToColor(color EGLColorRGBA32) error

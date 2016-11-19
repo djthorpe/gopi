@@ -229,7 +229,7 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Create the device
 	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_GPIO|APP_I2C) != 0 {
-		device, err := gopi.Open(rpi.Device{}, this.Logger)
+		device, err := gopi.Open(rpi.Hardware{}, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err

@@ -81,21 +81,20 @@ type Tuple interface {
 	String() string
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
 	// Capability keys
-	CAP_HW_SERIAL Capability = iota   // serial number
-	CAP_HW_PLATFORM        // platform
-	CAP_HW_MODEL           // hardware model number
-	CAP_HW_REVISION        // hardware revision
-	CAP_HW_PCB             // hardware PCB number
-	CAP_HW_WARRANTY        // hardware warranty bit
-	CAP_HW_PROCESSOR_NAME  // processor name
-	CAP_HW_PROCESSOR_TEMP  // processor temperature
-	CAP_MAX                // maximum capability number
+	CAP_HW_SERIAL         Capability = iota // serial number
+	CAP_HW_PLATFORM                         // platform
+	CAP_HW_MODEL                            // hardware model number
+	CAP_HW_REVISION                         // hardware revision
+	CAP_HW_PCB                              // hardware PCB number
+	CAP_HW_WARRANTY                         // hardware warranty bit
+	CAP_HW_PROCESSOR_NAME                   // processor name
+	CAP_HW_PROCESSOR_TEMP                   // processor temperature
+	CAP_MAX                                 // maximum capability number
 )
 
 /*
@@ -140,7 +139,7 @@ func Open(config Config, log *util.LoggerDevice) (Driver, error) {
 }
 
 func (c Capability) String() string {
-	switch(c) {
+	switch c {
 	case CAP_HW_SERIAL:
 		return "CAP_HW_SERIAL"
 	case CAP_HW_PLATFORM:
@@ -161,4 +160,3 @@ func (c Capability) String() string {
 		return "[?? Unknown Capability type]"
 	}
 }
-

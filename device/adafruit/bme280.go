@@ -97,24 +97,24 @@ type BME280Mode uint8
 ////////////////////////////////////////////////////////////////////////////////
 
 const (
-	BME280_SLAVE_DEFAULT uint8 = 0x77
-	BME280_SOFTRESET_VALUE uint8 = 0xB6
+	BME280_SLAVE_DEFAULT     uint8   = 0x77
+	BME280_SOFTRESET_VALUE   uint8   = 0xB6
 	BME280_PRESSURE_SEALEVEL float64 = 1013.25
 )
 
 const (
 	// Oversampling
 	BME280_OVERSAMPLE_NONE BME280Oversample = 0x00
-	BME280_OVERSAMPLE_1 BME280Oversample = 0x01
-	BME280_OVERSAMPLE_2 BME280Oversample = 0x02
-	BME280_OVERSAMPLE_4 BME280Oversample = 0x03
-	BME280_OVERSAMPLE_8 BME280Oversample = 0x04
-	BME280_OVERSAMPLE_16 BME280Oversample = 0x05
+	BME280_OVERSAMPLE_1    BME280Oversample = 0x01
+	BME280_OVERSAMPLE_2    BME280Oversample = 0x02
+	BME280_OVERSAMPLE_4    BME280Oversample = 0x03
+	BME280_OVERSAMPLE_8    BME280Oversample = 0x04
+	BME280_OVERSAMPLE_16   BME280Oversample = 0x05
 )
 
 const (
 	// Mode
-	BME280_MODE_SLEEP BME280Mode = 0x00
+	BME280_MODE_SLEEP  BME280Mode = 0x00
 	BME280_MODE_FORCED BME280Mode = 0x01
 	BME280_MODE_NORMAL BME280Mode = 0x03
 )
@@ -217,7 +217,7 @@ func (this *BME280Driver) Close() error {
 
 // Device is reset using the complete power-on-reset procedure
 func (this *BME280Driver) SoftReset() error {
-	if err := this.i2c.WriteUint8(BME280_REGISTER_SOFTRESET,BME280_SOFTRESET_VALUE); err != nil {
+	if err := this.i2c.WriteUint8(BME280_REGISTER_SOFTRESET, BME280_SOFTRESET_VALUE); err != nil {
 		return err
 	}
 	// Set mode
@@ -227,7 +227,6 @@ func (this *BME280Driver) SoftReset() error {
 	}
 	return nil
 }
-
 
 func (this *BME280Driver) readCalibration() (*BME280Calibation, error) {
 	var err error
@@ -302,7 +301,7 @@ func (this *BME280Driver) readCalibration() (*BME280Calibation, error) {
 	}
 
 	calibration.H4 = (int16(h41) << 4) | (int16(h42) & 0x0F)
-	calibration.H5 = ((int16(h51) & 0xF0) >> 4) | int16(h52 << 4)
+	calibration.H5 = ((int16(h51) & 0xF0) >> 4) | int16(h52<<4)
 
 	if calibration.H6, err = this.i2c.ReadInt8(BME280_REGISTER_DIG_H6); err != nil {
 		return nil, err
@@ -322,31 +321,31 @@ func (this *BME280Driver) ReadValues() (float64, float64, float64, error) {
 		// Set mode
 		sleep_time_ms, err := this.setOversamplingMode()
 		if err != nil {
-			return 0,0,0,err
+			return 0, 0, 0, err
 		}
 		time.Sleep(sleep_time_ms * time.Microsecond)
 	}
 	// Read values
 	temp, t_fine, err := this.readTemperature()
 	if err != nil {
-		return 0,0,0,err
+		return 0, 0, 0, err
 	}
 	pressure, err := this.readPressure(t_fine)
 	if err != nil {
-		return 0,0,0,err
+		return 0, 0, 0, err
 	}
 	humidity, err := this.readHumidity(t_fine)
 	if err != nil {
-		return 0,0,0,err
+		return 0, 0, 0, err
 	}
-	return temp,pressure,humidity,nil
+	return temp, pressure, humidity, nil
 }
 
 // Returns altitude in metres based on pressure reading in Pascals, given
 // the sealevel pressure in Pascals. You can use a standard value of
 // BME280_PRESSURE_SEALEVEL for sealevel
-func (this *BME280Driver) AltitudeForPressure(atmospheric,sealevel float64) float64 {
-	return 44330.0 * (1.0 - math.Pow(atmospheric / sealevel, (1.0/5.255)))
+func (this *BME280Driver) AltitudeForPressure(atmospheric, sealevel float64) float64 {
+	return 44330.0 * (1.0 - math.Pow(atmospheric/sealevel, (1.0/5.255)))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -356,11 +355,11 @@ func (this *BME280Driver) String() string {
 }
 
 func (this *BME280Calibation) String() string {
-	return fmt.Sprintf("<adafruit.BME280Calibation>{ T1=%v T2=%v T3=%v P1=%v P2=%v P3=%v P4=%v P5=%v P6=%v P7=%v P8=%v P9=%v H1=%v H2=%v H3=%v H4=%v H5=%v H6=%v }", this.T1, this.T2, this.T3, this.P1, this.P2, this.P3, this.P4, this.P5, this.P6, this.P7, this.P8, this.P9, this.H1, this.H2, this.H3, this.H4, this.H5, this.H6 )
+	return fmt.Sprintf("<adafruit.BME280Calibation>{ T1=%v T2=%v T3=%v P1=%v P2=%v P3=%v P4=%v P5=%v P6=%v P7=%v P8=%v P9=%v H1=%v H2=%v H3=%v H4=%v H5=%v H6=%v }", this.T1, this.T2, this.T3, this.P1, this.P2, this.P3, this.P4, this.P5, this.P6, this.P7, this.P8, this.P9, this.H1, this.H2, this.H3, this.H4, this.H5, this.H6)
 }
 
 func (o BME280Oversample) String() string {
-	switch(o) {
+	switch o {
 	case BME280_OVERSAMPLE_NONE:
 		return "BME280_OVERSAMPLE_NONE"
 	case BME280_OVERSAMPLE_1:
@@ -379,7 +378,7 @@ func (o BME280Oversample) String() string {
 }
 
 func (m BME280Mode) String() string {
-	switch(m) {
+	switch m {
 	case BME280_MODE_SLEEP:
 		return "BME280_MODE_SLEEP"
 	case BME280_MODE_FORCED:
@@ -392,7 +391,7 @@ func (m BME280Mode) String() string {
 }
 
 func (o BME280Oversample) Uint() uint {
-	switch(o) {
+	switch o {
 	case BME280_OVERSAMPLE_1:
 		return 1
 	case BME280_OVERSAMPLE_2:
@@ -414,10 +413,10 @@ func (o BME280Oversample) Uint() uint {
 func (this *BME280Driver) readTemperature() (float64, float64, error) {
 	adc, err := this.readTemperatureRaw()
 	if err != nil {
-		return 0,0,err
+		return 0, 0, err
 	}
-	var1 := (float64(adc) / 16384.0 - float64(this.calibration.T1) / 1024.0) * float64(this.calibration.T2)
-	var2 := ((float64(adc) / 131072.0 - float64(this.calibration.T1) / 8192.0) * (float64(adc) / 131072.0 - float64(this.calibration.T1) / 8192.0)) * float64(this.calibration.T3)
+	var1 := (float64(adc)/16384.0 - float64(this.calibration.T1)/1024.0) * float64(this.calibration.T2)
+	var2 := ((float64(adc)/131072.0 - float64(this.calibration.T1)/8192.0) * (float64(adc)/131072.0 - float64(this.calibration.T1)/8192.0)) * float64(this.calibration.T3)
 	t_fine := var1 + var2
 	return t_fine / 5120.0, t_fine, nil
 }
@@ -426,22 +425,22 @@ func (this *BME280Driver) readTemperature() (float64, float64, error) {
 func (this *BME280Driver) readPressure(t_fine float64) (float64, error) {
 	adc, err := this.readPressureRaw()
 	if err != nil {
-		return 0,err
+		return 0, err
 	}
-	var1 := t_fine / 2.0 - 64000.0
+	var1 := t_fine/2.0 - 64000.0
 	var2 := var1 * var1 * float64(this.calibration.P6) / 32768.0
-	var2 = var2 + var1 * float64(this.calibration.P5) * 2.0
-	var2 = var2 / 4.0 + float64(this.calibration.P4) * 65536.0
-	var1 = (float64(this.calibration.P3) * var1 * var1 / 524288.0 + float64(this.calibration.P2) * var1) / 524288.0
-	var1 = (1.0 + var1 / 32768.0) * float64(this.calibration.P1)
+	var2 = var2 + var1*float64(this.calibration.P5)*2.0
+	var2 = var2/4.0 + float64(this.calibration.P4)*65536.0
+	var1 = (float64(this.calibration.P3)*var1*var1/524288.0 + float64(this.calibration.P2)*var1) / 524288.0
+	var1 = (1.0 + var1/32768.0) * float64(this.calibration.P1)
 	if var1 == 0 {
 		return 0, nil // avoid exception caused by division by zero
 	}
 	p := 1048576.0 - float64(adc)
-	p = ((p - var2 / 4096.0) * 6250.0) / var1
+	p = ((p - var2/4096.0) * 6250.0) / var1
 	var1 = float64(this.calibration.P9) * p * p / 2147483648.0
 	var2 = p * float64(this.calibration.P8) / 32768.0
-	p = p + (var1 + var2 + float64(this.calibration.P7)) / 16.0
+	p = p + (var1+var2+float64(this.calibration.P7))/16.0
 	return p / 100.0, nil
 }
 
@@ -449,11 +448,11 @@ func (this *BME280Driver) readPressure(t_fine float64) (float64, error) {
 func (this *BME280Driver) readHumidity(t_fine float64) (float64, error) {
 	adc, err := this.readHumidityRaw()
 	if err != nil {
-		return 0,err
+		return 0, err
 	}
 	h := t_fine - 76800.0
-	h = (float64(adc) - (float64(this.calibration.H4) * 64.0 + float64(this.calibration.H5) / 16384.8 * h)) * (float64(this.calibration.H2) / 65536.0 * (1.0 + float64(this.calibration.H6) / 67108864.0 * h * (1.0 + float64(this.calibration.H3) / 67108864.0 * h)))
-	h = h * (1.0 - float64(this.calibration.H1) * h / 524288.0)
+	h = (float64(adc) - (float64(this.calibration.H4)*64.0 + float64(this.calibration.H5)/16384.8*h)) * (float64(this.calibration.H2) / 65536.0 * (1.0 + float64(this.calibration.H6)/67108864.0*h*(1.0+float64(this.calibration.H3)/67108864.0*h)))
+	h = h * (1.0 - float64(this.calibration.H1)*h/524288.0)
 	switch {
 	case h > 100.0:
 		return 100.0, nil
@@ -468,29 +467,29 @@ func (this *BME280Driver) readHumidity(t_fine float64) (float64, error) {
 
 // Set the oversampling values and the mode, then sleep for the required
 // amount of time
-func (this *BME280Driver) setOversamplingMode() (time.Duration,error) {
-	if err := this.i2c.WriteUint8(BME280_REGISTER_CONTROLHUMID,uint8(this.osrs_h)); err != nil {
-		return time.Duration(0),err
+func (this *BME280Driver) setOversamplingMode() (time.Duration, error) {
+	if err := this.i2c.WriteUint8(BME280_REGISTER_CONTROLHUMID, uint8(this.osrs_h)); err != nil {
+		return time.Duration(0), err
 	}
-	if err := this.i2c.WriteUint8(BME280_REGISTER_CONTROL,((uint8(this.osrs_t) & 0x7) << 5) | ((uint8(this.osrs_p) & 0x7) << 2) | (uint8(this.mode) & 0x3)); err != nil {
-		return time.Duration(0),err
+	if err := this.i2c.WriteUint8(BME280_REGISTER_CONTROL, ((uint8(this.osrs_t)&0x7)<<5)|((uint8(this.osrs_p)&0x7)<<2)|(uint8(this.mode)&0x3)); err != nil {
+		return time.Duration(0), err
 	}
-    sleep_time_ms := time.Duration(1.25 + (2 * 0.575) + 2.3 * float64(this.osrs_t.Uint() + this.osrs_p.Uint() + this.osrs_h.Uint()))
-	return sleep_time_ms,nil
+	sleep_time_ms := time.Duration(1.25 + (2 * 0.575) + 2.3*float64(this.osrs_t.Uint()+this.osrs_p.Uint()+this.osrs_h.Uint()))
+	return sleep_time_ms, nil
 }
 
 func (this *BME280Driver) readTemperatureRaw() (int32, error) {
 	msb, err := this.i2c.ReadUint8(BME280_REGISTER_TEMPDATA)
 	if err != nil {
-		return int32(0),err
+		return int32(0), err
 	}
 	lsb, err := this.i2c.ReadUint8(BME280_REGISTER_TEMPDATA + 1)
 	if err != nil {
-		return int32(0),err
+		return int32(0), err
 	}
 	xlsb, err := this.i2c.ReadUint8(BME280_REGISTER_TEMPDATA + 2)
 	if err != nil {
-		return int32(0),err
+		return int32(0), err
 	}
 	return ((int32(msb) << 16) | (int32(lsb) << 8) | int32(xlsb)) >> 4, nil
 }
@@ -499,15 +498,15 @@ func (this *BME280Driver) readPressureRaw() (int32, error) {
 	// Assumes temperature has already been read
 	msb, err := this.i2c.ReadUint8(BME280_REGISTER_PRESSUREDATA)
 	if err != nil {
-		return int32(0),err
+		return int32(0), err
 	}
 	lsb, err := this.i2c.ReadUint8(BME280_REGISTER_PRESSUREDATA + 1)
 	if err != nil {
-		return int32(0),err
+		return int32(0), err
 	}
 	xlsb, err := this.i2c.ReadUint8(BME280_REGISTER_PRESSUREDATA + 2)
 	if err != nil {
-		return int32(0),err
+		return int32(0), err
 	}
 	return ((int32(msb) << 16) | (int32(lsb) << 8) | int32(xlsb)) >> 4, nil
 }
@@ -516,12 +515,11 @@ func (this *BME280Driver) readHumidityRaw() (int32, error) {
 	// Assumes temperature has already been read
 	msb, err := this.i2c.ReadUint8(BME280_REGISTER_HUMIDDATA)
 	if err != nil {
-		return int32(0),err
+		return int32(0), err
 	}
 	lsb, err := this.i2c.ReadUint8(BME280_REGISTER_HUMIDDATA + 1)
 	if err != nil {
-		return int32(0),err
+		return int32(0), err
 	}
 	return (int32(msb) << 8) | int32(lsb), nil
 }
-

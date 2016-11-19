@@ -137,7 +137,7 @@ func (config GPIO) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	this.log = log
 
 	// Get Respberry Pi Model and Revision
-	this.model, this.revision, err = config.Device.(*DeviceState).GetModel()
+	this.model, this.revision, err = config.Device.(*Device).GetModel()
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (config GPIO) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	}
 
 	// Open the /dev/mem and provide offset & size for accessing memory
-	file, peripheral_base, peripheral_size, err := gpioOpenDevice(config.Device.(*DeviceState))
+	file, peripheral_base, peripheral_size, err := gpioOpenDevice(config.Device.(*Device))
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +358,7 @@ func (this *GPIODriver) SetPullMode(pin hw.GPIOPin, pull hw.GPIOPull) {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func gpioOpenDevice(device *DeviceState) (*os.File, uint32, uint32, error) {
+func gpioOpenDevice(device *Device) (*os.File, uint32, uint32, error) {
 	var file *os.File
 	var err error
 	var peripheral_base uint32

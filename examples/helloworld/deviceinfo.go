@@ -20,8 +20,8 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 func DeviceInfo(app *app.App) error {
-	for _,tuple := range app.Device.GetCapabilities() {
-		fmt.Printf("%v: %v\n",tuple.GetKey(),tuple)
+	for _, tuple := range app.Device.GetCapabilities() {
+		fmt.Printf("%v: %v\n", tuple.GetKey(), tuple)
 	}
 
 	// Return success

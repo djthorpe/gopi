@@ -75,7 +75,7 @@ type EGLDriver interface {
 	CreateBackground(api string, opacity float32) (EGLSurface, error)
 	CreateSurface(api string, size EGLSize, origin EGLPoint, layer uint16, opacity float32) (EGLSurface, error)
 	CreateSurfaceWithBitmap(bitmap EGLBitmap, origin EGLPoint, layer uint16, opacity float32) (EGLSurface, error)
-	
+
 	// Destroy Surface
 	DestroySurface(surface EGLSurface) error
 
@@ -118,13 +118,13 @@ type EGLSurface interface {
 // Variables
 
 var (
-	EGLZeroPoint = EGLPoint{ 0, 0 }
-	EGLWhiteColor = EGLColorRGBA32{ 0xFF, 0xFF, 0xFF, 0xFF }
-	EGLRedColor = EGLColorRGBA32{ 0xFF, 0x00, 0x00, 0xFF }
-	EGLGreenColor = EGLColorRGBA32{ 0x00, 0xFF, 0x00, 0xFF }
-	EGLBlueColor = EGLColorRGBA32{ 0x00, 0x00, 0xFF, 0xFF }
-	EGLBlackColor = EGLColorRGBA32{ 0x00, 0x00, 0x00, 0xFF }
-	EGLGreyColor = EGLColorRGBA32{ 0x80, 0x80, 0x80, 0xFF }
+	EGLZeroPoint  = EGLPoint{0, 0}
+	EGLWhiteColor = EGLColorRGBA32{0xFF, 0xFF, 0xFF, 0xFF}
+	EGLRedColor   = EGLColorRGBA32{0xFF, 0x00, 0x00, 0xFF}
+	EGLGreenColor = EGLColorRGBA32{0x00, 0xFF, 0x00, 0xFF}
+	EGLBlueColor  = EGLColorRGBA32{0x00, 0x00, 0xFF, 0xFF}
+	EGLBlackColor = EGLColorRGBA32{0x00, 0x00, 0x00, 0xFF}
+	EGLGreyColor  = EGLColorRGBA32{0x80, 0x80, 0x80, 0xFF}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ func (this EGLFrame) String() string {
 }
 
 func (this EGLColorRGBA32) String() string {
-	return fmt.Sprintf("<EGLColorRGBA32>{r=%02X g=%02X b=%02X a=%02X}",this.R,this.G,this.B,this.A)
+	return fmt.Sprintf("<EGLColorRGBA32>{r=%02X g=%02X b=%02X a=%02X}", this.R, this.G, this.B, this.A)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -169,6 +169,5 @@ func (this EGLPoint) Equals(that EGLPoint) bool {
 // Color methods
 
 func (color EGLColorRGBA32) Uint32() uint32 {
-	return uint32(color.A) << 24 + uint32(color.B) << 16 + uint32(color.G) << 8 + uint32(color.R)
+	return uint32(color.A)<<24 + uint32(color.B)<<16 + uint32(color.G)<<8 + uint32(color.R)
 }
-

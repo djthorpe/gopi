@@ -27,9 +27,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"errors"
 	"strconv"
 	"time"
 )
@@ -63,26 +63,26 @@ func RunLoop(app *app.App) error {
 
 	switch {
 	case app.FlagSet.HasFlag("off"):
-		app.GPIO.SetPinMode(pin,hw.GPIO_OUTPUT)
-		app.GPIO.WritePin(pin,hw.GPIO_LOW)
+		app.GPIO.SetPinMode(pin, hw.GPIO_OUTPUT)
+		app.GPIO.WritePin(pin, hw.GPIO_LOW)
 		return nil
 	case app.FlagSet.HasFlag("on"):
-		app.GPIO.SetPinMode(pin,hw.GPIO_OUTPUT)
-		app.GPIO.WritePin(pin,hw.GPIO_HIGH)
+		app.GPIO.SetPinMode(pin, hw.GPIO_OUTPUT)
+		app.GPIO.WritePin(pin, hw.GPIO_HIGH)
 		return nil
 	case app.FlagSet.HasFlag("flash"):
-		app.GPIO.SetPinMode(pin,hw.GPIO_OUTPUT)
-		app.GPIO.WritePin(pin,hw.GPIO_LOW)
+		app.GPIO.SetPinMode(pin, hw.GPIO_OUTPUT)
+		app.GPIO.WritePin(pin, hw.GPIO_LOW)
 		go func() {
 			for {
 				time.Sleep(100 * time.Millisecond)
-				app.GPIO.WritePin(pin,hw.GPIO_HIGH)
+				app.GPIO.WritePin(pin, hw.GPIO_HIGH)
 				time.Sleep(50 * time.Millisecond)
-				app.GPIO.WritePin(pin,hw.GPIO_LOW)
+				app.GPIO.WritePin(pin, hw.GPIO_LOW)
 			}
 		}()
-		default:
-			return errors.New("NOT IMPLEMENTED")
+	default:
+		return errors.New("NOT IMPLEMENTED")
 	}
 
 	app.WaitUntilDone()
