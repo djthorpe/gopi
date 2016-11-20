@@ -113,20 +113,16 @@ func (this *Port) Disable() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PORT FORMAT
 
+// Return type of format which can be get/set for the port
 func (this *Port) FormatType() FormatType {
 	format := this.handle.format
 	return FormatType(format._type)
 }
 
+// Return the format structure
 func (this *Port) GetFormat() (Format, error) {
-	t := this.FormatType()
-	switch(t) {
-	case MMAL_ES_TYPE_AUDIO:
-	case MMAL_ES_TYPE_VIDEO:
-	case MMAL_ES_TYPE_SUBPICTURE:
-
+	return mmalGetFormat(this.handle.format)
 }
-
 
 func (this *Port) SetFormat(format Format) error {
 	ret := status(C.mmal_port_format_commit(unsafe.Pointer(this.handle)))
@@ -135,5 +131,3 @@ func (this *Port) SetFormat(format Format) error {
 	}
 	return nil
 }
-
-

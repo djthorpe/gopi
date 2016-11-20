@@ -77,7 +77,7 @@ type Capability uint
 
 // Abstract set of key/value pairs
 type Tuple interface {
-	GetKey() Capability
+	Capability() Capability
 	String() string
 }
 
@@ -86,19 +86,21 @@ type Tuple interface {
 
 const (
 	// Capability keys
-	CAP_HW_SERIAL         Capability = iota // serial number
-	CAP_HW_PLATFORM                         // platform
-	CAP_HW_MODEL                            // hardware model number
-	CAP_HW_REVISION                         // hardware revision
-	CAP_HW_PCB                              // hardware PCB number
-	CAP_HW_WARRANTY                         // hardware warranty bit
-	CAP_HW_PROCESSOR_NAME                   // processor name
-	CAP_HW_PROCESSOR_TEMP                   // processor temperature
-	CAP_MAX                                 // maximum capability number
+	CAP_HW_SERIAL           Capability = iota // serial number
+	CAP_HW_PLATFORM                           // platform
+	CAP_HW_MODEL                              // hardware model number
+	CAP_HW_REVISION                           // hardware revision
+	CAP_HW_PCB                                // hardware PCB number
+	CAP_HW_WARRANTY                           // hardware warranty bit
+	CAP_HW_PROCESSOR_NAME                     // processor name
+	CAP_HW_PROCESSOR_TEMP                     // processor temperature
+	CAP_HW_CAMERA_SUPPORTED                   // whether camera is supported
+	CAP_HW_CAMERA_DETECTED                    // whether camera is detected
+	CAP_HW_I2C_ENUMERATION                    // enumeration of I2C busses
+	CAP_MAX                                   // maximum capability number
 )
 
 /*
-	GOPI_CAP_DISPLAY            // array of display numbers
 	GOPI_CAP_DISPLAY_ID         // display id
 	GOPI_CAP_DISPLAY_NAME       // display name
 	GOPI_CAP_DISPLAY_WIDTH      // display width
