@@ -51,6 +51,10 @@ type vgErrorType uint16
 // CONSTANTS
 
 const (
+	VG_PATH_NONE C.VGPath = C.VGPath(0)
+)
+
+const (
 	VG_CLEAR_COLOR          uint16  = 0x1121
 	VG_PATH_FORMAT_STANDARD C.VGint = 0
 )
@@ -246,9 +250,9 @@ func (e vgErrorType) String() string {
 
 func (this *vgDriver) Clear(color khronos.VGColor) error {
 	if this.surface == nil {
-		this.log.Warn("<rpi.OpenVG> Clear() cannot be called without Begin()")
-		return nil
+		return this.log.Error("<rpi.OpenVG> Clear() cannot be called without Begin()")
 	}
+
 	size := this.surface.GetSize()
 	C.vgSetfv(C.VGParamType(VG_CLEAR_COLOR), C.VGint(4), (*C.VGfloat)(unsafe.Pointer(&color)))
 	C.vgClear(C.VGint(0), C.VGint(0), C.VGint(size.Width), C.VGint(size.Height))
@@ -258,8 +262,34 @@ func (this *vgDriver) Clear(color khronos.VGColor) error {
 
 func (this *vgDriver) Line(p1 khronos.VGPoint, p2 khronos.VGPoint) error {
 	if this.surface == nil {
-		this.log.Warn("<rpi.OpenVG> Line() cannot be called without Begin()")
-		return nil
+		return this.log.Error("<rpi.OpenVG> Line() cannot be called without Begin()")
+	}
+
+	// create a path
+	path, err := this.CreatePath()
+	if err != nil {
+		return err
+	}
+	defer this.DestroyPath(path)
+
+	// append line to path
+	if err := vguLine(path, p1, p2); err != nil {
+		return err
+	}
+
+	// draw path - stroke but no fill
+	if err := this.DrawPath(path, true, false); err != nil {
+		return err
+	}
+
+	// success
+	return nil
+}
+
+/*
+func (this *vgDriver) Ellipse(origin khronos.VGPoint,size khronos.VGSize) error {
+	if this.surface == nil {
+		return this.log.Error("<rpi.OpenVG> Ellipse() cannot be called without Begin()")
 	}
 
 	// create a path
@@ -268,22 +298,15 @@ func (this *vgDriver) Line(p1 khronos.VGPoint, p2 khronos.VGPoint) error {
 		return err
 	}
 
-	// append line to path
-	err = vguLine(path, p1, p2)
+	// append ellipse to path
+	err = vguEllipse(path, origin, size)
 	if err != nil {
 		this.DestroyPath(path)
 		return err
 	}
 
-	// draw path - stroke but no fill
-	if this.DrawPath(path, true, false) != nil {
-		this.DestroyPath(path)
-		return err
-	}
-
-	// destroy path
-	return this.DestroyPath(path)
 }
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // VGU GRAPHICS PRIMITIVES
@@ -298,6 +321,12 @@ func vgGetError(err vgErrorType) error {
 func vguLine(path khronos.VGPath, p1 khronos.VGPoint, p2 khronos.VGPoint) error {
 	return vgGetError(vgErrorType(C.vguLine(C.VGPath(path), C.VGfloat(p1.X), C.VGfloat(p1.Y), C.VGfloat(p2.X), C.VGfloat(p2.Y))))
 }
+
+/*
+func vguEllipse(path khronos.VGPath, origin khronos.VGPoint, size khronos.VGSize) error {
+	return vgGetError(vgErrorType(C.vguEllipse(C.VGPath(path), C.VGfloat(origin.X), C.VGfloat(origin.Y), C.VGfloat(size.Width), C.VGfloat(size.Height))))
+}
+*/
 
 /*
 func (this *vgDriver) vguPolygon(path khronos.VGPath, points []khronos.VGPoint, closed bool) error {

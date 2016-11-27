@@ -20,6 +20,9 @@ type EGLBitmap interface {
 	// Return window size
 	GetSize() EGLSize
 
+	// Return frame with origin at (0,0)
+	GetFrame() EGLFrame
+
 	// Paint an image into the bitmap
 	PaintImage(pt EGLPoint, bitmap image.Image) error
 

@@ -37,6 +37,9 @@ type EGLFrame struct {
 	EGLSize
 }
 
+// Frame alignment
+type EGLFrameAlignFlag uint8
+
 // EGLColorRGBA32
 type EGLColorRGBA32 struct {
 	R uint8
@@ -115,7 +118,20 @@ type EGLSurface interface {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Variables
+// CONSTANTS
+
+const (
+	EGL_ALIGN_VCENTER EGLFrameAlignFlag = 1 << iota
+	EGL_ALIGN_TOP                       = 1 << iota
+	EGL_ALIGN_BOTTOM                    = 1 << iota
+	EGL_ALIGN_HCENTER                   = 1 << iota
+	EGL_ALIGN_LEFT                      = 1 << iota
+	EGL_ALIGN_RIGHT                     = 1 << iota
+	EGL_ALIGN_CENTER                    = EGL_ALIGN_VCENTER | EGL_ALIGN_HCENTER
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// VARIABLES
 
 var (
 	EGLZeroPoint  = EGLPoint{0, 0}
@@ -128,7 +144,7 @@ var (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// String() methods
+// METHODS String() methods
 
 func (this EGLSize) String() string {
 	return fmt.Sprintf("<EGLSize>{%v,%v}", this.Width, this.Height)
@@ -147,7 +163,7 @@ func (this EGLColorRGBA32) String() string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Point, Size and Frame methods
+// METHODS Point methods
 
 // Return the result of adding two points
 func (this EGLPoint) Add(that EGLPoint) EGLPoint {
@@ -166,7 +182,50 @@ func (this EGLPoint) Equals(that EGLPoint) bool {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Color methods
+// METHODS Frame methods
+
+// Return origin of a frame
+func (this EGLFrame) Origin() EGLPoint {
+	return EGLPoint{this.X, this.Y}
+}
+
+// Return size of a frame
+func (this EGLFrame) Size() EGLSize {
+	return EGLSize{this.Width, this.Height}
+}
+
+// Aligns origin of rectangle to another frame, and returns new frame. The other
+// frame is passed as a pointer, so no need to copy the frame.
+func (this EGLFrame) AlignTo(that *EGLFrame, flags EGLFrameAlignFlag) EGLFrame {
+	// Vertical
+	switch {
+	case (flags & EGL_ALIGN_VCENTER) == EGL_ALIGN_VCENTER:
+		this.Y = that.Y + ((int(that.Height) - int(this.Height)) / 2)
+		break
+	case (flags & EGL_ALIGN_TOP) == EGL_ALIGN_TOP:
+		this.Y = that.Y
+		break
+	case (flags & EGL_ALIGN_BOTTOM) == EGL_ALIGN_BOTTOM:
+		this.Y = that.Y + int(that.Height) - int(this.Height)
+		break
+	}
+	// Horizontal
+	switch {
+	case (flags & EGL_ALIGN_HCENTER) == EGL_ALIGN_HCENTER:
+		this.X = that.X + ((int(that.Width) - int(this.Width)) / 2)
+		break
+	case (flags & EGL_ALIGN_LEFT) == EGL_ALIGN_LEFT:
+		this.X = that.X
+		break
+	case (flags & EGL_ALIGN_RIGHT) == EGL_ALIGN_RIGHT:
+		this.X = that.X + int(that.Width) - int(this.Width)
+		break
+	}
+	return this
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// METHODS Color methods
 
 func (color EGLColorRGBA32) Uint32() uint32 {
 	return uint32(color.A)<<24 + uint32(color.B)<<16 + uint32(color.G)<<8 + uint32(color.R)

@@ -8,6 +8,10 @@
 package khronos /* import "github.com/djthorpe/gopi/khronos" */
 
 import (
+	"os"
+)
+
+import (
 	gopi "github.com/djthorpe/gopi"
 )
 
@@ -30,6 +34,46 @@ type VGDriver interface {
 
 	// Draw a line from one point to another
 	Line(a VGPoint, b VGPoint) error
+}
+
+// Abstract font interface
+type VGFontDriver interface {
+	// Inherit general driver interface
+	gopi.Driver
+
+	// Open a font face
+	OpenFace(path string) (VGFace, error)
+
+	// Open a font face - indexed within file of several faces
+	OpenFaceAtIndex(path string, index uint) (VGFace, error)
+
+	// Open font faces at path, checking to see if individual files should
+	// be opened through a callback function
+	OpenFacesAtPath(path string, callback func(path string, info os.FileInfo) bool) error
+
+	// Destroy a font face
+	DestroyFace(VGFace) error
+}
+
+// Abstract font face interface
+type VGFace interface {
+	// Get Face Name (from the filename)
+	GetName() string
+
+	// Get Face Index
+	GetIndex() uint
+
+	// Get Number of faces within the file
+	GetNumFaces() uint
+
+	// Number of glyphs for the face
+	GetNumGlyphs() uint
+
+	// Return name of font family
+	GetFamily() string
+
+	// Return style name of font face
+	GetStyle() string
 }
 
 // Color with Alpha value

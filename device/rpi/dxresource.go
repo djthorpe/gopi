@@ -84,6 +84,10 @@ func (this *DXResource) GetSize() khronos.EGLSize {
 	return this.size
 }
 
+func (this *DXResource) GetFrame() khronos.EGLFrame {
+	return khronos.EGLFrame{khronos.EGLPoint{0, 0}, khronos.EGLSize{this.size.Width, this.size.Height}}
+}
+
 func (this *DXResource) GetHandle() dxResourceHandle {
 	return this.handle
 }

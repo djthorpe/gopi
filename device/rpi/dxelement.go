@@ -70,6 +70,7 @@ func (this *DXDisplay) AddElement(update dxUpdateHandle, layer uint16, opacity u
 	}
 
 	// set alpha
+	//alpha := dxAlpha{ DX_FLAGS_ALPHA_FROM_SOURCE, opacity, 0 }
 	alpha := dxAlpha{DX_FLAGS_ALPHA_FIXED_ALL_PIXELS, opacity, 0}
 
 	// set resource handle

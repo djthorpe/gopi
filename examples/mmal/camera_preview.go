@@ -29,6 +29,16 @@ func RunLoop(app *app.App) error {
 	}
 	defer camera.Close()
 
+	// Get ports
+	control_port := camera.(*mmal.Component).GetControl()
+	if err := control_port.Enable(); err != nil {
+		return err
+	}
+	input_port, err := camera.(*mmal.Component).GetInput(0)
+	if err != nil {
+		return err
+	}
+
 	if err := camera.(*mmal.Component).Enable(); err != nil {
 		return err
 	}

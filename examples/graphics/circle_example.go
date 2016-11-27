@@ -15,10 +15,14 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path"
+	"strings"
 )
 
 import (
+	gopi "github.com/djthorpe/gopi"
 	app "github.com/djthorpe/gopi/app"
+	rpi "github.com/djthorpe/gopi/device/rpi"
 	khronos "github.com/djthorpe/gopi/khronos"
 )
 
@@ -78,31 +82,18 @@ func GetBackgroundColor(color string) (khronos.EGLColorRGBA32, error) {
 	}
 }
 
+func DrawCircle(driver khronos.VGDriver, surface khronos.EGLSurface) error {
+
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func MyRunLoop(app *app.App) error {
 	app.Logger.Info("Device=%v", app.Device)
 	app.Logger.Info("Display=%v", app.Display)
 	app.Logger.Info("EGL=%v", app.EGL)
-
-	// Fetch image filename flag
-	filename, _ := app.FlagSet.GetString("image")
-	if filename == "" {
-		return errors.New("Missing -image flag")
-	}
-
-	// Open the image
-	reader, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-	image, err := app.EGL.CreateImage(reader)
-	if err != nil {
-		return err
-	}
-	defer app.EGL.DestroyImage(image)
-	app.Logger.Info("Image=%v", image)
+	app.Logger.Info("OpenVG=%v", app.OpenVG)
 
 	// Create background
 	bgsurface, err := CreateBackground(app)
@@ -114,18 +105,47 @@ func MyRunLoop(app *app.App) error {
 	}
 
 	screen_rect := app.EGL.GetFrame()
-	image_rect := image.GetFrame().AlignTo(&screen_rect, khronos.EGL_ALIGN_CENTER)
 	app.Logger.Info("Screen Rect = %v", screen_rect)
-	app.Logger.Info("Image Rect = %v", image_rect)
 
-	// Create window with image - set opacity
-	opacity, _ := app.FlagSet.GetFloat64("opacity")
-	surface, err := app.EGL.CreateSurfaceWithBitmap(image, image_rect.Origin(), 2, float32(opacity))
+	// Create window
+	surface, err := app.EGL.CreateSurface("OpenVG", screen_rect.Size(), screen_rect.Origin(), 2, 1.0)
 	if err != nil {
 		return err
 	}
 	defer app.EGL.DestroySurface(surface)
 	app.Logger.Info("Surface=%v", surface)
+
+	// Open Fonts
+	fonts, err := gopi.Open(rpi.VGFont{}, app.Logger)
+	if err != nil {
+		return err
+	}
+	defer fonts.Close()
+
+	// Open Faces
+	basepath, exists := app.FlagSet.GetString("fontdir")
+	if exists {
+		err = fonts.(khronos.VGFontDriver).OpenFacesAtPath(basepath, func(filename string, info os.FileInfo) bool {
+			if strings.HasPrefix(info.Name(), ".") {
+				return false
+			}
+			if info.IsDir() {
+				// Recurse into folders
+				return true
+			}
+			if path.Ext(filename) == ".ttf" || path.Ext(filename) == ".TTF" {
+
+				return true
+			}
+			app.Logger.Warn("Ignoring file %v", filename)
+			return false
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	app.Logger.Info("Fonts=%v", fonts)
 
 	// Wait until done (which means CTRL+C)
 	app.WaitUntilDone()
@@ -137,12 +157,11 @@ func MyRunLoop(app *app.App) error {
 
 func main() {
 	// Create the config
-	config := app.Config(app.APP_EGL)
+	config := app.Config(app.APP_EGL | app.APP_OPENVG)
 
 	// Add on command-line flags
-	config.FlagSet.FlagString("image", "", "Image filename")
 	config.FlagSet.FlagString("bg", "", "Background color. One of red, green, blue, black, white, grey")
-	config.FlagSet.FlagFloat64("opacity", 1.0, "Image opacity, 0.0 -> 1.0")
+	config.FlagSet.FlagString("fontdir", "", "Font directory for loading of fonts")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

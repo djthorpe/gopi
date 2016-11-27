@@ -18,6 +18,14 @@ import (
     #cgo CFLAGS: -I/opt/vc/include -I/opt/vc/include/interface/mmal
     #cgo LDFLAGS:  -L/opt/vc/lib -lmmal -lmmal_components -lmmal_core
 	#include <mmal.h>
+	#include <stdio.h>
+
+	// port callback
+	void mmal_port_cb(MMAL_PORT_T* port, MMAL_BUFFER_HEADER_T* buffer) {
+		printf("CALLBACK: mmal_port_cb");
+		mmal_buffer_header_release(buffer);
+	}
+
 */
 import "C"
 
@@ -29,6 +37,8 @@ type Port struct {
 }
 
 type PortType uint32
+
+type PortCallback func()
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -110,6 +120,14 @@ func (this *Port) Disable() error {
 	return nil
 }
 
+func (this *Port) Enable() error {
+	ret := status(C.mmal_port_enable(unsafe.Pointer(this.handle), (C.MMAL_PORT_BH_CB_T)(unsafe.Pointer(C.mmal_port_cb))))
+	if ret != MMAL_SUCCESS {
+		return ret.Error()
+	}
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PORT FORMAT
 
@@ -120,14 +138,14 @@ func (this *Port) FormatType() FormatType {
 }
 
 // Return the format structure
-func (this *Port) GetFormat() (Format, error) {
-	return mmalGetFormat(this.handle.format)
-}
+//func (this *Port) GetFormat() (Format, error) {
+//	return mmalGetFormat(this.handle.format)
+//}
 
-func (this *Port) SetFormat(format Format) error {
-	ret := status(C.mmal_port_format_commit(unsafe.Pointer(this.handle)))
-	if ret != MMAL_SUCCESS {
-		return ret.Error()
-	}
-	return nil
-}
+//func (this *Port) SetFormat(format Format) error {
+//	ret := status(C.mmal_port_format_commit(unsafe.Pointer(this.handle)))
+//	if ret != MMAL_SUCCESS {
+//		return ret.Error()
+//	}
+//	return nil
+//}
