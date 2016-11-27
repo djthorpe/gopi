@@ -1,22 +1,39 @@
 # Introduction
 
-This repository contains Golang interface to the Raspberry Pi hardware, which
-is one of the Broadcom ARM processors, which should eventually include
-the peripheral devices and the VideoCore GPU. In order to use it, you'll need
-to have a working version of Go on your Raspberry Pi, which you
-can [download](https://golang.org/dl/). Then in order to retrieve the source 
-code on your device, use:
+This repository contains the Golang interface to hardware and graphics devices,
+currently targetting the Raspberry Pi but could theoretically target other
+platforms too.
+
+The scope of this library is as follows:
+
+  * A framework for developing applications easily, either for use on
+    the command line or event-based applications
+  * Enumerating the capabilities of the device and providing various
+    information about the device, including the hardware model, serial number
+    and so forth
+  * Access to input/output devices, including GPIO, I2C, SPI, Touchscreen,
+    Mouse and Keyboard devices
+  * Use of the Graphics Processing Unit (if there is one) including creating
+    displays & window surfaces, and being able to move them on the screen
+  * Access to OpenVG and OpenGL API's
+
+In order to use the library, you'll need to have a working version of Go on 
+your Raspberry Pi, which you can [download](https://golang.org/dl/). Then 
+retrieve the library on your device, using:
 
 ```
 go get github.com/djthorpe/gopi
 ```
 
+The following sections provide a quickstart guide, with more detailed 
+information provided [here](https://godoc.org/github.com/djthorpe/gopi).
+
 # Quickstart Guide
 
 The `gopi` package abstracts the Raspberry Pi device, peripherals and GPU. It
-also includes a logger interface which is used throughout in order to provide
-informational information. Here's a short example which creates a logger
-and then prints out some information about the Raspberry Pi:
+also includes a logger interface which is used throughout. Here's a short 
+example which creates a logger and then prints out some information about 
+the Raspberry Pi:
 
 ```go
 
@@ -48,12 +65,10 @@ func main() {
 	}
 	defer device.Close()
 
-	// DO STUFF HERE
 	log.Info("Device=%v",device)
 }
 
 ```
-
 The `gopi.Open` method takes two arguments, one of which is your "concrete"
 Raspberry Pi device, and the second of which is a reference to your logger.
 If you leave the second argument is `nil` then a logging device is created
@@ -62,7 +77,7 @@ for you, but it doesn't print anything out.
 You can get some information on your Raspberry Pi using the following method:
 
 ```go
-  log.Info("Info=%v",device.GetInfo())
+  log.Info("Info=%v",device)
 ```
 
 This displays model number, serial number, processor, PCB revision and
@@ -99,6 +114,3 @@ Read the remaining documentation on the various functions of `gopi`:
 This repository is released under the BSD License. Please see the file
 [LICENSE](LICENSE.md) for a copy of this license.
 
-# Appendices
-
-TODO
