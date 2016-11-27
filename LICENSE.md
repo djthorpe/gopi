@@ -1,8 +1,6 @@
 
 
-== Contains code from https://github.com/davecheney/gpio/ ==
-
-Copyright (c) 2013, GPIO Authors
+Copyright (c) 2016, David Thorpe
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
