@@ -5,6 +5,84 @@
 
 	For Licensing and Usage information, please see LICENSE.md
 */
+
+// VGFONT
+//
+// This package implements the ability to load TrueType fonts into OpenVG.
+// interfacing with FreeType. It is based on the following sets of code:
+//
+//    https://github.com/ajstarks/openvg/blob/master/fontutil
+//    https://github.com/raspberrypi/firmware/tree/master/opt/vc/src/hello_pi/libs/vgfont
+//
+// To construct a font library instance, use the following form:
+//
+//	fonts, err := gopi.Open(rpi.VGFont{ PPI: pixels_per_inch }, logger)
+//	if err != nil { /* handle error */ }
+//	defer fonts.Close()
+//
+// This returns a gopi.Driver object which can be later cast into a font driver
+// of type khronos.VGFontDriver. You should pass the number of pixels per inch
+// for your display into the configuration, which is used to calculate font
+// size from points when drawing text. If you omit, then a default value will
+// be set instead.
+//
+// To load a font face from a TrueType file, use the following:
+//
+//   face, err := fonts.(khronos.VGFontDriver).OpenFace(filename)
+//   if err != nil { /* handle error */ }
+//   defer fonts.DestroyFace(face)
+//
+// The face returned is of type kronos.VGFace. A single TrueType file may
+// contain several faces. The number of faces can be returned as face.GetNumFaces()
+// and you can load other faces in the same file using:
+//
+//   face, err := fonts.(khronos.VGFontDriver).OpenFaceAtIndex(filename,index)
+//   if err != nil { /* handle error */ }
+//   defer fonts.DestroyFace(face)
+//
+// You can enumerate the loaded font families and styles using the following:
+//
+//   for _, family := range fonts.(khronos.VGFontDriver).GetFamilies() {
+//     styles := fonts.(khronos.VGFontDriver).GetFaces(family,khronos.VG_FONT_STYLE_ANY)
+//     /* will return a map of style names to faces... */
+//   }
+//
+// GetStyles can be called with an empty family string to return styles for all
+// families. The following flags can be used to query family styles (the flags
+// can be OR'd):
+//
+//   khronos.VG_FONT_STYLE_ANY : Any style
+//   khronos.VG_FONT_STYLE_REGULAR : Regular style
+//   khronos.VG_FONT_STYLE_BOLD : Bold style
+//   khronos.VG_FONT_STYLE_ITALIC : Italic style
+//
+// To load many font faces at once, you can also import fonts from a folder. In
+// order to do this, you'll need to define a callback function which can be used
+// to determine if a particular font file should be loaded. For example:
+//
+//   func fontload_callback(filename string, info os.FileInfo) bool {
+//     if strings.HasPrefix(info.Name(), ".") {
+//       return false /* ignore hidden directories and files */
+//     }
+//     if info.IsDir() {
+//       return true /* recurse into folders */
+//     }
+//     if path.Ext(filename) == ".ttf" || path.Ext(filename) == ".TTF" {
+//       return true /* load files with TTF extension */
+//     }
+//     return false /* ignore all other files */
+//   }
+//
+// Then you can load font faces in a folder using the following method:
+//
+//   err := fonts.(khronos.VGFontDriver).OpenFacesAtPath(basepath,fontload_callback)
+//   if err != nil { /* handle errors */ }
+//
+// If there are several faces within a file, they will all be loaded.
+//
+// Further documentation on how to use the font faces for rendering will be
+// provided shortly!
+//
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
@@ -312,7 +390,7 @@ func (this *vgfDriver) LoadGlyphs(face *vgfFace, w, h float32) error {
 		if ret != VG_FONT_FT_ERROR_NONE {
 			return vgfontGetError(ret)
 		}
-		if err := this.vgfontLoadGlyphToFont(face,glyph); err != nil {
+		if err := this.vgfontLoadGlyphToFont(face, glyph); err != nil {
 			return err
 		}
 
@@ -350,23 +428,23 @@ func (this *vgfDriver) vgfontSelectCharmap(handle C.FT_Face, encoding vgfEncodin
 	return vgfontGetError(C.FT_Select_Charmap(handle, code))
 }
 
-func (this *vgfDriver) vgfontLoadGlyphToFont(face *vgfFace,glyph C.FT_UInt) error {
+func (this *vgfDriver) vgfontLoadGlyphToFont(face *vgfFace, glyph C.FT_UInt) error {
 	// create a path
 	path := VG_PATH_NONE
 	outline := face.handle.glyph.outline
 	if outline.n_contours != 0 {
-		path = C.vgCreatePath(VG_PATH_FORMAT_STANDARD, VG_PATH_DATATYPE_F, C.VGfloat(1.0), C.VGfloat(0.0), C.VGint(0), C.VGint(0),C.VGbitfield(VG_PATH_CAPABILITY_ALL))
+		path = C.vgCreatePath(VG_PATH_FORMAT_STANDARD, VG_PATH_DATATYPE_F, C.VGfloat(1.0), C.VGfloat(0.0), C.VGint(0), C.VGint(0), C.VGbitfield(VG_PATH_CAPABILITY_ALL))
 		if path == VG_PATH_NONE {
 			return vgGetError(vgErrorType(C.vgGetError()))
 		}
 	}
 
-/* TODO
-	origin := []C.VGfloat{ C.VGfloat(0), C.VGfloat(0) }
-	escapement :=
-      VGfloat escapement[] = { float_from_26_6(font->ft_face->glyph->advance.x), float_from_26_6(font->ft_face->glyph->advance.y) };
-      vgSetGlyphToPath(font->vg_font, glyph_index, vg_path, VG_FALSE, origin, escapement);
-*/
+	/* TODO
+	   	origin := []C.VGfloat{ C.VGfloat(0), C.VGfloat(0) }
+	   	escapement :=
+	         VGfloat escapement[] = { float_from_26_6(font->ft_face->glyph->advance.x), float_from_26_6(font->ft_face->glyph->advance.y) };
+	         vgSetGlyphToPath(font->vg_font, glyph_index, vg_path, VG_FALSE, origin, escapement);
+	*/
 
 	// destroy path
 	if path != VG_PATH_NONE {

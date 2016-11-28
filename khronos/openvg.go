@@ -41,7 +41,7 @@ type VGFontDriver interface {
 	// Inherit general driver interface
 	gopi.Driver
 
-	// Open a font face
+	// Open a font face - first face at index 0 is loaded
 	OpenFace(path string) (VGFace, error)
 
 	// Open a font face - indexed within file of several faces
@@ -53,6 +53,12 @@ type VGFontDriver interface {
 
 	// Destroy a font face
 	DestroyFace(VGFace) error
+
+	// Return an array of font families which are loaded
+	GetFamilies() []string
+
+	// Return a map of font faces which are loaded
+	GetFaces(family string, flags VGFontStyleFlags) map[string]VGFace
 }
 
 // Abstract font face interface
@@ -89,8 +95,22 @@ type VGPoint struct {
 // Drawing Path
 type VGPath uint64
 
+// Font face query flags
+type VGFontStyleFlags uint16
+
 ////////////////////////////////////////////////////////////////////////////////
-// COLORS
+// CONSTANTS
+
+const (
+	// Constants used for querying faces for VGFontDriver
+	VG_FONT_STYLE_ANY     VGFontStyleFlags = 0xFFFF
+	VG_FONT_STYLE_REGULAR VGFontStyleFlags = 0x0001
+	VG_FONT_STYLE_BOLD    VGFontStyleFlags = 0x0002
+	VG_FONT_STYLE_ITALIC  VGFontStyleFlags = 0x0004
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// VARIABLES
 
 // Standard Colors
 var (
