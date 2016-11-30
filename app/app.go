@@ -6,6 +6,24 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
+// APP
+//
+// This package provides the main application framework for developing
+// applications for the GOPI library. In order to create an application,
+// first create a configuration object, then create an application object
+// with your configuration. For example,
+//
+//    config := app.Config(flags)
+//    /* ... add additional configuration code here ... */
+//    app, err := app.NewApp(config)
+//    if err != nil { /* handle application error */ }
+//    defer app.Close()
+//
+// The application will create all the necessary subsystems you need for your
+// program, including hardware, display, GPU, GPIO, I2C and so forth. You
+// specify what features you need through the 'flags' when calling the app.Config
+// method.
+//
 package app /* import "github.com/djthorpe/gopi/app" */
 
 // import
@@ -14,6 +32,8 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
+	"strconv"
+	"errors"
 )
 
 // import abstract drivers
@@ -63,6 +83,9 @@ type App struct {
 	// The I2C driver
 	I2C hw.I2CDriver
 
+	// The Font driver
+	Fonts khronos.VGFontDriver
+
 	// Signal channel on catching signals
 	signal_channel chan os.Signal
 
@@ -71,6 +94,10 @@ type App struct {
 
 	// debug and verbose flags
 	debug, verbose bool
+
+	// pixels-per-inch and screen length in inches
+	ppi uint
+	length_in float64
 }
 
 // Application configuration
@@ -95,6 +122,9 @@ type AppConfig struct {
 
 	// Whether to append to the log file
 	LogAppend bool
+
+	// An array of font paths from which to load fonts
+	FontPaths []string
 }
 
 // Run callback
@@ -115,6 +145,7 @@ const (
 	APP_GPIO      AppFlags = 0x0010
 	APP_I2C       AppFlags = 0x0020
 	APP_OPENGL_ES AppFlags = 0x0040
+	APP_VGFONT    AppFlags = 0x0080
 )
 
 const (
@@ -136,6 +167,9 @@ func Config(flags AppFlags) AppConfig {
 	config.FlagSet = NewFlags(path.Base(os.Args[0]))
 	config.Features = flags
 
+	// create empty array for font paths
+	config.FontPaths = make([]string,0)
+
 	// Add on -log flag for path to logfile
 	config.FlagSet.FlagString("log", "", "File for logging")
 	config.FlagSet.FlagBool("verbose", APP_DEFAULT_VERBOSE, "Log verbosely")
@@ -147,13 +181,18 @@ func Config(flags AppFlags) AppConfig {
 	}
 
 	// Add -ppi
-	if config.Features&(APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0 {
-		config.FlagSet.FlagString("ppi", "", "Pixels per inch (or screen size in mm)")
+	if config.Features&(APP_EGL|APP_OPENVG|APP_OPENGL_ES|APP_VGFONT) != 0 {
+		config.FlagSet.FlagString("ppi", "", "Pixels per inch (other valid formats: 99in 99mm 99cm 99x99in 99x99mm 99x99cm)")
 	}
 
 	// Add -i2cbus
 	if config.Features&(APP_I2C) != 0 {
 		config.FlagSet.FlagUint("i2cbus", 1, "I2C Bus")
+	}
+
+	// Add -fontpath
+	if config.Features&(APP_VGFONT) != 0 {
+		config.FlagSet.FlagString("fontpath", "", "Path to font file or folder, will recurse into subfolders (file extensions allowed: .TTF, .TTC, .OTF, .OTC)")
 	}
 
 	return config
@@ -185,6 +224,11 @@ func NewApp(config AppConfig) (*App, error) {
 	this.debug = this.getDebug()
 	this.verbose = this.getVerbose()
 
+	// Set PPI and length_in
+	if this.ppi, this.length_in, err = this.getPPI(); err != nil {
+		return nil, err
+	}
+
 	// Set log level
 	if config.LogLevel == util.LOG_ANY {
 		if this.debug && this.verbose {
@@ -212,12 +256,13 @@ func NewApp(config AppConfig) (*App, error) {
 	this.Logger.SetLevel(config.LogLevel)
 
 	// Debugging
-	this.Logger.Debug("<App>Open device=%v display=%v egl=%v openvg=%v opengl_es=%v gpio=%v i2c=%v",
-		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_GPIO|APP_I2C) != 0,
-		config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG) != 0,
+	this.Logger.Debug("<App>Open device=%v display=%v egl=%v openvg=%v opengl_es=%v vgfont=%v gpio=%v i2c=%v",
+		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT|APP_GPIO|APP_I2C) != 0,
+		config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT) != 0,
 		config.Features&(APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0,
 		config.Features&(APP_OPENVG) != 0,
 		config.Features&(APP_OPENGL_ES) != 0,
+		config.Features&(APP_VGFONT) != 0,
 		config.Features&(APP_GPIO) != 0,
 		config.Features&(APP_I2C) != 0,
 	)
@@ -228,7 +273,7 @@ func NewApp(config AppConfig) (*App, error) {
 	signal.Notify(this.signal_channel, syscall.SIGTERM, syscall.SIGINT)
 
 	// Create the device
-	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_GPIO|APP_I2C) != 0 {
+	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT|APP_GPIO|APP_I2C) != 0 {
 		device, err := gopi.Open(rpi.Hardware{}, this.Logger)
 		if err != nil {
 			this.Close()
@@ -239,7 +284,7 @@ func NewApp(config AppConfig) (*App, error) {
 	}
 
 	// Create the display
-	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG) != 0 {
+	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT) != 0 {
 		display, err := gopi.Open(rpi.DXDisplayConfig{
 			Device:  this.Device,
 			Display: config.Display,
@@ -250,6 +295,11 @@ func NewApp(config AppConfig) (*App, error) {
 		}
 		// Convert device into a DisplayDriver
 		this.Display = display.(gopi.DisplayDriver)
+	}
+
+	// Set the PPI value if not yet set
+	if this.Device != nil && this.ppi == 0 && this.length_in > 0.0 {
+		this.Logger.Info("TODO: Set PPI value from length_in=%v and display=%v",this.length_in,config.Display)
 	}
 
 	// Create the EGL interface
@@ -272,6 +322,20 @@ func NewApp(config AppConfig) (*App, error) {
 		}
 		// Convert device into a VGDriver
 		this.OpenVG = openvg.(khronos.VGDriver)
+	}
+
+	// Create the Font driver
+	if config.Features&(APP_VGFONT) != 0 {
+		fontdriver, err := gopi.Open(rpi.VGFont{ PPI: this.ppi }, this.Logger)
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
+		// Convert fontdriver into a VGFontDriver
+		this.Fonts = fontdriver.(khronos.VGFontDriver)
+
+		// Load font paths
+		this.fontpaths = this.getFontpaths()
 	}
 
 	// Create the GPIO interface
@@ -321,6 +385,12 @@ func (this *App) Close() error {
 		}
 		this.GPIO = nil
 	}
+	if this.Fonts != nil {
+		if err := this.Fonts.Close(); err != nil {
+			return err
+		}
+		this.Fonts = nil
+	}
 	if this.OpenVG != nil {
 		if err := this.OpenVG.Close(); err != nil {
 			return err
@@ -357,6 +427,11 @@ func (this *App) Close() error {
 // Run the application with callback
 func (this *App) Run(callback AppCallback) error {
 	this.Logger.Debug2("<App>Run pid=%v", os.Getpid())
+
+	// Load the fonts
+	if err := this.loadfonts(); err != nil {
+		return this.Logger.Error("Error loading fonts: %v",err)
+	}
 
 	// Go routine to wait for signal, and send finish signal in that case
 	go func() {
@@ -430,4 +505,14 @@ func (this *App) getVerbose() bool {
 		return APP_DEFAULT_VERBOSE
 	}
 	return verbose
+}
+
+// Load fonts
+func (this *App) loadFontPaths() error {
+	// Ignore if fonts are not yet loaded
+	if this.Fonts == nil {
+		return nil
+	}
+
+	return nil
 }

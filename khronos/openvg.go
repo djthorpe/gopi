@@ -57,8 +57,8 @@ type VGFontDriver interface {
 	// Return an array of font families which are loaded
 	GetFamilies() []string
 
-	// Return a map of font faces which are loaded
-	GetFaces(family string, flags VGFontStyleFlags) map[string]VGFace
+	// Return faces in a family and/or with a particular set of attributes
+	GetFaces(family string, flags VGFontStyleFlags) []VGFace
 }
 
 // Abstract font face interface
@@ -103,10 +103,11 @@ type VGFontStyleFlags uint16
 
 const (
 	// Constants used for querying faces for VGFontDriver
-	VG_FONT_STYLE_ANY     VGFontStyleFlags = 0xFFFF
-	VG_FONT_STYLE_REGULAR VGFontStyleFlags = 0x0001
-	VG_FONT_STYLE_BOLD    VGFontStyleFlags = 0x0002
-	VG_FONT_STYLE_ITALIC  VGFontStyleFlags = 0x0004
+	VG_FONT_STYLE_ANY     VGFontStyleFlags = iota
+	VG_FONT_STYLE_REGULAR
+	VG_FONT_STYLE_BOLD
+	VG_FONT_STYLE_ITALIC
+	VG_FONT_STYLE_BOLDITALIC
 )
 
 ////////////////////////////////////////////////////////////////////////////////

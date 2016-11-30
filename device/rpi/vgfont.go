@@ -150,6 +150,8 @@ const (
 	VG_FONT_PPI_DEFAULT         uint        = 72
 	VG_FONT_FT_ERROR_NONE       C.FT_Error  = C.FT_Error(0)
 	VG_FONT_FT_ENCODING_UNICODE vgfEncoding = "unic"
+	VG_FONT_FT_STYLE_FLAG_ITALIC C.FT_Long = (1 << 0)
+	VG_FONT_FT_STYLE_FLAG_BOLD C.FT_Long = (1 << 0)
 )
 
 const (
@@ -228,6 +230,57 @@ func (this *vgfDriver) Close() error {
 // Return human-readable form of driver
 func (this *vgfDriver) String() string {
 	return fmt.Sprintf("<rpi.VGFont>{ handle=%v ppi=%v faces=%v }", this.handle, this.ppi, this.faces)
+}
+
+// Return string array of families
+func (this *vgfDriver) GetFamilies() []string {
+	family_map := make(map[string]bool,0)
+	family_array := make([]string,0)
+	for _, face := range this.faces {
+		family := face.GetFamily()
+		if _, exists := family_map[family]; exists {
+			continue
+		}
+		family_map[family] = true
+		family_array = append(family_array,family)
+	}
+	return family_array
+}
+
+// Return faces in a family and/or with a particular set of attributes
+func (this *vgfDriver) GetFaces(family string, flags khronos.VGFontStyleFlags) []khronos.VGFace {
+	faces := make([]khronos.VGFace,0)
+	for _, face := range this.faces {
+		if family != "" && family != face.GetFamily() {
+			continue
+		}
+		switch(flags) {
+		case khronos.VG_FONT_STYLE_ANY:
+			faces = append(faces,face)
+			break
+		case khronos.VG_FONT_STYLE_REGULAR:
+			if face.IsBold() == false && face.IsItalic() == false {
+				faces = append(faces,face)
+			}
+			break
+		case khronos.VG_FONT_STYLE_BOLD:
+			if face.IsBold() == true && face.IsItalic() == false {
+				faces = append(faces,face)
+			}
+			break
+		case khronos.VG_FONT_STYLE_ITALIC:
+			if face.IsBold() == false && face.IsItalic() == true {
+				faces = append(faces,face)
+			}
+			break
+		case khronos.VG_FONT_STYLE_BOLDITALIC:
+			if face.IsBold() == true && face.IsItalic() == true {
+				faces = append(faces,face)
+			}
+			break
+		}
+	}
+	return faces
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -339,6 +392,9 @@ func (this *vgfDriver) DestroyFace(face khronos.VGFace) error {
 	return nil
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC FUNCTIONS: Face information
+
 func (this *vgfFace) String() string {
 	return fmt.Sprintf("<rpi.VGFace>{ id=%v name=%v index=%v family=%v style=%v num_faces=%v num_glyphs=%v }", this.count, this.GetName(), this.GetIndex(), this.GetFamily(), this.GetStyle(), this.GetNumFaces(), this.GetNumGlyphs())
 }
@@ -371,8 +427,16 @@ func (this *vgfFace) GetNumGlyphs() uint {
 	return uint(this.handle.num_glyphs)
 }
 
+func (this *vgfFace) IsBold() bool {
+	return (this.handle.style_flags & VG_FONT_FT_STYLE_FLAG_BOLD) != 0
+}
+
+func (this *vgfFace) IsItalic() bool {
+	return (this.handle.style_flags & VG_FONT_FT_STYLE_FLAG_ITALIC) != 0
+}
+
 ////////////////////////////////////////////////////////////////////////////////
-// LOAD GLYPHS AT PARTICULAR SIZE
+// CONVERT GLYPHS AT PARTICULAR SIZE
 
 // Load Glyphs at (w,h) point size
 func (this *vgfDriver) LoadGlyphs(face *vgfFace, w, h float32) error {
