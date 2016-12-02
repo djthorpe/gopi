@@ -70,6 +70,20 @@ func ParseLengthString(value string) (float64, error) {
 	return 0.0, ErrParseError
 }
 
+// Returns pixels per inch for a given display. Will use the screen width
+// and height where the string value is provided as a length, or simply
+// returns the number where value is a pure integer number.
+//
+//   PixelsPerInch(800,500,"8in") -> returns X
+//   PixelsPerInch(800,500,"72") -> returns 72
+//   PixelsPerInch(800,500,"") -> returns 0
+//
+/  Returns error if value cannot be decoded, or if either of the screen
+// dimensions are zero.
+func PixelsPerInch(w,h uint,value string) (uint, error) {
+	// TODO
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
