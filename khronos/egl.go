@@ -5,6 +5,12 @@
 
 	For Licensing and Usage information, please see LICENSE.md
 */
+
+// EGL
+//
+// This package defines abstract surface, which can be bitmap, 2D or 3D vector.
+// It also defines types for points, sizes and frames and associated calculations
+//
 package khronos /* import "github.com/djthorpe/gopi/khronos" */
 
 import (

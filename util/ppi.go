@@ -27,6 +27,8 @@ import (
 	"math"
 	"regexp"
 	"strconv"
+	"strings"
+	"fmt"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,10 +80,27 @@ func ParseLengthString(value string) (float64, error) {
 //   PixelsPerInch(800,500,"72") -> returns 72
 //   PixelsPerInch(800,500,"") -> returns 0
 //
-/  Returns error if value cannot be decoded, or if either of the screen
+//  Returns error if value cannot be decoded, or if either of the screen
 // dimensions are zero.
 func PixelsPerInch(w,h uint,value string) (uint, error) {
-	// TODO
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0, nil
+	}
+	uint32_value, err := strconv.ParseUint(value, 32, 10)
+	if err == nil {
+		return uint(uint32_value), nil
+	}
+	fmt.Println(value)
+	float64_length, err := ParseLengthString(value)
+	if err == nil {
+		if w == 0 || h == 0 {
+			return 0, ErrParseError
+		}
+		ppi := math.Sqrt(math.Pow(float64(w), 2) + math.Pow(float64(h), 2)) / float64_length
+		return uint(ppi), nil
+	}
+	return 0, err
 }
 
 ////////////////////////////////////////////////////////////////////////////////
