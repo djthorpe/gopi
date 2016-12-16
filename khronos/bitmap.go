@@ -28,4 +28,8 @@ type EGLBitmap interface {
 
 	// Clear bitmap to one color
 	ClearToColor(color EGLColorRGBA32) error
+
+	// Draw text starting at an origin as (top,left) with a particular
+	// font face and a point size
+	PaintText(text string,face VGFace,origin EGLPoint,size float32) error
 }

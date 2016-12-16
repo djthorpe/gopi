@@ -333,7 +333,13 @@ func (this *vgfDriver) OpenFaceAtIndex(path string, index uint) (khronos.VGFace,
 }
 
 func (this *vgfDriver) OpenFacesAtPath(path string, callback func(path string, info os.FileInfo) bool) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return err
+	}
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if info == nil {
+			return nil
+		}
 		if callback(path, info) == false {
 			if info.IsDir() {
 				return filepath.SkipDir

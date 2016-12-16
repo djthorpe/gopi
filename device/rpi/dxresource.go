@@ -125,6 +125,10 @@ func (this *DXResource) PaintImage(pt khronos.EGLPoint, bitmap image.Image) erro
 	return nil
 }
 
+func (this *DXResource) PaintText(text string,face khronos.VGFace,origin khronos.EGLPoint,size float32) error {
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods
 

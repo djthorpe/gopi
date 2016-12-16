@@ -33,7 +33,11 @@ func MyRunLoop(app *app.App) error {
 	// display the list of fonts based on criteria
 	family, exists := app.FlagSet.GetString("family")
 	if exists == false {
-		for _, family := range app.Fonts.GetFamilies() {
+		families := app.Fonts.GetFamilies()
+		if len(families) == 0 {
+			return app.Logger.Error("No font families loaded, use -fontpath path to locate fonts")
+		}
+		for _, family := range families {
 			fmt.Println(family)
 		}
 	} else {
