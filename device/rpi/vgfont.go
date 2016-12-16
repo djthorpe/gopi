@@ -151,7 +151,7 @@ const (
 	VG_FONT_FT_ERROR_NONE       C.FT_Error  = C.FT_Error(0)
 	VG_FONT_FT_ENCODING_UNICODE vgfEncoding = "unic"
 	VG_FONT_FT_STYLE_FLAG_ITALIC C.FT_Long = (1 << 0)
-	VG_FONT_FT_STYLE_FLAG_BOLD C.FT_Long = (1 << 0)
+	VG_FONT_FT_STYLE_FLAG_BOLD C.FT_Long = (1 << 1)
 )
 
 const (
@@ -313,18 +313,18 @@ func (this *vgfDriver) OpenFaceAtIndex(path string, index uint) (khronos.VGFace,
 	}
 
 	// VG Create Font
-	face.font = C.vgCreateFont(C.VGint(face.GetNumGlyphs()))
-	if face.font == VG_FONT_NONE {
-		this.vgfontDoneFace(face.handle)
-		return nil, vgGetError(vgErrorType(C.vgGetError()))
-	}
+	//face.font = C.vgCreateFont(C.VGint(face.GetNumGlyphs()))
+	//if face.font == VG_FONT_NONE {
+	//	this.vgfontDoneFace(face.handle)
+	//	return nil, vgGetError(vgErrorType(C.vgGetError()))
+	//}
 
 	// Load Glyphs
-	if err := this.LoadGlyphs(face, 64.0, 0.0); err != nil {
-		this.vgfontDoneFace(face.handle)
-		C.vgDestroyFont(face.font)
-		return nil, err
-	}
+	//if err := this.LoadGlyphs(face, 64.0, 0.0); err != nil {
+	//	this.vgfontDoneFace(face.handle)
+	//	C.vgDestroyFont(face.font)
+	//	return nil, err
+	//}
 
 	// Add face to list of faces
 	this.faces = append(this.faces, face)
@@ -396,7 +396,7 @@ func (this *vgfDriver) DestroyFace(face khronos.VGFace) error {
 // PUBLIC FUNCTIONS: Face information
 
 func (this *vgfFace) String() string {
-	return fmt.Sprintf("<rpi.VGFace>{ id=%v name=%v index=%v family=%v style=%v num_faces=%v num_glyphs=%v }", this.count, this.GetName(), this.GetIndex(), this.GetFamily(), this.GetStyle(), this.GetNumFaces(), this.GetNumGlyphs())
+	return fmt.Sprintf("<rpi.VGFace>{ id=%v name=%v index=%v family=%v style=%v is_bold=%v is_italic=%v num_faces=%v num_glyphs=%v }", this.count, this.GetName(), this.GetIndex(), this.GetFamily(), this.GetStyle(), this.IsBold(), this.IsItalic(), this.GetNumFaces(), this.GetNumGlyphs())
 }
 
 func (this *vgfFace) GetName() string {

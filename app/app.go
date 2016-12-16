@@ -32,6 +32,7 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
+	"strings"
 )
 
 // import abstract drivers
@@ -92,10 +93,6 @@ type App struct {
 
 	// debug and verbose flags
 	debug, verbose bool
-
-	// pixels-per-inch and screen length in inches
-	ppi uint
-	length_in float64
 }
 
 // Application configuration
@@ -166,8 +163,8 @@ func Config(flags AppFlags) AppConfig {
 	config.FlagSet = NewFlags(path.Base(os.Args[0]))
 	config.Features = flags
 
-	// create empty array for font paths
-	config.FontPaths = make([]string,0)
+	// create nil value for FontPaths
+	config.FontPaths = nil
 
 	// Add on -log flag for path to logfile
 	config.FlagSet.FlagString("log", "", "File for logging")
@@ -192,7 +189,7 @@ func Config(flags AppFlags) AppConfig {
 
 	// Add -fontpath
 	if config.Features&(APP_VGFONT) != 0 {
-		config.FlagSet.FlagString("fontpath", "", "Path to font file or folder, will recurse into subfolders (file extensions allowed: .TTF, .TTC, .OTF, .OTC)")
+		config.FlagSet.FlagString("fontpath", "", "Path to font file or folder, will recurse into subfolders (file extensions allowed: .TTF, .TTC, .OTF, .OTC, .DFONT)")
 	}
 
 	return config
@@ -299,11 +296,6 @@ func NewApp(config AppConfig) (*App, error) {
 		this.Display = display.(gopi.DisplayDriver)
 	}
 
-	// Set the PPI value if not yet set
-	if this.Device != nil && this.ppi == 0 && this.length_in > 0.0 {
-		this.Logger.Info("TODO: Set PPI value from length_in=%v and display=%v",this.length_in,config.Display)
-	}
-
 	// Create the EGL interface
 	if config.Features&(APP_EGL|APP_OPENVG) != 0 {
 		egl, err := gopi.Open(rpi.EGL{Display: this.Display}, this.Logger)
@@ -328,7 +320,11 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Create the Font driver
 	if config.Features&(APP_VGFONT) != 0 {
-		fontdriver, err := gopi.Open(rpi.VGFont{ PPI: this.ppi }, this.Logger)
+		ppi := uint(0)
+		if this.Display != nil {
+			ppi = uint(this.Display.GetPixelsPerInch())
+		}
+		fontdriver, err := gopi.Open(rpi.VGFont{ PPI: ppi }, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err
@@ -336,8 +332,18 @@ func NewApp(config AppConfig) (*App, error) {
 		// Convert fontdriver into a VGFontDriver
 		this.Fonts = fontdriver.(khronos.VGFontDriver)
 
-		// Load font paths
-		//this.fontpaths = this.getFontpaths()
+		// Load fonts
+		if config.FontPaths != nil {
+			err = this.loadFonts(config.FontPaths)
+		} else {
+			if fontpaths, err := this.getFontPaths(); err == nil {
+				err = this.loadFonts(fontpaths)
+			}
+		}
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
 	}
 
 	// Create the GPIO interface
@@ -529,11 +535,69 @@ func (this *App) getDisplay(default_display uint16) (uint16, float64, error) {
 	return display, inches, nil
 }
 
+// Get font path from command line
+func (this *App) getFontPaths() ([]string, error) {
+	if this.FlagSet == nil {
+		return nil, nil
+	}
+	path, exists := this.FlagSet.GetString("fontpath")
+	if exists == false {
+		return nil, nil
+	}
+	return []string{ path }, nil
+}
+
 // Load fonts
-func (this *App) loadFontPaths() error {
+func (this *App) loadFonts(paths []string) error {
 	// Ignore if fonts are not yet loaded
 	if this.Fonts == nil {
 		return nil
+	}
+	// Ignore if there are no font paths
+	if paths==nil || len(paths)==0 {
+		return nil
+	}
+	// Now iterate through font paths
+	for _,filepath := range(paths) {
+		err := this.Fonts.OpenFacesAtPath(filepath,func (filename string, info os.FileInfo) bool {
+			if strings.HasPrefix(info.Name(), ".") {
+				// ignore hidden files and folders
+				return false
+			}
+			if info.IsDir() {
+				// recurse into folders
+				return true
+			}
+			if path.Ext(filename) == ".ttf" || path.Ext(filename) == ".TTF" {
+				// support TTF loading
+				return true
+			}
+			if path.Ext(filename) == ".ttc" || path.Ext(filename) == ".TTC" {
+				// support TTC loading
+				return true
+			}
+			if path.Ext(filename) == ".otf" || path.Ext(filename) == ".OTF" {
+				// support OTF loading
+				return true
+			}
+			if path.Ext(filename) == ".otc" || path.Ext(filename) == ".OTC" {
+				// support OTC loading
+				return true
+			}
+			if path.Ext(filename) == ".dfont" {
+				// support DFONT loading
+				return true
+			}
+			if path.Ext(filename) == ".txt" || path.Ext(filename) == ".TXT" || path.Ext(filename) == "" {
+				// silently ignore txt files and files without extension
+				return false
+			}
+			this.Logger.Warn("Whilst loading fonts at path %v: Ignoring file %v",filepath,filename)
+			return false
+		})
+		if err != nil {
+			return this.Logger.Error("Error loading fonts at path: %v: %v",filepath,err)
+		}
 	}
 
 	return nil

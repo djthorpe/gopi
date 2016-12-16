@@ -18,6 +18,7 @@ import (
 
 import (
 	app "github.com/djthorpe/gopi/app"
+	khronos "github.com/djthorpe/gopi/khronos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,8 +30,35 @@ func MyRunLoop(app *app.App) error {
 	app.Logger.Info("OpenVG=%v", app.OpenVG)
 	app.Logger.Info("Fonts=%v", app.Fonts)
 
-	// Wait until done (which means CTRL+C)
-	app.WaitUntilDone()
+	// display the list of fonts based on criteria
+	family, exists := app.FlagSet.GetString("family")
+	if exists == false {
+		for _, family := range app.Fonts.GetFamilies() {
+			fmt.Println(family)
+		}
+	} else {
+		flags := khronos.VG_FONT_STYLE_ANY
+		bold, _ := app.FlagSet.GetBool("bold")
+		italic, _ := app.FlagSet.GetBool("italic")
+		switch {
+		case bold && italic:
+			flags = khronos.VG_FONT_STYLE_BOLDITALIC
+		case bold:
+			flags = khronos.VG_FONT_STYLE_BOLD
+		case italic:
+			flags = khronos.VG_FONT_STYLE_ITALIC
+		}
+		faces := app.Fonts.GetFaces(family, flags)
+		if len(faces) == 0 {
+			return app.Logger.Error("No such family '%s'",family)
+		}
+		format := "%3s %-20s %-20s\n"
+		fmt.Printf(format,"ID","Family","Style")
+		fmt.Printf("--------------------------------------------\n")
+		for _, face := range faces {
+			fmt.Printf(format,fmt.Sprintf("%03d",face.GetIndex()),face.GetFamily(),face.GetStyle())
+		}
+	}
 
 	return nil
 }
@@ -40,6 +68,11 @@ func MyRunLoop(app *app.App) error {
 func main() {
 	// Create the config
 	config := app.Config(app.APP_VGFONT)
+
+	// Family, italic and bold
+	config.FlagSet.FlagString("family", "", "List fonts for one particular family")
+	config.FlagSet.FlagBool("bold", false, "List bold fonts")
+	config.FlagSet.FlagBool("italic", false, "List italic fonts")
 
 	// Create the application
 	myapp, err := app.NewApp(config)
