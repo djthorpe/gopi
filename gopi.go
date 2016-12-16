@@ -54,15 +54,22 @@ type HardwareDriver interface {
 
 	// Return serial number of hardware as uint64 - hopefully unique for this device
 	GetSerialNumber() (uint64, error)
-
-	// Return system capabilities
-	GetCapabilities() []Tuple
 }
 
 // Abstract display interface
 type DisplayDriver interface {
 	// Enforces general driver
 	Driver
+
+	// Return the PPI (pixels-per-inch) for the display, or return zero if
+	// display size is unknown
+	GetPixelsPerInch() uint32
+
+	// Returns the display size in pixels (width/height)
+	GetDisplaySize() (uint32, uint32)
+
+	// Returns the display number
+	GetDisplay() uint16
 }
 
 // Abstract configuration which is used to open and return the
@@ -72,53 +79,10 @@ type Config interface {
 	Open(*util.LoggerDevice) (Driver, error)
 }
 
-// Capability key
-type Capability uint
-
-// Abstract set of key/value pairs
-type Tuple interface {
-	Capability() Capability
-	String() string
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
-const (
-	// Capability keys
-	CAP_HW_SERIAL           Capability = iota // serial number
-	CAP_HW_PLATFORM                           // platform
-	CAP_HW_MODEL                              // hardware model number
-	CAP_HW_REVISION                           // hardware revision
-	CAP_HW_PCB                                // hardware PCB number
-	CAP_HW_WARRANTY                           // hardware warranty bit
-	CAP_HW_PROCESSOR_NAME                     // processor name
-	CAP_HW_PROCESSOR_TEMP                     // processor temperature
-	CAP_HW_CAMERA_SUPPORTED                   // whether camera is supported
-	CAP_HW_CAMERA_DETECTED                    // whether camera is detected
-	CAP_HW_I2C_ENUMERATION                    // enumeration of I2C busses
-	CAP_MAX                                   // maximum capability number
-)
-
-/*
-	GOPI_CAP_DISPLAY_ID         // display id
-	GOPI_CAP_DISPLAY_NAME       // display name
-	GOPI_CAP_DISPLAY_WIDTH      // display width
-	GOPI_CAP_DISPLAY_HEIGHT     // display height
-	GOPI_CAP_DISPLAY_PPI        // display density
-	GOPI_CAP_DISPLAY_COLORMODEL // display colormodel
-	GOPI_CAP_CLOCK              // clock units
-	GOPI_CAP_CLOCK_ID           // speed of each clock
-	GOPI_CAP_CLOCK_SPEED        // speed of each clock
-	GOPI_CAP_CODEC              // array of enabled codecs
-	GOPI_CAP_CODEC_ID           // codec name
-	GOPI_CAP_CODEC_ENABLED      // boolean value of whether a codec is enabled
-	GOPI_CAP_TEMP               // temperature areas
-	GOPI_CAP_TEMP_ID            // temperature name
-	GOPI_CAP_TEMP_VALUE         // value of temperature
-	GOPI_CAP_MEMORY             // memory units
-	GOPI_CAP_MEMORY_VALUE       // value of memory units
-*/
+// TODO
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
@@ -138,27 +102,4 @@ func Open(config Config, log *util.LoggerDevice) (Driver, error) {
 		return nil, err
 	}
 	return driver, nil
-}
-
-func (c Capability) String() string {
-	switch c {
-	case CAP_HW_SERIAL:
-		return "CAP_HW_SERIAL"
-	case CAP_HW_PLATFORM:
-		return "CAP_HW_PLATFORM"
-	case CAP_HW_MODEL:
-		return "CAP_HW_MODEL"
-	case CAP_HW_REVISION:
-		return "CAP_HW_REVISION"
-	case CAP_HW_PCB:
-		return "CAP_HW_PCB"
-	case CAP_HW_WARRANTY:
-		return "CAP_HW_WARRANTY"
-	case CAP_HW_PROCESSOR_NAME:
-		return "CAP_HW_PROCESSOR_NAME"
-	case CAP_HW_PROCESSOR_TEMP:
-		return "CAP_HW_PROCESSOR_TEMP"
-	default:
-		return "[?? Unknown Capability type]"
-	}
 }

@@ -32,8 +32,6 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
-	"strconv"
-	"errors"
 )
 
 // import abstract drivers
@@ -150,8 +148,9 @@ const (
 
 const (
 	// Constants used to determine default flags
-	APP_DEFAULT_DEBUG   = false
-	APP_DEFAULT_VERBOSE = false
+	APP_DEFAULT_DEBUG   bool = false
+	APP_DEFAULT_VERBOSE bool = false
+	APP_DEFAULT_DISPLAY uint16 = 0
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -177,12 +176,13 @@ func Config(flags AppFlags) AppConfig {
 
 	// Add -display
 	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0 {
-		config.FlagSet.FlagUint("display", 0, "Display to use")
+		config.Display = APP_DEFAULT_DISPLAY
+		config.FlagSet.FlagUint("display", uint(config.Display), "Display to use")
 	}
 
 	// Add -ppi
-	if config.Features&(APP_EGL|APP_OPENVG|APP_OPENGL_ES|APP_VGFONT) != 0 {
-		config.FlagSet.FlagString("ppi", "", "Pixels per inch (other valid formats: 99in 99mm 99cm 99x99in 99x99mm 99x99cm)")
+	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_OPENGL_ES|APP_VGFONT) != 0 {
+		config.FlagSet.FlagString("screensize", "", "Screen size in inches (ie, 99in 99mm 99cm 99x99in 99x99mm 99x99cm)")
 	}
 
 	// Add -i2cbus
@@ -224,8 +224,9 @@ func NewApp(config AppConfig) (*App, error) {
 	this.debug = this.getDebug()
 	this.verbose = this.getVerbose()
 
-	// Set PPI and length_in
-	if this.ppi, this.length_in, err = this.getPPI(); err != nil {
+	// Set display and diagnol size in inches
+	display, screensize, err := this.getDisplay(config.Display)
+	if err != nil {
 		return nil, err
 	}
 
@@ -287,7 +288,8 @@ func NewApp(config AppConfig) (*App, error) {
 	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT) != 0 {
 		display, err := gopi.Open(rpi.DXDisplayConfig{
 			Device:  this.Device,
-			Display: config.Display,
+			Display: display,
+			PhysicalInches: screensize,
 		}, this.Logger)
 		if err != nil {
 			this.Close()
@@ -335,7 +337,7 @@ func NewApp(config AppConfig) (*App, error) {
 		this.Fonts = fontdriver.(khronos.VGFontDriver)
 
 		// Load font paths
-		this.fontpaths = this.getFontpaths()
+		//this.fontpaths = this.getFontpaths()
 	}
 
 	// Create the GPIO interface
@@ -429,9 +431,9 @@ func (this *App) Run(callback AppCallback) error {
 	this.Logger.Debug2("<App>Run pid=%v", os.Getpid())
 
 	// Load the fonts
-	if err := this.loadfonts(); err != nil {
-		return this.Logger.Error("Error loading fonts: %v",err)
-	}
+	//if err := this.loadfonts(); err != nil {
+	//	return this.Logger.Error("Error loading fonts: %v",err)
+	//}
 
 	// Go routine to wait for signal, and send finish signal in that case
 	go func() {
@@ -505,6 +507,26 @@ func (this *App) getVerbose() bool {
 		return APP_DEFAULT_VERBOSE
 	}
 	return verbose
+}
+
+// Return screen size
+func (this *App) getDisplay(default_display uint16) (uint16, float64, error) {
+	if this.FlagSet == nil {
+		return default_display, 0.0, nil
+	}
+	display, exists := this.FlagSet.GetUint16("display")
+	if exists == false {
+		display = default_display
+	}
+	screensize, exists := this.FlagSet.GetString("screensize")
+	if exists == false {
+		return display, 0.0, nil
+	}
+	inches, err := util.ParseLengthString(screensize)
+	if err != nil {
+		return display, inches,this.Logger.Error("Invalid -screensize: %v",err)
+	}
+	return display, inches, nil
 }
 
 // Load fonts

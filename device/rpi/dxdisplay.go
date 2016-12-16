@@ -10,6 +10,7 @@ package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 import (
 	"fmt"
 	"unsafe"
+	"math"
 )
 
 import (
@@ -30,7 +31,13 @@ import "C"
 // TYPES
 
 type DXDisplayConfig struct {
+	// The number of the display to open
 	Display uint16
+
+	// The physical inches on the diagnol for the display or zero if unknown
+	PhysicalInches float64
+
+	// Hardware board driver
 	Device  gopi.HardwareDriver
 }
 
@@ -38,6 +45,7 @@ type DXDisplay struct {
 	display uint16
 	width   uint32
 	height  uint32
+	ppi     uint32
 	handle  dxDisplayHandle
 	log     *util.LoggerDevice
 }
@@ -77,6 +85,14 @@ func (config DXDisplayConfig) Open(log *util.LoggerDevice) (gopi.Driver, error) 
 	d.display = config.Display
 	d.width, d.height = config.Device.GetDisplaySize(d.display)
 
+	// set the pixels-per-inch value
+	if(config.PhysicalInches > 0.0) {
+		pixels := math.Sqrt(math.Pow(float64(d.width),2.0) + math.Pow(float64(d.height),2.0))
+		d.ppi = uint32(math.Floor((pixels / float64(config.PhysicalInches)) + 0.5))
+	} else {
+		d.ppi = 0
+	}
+
 	// open the display
 	d.handle = dxDisplayOpen(d.display)
 	if d.handle == DX_DISPLAY_NONE {
@@ -103,6 +119,22 @@ func (this *DXDisplay) GetSize() DXSize {
 	return DXSize{this.width, this.height}
 }
 
+// Return pixel density in pixels per inch.
+// Returns 0 if no PPI value has been set.
+func (this *DXDisplay) GetPixelsPerInch() uint32 {
+	return this.ppi
+}
+
+// Return the size of the display in pixels
+func (this *DXDisplay) GetDisplaySize() (uint32, uint32) {
+	return this.width, this.height
+}
+
+// Return the display number
+func (this *DXDisplay) GetDisplay() uint16 {
+	return this.display
+}
+
 // Return mode info
 func (this *DXDisplay) GetModeInfo() (*DXModeInfo, error) {
 	var modeInfo DXModeInfo
@@ -114,7 +146,7 @@ func (this *DXDisplay) GetModeInfo() (*DXModeInfo, error) {
 
 // Human-readable version of the display
 func (this *DXDisplay) String() string {
-	return fmt.Sprintf("<rpi.DXDisplay>{ handle=%v display=%v size=%v", this.handle, this.display, this.GetSize())
+	return fmt.Sprintf("<rpi.DXDisplay>{ handle=%v display=%v size=%v ppi=%v", this.handle, this.display, this.GetSize(), this.GetPixelsPerInch())
 }
 
 // Human-readable version of the modeInfo

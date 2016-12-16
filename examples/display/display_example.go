@@ -10,16 +10,18 @@
 package main
 
 import (
+	"os"
+	"fmt"
+)
+
+import (
 	app "github.com/djthorpe/gopi/app"
-	khronos "github.com/djthorpe/gopi/khronos"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func MyRunLoop(app *app.App) error {
-	app.Loger.Info("RUN LOOP")
-
+	fmt.Println("DISPLAY:",app.Display)
 	return nil
 }
 

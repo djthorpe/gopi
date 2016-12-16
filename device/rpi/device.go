@@ -42,7 +42,6 @@ type Device struct {
 	service      int                // service number
 	serial       uint64
 	revision     uint32
-	capabilities []gopi.Tuple
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,7 +94,6 @@ func (config Hardware) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	this.service = GENCMD_SERVICE_NONE
 	this.serial = GENCMD_SERIAL_NONE
 	this.revision = GENCMD_REVISION_NONE
-	this.capabilities = this.makeCapabilities()
 
 	return this, nil
 }
@@ -132,11 +130,6 @@ func (this *Device) GetPeripheralAddress() uint32 {
 
 func (this *Device) GetPeripheralSize() uint32 {
 	return bcmHostGetPeripheralSize()
-}
-
-// Return set of capabilities for this device
-func (this *Device) GetCapabilities() []gopi.Tuple {
-	return this.capabilities
 }
 
 // Return the 64-bit serial number for the device

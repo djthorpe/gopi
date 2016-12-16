@@ -14,6 +14,10 @@
 package khronos /* import "github.com/djthorpe/gopi/khronos" */
 
 import (
+	"os"
+)
+
+import (
 	gopi "github.com/djthorpe/gopi"
 )
 

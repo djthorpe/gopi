@@ -27,8 +27,6 @@ import (
 	"math"
 	"regexp"
 	"strconv"
-	"strings"
-	"fmt"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,37 +70,6 @@ func ParseLengthString(value string) (float64, error) {
 	return 0.0, ErrParseError
 }
 
-// Returns pixels per inch for a given display. Will use the screen width
-// and height where the string value is provided as a length, or simply
-// returns the number where value is a pure integer number.
-//
-//   PixelsPerInch(800,500,"8in") -> returns X
-//   PixelsPerInch(800,500,"72") -> returns 72
-//   PixelsPerInch(800,500,"") -> returns 0
-//
-//  Returns error if value cannot be decoded, or if either of the screen
-// dimensions are zero.
-func PixelsPerInch(w,h uint,value string) (uint, error) {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return 0, nil
-	}
-	uint32_value, err := strconv.ParseUint(value, 32, 10)
-	if err == nil {
-		return uint(uint32_value), nil
-	}
-	fmt.Println(value)
-	float64_length, err := ParseLengthString(value)
-	if err == nil {
-		if w == 0 || h == 0 {
-			return 0, ErrParseError
-		}
-		ppi := math.Sqrt(math.Pow(float64(w), 2) + math.Pow(float64(h), 2)) / float64_length
-		return uint(ppi), nil
-	}
-	return 0, err
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
@@ -119,6 +86,20 @@ func parseLengthsToInches(value1 string, value2 string, units string) (float64, 
 	return math.Sqrt(math.Pow(float1, 2) + math.Pow(float2, 2)), nil
 }
 
+// return inches given a number in string form and the units
+func parseNumberToInches(value string, units string) (float64, error) {
+	float, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return float, ErrParseError
+	}
+	multipler := multiplierForUnit(units)
+	if multipler == 0.0 {
+		return float, ErrParseError
+	}
+	return float * multipler, nil
+}
+
+
 // return multiplier to convert a value to inches
 func multiplierForUnit(units string) float64 {
 	switch units {
@@ -131,17 +112,4 @@ func multiplierForUnit(units string) float64 {
 	default:
 		return 0.0
 	}
-}
-
-// return inches given a number in string form and the units
-func parseNumberToInches(value string, units string) (float64, error) {
-	float, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return float, ErrParseError
-	}
-	multipler := multiplierForUnit(units)
-	if multipler == 0.0 {
-		return float, ErrParseError
-	}
-	return float * multipler, nil
 }

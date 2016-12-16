@@ -171,6 +171,18 @@ func (this *Flags) GetUint(name string) (uint, bool) {
 	return value.Value.(flag.Getter).Get().(uint), this.HasFlag(name)
 }
 
+// Get unsigned integer value for a flag, and a boolean which indicates if
+// the flag was set
+func (this *Flags) GetUint16(name string) (uint16, bool) {
+	value := this.flagset.Lookup(name)
+	if value == nil {
+		return 0, false
+	}
+	uint_value := value.Value.(flag.Getter).Get().(uint)
+	return uint16(uint_value), this.HasFlag(name)
+}
+
+
 // Get float64 value for a flag, and a boolean which indicates if
 // the flag was set
 func (this *Flags) GetFloat64(name string) (float64, bool) {
