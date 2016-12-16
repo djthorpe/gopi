@@ -52,6 +52,9 @@ func MyRunLoop(app *app.App) error {
 		case italic:
 			flags = khronos.VG_FONT_STYLE_ITALIC
 		}
+		if family == "all" {
+			family = ""
+		}
 		faces := app.Fonts.GetFaces(family, flags)
 		if len(faces) == 0 {
 			return app.Logger.Error("No such family '%s'",family)
@@ -74,7 +77,7 @@ func main() {
 	config := app.Config(app.APP_VGFONT)
 
 	// Family, italic and bold
-	config.FlagSet.FlagString("family", "", "List fonts for one particular family")
+	config.FlagSet.FlagString("family", "all", "List fonts for one particular family, or 'all'")
 	config.FlagSet.FlagBool("bold", false, "List bold fonts")
 	config.FlagSet.FlagBool("italic", false, "List italic fonts")
 

@@ -9,8 +9,8 @@ package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
 	"fmt"
-	"unsafe"
 	"math"
+	"unsafe"
 )
 
 import (
@@ -38,7 +38,7 @@ type DXDisplayConfig struct {
 	PhysicalInches float64
 
 	// Hardware board driver
-	Device  gopi.HardwareDriver
+	Device gopi.HardwareDriver
 }
 
 type DXDisplay struct {
@@ -86,8 +86,8 @@ func (config DXDisplayConfig) Open(log *util.LoggerDevice) (gopi.Driver, error) 
 	d.width, d.height = config.Device.GetDisplaySize(d.display)
 
 	// set the pixels-per-inch value
-	if(config.PhysicalInches > 0.0) {
-		pixels := math.Sqrt(math.Pow(float64(d.width),2.0) + math.Pow(float64(d.height),2.0))
+	if config.PhysicalInches > 0.0 {
+		pixels := math.Sqrt(math.Pow(float64(d.width), 2.0) + math.Pow(float64(d.height), 2.0))
 		d.ppi = uint32(math.Floor((pixels / float64(config.PhysicalInches)) + 0.5))
 	} else {
 		d.ppi = 0

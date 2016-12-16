@@ -38,10 +38,10 @@ import "C"
 type Hardware struct{}
 
 type Device struct {
-	log          *util.LoggerDevice // logger
-	service      int                // service number
-	serial       uint64
-	revision     uint32
+	log      *util.LoggerDevice // logger
+	service  int                // service number
+	serial   uint64
+	revision uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////

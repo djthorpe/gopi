@@ -10,6 +10,7 @@ package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 import (
 	"fmt"
 	"image"
+	"unicode/utf8"
 	"unsafe"
 )
 
@@ -125,7 +126,20 @@ func (this *DXResource) PaintImage(pt khronos.EGLPoint, bitmap image.Image) erro
 	return nil
 }
 
-func (this *DXResource) PaintText(text string,face khronos.VGFace,origin khronos.EGLPoint,size float32) error {
+func (this *DXResource) PaintText(text string, face khronos.VGFace, origin khronos.EGLPoint, size float32) error {
+
+	if err := face.(*vgfFace).SetSize(size); err != nil {
+		return err
+	}
+
+	for i, w := 0, 0; i < len(text); i += w {
+		runeValue, width := utf8.DecodeRuneInString(text[i:])
+		err := face.(*vgfFace).LoadBitmapForRune(runeValue)
+		if err != nil {
+			return err
+		}
+		w = width
+	}
 	return nil
 }
 
