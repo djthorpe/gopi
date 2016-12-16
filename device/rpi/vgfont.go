@@ -480,12 +480,13 @@ func (this *vgfFace) LoadBitmapForRune(value rune) error {
 	}
 
 	// Check on glyph format
-	//bitmap := this.handle.glyph.bitmap
+	bitmap := this.handle.glyph.bitmap
+	fmt.Printf("rune=%v rows=%v width=%v pitch=%v num_grays=%v\n",value,bitmap.rows,bitmap.width,bitmap.pitch,bitmap.num_grays)
 	// TODO: Draw bitmap
 
 	// increment pen position
-	//pen_x += slot->advance.x >> 6;
-	//pen_y += slot->advance.y >> 6; /* not useful for now */
+	//pen_x += this.handle.glyph.advance.x >> 6;
+	//pen_y += this.handle.glyph.advance.y >> 6; /* not useful for now */
 
 	return nil
 }
