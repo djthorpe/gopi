@@ -88,7 +88,7 @@ type EGLDriver interface {
 	// Destroy Surface
 	DestroySurface(surface EGLSurface) error
 
-	// Create bitmap resource
+	// Create bitmap resource from an image
 	CreateImage(r io.Reader) (EGLBitmap, error)
 
 	// Destroy bitmap resource
