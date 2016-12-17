@@ -108,6 +108,15 @@ below the origin, where the text has characters with descenders (for example,
 
 TODO
 
+## Examples
+
+There are two examples in the [examples](https://github.com/djthorpe/gopi/tree/master/examples/vgfont)
+folder. 
+
+  * `font_example.go` demonstrates how to load fonts and query which fonts are loaded.
+  * `dx_example.go` demonstrates how to render text on bitmap surfaces.
+
+
 
 
 
