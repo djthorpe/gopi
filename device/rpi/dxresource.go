@@ -94,18 +94,28 @@ func (this *DXResource) GetHandle() dxResourceHandle {
 }
 
 func (this *DXResource) ClearToColor(color khronos.EGLColorRGBA32) error {
-	data := make([]uint32, uint(this.stride/4)*uint(this.size.Height))
+	data, err := dxReadBitmap(this,false)
+	if err != nil {
+		return err
+	}
 	value := color.Uint32()
 	for i := 0; i < len(data); i++ {
 		data[i] = value
 	}
-	dst_frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(this.size.Width), uint32(this.size.Height)}}
-	dxResourceWriteData(this.handle, this.model, this.stride, unsafe.Pointer(&data[0]), &dst_frame)
+
+	// Write bitmap
+	if err := dxWriteBitmap(this,data); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (this *DXResource) PaintImage(pt khronos.EGLPoint, bitmap image.Image) error {
-	data := make([]uint32, uint(this.stride/4)*uint(this.size.Height))
+	data, err := dxReadBitmap(this,false)
+	if err != nil {
+		return err
+	}
 	bounds := bitmap.Bounds()
 	for i := uint(0); i < uint(len(data)); i++ {
 		dx := i % uint(this.stride>>2)
@@ -121,18 +131,30 @@ func (this *DXResource) PaintImage(pt khronos.EGLPoint, bitmap image.Image) erro
 		r, g, b, a := bitmap.At(int(sx), int(sy)).RGBA()
 		data[i] = ((r & 0xFF00) >> 8) | (g & 0xFF00) | ((b & 0xFF00) << 8) | ((a & 0xFF00) << 16)
 	}
-	dst_frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(this.size.Width), uint32(this.size.Height)}}
-	dxResourceWriteData(this.handle, this.model, this.stride, unsafe.Pointer(&data[0]), &dst_frame)
+
+	// Write bitmap
+	if err := dxWriteBitmap(this,data); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (this *DXResource) PaintText(text string, face khronos.VGFace, origin khronos.EGLPoint, size float32) error {
+	// Get bitmap
+	data, err := dxReadBitmap(this,false)
+	if err != nil {
+		return err
+	}
 
+	// Set font size
 	if err := face.(*vgfFace).SetSize(size); err != nil {
 		return err
 	}
 
+	// Draw
 	for i, w := 0, 0; i < len(text); i += w {
+		data[i] = 0xFFFFFFFF
 		runeValue, width := utf8.DecodeRuneInString(text[i:])
 		err := face.(*vgfFace).LoadBitmapForRune(runeValue)
 		if err != nil {
@@ -140,11 +162,36 @@ func (this *DXResource) PaintText(text string, face khronos.VGFace, origin khron
 		}
 		w = width
 	}
+
+	// Write bitmap
+	if err := dxWriteBitmap(this,data); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods
+
+// Create a bitmap buffer and optionally read the data from the resource
+func dxReadBitmap(resource *DXResource,readData bool) ([]uint32, error) {
+	data := make([]uint32, uint(resource.stride/4)*uint(resource.size.Height))
+	frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(resource.size.Width), uint32(resource.size.Height)}}
+	if success := dxResourceReadData(resource.handle, &frame, unsafe.Pointer(&data[0]), resource.stride); success == false {
+		return nil,EGLErrorInvalidParameter
+	}
+	return data, nil
+}
+
+// Write bitmap
+func dxWriteBitmap(resource *DXResource,data []uint32) error {
+	frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(resource.size.Width), uint32(resource.size.Height)}}
+	if success := dxResourceWriteData(resource.handle, resource.model, resource.stride, unsafe.Pointer(&data[0]), &frame); success == false {
+		return EGLErrorInvalidParameter
+	}
+	return nil
+}
 
 func dxResourceCreate(model DXColorModel, w, h uint) dxResourceHandle {
 	var dummy C.uint32_t
@@ -159,7 +206,7 @@ func dxResourceWriteData(handle dxResourceHandle, model DXColorModel, src_pitch 
 	return C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), C.VC_IMAGE_TYPE_T(model), C.int(src_pitch), src_buffer, (*C.VC_RECT_T)(unsafe.Pointer(dst_rect))) == DX_RESOURCE_SUCCESS
 }
 
-func dxResourceReadData(handle dxResourceHandle, src_rect *DXFrame, dst_buffer uintptr, dst_pitch int) bool {
+func dxResourceReadData(handle dxResourceHandle, src_rect *DXFrame, dst_buffer unsafe.Pointer, dst_pitch uint32) bool {
 	return C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), (*C.VC_RECT_T)(unsafe.Pointer(src_rect)), unsafe.Pointer(dst_buffer), C.uint32_t(dst_pitch)) == DX_RESOURCE_SUCCESS
 }
 
