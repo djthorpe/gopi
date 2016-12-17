@@ -116,6 +116,11 @@ folder.
   * `font_example.go` demonstrates how to load fonts and query which fonts are loaded.
   * `dx_example.go` demonstrates how to render text on bitmap surfaces.
 
+For example,
+
+```
+  gopi% dx_example -fontpath etc/fonts -font Roboto -size 72
+```
 
 
 
