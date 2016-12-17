@@ -31,8 +31,8 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"syscall"
 	"strings"
+	"syscall"
 )
 
 // import abstract drivers
@@ -145,8 +145,8 @@ const (
 
 const (
 	// Constants used to determine default flags
-	APP_DEFAULT_DEBUG   bool = false
-	APP_DEFAULT_VERBOSE bool = false
+	APP_DEFAULT_DEBUG   bool   = false
+	APP_DEFAULT_VERBOSE bool   = false
 	APP_DEFAULT_DISPLAY uint16 = 0
 )
 
@@ -284,8 +284,8 @@ func NewApp(config AppConfig) (*App, error) {
 	// Create the display
 	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT) != 0 {
 		display, err := gopi.Open(rpi.DXDisplayConfig{
-			Device:  this.Device,
-			Display: display,
+			Device:         this.Device,
+			Display:        display,
 			PhysicalInches: screensize,
 		}, this.Logger)
 		if err != nil {
@@ -324,7 +324,7 @@ func NewApp(config AppConfig) (*App, error) {
 		if this.Display != nil {
 			ppi = uint(this.Display.GetPixelsPerInch())
 		}
-		fontdriver, err := gopi.Open(rpi.VGFont{ PPI: ppi }, this.Logger)
+		fontdriver, err := gopi.Open(rpi.VGFont{PPI: ppi}, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err
@@ -530,7 +530,7 @@ func (this *App) getDisplay(default_display uint16) (uint16, float64, error) {
 	}
 	inches, err := util.ParseLengthString(screensize)
 	if err != nil {
-		return display, inches,this.Logger.Error("Invalid -screensize: %v",err)
+		return display, inches, this.Logger.Error("Invalid -screensize: %v", err)
 	}
 	return display, inches, nil
 }
@@ -544,7 +544,7 @@ func (this *App) getFontPaths() ([]string, error) {
 	if exists == false {
 		return nil, nil
 	}
-	return []string{ path }, nil
+	return []string{path}, nil
 }
 
 // Load fonts
@@ -554,12 +554,12 @@ func (this *App) loadFonts(paths []string) error {
 		return nil
 	}
 	// Ignore if there are no font paths
-	if paths==nil || len(paths)==0 {
+	if paths == nil || len(paths) == 0 {
 		return nil
 	}
 	// Now iterate through font paths
-	for _,filepath := range(paths) {
-		err := this.Fonts.OpenFacesAtPath(filepath,func (filename string, info os.FileInfo) bool {
+	for _, filepath := range paths {
+		err := this.Fonts.OpenFacesAtPath(filepath, func(filename string, info os.FileInfo) bool {
 			if strings.HasPrefix(info.Name(), ".") {
 				// ignore hidden files and folders
 				return false
@@ -592,11 +592,11 @@ func (this *App) loadFonts(paths []string) error {
 				// silently ignore txt files and files without extension
 				return false
 			}
-			this.Logger.Warn("Whilst loading fonts at path %v: Ignoring file %v",filepath,filename)
+			this.Logger.Warn("Whilst loading fonts at path %v: Ignoring file %v", filepath, filename)
 			return false
 		})
 		if err != nil {
-			return this.Logger.Error("Error loading fonts at path: %v: %v",filepath,err)
+			return this.Logger.Error("Error loading fonts at path: %v: %v", filepath, err)
 		}
 	}
 

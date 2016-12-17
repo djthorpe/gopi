@@ -12,6 +12,8 @@ import (
 	"image"
 	"unicode/utf8"
 	"unsafe"
+	"errors"
+	"reflect"
 )
 
 import (
@@ -56,7 +58,7 @@ func (this *DXDisplay) CreateResource(model DXColorModel, size khronos.EGLSize) 
 	resource.size = size
 	resource.model = model
 	resource.stride = dxAlignUp(uint32(size.Width), uint32(16)) * 4
-	this.log.Debug2("<rpi.DX>CreateResource model=%v size=%v stride=%v", model, size)
+	this.log.Debug2("<rpi.DX>CreateResource model=%v size=%v stride=%v", model, size, resource.stride)
 	resource.handle = dxResourceCreate(model, size.Width, size.Height)
 	if resource.handle == DX_RESOURCE_NONE {
 		return nil, this.log.Error("dxResourceCreate failed")
@@ -94,7 +96,7 @@ func (this *DXResource) GetHandle() dxResourceHandle {
 }
 
 func (this *DXResource) ClearToColor(color khronos.EGLColorRGBA32) error {
-	data, err := dxReadBitmap(this,false)
+	data, err := dxReadBitmap(this, false)
 	if err != nil {
 		return err
 	}
@@ -104,7 +106,7 @@ func (this *DXResource) ClearToColor(color khronos.EGLColorRGBA32) error {
 	}
 
 	// Write bitmap
-	if err := dxWriteBitmap(this,data); err != nil {
+	if err := dxWriteBitmap(this, data); err != nil {
 		return err
 	}
 
@@ -112,7 +114,7 @@ func (this *DXResource) ClearToColor(color khronos.EGLColorRGBA32) error {
 }
 
 func (this *DXResource) PaintImage(pt khronos.EGLPoint, bitmap image.Image) error {
-	data, err := dxReadBitmap(this,false)
+	data, err := dxReadBitmap(this, false)
 	if err != nil {
 		return err
 	}
@@ -133,16 +135,20 @@ func (this *DXResource) PaintImage(pt khronos.EGLPoint, bitmap image.Image) erro
 	}
 
 	// Write bitmap
-	if err := dxWriteBitmap(this,data); err != nil {
+	if err := dxWriteBitmap(this, data); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (this *DXResource) PaintText(text string, face khronos.VGFace, origin khronos.EGLPoint, size float32) error {
+func (this *DXResource) PaintText(text string, face khronos.VGFace, color khronos.EGLColorRGBA32, origin khronos.EGLPoint, size float32) error {
+	// Get frame & color
+	frame := this.GetFrame()
+	color_uint32 := color.Uint32()
+
 	// Get bitmap
-	data, err := dxReadBitmap(this,false)
+	data, err := dxReadBitmap(this, false)
 	if err != nil {
 		return err
 	}
@@ -154,16 +160,41 @@ func (this *DXResource) PaintText(text string, face khronos.VGFace, origin khron
 
 	// Draw
 	for i, w := 0, 0; i < len(text); i += w {
+
+		// Load bitmap for rune
 		char, width := utf8.DecodeRuneInString(text[i:])
-		err := face.(*vgfFace).LoadBitmapForRune(char)
+		buffer, pixel_mode, size, advance, stride, err := face.(*vgfFace).LoadBitmapForRune(char)
 		if err != nil {
 			return err
 		}
+
+		// Check pixel mode to ensure it's supported
+		if pixel_mode != VG_FONT_FT_PIXEL_MODE_GRAY {
+			// We only support greyscale for the moment
+			return errors.New("Glyph pixel mode unsupported")
+		}
+
+		// convert buffer to []byte (supports 8-bit greyscales)
+		data_src := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{ buffer, int(stride * size.Height), int(stride * size.Height) }))
+		offset_src := uint(stride * size.Height)
+
+		// paint pixels
+		for y := uint(0); y < size.Height; y++ {
+			offset_src -= stride
+			for x := uint(0); x < size.Width; x++ {
+				point := khronos.EGLPoint{ origin.X + int(x), origin.Y - int(y) }
+				if point.InFrame(frame) {
+					offset_dst := point.X + point.Y * int(this.stride >> 2)
+					data[offset_dst] = dxPixelOver(data[offset_dst],color_uint32,data_src[offset_src + x])
+				}
+			}
+		}
+		origin = origin.Offset(advance)
 		w = width
 	}
 
 	// Write bitmap
-	if err := dxWriteBitmap(this,data); err != nil {
+	if err := dxWriteBitmap(this, data); err != nil {
 		return err
 	}
 
@@ -173,23 +204,35 @@ func (this *DXResource) PaintText(text string, face khronos.VGFace, origin khron
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods
 
-// Copy one bitmap into another
-//func dxDrawBitmap(resource *DXResource,dest []uint32,src []uint32) {
-//
-//}
+// OVER pixel function
+func dxPixelOver(src uint32,dst uint32,alpha byte) uint32 {
+	sr := float32(src & 0x000000FF)
+	sg := float32((src & 0x0000FF00) >> 8)
+	sb := float32((src & 0x00FF0000) >> 16)
+	dr := float32(dst & 0x000000FF)
+	dg := float32((dst & 0x0000FF00) >> 8)
+	db := float32((dst & 0x00FF0000) >> 16)
+	da := (dst & 0xFF000000) >> 24
+	pa := float32(alpha / 255.0)
+	na := 1.0 - pa
+	dr = dr * pa + na * sr
+	dg = dg * pa + na * sg
+	db = db * pa + na * sb
+	return da << 24 | uint32(byte(db)) << 16 | uint32(byte(dg)) << 8 | uint32(byte(dr))
+}
 
 // Create a bitmap buffer and optionally read the data from the resource
-func dxReadBitmap(resource *DXResource,readData bool) ([]uint32, error) {
+func dxReadBitmap(resource *DXResource, readData bool) ([]uint32, error) {
 	data := make([]uint32, uint(resource.stride/4)*uint(resource.size.Height))
 	frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(resource.size.Width), uint32(resource.size.Height)}}
 	if success := dxResourceReadData(resource.handle, &frame, unsafe.Pointer(&data[0]), resource.stride); success == false {
-		return nil,EGLErrorInvalidParameter
+		return nil, EGLErrorInvalidParameter
 	}
 	return data, nil
 }
 
 // Write bitmap
-func dxWriteBitmap(resource *DXResource,data []uint32) error {
+func dxWriteBitmap(resource *DXResource, data []uint32) error {
 	frame := DXFrame{DXPoint{int32(0), int32(0)}, DXSize{uint32(resource.size.Width), uint32(resource.size.Height)}}
 	if success := dxResourceWriteData(resource.handle, resource.model, resource.stride, unsafe.Pointer(&data[0]), &frame); success == false {
 		return EGLErrorInvalidParameter

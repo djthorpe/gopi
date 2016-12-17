@@ -31,5 +31,5 @@ type EGLBitmap interface {
 
 	// Draw text starting at an origin as (top,left) with a particular
 	// font face and a point size
-	PaintText(text string,face VGFace,origin EGLPoint,size float32) error
+	PaintText(text string, face VGFace, color EGLColorRGBA32, origin EGLPoint, size float32) error
 }

@@ -14,21 +14,20 @@ import (
 
 import (
 	app "github.com/djthorpe/gopi/app"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func HelloWorld(app *app.App) error {
 
-	// Get Serial Number of the Raspberry Pi
+	// Get serial number of the device
 	serial_number, err := app.Device.GetSerialNumber()
 	if err != nil {
 		return err
 	}
 
-	// Output information to logging
-	app.Logger.Info("Hello, %v", serial_number)
+	// Output message to stdout
+	fmt.Fprintf(os.Stdout, "Hello %08X!!\n", serial_number)
 
 	// Return success
 	return nil
@@ -38,11 +37,12 @@ func HelloWorld(app *app.App) error {
 
 func main() {
 
+	// Create the configuration, we want to use the DEVICE
+	// subsystem
+	config := app.Config(app.APP_DEVICE)
+
 	// Create the application
-	myapp, err := app.NewApp(app.AppConfig{
-		Features: app.APP_DEVICE,
-		LogLevel: util.LOG_INFO,
-	})
+	myapp, err := app.NewApp(config)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return

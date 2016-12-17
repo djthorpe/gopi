@@ -57,13 +57,13 @@ func MyRunLoop(app *app.App) error {
 		}
 		faces := app.Fonts.GetFaces(family, flags)
 		if len(faces) == 0 {
-			return app.Logger.Error("No such family '%s'",family)
+			return app.Logger.Error("No such family '%s'", family)
 		}
 		format := "%3s %-20s %-20s\n"
-		fmt.Printf(format,"ID","Family","Style")
+		fmt.Printf(format, "ID", "Family", "Style")
 		fmt.Printf("--------------------------------------------\n")
 		for _, face := range faces {
-			fmt.Printf(format,fmt.Sprintf("%03d",face.GetIndex()),face.GetFamily(),face.GetStyle())
+			fmt.Printf(format, fmt.Sprintf("%03d", face.GetIndex()), face.GetFamily(), face.GetStyle())
 		}
 	}
 

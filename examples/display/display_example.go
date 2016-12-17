@@ -7,11 +7,12 @@
 */
 
 // This example opens a display and returns information about the display.
+// That's it!
 package main
 
 import (
-	"os"
 	"fmt"
+	"os"
 )
 
 import (
@@ -21,7 +22,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 func MyRunLoop(app *app.App) error {
-	fmt.Println("DISPLAY:",app.Display)
+	fmt.Println("DISPLAY:", app.Display)
 	return nil
 }
 

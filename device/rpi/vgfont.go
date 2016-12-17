@@ -145,6 +145,9 @@ type vgfFace struct {
 // vgfEncoding represents charmap encoding
 type vgfEncoding string
 
+// glyph bitmap format
+type VGFontBitmapPixelMode C.FT_Pixel_Mode
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
@@ -175,6 +178,17 @@ const (
 	VG_FONT_FT_LOAD_NO_AUTOHINT                 uint32 = (1 << 15)
 	VG_FONT_FT_LOAD_COLOR                       uint32 = (1 << 20)
 	VG_FONT_FT_LOAD_COMPUTE_METRICS             uint32 = (1 << 21)
+)
+
+const (
+	VG_FONT_FT_PIXEL_MODE_NONE  VGFontBitmapPixelMode = iota
+	VG_FONT_FT_PIXEL_MODE_MONO                        // 1 bit per pixel (unsupported)
+	VG_FONT_FT_PIXEL_MODE_GRAY                        // 8 bits per pixel
+	VG_FONT_FT_PIXEL_MODE_GRAY2                       // 2 bits per pixel (unsupported)
+	VG_FONT_FT_PIXEL_MODE_GRAY4                       // 4 bits per pixel (unsupported)
+	VG_FONT_FT_PIXEL_MODE_LCD                         // 8 bits per pixel, horizontal LCD (unsupported)
+	VG_FONT_FT_PIXEL_MODE_LCD_V                       // 8 bits per pixel, vertical LCD (unsupported)
+	VG_FONT_FT_PIXEL_MODE_BGRA                        // 32 bits per pixel (unsupported)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -453,42 +467,46 @@ func (this *vgfFace) IsItalic() bool {
 func (this *vgfFace) SetSize(points float32) error {
 	if this.ppi == 0 {
 		// Set as pixels
-		if ret := C.FT_Set_Pixel_Sizes(this.handle,0,C.FT_UInt(points)); ret != VG_FONT_FT_ERROR_NONE {
+		if ret := C.FT_Set_Pixel_Sizes(this.handle, 0, C.FT_UInt(points)); ret != VG_FONT_FT_ERROR_NONE {
 			return vgfontGetError(ret)
 		}
 	} else {
 		// Set as points
-		if ret := C.FT_Set_Char_Size(this.handle,0,C.FT_F26Dot6(points * 64.0),0,C.FT_UInt(this.ppi)); ret != VG_FONT_FT_ERROR_NONE {
+		if ret := C.FT_Set_Char_Size(this.handle, 0, C.FT_F26Dot6(points*64.0), 0, C.FT_UInt(this.ppi)); ret != VG_FONT_FT_ERROR_NONE {
 			return vgfontGetError(ret)
 		}
 	}
 	return nil
 }
 
-func (this *vgfFace) LoadBitmapForRune(value rune) error {
+// This method returns a bitmap for a rune. The returned values are a pointer
+// to the bitmap pixels, the width and height of the bitmap data, the advancement
+// required to draw the next bitmap rune, the stride value for the bitmap (number
+// of pixels per row) and an error condition if the rune could not be found in
+// the font face (for example) or the size had not yet been set.
+func (this *vgfFace) LoadBitmapForRune(value rune) (uintptr, VGFontBitmapPixelMode, khronos.EGLSize, khronos.EGLSize, uint, error) {
 
 	// Get Glyph
 	glyph_index := C.FT_Get_Char_Index(this.handle, C.FT_ULong(value))
 	if glyph_index == 0 {
-		return ErrFontInvalidCharacterCode
+		return uintptr(0), VG_FONT_FT_PIXEL_MODE_NONE, khronos.EGLZeroSize, khronos.EGLZeroSize, 0, ErrFontInvalidCharacterCode
 	}
 
 	// Render Glyph
 	ret := C.FT_Load_Glyph(this.handle, glyph_index, C.FT_Int32(VG_FONT_FT_LOAD_RENDER))
 	if ret != VG_FONT_FT_ERROR_NONE {
-		return vgfontGetError(ret)
+		return uintptr(0), VG_FONT_FT_PIXEL_MODE_NONE, khronos.EGLZeroSize, khronos.EGLZeroSize, 0, vgfontGetError(ret)
 	}
 
-	// Check on glyph format
+	// Compute relevant information
 	bitmap := this.handle.glyph.bitmap
-	fmt.Printf("rune=%v rows=%v width=%v pitch=%v num_grays=%v\n",value,bitmap.rows,bitmap.width,bitmap.pitch,bitmap.num_grays)
-	// TODO: Draw bitmap
+	pixel_mode := VGFontBitmapPixelMode(bitmap.pixel_mode)
+	size := khronos.EGLSize{ Width: uint(bitmap.width), Height: uint(bitmap.rows) }
+	advance := khronos.EGLSize{ Width: uint(this.handle.glyph.advance.x >> 6), Height: uint(this.handle.glyph.advance.y >> 6) }
+	stride := uint(bitmap.pitch)
 
-	// increment pen position
-	//pen_x += this.handle.glyph.advance.x >> 6;
-	//pen_y += this.handle.glyph.advance.y >> 6; /* not useful for now */
-
-	return nil
+	// Success
+	return uintptr(unsafe.Pointer(bitmap.buffer)), pixel_mode, size, advance, stride, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -571,6 +589,32 @@ func (this *vgfDriver) vgfontLoadGlyphToFont(face *vgfFace, glyph C.FT_UInt) err
 		C.vgDestroyPath(path)
 	}
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (m VGFontBitmapPixelMode) String() string {
+	switch(m) {
+	case VG_FONT_FT_PIXEL_MODE_NONE:
+		return "VG_FONT_FT_PIXEL_MODE_NONE"
+	case VG_FONT_FT_PIXEL_MODE_MONO:
+		return "VG_FONT_FT_PIXEL_MODE_MONO"
+	case VG_FONT_FT_PIXEL_MODE_GRAY:
+		return "VG_FONT_FT_PIXEL_MODE_GRAY"
+	case VG_FONT_FT_PIXEL_MODE_GRAY2:
+		return "VG_FONT_FT_PIXEL_MODE_GRAY2"
+	case VG_FONT_FT_PIXEL_MODE_GRAY4:
+		return "VG_FONT_FT_PIXEL_MODE_GRAY4"
+	case VG_FONT_FT_PIXEL_MODE_LCD:
+		return "VG_FONT_FT_PIXEL_MODE_LCD"
+	case VG_FONT_FT_PIXEL_MODE_LCD_V:
+		return "VG_FONT_FT_PIXEL_MODE_LCD_V"
+	case VG_FONT_FT_PIXEL_MODE_BGRA:
+		return "VG_FONT_FT_PIXEL_MODE_BGRA"
+	default:
+		return "[?? Invalid VGFontBitmapPixelMode value]"
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

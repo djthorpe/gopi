@@ -78,10 +78,9 @@ type VGFontStyleFlags uint16
 
 const (
 	// Constants used for querying faces for VGFontDriver
-	VG_FONT_STYLE_ANY     VGFontStyleFlags = iota
+	VG_FONT_STYLE_ANY VGFontStyleFlags = iota
 	VG_FONT_STYLE_REGULAR
 	VG_FONT_STYLE_BOLD
 	VG_FONT_STYLE_ITALIC
 	VG_FONT_STYLE_BOLDITALIC
 )
-

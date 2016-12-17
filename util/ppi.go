@@ -99,7 +99,6 @@ func parseNumberToInches(value string, units string) (float64, error) {
 	return float * multipler, nil
 }
 
-
 // return multiplier to convert a value to inches
 func multiplierForUnit(units string) float64 {
 	switch units {

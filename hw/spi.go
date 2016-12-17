@@ -6,7 +6,6 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-
 // SPI
 //
 // The abstract SPI hardware interface can be used for interfacing a

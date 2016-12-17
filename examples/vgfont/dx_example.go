@@ -36,21 +36,34 @@ func MyRunLoop(app *app.App) error {
 	}
 	defer app.EGL.DestroySurface(bg)
 
-	// Load in font face
-	face := GetFontFace(app)
-	if face == nil {
-		return app.Logger.Error("Error: Missing or invalid -font flag")
-	}
-
-	app.Logger.Info("FACE=%v",face)
-
-	// Draw at {0,0}
+	face_index := 0
+	size, _ := app.FlagSet.GetFloat64("size")
+	text, text_exists := app.FlagSet.GetString("text")
+	origin := khronos.EGLPoint{20, int(size) }
 	bitmap, err := bg.GetBitmap()
+	color := khronos.EGLWhiteColor
 	if err != nil {
 		return err
 	}
-	if err := bitmap.PaintText("Hello, world!",face,khronos.EGLPoint{ 0, 0 },128.0); err != nil {
-		return err
+
+	bitmap.ClearToColor(khronos.EGLRedColor)
+
+	for {
+		// Load in font face
+		face := GetFontFace(app,face_index)
+		if face == nil {
+			break
+		}
+		// Draw
+		if text_exists == false {
+			text = fmt.Sprintf("%s %s",face.GetFamily(),face.GetStyle())
+		}
+		if err := bitmap.PaintText(text, face, color, origin, float32(size)); err != nil {
+			return err
+		}
+		// Increment
+		face_index += 1
+		origin.Y += int(size)
 	}
 
 	// Wait until CTRL+C is pressed
@@ -61,27 +74,29 @@ func MyRunLoop(app *app.App) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func GetFontFace(app *app.App) khronos.VGFace {
+func GetFontFace(app *app.App,index int) khronos.VGFace {
 	family, exists := app.FlagSet.GetString("font")
 	if exists == false {
 		return nil
 	}
-	faces := app.Fonts.GetFaces(family,khronos.VG_FONT_STYLE_REGULAR)
-	if len(faces) == 0 {
+	faces := app.Fonts.GetFaces(family, khronos.VG_FONT_STYLE_REGULAR)
+	if len(faces) == 0 || index >= len(faces) {
 		return nil
 	}
-	// return the first face
-	return faces[0]
+	// return the face
+	return faces[index]
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
 	// Create the config
-	config := app.Config(app.APP_VGFONT|app.APP_EGL)
+	config := app.Config(app.APP_VGFONT | app.APP_EGL)
 
 	// Font
 	config.FlagSet.FlagString("font", "", "Font to use")
+	config.FlagSet.FlagFloat64("size", 48.0, "Font size, in points")
+	config.FlagSet.FlagString("text", "Hello, world!", "Message to display")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

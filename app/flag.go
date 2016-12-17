@@ -182,7 +182,6 @@ func (this *Flags) GetUint16(name string) (uint16, bool) {
 	return uint16(uint_value), this.HasFlag(name)
 }
 
-
 // Get float64 value for a flag, and a boolean which indicates if
 // the flag was set
 func (this *Flags) GetFloat64(name string) (float64, bool) {

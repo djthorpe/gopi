@@ -141,6 +141,7 @@ const (
 
 var (
 	EGLZeroPoint  = EGLPoint{0, 0}
+	EGLZeroSize   = EGLSize{0, 0}
 	EGLWhiteColor = EGLColorRGBA32{0xFF, 0xFF, 0xFF, 0xFF}
 	EGLRedColor   = EGLColorRGBA32{0xFF, 0x00, 0x00, 0xFF}
 	EGLGreenColor = EGLColorRGBA32{0x00, 0xFF, 0x00, 0xFF}
@@ -174,6 +175,25 @@ func (this EGLColorRGBA32) String() string {
 // Return the result of adding two points
 func (this EGLPoint) Add(that EGLPoint) EGLPoint {
 	return EGLPoint{this.X + that.X, this.Y + that.Y}
+}
+
+// Return the result of adding a size to a point
+func (this EGLPoint) Offset(that EGLSize) EGLPoint {
+	return EGLPoint{this.X + int(that.Width), this.Y + int(that.Height) }
+}
+
+// Return boolean value that determines if point is within a frame
+func (this EGLPoint) InFrame(that EGLFrame) bool {
+	if this.X < that.X || this.Y < that.Y {
+		return false
+	}
+	if this.X >= that.X + int(that.Width) {
+		return false
+	}
+	if this.Y >= that.Y + int(that.Height) {
+		return false
+	}
+	return true
 }
 
 // Return if equals
