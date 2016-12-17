@@ -154,9 +154,8 @@ func (this *DXResource) PaintText(text string, face khronos.VGFace, origin khron
 
 	// Draw
 	for i, w := 0, 0; i < len(text); i += w {
-		data[i] = 0xFFFFFFFF
-		runeValue, width := utf8.DecodeRuneInString(text[i:])
-		err := face.(*vgfFace).LoadBitmapForRune(runeValue)
+		char, width := utf8.DecodeRuneInString(text[i:])
+		err := face.(*vgfFace).LoadBitmapForRune(char)
 		if err != nil {
 			return err
 		}
@@ -173,6 +172,11 @@ func (this *DXResource) PaintText(text string, face khronos.VGFace, origin khron
 
 ////////////////////////////////////////////////////////////////////////////////
 // Private methods
+
+// Copy one bitmap into another
+//func dxDrawBitmap(resource *DXResource,dest []uint32,src []uint32) {
+//
+//}
 
 // Create a bitmap buffer and optionally read the data from the resource
 func dxReadBitmap(resource *DXResource,readData bool) ([]uint32, error) {
