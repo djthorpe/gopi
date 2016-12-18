@@ -18,6 +18,7 @@ import (
 import (
 	gopi "github.com/djthorpe/gopi"
 	util "github.com/djthorpe/gopi/util"
+	hw "github.com/djthorpe/gopi/hw"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,6 +37,9 @@ type InputDevice struct {
 
 	// The path to the input device
 	Path string
+
+	// The type of device, or NONE
+	Type hw.InputDeviceType
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -99,7 +103,7 @@ func (this *InputDriver) String() string {
 
 // Strinfigy InputDevice object
 func (this *InputDevice) String() string {
-	return fmt.Sprintf("<linux.InputDevice>{ name=\"%s\" path=%s }", this.Name, this.Path)
+	return fmt.Sprintf("<linux.InputDevice>{ name=\"%s\" path=%s type=%v }", this.Name, this.Path, this.Type)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
