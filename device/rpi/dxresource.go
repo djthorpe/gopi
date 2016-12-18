@@ -8,12 +8,12 @@
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
+	"errors"
 	"fmt"
 	"image"
+	"reflect"
 	"unicode/utf8"
 	"unsafe"
-	"errors"
-	"reflect"
 )
 
 import (
@@ -175,17 +175,17 @@ func (this *DXResource) PaintText(text string, face khronos.VGFace, color khrono
 		}
 
 		// convert buffer to []byte (supports 8-bit greyscales)
-		data_src := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{ buffer, int(stride * size.Height), int(stride * size.Height) }))
+		data_src := *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{buffer, int(stride * size.Height), int(stride * size.Height)}))
 		offset_src := uint(stride * size.Height)
 
 		// paint pixels
 		for y := uint(0); y < size.Height; y++ {
 			offset_src -= stride
 			for x := uint(0); x < size.Width; x++ {
-				point := khronos.EGLPoint{ origin.X + int(x), origin.Y - int(y) }
+				point := khronos.EGLPoint{origin.X + int(x), origin.Y - int(y)}
 				if point.InFrame(frame) {
-					offset_dst := point.X + point.Y * int(this.stride >> 2)
-					data[offset_dst] = dxPixelOver(data[offset_dst],color_uint32,data_src[offset_src + x])
+					offset_dst := point.X + point.Y*int(this.stride>>2)
+					data[offset_dst] = dxPixelOver(data[offset_dst], color_uint32, data_src[offset_src+x])
 				}
 			}
 		}
@@ -205,7 +205,7 @@ func (this *DXResource) PaintText(text string, face khronos.VGFace, color khrono
 // Private methods
 
 // OVER pixel function
-func dxPixelOver(src uint32,dst uint32,alpha byte) uint32 {
+func dxPixelOver(src uint32, dst uint32, alpha byte) uint32 {
 	sr := float32(src & 0x000000FF)
 	sg := float32((src & 0x0000FF00) >> 8)
 	sb := float32((src & 0x00FF0000) >> 16)
@@ -215,10 +215,10 @@ func dxPixelOver(src uint32,dst uint32,alpha byte) uint32 {
 	da := (dst & 0xFF000000) >> 24
 	pa := float32(alpha / 255.0)
 	na := 1.0 - pa
-	dr = dr * pa + na * sr
-	dg = dg * pa + na * sg
-	db = db * pa + na * sb
-	return da << 24 | uint32(byte(db)) << 16 | uint32(byte(dg)) << 8 | uint32(byte(dr))
+	dr = dr*pa + na*sr
+	dg = dg*pa + na*sg
+	db = db*pa + na*sb
+	return da<<24 | uint32(byte(db))<<16 | uint32(byte(dg))<<8 | uint32(byte(dr))
 }
 
 // Create a bitmap buffer and optionally read the data from the resource

@@ -26,7 +26,7 @@ func (this *eglDriver) CreateCursor() (khronos.EGLSurface, error) {
 
 	// Place cursor in the middle of the screen
 	screen := this.GetFrame()
-	frame := khronos.EGLFrame{ khronos.EGLPoint{ 0, 0 }, khronos.EGLSize{ 32, 32 } }.AlignTo(&screen,khronos.EGL_ALIGN_VCENTER | khronos.EGL_ALIGN_HCENTER)
+	frame := khronos.EGLFrame{khronos.EGLPoint{0, 0}, khronos.EGLSize{32, 32}}.AlignTo(&screen, khronos.EGL_ALIGN_VCENTER|khronos.EGL_ALIGN_HCENTER)
 
 	// Create the surface
 	surface, err := this.createWindow("DX", frame.Size(), frame.Origin(), EGL_LAYER_CURSOR, 1.0, nil)

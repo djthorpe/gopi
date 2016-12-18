@@ -54,6 +54,7 @@ const (
 	EGL_LAYER_BG        uint16 = 0x0000
 	EGL_LAYER_MIN       uint16 = 0x0001
 	EGL_LAYER_MAX       uint16 = 0xFFFE
+	EGL_LAYER_CURSOR    uint16 = 0xFFFF
 	EGL_WINDOW_SIZE_MAX uint32 = 0xFFFF
 )
 
@@ -131,6 +132,10 @@ func (this *eglDriver) FlushSurface(surface khronos.EGLSurface) error {
 
 // Move surface origin relative to current origin
 func (this *eglDriver) MoveSurfaceOriginBy(surface khronos.EGLSurface, rel khronos.EGLPoint) error {
+	// Background surface cannot be moved
+	if surface.IsBackgroundSurface() {
+		return EGLErrorInvalidParameter
+	}
 	return this.setWindowOrigin(surface.(*eglWindow), surface.GetOrigin().Add(rel))
 }
 

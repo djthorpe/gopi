@@ -6,8 +6,8 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-// This example takes a snapshot of the screen and writes to a file as a PNG
-// image
+// This example draws a cursor and allows it to be moved on the
+// screen by mouse or touchscreen
 package main
 
 import (
@@ -42,7 +42,7 @@ func MyRunLoop(app *app.App) error {
 
 func main() {
 	// Create the config
-	config := app.Config(app.APP_EGL)
+	config := app.Config(app.APP_EGL | app.APP_INPUT)
 
 	// Create the application
 	myapp, err := app.NewApp(config)

@@ -82,17 +82,24 @@ type EGLDriver interface {
 
 	// Create Background & Surfaces
 	CreateBackground(api string, opacity float32) (EGLSurface, error)
+	CreateCursor() (EGLSurface, error)
 	CreateSurface(api string, size EGLSize, origin EGLPoint, layer uint16, opacity float32) (EGLSurface, error)
 	CreateSurfaceWithBitmap(bitmap EGLBitmap, origin EGLPoint, layer uint16, opacity float32) (EGLSurface, error)
 
 	// Destroy Surface
 	DestroySurface(surface EGLSurface) error
 
-	// Create bitmap resource from an image
+	// Create Bitmap resource from an image
 	CreateImage(r io.Reader) (EGLBitmap, error)
 
-	// Destroy bitmap resource
+	// Write Bitmap out to stream as PNG
+	WriteImagePNG(w io.Writer, bitmap EGLBitmap) error
+
+	// Destroy Bitmap resource
 	DestroyImage(bitmap EGLBitmap) error
+
+	// Create a bitmap with a copy of the screen contents
+	SnapshotImage() (EGLBitmap, error)
 
 	// Move surface origin relative to current origin
 	MoveSurfaceOriginBy(surface EGLSurface, rel EGLPoint) error
@@ -179,7 +186,7 @@ func (this EGLPoint) Add(that EGLPoint) EGLPoint {
 
 // Return the result of adding a size to a point
 func (this EGLPoint) Offset(that EGLSize) EGLPoint {
-	return EGLPoint{this.X + int(that.Width), this.Y + int(that.Height) }
+	return EGLPoint{this.X + int(that.Width), this.Y + int(that.Height)}
 }
 
 // Return boolean value that determines if point is within a frame
@@ -187,10 +194,10 @@ func (this EGLPoint) InFrame(that EGLFrame) bool {
 	if this.X < that.X || this.Y < that.Y {
 		return false
 	}
-	if this.X >= that.X + int(that.Width) {
+	if this.X >= that.X+int(that.Width) {
 		return false
 	}
-	if this.Y >= that.Y + int(that.Height) {
+	if this.Y >= that.Y+int(that.Height) {
 		return false
 	}
 	return true

@@ -39,7 +39,7 @@ func MyRunLoop(app *app.App) error {
 	face_index := 0
 	size, _ := app.FlagSet.GetFloat64("size")
 	text, text_exists := app.FlagSet.GetString("text")
-	origin := khronos.EGLPoint{20, int(size) }
+	origin := khronos.EGLPoint{20, int(size)}
 	bitmap, err := bg.GetBitmap()
 	color := khronos.EGLWhiteColor
 	if err != nil {
@@ -50,13 +50,13 @@ func MyRunLoop(app *app.App) error {
 
 	for {
 		// Load in font face
-		face := GetFontFace(app,face_index)
+		face := GetFontFace(app, face_index)
 		if face == nil {
 			break
 		}
 		// Draw
 		if text_exists == false {
-			text = fmt.Sprintf("%s %s",face.GetFamily(),face.GetStyle())
+			text = fmt.Sprintf("%s %s", face.GetFamily(), face.GetStyle())
 		}
 		if err := bitmap.PaintText(text, face, color, origin, float32(size)); err != nil {
 			return err
@@ -74,7 +74,7 @@ func MyRunLoop(app *app.App) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func GetFontFace(app *app.App,index int) khronos.VGFace {
+func GetFontFace(app *app.App, index int) khronos.VGFace {
 	family, exists := app.FlagSet.GetString("font")
 	if exists == false {
 		return nil

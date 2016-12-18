@@ -501,8 +501,8 @@ func (this *vgfFace) LoadBitmapForRune(value rune) (uintptr, VGFontBitmapPixelMo
 	// Compute relevant information
 	bitmap := this.handle.glyph.bitmap
 	pixel_mode := VGFontBitmapPixelMode(bitmap.pixel_mode)
-	size := khronos.EGLSize{ Width: uint(bitmap.width), Height: uint(bitmap.rows) }
-	advance := khronos.EGLSize{ Width: uint(this.handle.glyph.advance.x >> 6), Height: uint(this.handle.glyph.advance.y >> 6) }
+	size := khronos.EGLSize{Width: uint(bitmap.width), Height: uint(bitmap.rows)}
+	advance := khronos.EGLSize{Width: uint(this.handle.glyph.advance.x >> 6), Height: uint(this.handle.glyph.advance.y >> 6)}
 	stride := uint(bitmap.pitch)
 
 	// Success
@@ -595,7 +595,7 @@ func (this *vgfDriver) vgfontLoadGlyphToFont(face *vgfFace, glyph C.FT_UInt) err
 // STRINGIFY
 
 func (m VGFontBitmapPixelMode) String() string {
-	switch(m) {
+	switch m {
 	case VG_FONT_FT_PIXEL_MODE_NONE:
 		return "VG_FONT_FT_PIXEL_MODE_NONE"
 	case VG_FONT_FT_PIXEL_MODE_MONO:

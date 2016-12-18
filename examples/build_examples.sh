@@ -50,3 +50,5 @@ go install -ldflags "${LDFLAGS}" examples/vgfont/font_example.go || exit -1
 echo "go install vgfont/dx_example"
 go install -ldflags "${LDFLAGS}" examples/vgfont/dx_example.go || exit -1
 
+echo "go install egl/snapshot"
+go install -ldflags "${LDFLAGS}" examples/egl/snapshot.go || exit -1

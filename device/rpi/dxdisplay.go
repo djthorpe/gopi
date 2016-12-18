@@ -15,6 +15,7 @@ import (
 
 import (
 	gopi "github.com/djthorpe/gopi"
+	khronos "github.com/djthorpe/gopi/khronos"
 	util "github.com/djthorpe/gopi/util"
 )
 
@@ -144,6 +145,19 @@ func (this *DXDisplay) GetModeInfo() (*DXModeInfo, error) {
 	return &modeInfo, nil
 }
 
+// Create snapshot of screen
+func (this *DXDisplay) CreateSnapshot() (*DXResource, error) {
+	// create a resource
+	resource, err := this.CreateResource(DX_IMAGE_RGBA32, khronos.EGLSize{uint(this.width), uint(this.height)})
+	if err != nil {
+		return nil, err
+	}
+	if ret := dxDisplaySnapshot(this.handle, resource.handle, DX_NO_ROTATE); ret == false {
+		return nil, EGLErrorSnapshot
+	}
+	return resource, nil
+}
+
 // Human-readable version of the display
 func (this *DXDisplay) String() string {
 	return fmt.Sprintf("<rpi.DXDisplay>{ handle=%v display=%v size=%v ppi=%v", this.handle, this.display, this.GetSize(), this.GetPixelsPerInch())
@@ -172,4 +186,8 @@ func dxDisplayClose(display dxDisplayHandle) bool {
 
 func dxDisplayGetInfo(display dxDisplayHandle, info *DXModeInfo) bool {
 	return C.vc_dispmanx_display_get_info(C.DISPMANX_DISPLAY_HANDLE_T(display), (*C.DISPMANX_MODEINFO_T)(unsafe.Pointer(info))) == DX_SUCCESS
+}
+
+func dxDisplaySnapshot(display dxDisplayHandle, resource dxResourceHandle, transform DXTransform) bool {
+	return C.vc_dispmanx_snapshot(C.DISPMANX_DISPLAY_HANDLE_T(display), C.DISPMANX_RESOURCE_HANDLE_T(resource), C.DISPMANX_TRANSFORM_T(transform)) == DX_SUCCESS
 }

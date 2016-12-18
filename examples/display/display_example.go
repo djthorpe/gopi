@@ -16,13 +16,20 @@ import (
 )
 
 import (
+	gopi "github.com/djthorpe/gopi"
 	app "github.com/djthorpe/gopi/app"
+	khronos "github.com/djthorpe/gopi/khronos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func MyRunLoop(app *app.App) error {
-	fmt.Println("DISPLAY:", app.Display)
+	display := app.Display.(gopi.DisplayDriver)
+	fmt.Println("DISPLAY:", display.GetDisplay())
+	w, h := display.GetDisplaySize()
+	fmt.Println("   SIZE:", khronos.EGLSize{uint(w), uint(h)})
+	fmt.Println("    PPI:", display.GetPixelsPerInch())
+
 	return nil
 }
 

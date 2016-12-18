@@ -51,3 +51,17 @@ func (this *eglDriver) CreateImage(r io.Reader) (khronos.EGLBitmap, error) {
 func (this *eglDriver) DestroyImage(bitmap khronos.EGLBitmap) error {
 	return this.dx.DestroyResource(bitmap.(*DXResource))
 }
+
+// Snapshot screen
+func (this *eglDriver) SnapshotImage() (khronos.EGLBitmap, error) {
+	resource, err := this.dx.CreateSnapshot()
+	if err != nil {
+		return nil, err
+	}
+	return resource, nil
+}
+
+// Write image as a PNG
+func (this *eglDriver) WriteImagePNG(w io.Writer, bitmap khronos.EGLBitmap) error {
+	return ErrNotImplemented
+}

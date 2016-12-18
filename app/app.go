@@ -76,14 +76,17 @@ type App struct {
 	// The OpenVG driver
 	OpenVG khronos.VGDriver
 
+	// The Font driver
+	Fonts khronos.VGFontDriver
+
 	// The GPIO driver
 	GPIO hw.GPIODriver
 
 	// The I2C driver
 	I2C hw.I2CDriver
 
-	// The Font driver
-	Fonts khronos.VGFontDriver
+	// The Input driver
+	Input hw.InputDriver
 
 	// Signal channel on catching signals
 	signal_channel chan os.Signal
@@ -132,7 +135,7 @@ type AppFlags uint
 // CONSTANTS
 
 const (
-	// Constants used to determine what features are needed
+	// Constants used to determine what subsystems are needed
 	APP_DEVICE    AppFlags = 0x0001
 	APP_DISPLAY   AppFlags = 0x0002
 	APP_EGL       AppFlags = 0x0004
@@ -141,6 +144,7 @@ const (
 	APP_I2C       AppFlags = 0x0020
 	APP_OPENGL_ES AppFlags = 0x0040
 	APP_VGFONT    AppFlags = 0x0080
+	APP_INPUT     AppFlags = 0x0100
 )
 
 const (
@@ -179,7 +183,7 @@ func Config(flags AppFlags) AppConfig {
 
 	// Add -ppi
 	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_OPENGL_ES|APP_VGFONT) != 0 {
-		config.FlagSet.FlagString("screensize", "", "Screen size in inches (ie, 99in 99mm 99cm 99x99in 99x99mm 99x99cm)")
+		config.FlagSet.FlagString("displaysize", "", "Display physical size (ie, 99in 99mm 99cm 99x99in 99x99mm 99x99cm)")
 	}
 
 	// Add -i2cbus
@@ -254,13 +258,14 @@ func NewApp(config AppConfig) (*App, error) {
 	this.Logger.SetLevel(config.LogLevel)
 
 	// Debugging
-	this.Logger.Debug("<App>Open device=%v display=%v egl=%v openvg=%v opengl_es=%v vgfont=%v gpio=%v i2c=%v",
+	this.Logger.Debug("<App>Open device=%v display=%v egl=%v openvg=%v opengl_es=%v vgfont=%v input=%v gpio=%v i2c=%v",
 		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT|APP_GPIO|APP_I2C) != 0,
 		config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT) != 0,
 		config.Features&(APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0,
 		config.Features&(APP_OPENVG) != 0,
 		config.Features&(APP_OPENGL_ES) != 0,
 		config.Features&(APP_VGFONT) != 0,
+		config.Features&(APP_INPUT) != 0,
 		config.Features&(APP_GPIO) != 0,
 		config.Features&(APP_I2C) != 0,
 	)
@@ -318,7 +323,7 @@ func NewApp(config AppConfig) (*App, error) {
 		this.OpenVG = openvg.(khronos.VGDriver)
 	}
 
-	// Create the Font driver
+	// Create the Font driver subsystem
 	if config.Features&(APP_VGFONT) != 0 {
 		ppi := uint(0)
 		if this.Display != nil {
@@ -344,6 +349,17 @@ func NewApp(config AppConfig) (*App, error) {
 			this.Close()
 			return nil, err
 		}
+	}
+
+	// Create the Input subsystem
+	if config.Features&(APP_INPUT) != 0 {
+		input, err := gopi.Open(linux.Input{}, this.Logger)
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
+		// Convert device into an InputDriver
+		this.Input = input.(hw.InputDriver)
 	}
 
 	// Create the GPIO interface
@@ -386,6 +402,12 @@ func (this *App) Close() error {
 			return err
 		}
 		this.I2C = nil
+	}
+	if this.Input != nil {
+		if err := this.Input.Close(); err != nil {
+			return err
+		}
+		this.Input = nil
 	}
 	if this.GPIO != nil {
 		if err := this.GPIO.Close(); err != nil {
@@ -524,13 +546,13 @@ func (this *App) getDisplay(default_display uint16) (uint16, float64, error) {
 	if exists == false {
 		display = default_display
 	}
-	screensize, exists := this.FlagSet.GetString("screensize")
+	screensize, exists := this.FlagSet.GetString("displaysize")
 	if exists == false {
 		return display, 0.0, nil
 	}
 	inches, err := util.ParseLengthString(screensize)
 	if err != nil {
-		return display, inches, this.Logger.Error("Invalid -screensize: %v", err)
+		return display, inches, this.Logger.Error("Invalid -displaysize: %v", err)
 	}
 	return display, inches, nil
 }
