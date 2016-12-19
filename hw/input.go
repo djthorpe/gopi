@@ -23,8 +23,14 @@ type InputDriver interface {
 }
 
 type InputDevice interface {
+	// Get the name of the input device
 	GetName() string
+
+	// Get the type of device
 	GetType() InputDeviceType
+
+	// Close the device
+	Close() error
 }
 
 type InputDeviceType uint8

@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"os"
 )
 
 import (
@@ -29,6 +30,7 @@ type Input struct{}
 
 type InputDriver struct {
 	log *util.LoggerDevice // logger
+	devices []hw.InputDevice // input devices
 }
 
 type InputDevice struct {
@@ -40,13 +42,19 @@ type InputDevice struct {
 
 	// The type of device, or NONE
 	Type hw.InputDeviceType
+
+	// Handle to the device
+	handle *os.File
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
+// Internal constants
 const (
 	PATH_INPUT_DEVICES = "/sys/class/input/event*"
+	MAX_POLL_EVENTS      = 32
+	MAX_EVENT_SIZE_BYTES = 1024
 )
 
 // Event types
@@ -68,7 +76,7 @@ const (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// OPEN AND CLOSE
+// InputDriver OPEN AND CLOSE
 
 // Create new Input object, returns error if not possible
 func (config Input) Open(log *util.LoggerDevice) (gopi.Driver, error) {
@@ -81,7 +89,10 @@ func (config Input) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	this.log = log
 
 	// Find devices
-	if err := evFind(); err != nil {
+	this.devices = make([]hw.InputDevice,0)
+	if err := evFind(func (device *InputDevice) {
+		this.devices = append(this.devices,device)
+	}); err != nil {
 		return nil, err
 	}
 
@@ -93,24 +104,74 @@ func (config Input) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 func (this *InputDriver) Close() error {
 	this.log.Debug("<linux.Input>Close")
 
+	for _, device := range this.devices {
+		if err := device.Close(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// InputDevice OPEN AND CLOSE
+
+// Open driver
+func (this *InputDevice) Open() error {
+	if this.handle != nil {
+		if err := this.Close(); err != nil {
+			return err
+		}
+	}
+	var err error
+	if this.handle, err = os.OpenFile(this.Path, os.O_RDWR, 0); err != nil {
+		this.handle = nil
+		return err
+	}
+	// Success
+	return nil
+}
+
+// Close driver
+func (this *InputDevice) Close() error {
+	var err error
+	if this.handle != nil {
+		err = this.handle.Close()
+	}
+	this.handle = nil
+	return err
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// InputDevice implementation
+
+func (this *InputDevice) GetName() string {
+	return this.Name
+}
+
+func (this *InputDevice) GetType() hw.InputDeviceType {
+	return this.Type
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
 // Strinfigy InputDriver object
 func (this *InputDriver) String() string {
-	return fmt.Sprintf("<linux.Input>{ }")
+	return fmt.Sprintf("<linux.Input>{ devices=%v }",this.devices)
 }
+
 
 // Strinfigy InputDevice object
 func (this *InputDevice) String() string {
-	return fmt.Sprintf("<linux.InputDevice>{ name=\"%s\" path=%s type=%v }", this.Name, this.Path, this.Type)
+	return fmt.Sprintf("<linux.InputDevice>{ name=\"%s\" path=%s type=%v fd=%v }", this.Name, this.Path, this.Type, this.handle)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
 // Find all input devices
-func evFind() error {
+func evFind(callback func (driver *InputDevice)) error {
 	files, err := filepath.Glob(PATH_INPUT_DEVICES)
 	if err != nil {
 		return err
@@ -121,7 +182,8 @@ func evFind() error {
 			continue
 		}
 		device := &InputDevice{Name: strings.TrimSpace(string(buf)), Path: path.Join("/", "dev", "input", path.Base(file))}
-		fmt.Println(device)
+		callback(device)
 	}
 	return nil
 }
+
