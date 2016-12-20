@@ -9,7 +9,7 @@ This repository contains the Golang interface to hardware and graphics devices,
 currently targetting the Raspberry Pi but could theoretically target other
 platforms too.
 
-The scope of this library is as follows:
+The scope of this framework is as follows:
 
   * A framework for developing applications easily, either for use on
     the command line or event-based applications
