@@ -114,3 +114,4 @@ Read the remaining documentation on the various functions of `gopi`:
   * To render text as graphics using scalable fonts, read [FONTS](FONTS.md).
   * To use the GPIO peripheral port, read [GPIO](GPIO.md).
   * The application framework can make it easy to write applications. Read [APP](APP.md).
+
