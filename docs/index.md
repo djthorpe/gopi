@@ -1,3 +1,8 @@
+---
+layout: post
+title: Getting started with gopi, the golang Raspberry Pi framework
+---
+
 # Introduction
 
 This repository contains the Golang interface to hardware and graphics devices,
