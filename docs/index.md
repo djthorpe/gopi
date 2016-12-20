@@ -2,8 +2,6 @@
 title: Getting started with gopi, the golang Raspberry Pi framework
 layout: default
 ---
-XX
-# Introduction
 
 This repository contains the Golang interface to hardware and graphics devices,
 currently targetting the Raspberry Pi but could theoretically target other
