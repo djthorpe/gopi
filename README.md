@@ -1,6 +1,6 @@
 
 <center>
-![GOPI](https://raw.githubusercontent.com/djthorpe/gopi/master/etc/images/gopi-800x388.png)
+<img src="https://raw.githubusercontent.com/djthorpe/gopi/master/etc/images/gopi-800x388.png" alt="GOPI" style="width:75%;">
 </center>
 
 This repository contains a golang framework for the Raspberry Pi, which
