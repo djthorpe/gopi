@@ -1,7 +1,11 @@
 
-<center>
-| <img src="https://raw.githubusercontent.com/djthorpe/gopi/master/etc/images/gopi-800x388.png" alt="GOPI" style="width:200px"> | Go Language Raspberry Pi Framework |
-</center>
+<table><tr>
+  <td width="50%">
+    <img src="https://raw.githubusercontent.com/djthorpe/gopi/master/etc/images/gopi-800x388.png" alt="GOPI" style="width:200px">
+  </td><td>
+    Go Language Raspberry Pi Framework
+  </td>
+</tr></table>
 
 This repository contains a golang framework for the Raspberry Pi, which
 will allow you to develop applications which utilize the Graphics Processing
