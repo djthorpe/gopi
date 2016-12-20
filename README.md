@@ -1,5 +1,7 @@
 
-https://github.com/djthorpe/gopi/tree/master/etc/images/gopi-800x388.png "gopi"
+<center>
+![GOPI](https://github.com/djthorpe/gopi/tree/master/etc/images/gopi-800x388.png)
+</center>
 
 This repository contains a golang framework for the Raspberry Pi, which
 will allow you to develop applications which utilize the Graphics Processing
