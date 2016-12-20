@@ -1,5 +1,6 @@
 ---
 title: Getting started with gopi, the golang Raspberry Pi framework
+layout: default
 ---
 
 # Introduction
