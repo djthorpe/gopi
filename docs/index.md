@@ -1,5 +1,4 @@
 ---
-layout: post
 title: Getting started with gopi, the golang Raspberry Pi framework
 ---
 
