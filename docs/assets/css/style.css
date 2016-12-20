@@ -109,7 +109,7 @@ header {
   -webkit-font-smoothing:subpixel-antialiased;
 }
 
-header ul {
+header ul.dl {
   list-style:none;
   height:40px;
   padding:0;
