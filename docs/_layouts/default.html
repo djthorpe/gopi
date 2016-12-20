@@ -9,9 +9,8 @@
 <body>
     <div class="wrapper">
       <header>
-	  	<a href="{{ site.github.repository_url }}"><img src="https://raw.githubusercontent.com/djthorpe/gopi/master/etc/images/gopi-800x388.png" alt="GOPI" style="width:100%"></a>
-        <h1>{{ site.title | default: site.github.repository_name }}</h1>
-        <p>{{ site.description | default: site.github.project_tagline }}</p>
+	  	<a href="{{ site.github.repository_url }}"><img src="https://raw.githubusercontent.com/djthorpe/gopi/master/etc/images/gopi-800x388.png" alt="{{ site.title | default: site.github.repository_name }}" style="width:100%"></a>
+        <h2>{{ site.description | default: site.github.project_tagline }}</h2>
 
         {% if site.github.is_project_page %}
           <p class="view"><a href="{{ site.github.repository_url }}">View the Project on GitHub <small>{{ github_name }}</small></a></p>
