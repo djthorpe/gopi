@@ -107,16 +107,10 @@ The examples demonstrate various features of the `gopi` package. For example:
 
 Read the remaining documentation on the various functions of `gopi`:
 
-  * To read about getting general information about your device, read [DEVICE](docs/DEVICE.md).
-  * To read about input devices, read [INPUT](docs/INPUT.md).
-  * To read about opening displays, creating windows and resources, read [EGL](docs/EGL.md).
-  * To use OpenVG which provides you with Vector Graphics operations, read [OpenVG](docs/OpenVG.md).
-  * To render text as graphics using scalable fonts, read [FONTS](docs/FONTS.md).
-  * To use the GPIO peripheral port, read [GPIO](docs/GPIO.md).
-  * The application framework can make it easy to write applications. Read [APP](docs/APP.md).
-
-# License
-
-This repository is released under the BSD License. Please see the file
-[LICENSE](LICENSE.md) for a copy of this license.
-
+  * To read about getting general information about your device, read [DEVICE](DEVICE.md).
+  * To read about input devices, read [INPUT](INPUT.md).
+  * To read about opening displays, creating windows and resources, read [EGL](EGL.md).
+  * To use OpenVG which provides you with Vector Graphics operations, read [OpenVG](OpenVG.md).
+  * To render text as graphics using scalable fonts, read [FONTS](FONTS.md).
+  * To use the GPIO peripheral port, read [GPIO](GPIO.md).
+  * The application framework can make it easy to write applications. Read [APP](APP.md).
