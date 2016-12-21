@@ -25,7 +25,7 @@ import (
 func MyRunLoop(app *app.App) error {
 	egl := app.EGL.(khronos.EGLDriver)
 
-	app.Logger.Debug("INPUT=%v",app.Input)
+	app.Logger.Debug("INPUT=%v", app.Input)
 
 	// Create a cursor
 	cursor, err := egl.CreateCursor()
