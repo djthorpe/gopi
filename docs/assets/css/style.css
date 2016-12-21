@@ -144,6 +144,11 @@ footer {
 div#toc {
 
 }
+
+#toc h2 {
+	text-align: right;
+}
+
 #toc ul {
 	list-style-type: none;
 }

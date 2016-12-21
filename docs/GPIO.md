@@ -1,5 +1,5 @@
 
-# The GPIO interface
+# The General Purpose Input Output (GPIO) port
 
 The Raspberry Pi General Purpose interface provides you with a way to interface
 with external hardware. In order to interact with the GPIO device, you'll need
