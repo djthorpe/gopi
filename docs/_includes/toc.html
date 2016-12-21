@@ -21,12 +21,11 @@
 </div>
 <script language="JavaScript">
 	var url = window.location.href;
-	var page = url.match(/.*\/(.*)\.html$/)
-	page = page ? page[1].toLowerCase() : "index"
-	console.log(page)
-	var node = document.getElementById("toc_" + page)
+	var page = url.match(/.*\/(.*)\.html$/);
+	page = page ? page[1].toLowerCase() : "index";
+	var node = document.getElementById("toc_" + page);
 	if(node) {
-		node.className = "selected"
+		node.className = "selected";
 	}
 </script>
 
