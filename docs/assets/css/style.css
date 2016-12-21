@@ -160,6 +160,9 @@ div#toc {
 #toc li.selected {
 	font-weight: bold;
 }
+#toc a {
+	color: inherit;
+}
 
 @media print, screen and (max-width: 960px) {
 
