@@ -20,7 +20,9 @@
 </ul>
 </div>
 <script language="JavaScript">
-	console.log(location.href);
+	var url = window.location.href;
+	var filename = url.match(/.*\/(.*)\.html$/)[1];
+	console.log(filename);
 </script>
 
 
