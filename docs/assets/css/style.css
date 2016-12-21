@@ -210,6 +210,9 @@ div#toc {
   body {
     padding:15px;
   }
+  div#toc {
+  	display: none;
+  }
 }
 
 @media print {
