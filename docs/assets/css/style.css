@@ -157,7 +157,9 @@ div#toc {
 #toc li:hover {
 	background-color: #aaa;
 }
-
+#toc li.selected {
+	font-weight: bold;
+}
 
 @media print, screen and (max-width: 960px) {
 
