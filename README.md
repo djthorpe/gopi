@@ -43,4 +43,3 @@ modification, are permitted with some conditions.
 This repository is released under the BSD License. Please see the file
 [LICENSE](LICENSE.md) for a copy of this license and for a list of the
 conditions for redistribution and use.
-

@@ -9,6 +9,10 @@
 package hw // import "github.com/djthorpe/gopi/hw"
 
 import (
+	"time"
+)
+
+import (
 	gopi "github.com/djthorpe/gopi"
 )
 
@@ -19,7 +23,10 @@ type InputDriver interface {
 	// Enforces general driver
 	gopi.Driver
 
-	// Return devices
+	// Open Devices by name, alias and type
+	OpenDevicesByName(name string,callback InputEventCallback) ([]InputDevice,error)
+	OpenDevicesByAlias(alias string,callback InputEventCallback) ([]InputDevice,error)
+	OpenDevicesByType(type InputDeviceType,bus InputDeviceBus,callback InputEventCallback) ([]InputDevice,error)
 }
 
 type InputDevice interface {
@@ -31,16 +38,30 @@ type InputDevice interface {
 
 	// Get the bus interface
 	GetBus() InputDeviceBus
+}
 
-	// Close the device
-	Close() error
+type InputEvent interface {
+	// Timestamp of event
+	Timestamp time.Duration
+
+	// Type of device which has created the event
+	DeviceType InputDeviceType
+
+	// Event type
+	EventType InputEventType
 }
 
 // Device type (keyboard, mouse, touchscreen, etc)
 type InputDeviceType uint8
 
+// Event type (button press, button release, etc)
+type InputEventType uint16
+
 // Bus type (USB, Bluetooth, etc)
 type InputDeviceBus uint16
+
+// Callback function
+type InputEventCallback func (event InputEvent,device InputDevice)
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
