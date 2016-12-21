@@ -139,6 +139,26 @@ footer {
   -webkit-font-smoothing:subpixel-antialiased;
 }
 
+/* TABLE OF CONTENTS */
+
+div#toc {
+
+}
+#toc ul {
+	list-style-type: none;
+}
+#toc li {
+	padding: 2px 20px 2px 2px;
+	margin: 2px 5px 2px 2px;
+	border-radius: 20px 0px 0px 20px;
+	background-color: #eee;
+	text-align: right;
+}
+#toc li:hover {
+	background-color: #aaa;
+}
+
+
 @media print, screen and (max-width: 960px) {
 
   div.wrapper {
