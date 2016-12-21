@@ -40,11 +40,15 @@ a `hw.GPIODriver`. For example,
 
 The abstract device drivers are documented in the following folders:
 
-  * _hw_ The abstract hardware device drivers
-  * _kkronos_ The abstract graphics device drivers
+  * *hw* The abstract hardware device drivers
+  * *kkronos* The abstract graphics device drivers
 
 The concrete device drivers which implement these are stored in the `device`
 folder.
+
+It's expected that most interactions with the concrete drivers will be through
+the [application framework](APP.html), so you are actually using the abstract
+interfaces rather than the concrete.
 
 ## Organization of the Repository
 
