@@ -25,8 +25,8 @@ type InputDriver interface {
 
 	// Open Devices by name, alias and type
 	OpenDevicesByName(name string,callback InputEventCallback) ([]InputDevice,error)
-	OpenDevicesByAlias(alias string,callback InputEventCallback) ([]InputDevice,error)
-	OpenDevicesByType(type InputDeviceType,bus InputDeviceBus,callback InputEventCallback) ([]InputDevice,error)
+	//OpenDevicesByAlias(alias string,callback InputEventCallback) ([]InputDevice,error)
+	//OpenDevicesByType(type InputDeviceType,bus InputDeviceBus,callback InputEventCallback) ([]InputDevice,error)
 }
 
 type InputDevice interface {
@@ -38,9 +38,12 @@ type InputDevice interface {
 
 	// Get the bus interface
 	GetBus() InputDeviceBus
+
+	// Close the device to free the resources
+	Close() error
 }
 
-type InputEvent interface {
+type InputEvent struct {
 	// Timestamp of event
 	Timestamp time.Duration
 

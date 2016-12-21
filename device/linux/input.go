@@ -156,6 +156,7 @@ func (config Input) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 		}
 	}
 
+
 	// success
 	return this, nil
 }
@@ -202,6 +203,14 @@ func (t evType) String() string {
 	default:
 		return "[?? Unknown evType value]"
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// InputDriver Open devices
+
+func (this *InputDriver) OpenDevicesByName(name string,callback hw.InputEventCallback) ([]hw.InputDevice,error) {
+	// TODO: Not yet implemented
+	return nil,nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -265,18 +274,21 @@ func (this *InputDevice) String() string {
 // PRIVATE METHODS
 
 func (this *InputDevice) evSetCapabilities() error {
+	// Get the name of the device
 	name, err := evGetName(this.handle)
 	if err != nil {
 		return err
 	}
 	this.Name = name
 
+	// Get the physical Id for the device
 	id, err := evGetPhys(this.handle)
 	// Error is ignored
 	if err == nil {
 		this.Id = id
 	}
 
+	// Get device information
 	bus, vendor, product, version, err := evGetInfo(this.handle)
 	if err == nil {
 		// Error is ignored
@@ -286,11 +298,25 @@ func (this *InputDevice) evSetCapabilities() error {
 		this.Version = version
 	}
 
+	// Get supported events for the device
 	events, err := evGetEvents(this.handle)
 	if err != nil {
 		return err
 	}
 	this.Events = events
+
+	// Determine the device type - I hope the joystick has EV_MSC
+	// events, but this is untested.
+	switch {
+	case evCheckEvents(events,EV_KEY,EV_LED,EV_REP):
+		this.Type = hw.INPUT_TYPE_KEYBOARD
+	case evCheckEvents(events,EV_KEY,EV_REL):
+		this.Type = hw.INPUT_TYPE_MOUSE
+	case evCheckEvents(events,EV_KEY,EV_ABS,EV_MSC):
+		this.Type = hw.INPUT_TYPE_JOYSTICK
+	case evCheckEvents(events,EV_KEY,EV_ABS):
+		this.Type = hw.INPUT_TYPE_TOUCHSCREEN
+	}
 
 	return nil
 }
@@ -362,6 +388,19 @@ func evGetEvents(handle *os.File) ([]evType,error) {
 		}
 	}
 	return capabilities,nil
+}
+
+// Check to make sure all events exist in a list of events
+func evCheckEvents(capabilities []evType,types ...evType) bool {
+	count := 0
+	for _, capability := range capabilities {
+		for _, typ := range types {
+			if typ == capability {
+				count = count + 1
+			}
+		}
+	}
+	return (count == len(types))
 }
 
 // Call ioctl
