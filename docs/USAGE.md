@@ -13,7 +13,8 @@ The framework is meant to provide some level of device independence, so that
 there can be several implementations of the same interfaces. For example,
 there are both `rpi.GPIO` and `linux.GPIO` device subsystems which both
 implement the `hw.GPIO` interface, but which have different ways to
-interact with the GPIO port, different features, etc.
+interact with the GPIO port, different features, and so forth. In general you
+should need to understand only how the abstract interfaces work.
 
 Every device is opened using the `gpio.Open` method with a device-specific
 configuration. For the GPIO example,
