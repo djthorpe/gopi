@@ -261,8 +261,6 @@ func (this *InputDevice) String() string {
 	return fmt.Sprintf("<linux.InputDevice>{ name=\"%s\" path=%s id=%v type=%v bus=%v product=0x%04X vendor=0x%04X version=0x%04X events=%v fd=%v }", this.Name, this.Path, this.Id, this.Type, this.Bus, this.Product, this.Vendor, this.Version, this.Events, this.handle)
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
