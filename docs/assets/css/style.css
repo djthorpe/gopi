@@ -159,6 +159,8 @@ div#toc {
 }
 #toc li.selected {
 	font-weight: bold;
+	background-color: #222;
+	color: #fff;
 }
 #toc a {
 	color: inherit;
