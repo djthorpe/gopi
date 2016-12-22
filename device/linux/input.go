@@ -82,6 +82,10 @@ type InputDevice struct {
 
 	// Handle to the device
 	handle *os.File
+
+	// File polling info
+	poll          int
+	event         syscall.EpollEvent
 }
 
 type evType uint16
@@ -236,12 +240,19 @@ func (this *InputDriver) OpenDevicesByName(name string,flags hw.InputDeviceType,
 				continue
 			}
 		} else {
+			// non-concrete device, assume it has already been opened
 			if name != "" && name != device.GetName() {
 				continue
 			}
 		}
+
 		// append device
 		devices = append(devices,device)
+	}
+
+	// TODO: now wait for events for these devices
+	for _, device := range this.devices {
+		go device.evWaitForEvents(callback)
 	}
 
 	return devices, nil
