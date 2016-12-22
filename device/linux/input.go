@@ -208,9 +208,43 @@ func (t evType) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // InputDriver Open devices
 
-func (this *InputDriver) OpenDevicesByName(name string,callback hw.InputEventCallback) ([]hw.InputDevice,error) {
-	// TODO: Not yet implemented
-	return nil,nil
+func (this *InputDriver) OpenDevicesByName(name string,flags hw.InputDeviceType,callback hw.InputEventCallback) ([]hw.InputDevice,error) {
+	// create slice for devices
+	devices := make([]hw.InputDevice,0)
+
+	// if type is none then change it to any
+	if flags == hw.INPUT_TYPE_NONE {
+		flags = hw.INPUT_TYPE_ANY
+	}
+
+	// select the devices to open. If name non-empty then only devices
+	// whose name matches are considered
+	for _, device := range this.devices {
+		if flags & device.GetType() == hw.INPUT_TYPE_NONE {
+			continue
+		}
+		// open device if it's of type *InputDevice or else just append it
+		// so that we can support devices which aren't naitive linux devices
+		// later
+		concrete_device, ok := device.(*InputDevice)
+		if ok == true {
+			if name != "" && concrete_device.evMatchesName(name) == false {
+				continue
+			}
+			if err := concrete_device.Open(); err != nil {
+				this.log.Warn("Cannot open: %v: %v",device.GetName(),err)
+				continue
+			}
+		} else {
+			if name != "" && name != device.GetName() {
+				continue
+			}
+		}
+		// append device
+		devices = append(devices,device)
+	}
+
+	return devices, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -336,6 +370,26 @@ func evFind(callback func(driver *InputDevice)) error {
 		callback(device)
 	}
 	return nil
+}
+
+// Match device name against several ways to refer to the device
+func (this *InputDevice) evMatchesName(name string) bool {
+	if name == "" {
+		return false
+	}
+	if name == this.Name {
+		return true
+	}
+	if name == this.Id {
+		return true
+	}
+	if name == this.Path {
+		return true
+	}
+	if name == filepath.Base(this.Path) {
+		return true
+	}
+	return false
 }
 
 // Get name

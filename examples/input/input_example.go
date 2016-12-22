@@ -18,19 +18,25 @@ import (
 
 import (
 	app "github.com/djthorpe/gopi/app"
+	hw "github.com/djthorpe/gopi/hw"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func MyRunLoop(app *app.App) error {
 
-	devices, err := app.Input.OpenDevicesByName("",nil)
+	// Opens all devices
+	devices, err := app.Input.OpenDevicesByName("",hw.INPUT_TYPE_ANY,nil)
 	if err != nil {
 		return err
 	}
 
+	format := "%-30s %-25s %-25s\n"
+	fmt.Printf(format,"Name","Type","Bus")
+	fmt.Printf(format,"------------------------------","-------------------------","-------------------------")
+
 	for _, device := range devices {
-		fmt.Println(device)
+		fmt.Printf(format,device.GetName(),device.GetType(),device.GetBus())
 	}
 
 	// Return success

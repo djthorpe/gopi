@@ -23,10 +23,8 @@ type InputDriver interface {
 	// Enforces general driver
 	gopi.Driver
 
-	// Open Devices by name, alias and type
-	OpenDevicesByName(name string,callback InputEventCallback) ([]InputDevice,error)
-	//OpenDevicesByAlias(alias string,callback InputEventCallback) ([]InputDevice,error)
-	//OpenDevicesByType(type InputDeviceType,bus InputDeviceBus,callback InputEventCallback) ([]InputDevice,error)
+	// Open Devices by name and type
+	OpenDevicesByName(name string,flags InputDeviceType,callback InputEventCallback) ([]InputDevice,error)
 }
 
 type InputDevice interface {
@@ -76,6 +74,7 @@ const (
 	INPUT_TYPE_MOUSE       InputDeviceType = 0x02
 	INPUT_TYPE_TOUCHSCREEN InputDeviceType = 0x04
 	INPUT_TYPE_JOYSTICK    InputDeviceType = 0x08
+	INPUT_TYPE_ANY         InputDeviceType = 0xFF
 )
 
 // Types of input connection
