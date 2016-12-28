@@ -14,10 +14,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"errors"
 )
 
 import (
 	app "github.com/djthorpe/gopi/app"
+	linux "github.com/djthorpe/gopi/device/linux"
+	gopi "github.com/djthorpe/gopi"
 	hw "github.com/djthorpe/gopi/hw"
 )
 
@@ -25,20 +28,22 @@ import (
 
 func MyRunLoop(app *app.App) error {
 
-	// Opens all devices
-	app.Logger.Info("input=%v",app.Input)
-	devices, err := app.Input.OpenDevicesByName("",hw.INPUT_TYPE_ANY,nil)
+	path := app.FlagSet.Args()
+	if len(path) != 1 {
+		return errors.New("Invalid number of arguments")
+	}
+
+	device, err := gopi.Open(linux.InputDevice{ Path: path[0] },app.Logger)
 	if err != nil {
 		return err
 	}
+	defer device.Close()
 
-	format := "%-30s %-25s %-25s\n"
-	fmt.Printf(format,"Name","Type","Bus")
-	fmt.Printf(format,"------------------------------","-------------------------","-------------------------")
-
-	for _, device := range devices {
-		fmt.Printf(format,device.GetName(),device.GetType(),device.GetBus())
-	}
+	device.(hw.InputDevice).Watch(func (event hw.InputEvent,device hw.InputDevice) {
+		fmt.Println("EVENT")
+		fmt.Println("  DEVICE",device)
+		fmt.Println("   EVENT",event)
+	})
 
 	// Wait for termination
 	app.WaitUntilDone()
@@ -51,7 +56,7 @@ func MyRunLoop(app *app.App) error {
 
 func main() {
 	// Create the config
-	config := app.Config(app.APP_INPUT)
+	config := app.Config(app.APP_DEVICE)
 
 	// Create the application
 	myapp, err := app.NewApp(config)

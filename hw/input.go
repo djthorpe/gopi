@@ -28,6 +28,9 @@ type InputDriver interface {
 }
 
 type InputDevice interface {
+	// Enforces general driver
+	gopi.Driver
+
 	// Get the name of the input device
 	GetName() string
 
@@ -37,8 +40,13 @@ type InputDevice interface {
 	// Get the bus interface
 	GetBus() InputDeviceBus
 
-	// Close the device to free the resources
-	Close() error
+	// Returns true if device matches conditions
+	Matches(alias string,device_type InputDeviceType,device_bus InputDeviceBus) bool
+
+	// Watch for events and call function. This method should return
+	// immediately and watching continue in the background. Watching should
+	// complete when Close is called
+	Watch(callback InputEventCallback) error
 }
 
 type InputEvent struct {
@@ -99,6 +107,7 @@ const (
 	INPUT_BUS_GSC       InputDeviceBus = 0x001A
 	INPUT_BUS_ATARI     InputDeviceBus = 0x001B
 	INPUT_BUS_SPI       InputDeviceBus = 0x001C
+	INPUT_BUS_ANY       InputDeviceBus = 0xFFFF
 )
 
 ////////////////////////////////////////////////////////////////////////////////
