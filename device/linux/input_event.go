@@ -2,11 +2,18 @@
 	Go Language Raspberry Pi Interface
 	(c) Copyright David Thorpe 2016-2017
 	All Rights Reserved
-    Documentation http://djthorpe.github.io/gopi/
+
+	Documentation http://djthorpe.github.io/gopi/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
 package linux /* import "github.com/djthorpe/gopi/device/linux" */
+
+import (
+	"encoding/binary"
+	"time"
+	"io"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE TYPES
@@ -20,9 +27,6 @@ type evEvent struct {
 	Code        uint16
 	Value       uint32
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// CONSTANTS
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -43,6 +47,11 @@ const (
 	EV_PWR       evType = 0x0016 // Power management events
 	EV_FF_STATUS evType = 0x0017 // Device reporting of force-feedback effects back to the host
 	EV_MAX       evType = 0x001F
+)
+
+const (
+	EV_CODE_X              uint16 = 0x0000
+	EV_CODE_Y              uint16 = 0x0001
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -78,3 +87,97 @@ func (t evType) String() string {
 		return "[?? Unknown evType value]"
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// WATCH
+
+func (this *InputDriver) Watch(delta time.Duration) error {
+	if err := this.poll.Watch(delta,func (fd int,flags PollMode) {
+		// Obtain device
+		device, exists := this.devices[fd]
+		if exists == false {
+			return
+		}
+		// Read raw event data
+		var event evEvent
+		err := binary.Read(device.handle, binary.LittleEndian, &event)
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
+			this.log.Error("<linux.Input>Wtch Error: %v",err)
+			return
+		}
+		// Process the event data
+		this.evDecode(&event,device)
+	}); err != nil {
+		return this.log.Error("<linux.Input>Watch Error: %v",err)
+	}
+
+	// success
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// DECODE
+
+func (this *InputDriver) evDecode(raw_event *evEvent,device *evDevice) {
+	switch(raw_event.Type) {
+	case EV_SYN:
+		this.evDecodeSyn(raw_event,device)
+	case EV_KEY:
+		this.evDecodeKey(raw_event,device)
+	case EV_ABS:
+		this.evDecodeAbs(raw_event,device)
+	case EV_REL:
+		this.evDecodeRel(raw_event,device)
+	case EV_MSC:
+		this.evDecodeMsc(raw_event,device)
+	default:
+		this.log.Warn("<linux.Input>Watch device=%v event=%v Ignoring event type",device,raw_event.Type)
+	}
+}
+
+func (this *InputDriver) evDecodeSyn(raw_event *evEvent,device *evDevice) {
+	timestamp := time.Duration(time.Duration(raw_event.Second) * time.Second + time.Duration(raw_event.Microsecond) * time.Microsecond)
+
+	// Emit moved cursor
+	if device.position.Equals(device.last_position) == false {
+		this.log.Debug("%v ts=%v CURSOR_MOVE=%v",raw_event.Type,timestamp,device.position)
+		device.last_position = device.position
+	}
+
+	this.log.Debug("%v ts=%v",raw_event.Type,timestamp)
+}
+
+func (this *InputDriver) evDecodeKey(raw_event *evEvent,device *evDevice) {
+	key := raw_event.Code
+	action := raw_event.Value
+	this.log.Debug("%v key=%v action=%v",raw_event.Type,key,action)
+}
+
+func (this *InputDriver) evDecodeAbs(raw_event *evEvent,device *evDevice) {
+	if raw_event.Code == EV_CODE_X {
+		device.position.X = int(raw_event.Value)
+	} else if raw_event.Code == EV_CODE_Y {
+		device.position.Y = int(raw_event.Value)
+	} else {
+		this.log.Debug("%v Ignoring code %v",raw_event.Type,raw_event.Code)
+	}
+}
+
+func (this *InputDriver) evDecodeRel(raw_event *evEvent,device *evDevice) {
+	if raw_event.Code == EV_CODE_X {
+		device.position.X = device.position.X + int(raw_event.Value)
+	} else if raw_event.Code == EV_CODE_Y {
+		device.position.Y = device.position.Y + int(raw_event.Value)
+	} else {
+		this.log.Debug("%v Ignoring code %v",raw_event.Type,raw_event.Code)
+	}
+}
+
+func (this *InputDriver) evDecodeMsc(raw_event *evEvent,device *evDevice) {
+
+}
+
+

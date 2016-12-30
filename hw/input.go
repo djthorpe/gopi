@@ -14,6 +14,7 @@ import (
 
 import (
 	gopi "github.com/djthorpe/gopi"
+	khronos "github.com/djthorpe/gopi/khronos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,8 +24,14 @@ type InputDriver interface {
 	// Enforces general driver
 	gopi.Driver
 
-	// Open Devices by name and type
-	OpenDevicesByName(name string,flags InputDeviceType,callback InputEventCallback) ([]InputDevice,error)
+	// Open Devices by name, type and bus
+	OpenDevicesByName(name string,flags InputDeviceType,bus InputDeviceBus) ([]InputDevice,error)
+
+	// Close Device
+	CloseDevice(device InputDevice) error
+
+	// Watch for events for an amount of time
+	Watch(delta time.Duration) error
 }
 
 type InputDevice interface {
@@ -40,13 +47,14 @@ type InputDevice interface {
 	// Get the bus interface
 	GetBus() InputDeviceBus
 
+	// Get current cursor position (for mouse, joystick and touchscreen devices)
+	GetPosition() khronos.EGLPoint
+
+	// Set current cursor position
+	SetPosition(khronos.EGLPoint)
+
 	// Returns true if device matches conditions
 	Matches(alias string,device_type InputDeviceType,device_bus InputDeviceBus) bool
-
-	// Watch for events and call function. This method should return
-	// immediately and watching continue in the background. Watching should
-	// complete when Close is called
-	Watch(callback InputEventCallback) error
 }
 
 type InputEvent struct {
@@ -58,6 +66,12 @@ type InputEvent struct {
 
 	// Event type
 	EventType InputEventType
+
+	// Absolute cursor position
+	Position khronos.EGLPoint
+
+	// Relative change in position
+	Relative khronos.EGLPoint
 }
 
 // Device type (keyboard, mouse, touchscreen, etc)

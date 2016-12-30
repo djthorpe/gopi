@@ -12,13 +12,13 @@ package linux /* import "github.com/djthorpe/gopi/device/linux" */
 import (
 	"os"
 	"fmt"
-	"time"
 )
 
 import (
 	gopi "github.com/djthorpe/gopi"
 	hw "github.com/djthorpe/gopi/hw"
 	util "github.com/djthorpe/gopi/util"
+	khronos "github.com/djthorpe/gopi/khronos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,6 +34,9 @@ type InputDevice struct {
 
 // Represents an input device such as a keyboard, mouse or touchscreen
 type evDevice struct {
+
+	// The Path of the input device
+	path string
 
 	// The Name of the input device
 	name string
@@ -61,8 +64,9 @@ type evDevice struct {
 	// Handle to the device
 	handle *os.File
 
-	// Polling
-	poll *evPoll
+	// Position
+	position khronos.EGLPoint
+	last_position khronos.EGLPoint
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,9 +77,12 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	var err error
 
 	log.Debug("<linux.InputDevice>Open path=%v",config.Path)
+
 	this := new(evDevice)
 	this.log = log
-	if this.handle, err = os.OpenFile(config.Path, os.O_RDWR, 0); err != nil {
+	this.path = config.Path
+
+	if this.handle, err = os.Open(config.Path); err != nil {
 		return nil, err
 	}
 
@@ -127,21 +134,11 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 func (this *evDevice) Close() error {
 	this.log.Debug("<linux.InputDevice>Close device=%v",this)
 
-	// shutdown polling
-	if this.poll != nil {
-		if err := this.poll.Close(); err != nil {
-			return err
-		}
-		this.poll = nil
-	}
-
 	// close file handle
 	err := this.handle.Close()
 	if err != nil {
 		return err
 	}
-
-	time.Sleep(5 * time.Second)
 
 	// return success
 	return nil
@@ -163,6 +160,27 @@ func (this *evDevice) GetType() hw.InputDeviceType {
 // Return the bus we think the device is connected to
 func (this *evDevice) GetBus() hw.InputDeviceBus {
 	return this.bus
+}
+
+// Return the file descriptor
+func (this *evDevice) GetFd() int {
+	return int(this.handle.Fd())
+}
+
+// Return the path of the device
+func (this *evDevice) GetPath() string {
+	return this.path
+}
+
+// Return cursor position
+func (this *evDevice) GetPosition() khronos.EGLPoint {
+	return this.position
+}
+
+// Set cursor position
+func (this *evDevice) SetPosition(position khronos.EGLPoint) {
+	this.position = position
+	this.last_position = position
 }
 
 // Return true if the device matches an alias and/or a device type and/or bus
@@ -200,34 +218,6 @@ func (this *evDevice) Matches(alias string,device_type hw.InputDeviceType,device
 		return true
 	}
 	return false
-}
-
-// Starts watching for events from the device
-func (this *evDevice) Watch(callback hw.InputEventCallback) error {
-	var err error
-
-	if this.poll != nil {
-		if err := this.poll.Close(); err != nil {
-			return err
-		}
-	}
-	if this.poll, err = evNewPoll(this.handle); err != nil {
-		return err
-	}
-
-	go this.evWatch()
-
-	return nil
-}
-
-// Background thread for polling
-func (this *evDevice) evWatch() error {
-	this.log.Debug2("<linux.InputDevice>WatchOpen device=%v",this)
-	err := this.poll.evPoll(func (event *evEvent) {
-		this.log.Debug2("Event = %v",event)
-	})
-	this.log.Debug2("<linux.InputDevice>WatchClose error=%v",err)
-	return err
 }
 
 ////////////////////////////////////////////////////////////////////////////////
