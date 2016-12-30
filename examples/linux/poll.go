@@ -30,9 +30,26 @@ func HelloWorld(app *app.App) error {
 
 	app.Logger.Info("DEVICES = %v",devices)
 
-	app.Input.Watch(time.Second * 10)
+	// Watch for events and check for completed every 100 milliseconds
+	finished_channel := make(chan bool)
+	finished_watch := make(chan bool)
+	go func() {
+		for {
+			select {
+			case _ = <- finished_channel:
+				finished_watch <- true
+				return
+			default:
+				app.Input.Watch(time.Millisecond * 100)
+			}
+		}
+	}()
 
 	app.WaitUntilDone()
+
+	// Shutdown goroutine
+	finished_channel <- true
+	_ = <- finished_watch
 
 	// Return success
 	return nil
