@@ -10,15 +10,15 @@
 package linux /* import "github.com/djthorpe/gopi/device/linux" */
 
 import (
-	"os"
 	"fmt"
+	"os"
 )
 
 import (
 	gopi "github.com/djthorpe/gopi"
 	hw "github.com/djthorpe/gopi/hw"
-	util "github.com/djthorpe/gopi/util"
 	khronos "github.com/djthorpe/gopi/khronos"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ type evDevice struct {
 
 	// Product and version
 	product uint16
-	vendor uint16
+	vendor  uint16
 	version uint16
 
 	// Capabilities
@@ -64,9 +64,12 @@ type evDevice struct {
 	// Handle to the device
 	handle *os.File
 
-	// Position
-	position khronos.EGLPoint
+	// Positions, keys and states
+	position      khronos.EGLPoint
 	last_position khronos.EGLPoint
+	rel_position  khronos.EGLPoint
+	key_code      evKeyCode
+	key_action    evKeyAction
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +79,7 @@ type evDevice struct {
 func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	var err error
 
-	log.Debug("<linux.InputDevice>Open path=%v",config.Path)
+	log.Debug("<linux.InputDevice>Open path=%v", config.Path)
 
 	this := new(evDevice)
 	this.log = log
@@ -117,13 +120,13 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	// currently supported, however, so will need to find a
 	// joystick tester later
 	switch {
-	case this.evSupportsEventType(EV_KEY,EV_LED,EV_REP):
+	case this.evSupportsEventType(EV_KEY, EV_LED, EV_REP):
 		this.device_type = hw.INPUT_TYPE_KEYBOARD
-	case this.evSupportsEventType(EV_KEY,EV_REL):
+	case this.evSupportsEventType(EV_KEY, EV_REL):
 		this.device_type = hw.INPUT_TYPE_MOUSE
-	case this.evSupportsEventType(EV_KEY,EV_ABS,EV_MSC):
+	case this.evSupportsEventType(EV_KEY, EV_ABS, EV_MSC):
 		this.device_type = hw.INPUT_TYPE_JOYSTICK
-	case this.evSupportsEventType(EV_KEY,EV_ABS):
+	case this.evSupportsEventType(EV_KEY, EV_ABS):
 		this.device_type = hw.INPUT_TYPE_TOUCHSCREEN
 	}
 
@@ -132,7 +135,7 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 
 // Close InputDevice
 func (this *evDevice) Close() error {
-	this.log.Debug("<linux.InputDevice>Close device=%v",this)
+	this.log.Debug("<linux.InputDevice>Close device=%v", this)
 
 	// close file handle
 	err := this.handle.Close()
@@ -184,7 +187,7 @@ func (this *evDevice) SetPosition(position khronos.EGLPoint) {
 }
 
 // Return true if the device matches an alias and/or a device type and/or bus
-func (this *evDevice) Matches(alias string,device_type hw.InputDeviceType,device_bus hw.InputDeviceBus) bool {
+func (this *evDevice) Matches(alias string, device_type hw.InputDeviceType, device_bus hw.InputDeviceBus) bool {
 	// Check the device type. We use NONE or ANY to match any device
 	// type. The input argument can be OR'd in order to match more than one
 	// device type.
@@ -192,7 +195,7 @@ func (this *evDevice) Matches(alias string,device_type hw.InputDeviceType,device
 		device_type = hw.INPUT_TYPE_ANY
 	}
 	if device_type != hw.INPUT_TYPE_ANY {
-		if this.device_type & device_type == 0 {
+		if this.device_type&device_type == 0 {
 			return false
 		}
 	}
@@ -243,4 +246,3 @@ func (this *evDevice) evSupportsEventType(types ...evType) bool {
 	}
 	return (count == len(types))
 }
-

@@ -10,11 +10,11 @@
 package linux /* import "github.com/djthorpe/gopi/device/linux" */
 
 import (
-	"os"
-	"syscall"
-	"sync"
-	"time"
 	"errors"
+	"os"
+	"sync"
+	"syscall"
+	"time"
 )
 
 import (
@@ -43,21 +43,21 @@ type PollDriver struct {
 	ctlEvent syscall.EpollEvent
 }
 
-type PollCallback func (fd int,flags PollMode)
+type PollCallback func(fd int, flags PollMode)
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
-	POLL_READFLAGS = syscall.EPOLLIN | syscall.EPOLLRDHUP
+	POLL_READFLAGS  = syscall.EPOLLIN | syscall.EPOLLRDHUP
 	POLL_WRITEFLAGS = syscall.EPOLLOUT
 )
 
 const (
-	POLL_MODE_READ PollMode = 1 << iota
-	POLL_MODE_WRITE PollMode = 1 << iota
+	POLL_MODE_READ   PollMode = 1 << iota
+	POLL_MODE_WRITE  PollMode = 1 << iota
 	POLL_MODE_HANGUP PollMode = 1 << iota
-	POLL_MODE_ERROR PollMode = 1 << iota
+	POLL_MODE_ERROR  PollMode = 1 << iota
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,14 +70,14 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
 
-func NewPollDriver(log *util.LoggerDevice) (*PollDriver,error) {
+func NewPollDriver(log *util.LoggerDevice) (*PollDriver, error) {
 	var err error
 
 	log.Debug("<linux.Poll>Open")
 
 	this := new(PollDriver)
 	if this.handle, err = syscall.EpollCreate1(syscall.EPOLL_CLOEXEC); err != nil {
-		return nil,err
+		return nil, err
 	}
 	this.events = make(map[int]uint32)
 	this.log = log
@@ -106,7 +106,7 @@ func (this *PollDriver) Add(fd int, mode PollMode) error {
 	this.ctlEvent.Fd = int32(fd)
 	this.ctlEvent.Events, already = this.events[fd]
 
-	switch(mode) {
+	switch mode {
 	case POLL_MODE_READ:
 		this.ctlEvent.Events |= POLL_READFLAGS
 	case POLL_MODE_WRITE:
@@ -141,7 +141,7 @@ func (this *PollDriver) Remove(fd int, mode PollMode) error {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	switch(mode) {
+	switch mode {
 	case POLL_MODE_READ:
 		this.stopWaiting(fd, POLL_READFLAGS)
 	case POLL_MODE_WRITE:
@@ -153,8 +153,7 @@ func (this *PollDriver) Remove(fd int, mode PollMode) error {
 	return nil
 }
 
-
-func (this *PollDriver) Watch(delta time.Duration,callback PollCallback) error {
+func (this *PollDriver) Watch(delta time.Duration, callback PollCallback) error {
 	// Maximum of 64 events
 	events := make([]syscall.EpollEvent, 64)
 
@@ -179,20 +178,20 @@ func (this *PollDriver) Watch(delta time.Duration,callback PollCallback) error {
 		for _, event := range events[:n] {
 			var mode PollMode
 			// determine modes
-			if (event.Events & syscall.EPOLLHUP) != 0 || (event.Events & syscall.EPOLLRDHUP != 0) {
+			if (event.Events&syscall.EPOLLHUP) != 0 || (event.Events&syscall.EPOLLRDHUP != 0) {
 				mode |= POLL_MODE_HANGUP
 			}
-			if event.Events & syscall.EPOLLERR != 0 {
+			if event.Events&syscall.EPOLLERR != 0 {
 				mode |= POLL_MODE_ERROR
 			}
-			if event.Events & syscall.EPOLLIN != 0 {
+			if event.Events&syscall.EPOLLIN != 0 {
 				mode |= POLL_MODE_READ
 			}
-			if event.Events & syscall.EPOLLOUT != 0 {
+			if event.Events&syscall.EPOLLOUT != 0 {
 				mode |= POLL_MODE_WRITE
 			}
 			// callback
-			callback(int(event.Fd),mode)
+			callback(int(event.Fd), mode)
 		}
 	}
 	// we never reach here
@@ -206,25 +205,25 @@ func (m PollMode) String() string {
 	if m == 0 {
 		return s
 	}
-	if m & POLL_MODE_READ != 0 {
+	if m&POLL_MODE_READ != 0 {
 		s = s + "POLL_MODE_READ|"
 	}
-	if m & POLL_MODE_WRITE != 0 {
+	if m&POLL_MODE_WRITE != 0 {
 		s = s + "POLL_MODE_WRITE|"
 	}
-	if m & POLL_MODE_HANGUP != 0 {
+	if m&POLL_MODE_HANGUP != 0 {
 		s = s + "POLL_MODE_HANGUP|"
 	}
-	if m & POLL_MODE_ERROR != 0 {
+	if m&POLL_MODE_ERROR != 0 {
 		s = s + "POLL_MODE_ERROR|"
 	}
-	return s[0:len(s)-1]
+	return s[0 : len(s)-1]
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *PollDriver) stopWaiting(fd int,bits uint32) {
+func (this *PollDriver) stopWaiting(fd int, bits uint32) {
 	events, already := this.events[fd]
 	if already == false {
 		// The fd returned by the kernel may have been cancelled already; return silently.
@@ -238,18 +237,13 @@ func (this *PollDriver) stopWaiting(fd int,bits uint32) {
 		this.ctlEvent.Fd = int32(fd)
 		this.ctlEvent.Events = events
 		if err := syscall.EpollCtl(this.handle, syscall.EPOLL_CTL_MOD, fd, &this.ctlEvent); err != nil {
-			this.log.Warn("<linux.Poll> epoll_ctl error: EPOLL_CTL_MOD: %v",err)
+			this.log.Warn("<linux.Poll> epoll_ctl error: EPOLL_CTL_MOD: %v", err)
 		}
 		this.events[fd] = events
 	} else {
 		if err := syscall.EpollCtl(this.handle, syscall.EPOLL_CTL_DEL, fd, nil); err != nil {
-			this.log.Warn("<linux.Poll> epoll_ctl error: EPOLL_CTL_DEL: %v",err)
+			this.log.Warn("<linux.Poll> epoll_ctl error: EPOLL_CTL_DEL: %v", err)
 		}
 		delete(this.events, fd)
 	}
 }
-
-
-
-
-

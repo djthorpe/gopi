@@ -10,8 +10,8 @@ package linux /* import "github.com/djthorpe/gopi/device/linux" */
 
 import (
 	"os"
-	"unsafe"
 	"syscall"
+	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,35 +76,35 @@ func evGetPhys(handle *os.File) (string, error) {
 }
 
 // Get device information (bus, vendor, product, version)
-func evGetInfo(handle *os.File) (uint16,uint16,uint16,uint16,error) {
-	info := [4]uint16{ }
+func evGetInfo(handle *os.File) (uint16, uint16, uint16, uint16, error) {
+	info := [4]uint16{}
 	err := evIoctl(handle.Fd(), uintptr(EVIOCGID), unsafe.Pointer(&info))
 	if err != 0 {
-		return uint16(0),uint16(0),uint16(0),uint16(0),err
+		return uint16(0), uint16(0), uint16(0), uint16(0), err
 	}
-	return info[0],info[1],info[2],info[3],nil
+	return info[0], info[1], info[2], info[3], nil
 }
 
 // Get device capabilities
-func evGetSupportedEventTypes(handle *os.File) ([]evType,error) {
+func evGetSupportedEventTypes(handle *os.File) ([]evType, error) {
 	evbits := new([EV_MAX >> 3]byte)
-	err := evIoctl(handle.Fd(),uintptr(C._EVIOCGBIT(C.int(0), C.int(EV_MAX))), unsafe.Pointer(evbits))
+	err := evIoctl(handle.Fd(), uintptr(C._EVIOCGBIT(C.int(0), C.int(EV_MAX))), unsafe.Pointer(evbits))
 	if err != 0 {
-		return nil,err
+		return nil, err
 	}
-	capabilities := make([]evType,0)
+	capabilities := make([]evType, 0)
 	evtype := evType(0)
 	for i := 0; i < len(evbits); i++ {
 		evbyte := evbits[i]
 		for j := 0; j < 8; j++ {
-			if evbyte & 0x01 != 0x00 {
-				capabilities = append(capabilities,evtype)
+			if evbyte&0x01 != 0x00 {
+				capabilities = append(capabilities, evtype)
 			}
 			evbyte = evbyte >> 1
 			evtype++
 		}
 	}
-	return capabilities,nil
+	return capabilities, nil
 }
 
 // Call ioctl
@@ -112,4 +112,3 @@ func evIoctl(fd uintptr, name uintptr, data unsafe.Pointer) syscall.Errno {
 	_, _, err := syscall.RawSyscall(syscall.SYS_IOCTL, fd, name, uintptr(data))
 	return err
 }
-

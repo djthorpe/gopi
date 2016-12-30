@@ -10,6 +10,7 @@ package hw // import "github.com/djthorpe/gopi/hw"
 
 import (
 	"time"
+	"fmt"
 )
 
 import (
@@ -25,13 +26,13 @@ type InputDriver interface {
 	gopi.Driver
 
 	// Open Devices by name, type and bus
-	OpenDevicesByName(name string,flags InputDeviceType,bus InputDeviceBus) ([]InputDevice,error)
+	OpenDevicesByName(name string, flags InputDeviceType, bus InputDeviceBus) ([]InputDevice, error)
 
 	// Close Device
 	CloseDevice(device InputDevice) error
 
 	// Watch for events for an amount of time
-	Watch(delta time.Duration) error
+	Watch(delta time.Duration,callback InputEventCallback) error
 }
 
 type InputDevice interface {
@@ -54,7 +55,7 @@ type InputDevice interface {
 	SetPosition(khronos.EGLPoint)
 
 	// Returns true if device matches conditions
-	Matches(alias string,device_type InputDeviceType,device_bus InputDeviceBus) bool
+	Matches(alias string, device_type InputDeviceType, device_bus InputDeviceBus) bool
 }
 
 type InputEvent struct {
@@ -66,6 +67,9 @@ type InputEvent struct {
 
 	// Event type
 	EventType InputEventType
+
+	// Key or mouse button press
+	Keycode InputKeyCode
 
 	// Absolute cursor position
 	Position khronos.EGLPoint
@@ -80,11 +84,14 @@ type InputDeviceType uint8
 // Event type (button press, button release, etc)
 type InputEventType uint16
 
+// Keycode
+type InputKeyCode uint16
+
 // Bus type (USB, Bluetooth, etc)
 type InputDeviceBus uint16
 
 // Callback function
-type InputEventCallback func (event InputEvent,device InputDevice)
+type InputEventCallback func(event *InputEvent, device InputDevice)
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -124,8 +131,32 @@ const (
 	INPUT_BUS_ANY       InputDeviceBus = 0xFFFF
 )
 
+// Input events
+const (
+	INPUT_EVENT_NONE        InputEventType = 0x0000
+	INPUT_EVENT_KEYPRESS    InputEventType = 0x0001
+	INPUT_EVENT_KEYRELEASE  InputEventType = 0x0002
+	INPUT_EVENT_KEYREPEAT   InputEventType = 0x0003
+	INPUT_EVENT_ABSPOSITION InputEventType = 0x0004
+	INPUT_EVENT_RELPOSITION InputEventType = 0x0005
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY FUNCTIONS
+
+
+func (e InputEvent) String() string {
+	switch(e.EventType) {
+	case INPUT_EVENT_KEYPRESS, INPUT_EVENT_KEYRELEASE, INPUT_EVENT_KEYREPEAT:
+		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v keycode=0x%04X ts=%v }",e.EventType,e.DeviceType,uint16(e.Keycode),e.Timestamp)
+	case INPUT_EVENT_ABSPOSITION:
+		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v position=%v ts=%v }",e.EventType,e.DeviceType,e.Position,e.Timestamp)
+	case INPUT_EVENT_RELPOSITION:
+		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v position=%v relative=%v ts=%v }",e.EventType,e.DeviceType,e.Position,e.Relative,e.Timestamp)
+	default:
+		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v keycode=0x%04X position=%v relative=%v ts=%v }",e.EventType,e.DeviceType,uint16(e.Keycode),e.Position,e.Relative,e.Timestamp)
+	}
+}
 
 func (t InputDeviceType) String() string {
 	switch t {
@@ -190,3 +221,26 @@ func (b InputDeviceBus) String() string {
 		return "[?? Invalid InputDeviceBus value]"
 	}
 }
+
+func (e InputEventType) String() string {
+	switch e {
+	case INPUT_EVENT_NONE:
+		return "INPUT_EVENT_NONE"
+	case INPUT_EVENT_KEYPRESS:
+		return "INPUT_EVENT_KEYPRESS"
+	case INPUT_EVENT_KEYRELEASE:
+		return "INPUT_EVENT_KEYRELEASE"
+	case INPUT_EVENT_KEYREPEAT:
+		return "INPUT_EVENT_KEYREPEAT"
+	case INPUT_EVENT_ABSPOSITION:
+		return "INPUT_EVENT_ABSPOSITION"
+	case INPUT_EVENT_RELPOSITION:
+		return "INPUT_EVENT_RELPOSITION"
+	default:
+		return "[?? Invalid InputEventType value]"
+	}
+}
+
+
+
+

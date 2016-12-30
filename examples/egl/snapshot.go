@@ -46,7 +46,7 @@ func MyRunLoop(application *app.App) error {
 	defer egl.DestroyImage(bitmap)
 
 	// Save file as PNG
-	if err := egl.WriteImagePNG(handle,bitmap); err != nil {
+	if err := egl.WriteImagePNG(handle, bitmap); err != nil {
 		return err
 	}
 

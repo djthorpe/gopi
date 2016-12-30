@@ -26,18 +26,18 @@ import (
 func MyRunLoop(app *app.App) error {
 
 	// Opens all devices
-	app.Logger.Info("input=%v",app.Input)
-	devices, err := app.Input.OpenDevicesByName("",hw.INPUT_TYPE_ANY,nil)
+	app.Logger.Info("input=%v", app.Input)
+	devices, err := app.Input.OpenDevicesByName("", hw.INPUT_TYPE_ANY, nil)
 	if err != nil {
 		return err
 	}
 
 	format := "%-30s %-25s %-25s\n"
-	fmt.Printf(format,"Name","Type","Bus")
-	fmt.Printf(format,"------------------------------","-------------------------","-------------------------")
+	fmt.Printf(format, "Name", "Type", "Bus")
+	fmt.Printf(format, "------------------------------", "-------------------------", "-------------------------")
 
 	for _, device := range devices {
-		fmt.Printf(format,device.GetName(),device.GetType(),device.GetBus())
+		fmt.Printf(format, device.GetName(), device.GetType(), device.GetBus())
 	}
 
 	// Wait for termination

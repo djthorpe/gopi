@@ -355,7 +355,7 @@ func NewApp(config AppConfig) (*App, error) {
 	if config.Features&(APP_INPUT) != 0 {
 		input, err := gopi.Open(linux.Input{}, this.Logger)
 		if err != nil {
-			this.Logger.Info("Error %v",err)
+			this.Logger.Info("Error %v", err)
 			this.Close()
 			return nil, err
 		}

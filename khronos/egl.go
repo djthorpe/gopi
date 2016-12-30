@@ -104,6 +104,9 @@ type EGLDriver interface {
 	// Move surface origin relative to current origin
 	MoveSurfaceOriginBy(surface EGLSurface, rel EGLPoint) error
 
+	// Move surface origin absolutely
+	MoveSurfaceOriginTo(surface EGLSurface, abs EGLPoint) error
+
 	// Flush surface updates to screen
 	FlushSurface(surface EGLSurface) error
 

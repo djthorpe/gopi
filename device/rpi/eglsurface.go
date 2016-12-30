@@ -139,6 +139,15 @@ func (this *eglDriver) MoveSurfaceOriginBy(surface khronos.EGLSurface, rel khron
 	return this.setWindowOrigin(surface.(*eglWindow), surface.GetOrigin().Add(rel))
 }
 
+// Move surface origin
+func (this *eglDriver) MoveSurfaceOriginTo(surface khronos.EGLSurface, abs khronos.EGLPoint) error {
+	// Background surface cannot be moved
+	if surface.IsBackgroundSurface() {
+		return EGLErrorInvalidParameter
+	}
+	return this.setWindowOrigin(surface.(*eglWindow), abs)
+}
+
 // Set current context
 func (this *eglDriver) SetCurrentContext(surface khronos.EGLSurface) error {
 	return this.setCurrentContext(surface.(*eglWindow))

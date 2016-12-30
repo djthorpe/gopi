@@ -11,20 +11,27 @@ package linux /* import "github.com/djthorpe/gopi/device/linux" */
 
 import (
 	"encoding/binary"
-	"time"
 	"io"
+	"time"
+)
+
+import (
+	khronos "github.com/djthorpe/gopi/khronos"
+	hw "github.com/djthorpe/gopi/hw"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE TYPES
 
 type evType uint16
+type evKeyCode uint16
+type evKeyAction uint32
 
 type evEvent struct {
 	Second      uint32
 	Microsecond uint32
 	Type        evType
-	Code        uint16
+	Code        evKeyCode
 	Value       uint32
 }
 
@@ -50,15 +57,19 @@ const (
 )
 
 const (
-	EV_CODE_X              uint16 = 0x0000
-	EV_CODE_Y              uint16 = 0x0001
+	EV_CODE_X          evKeyCode = 0x0000
+	EV_CODE_Y          evKeyCode = 0x0001
+	EV_VALUE_KEY_NONE   evKeyAction    = 0x00000000
+	EV_VALUE_KEY_UP     evKeyAction    = 0x00000000
+	EV_VALUE_KEY_DOWN   evKeyAction    = 0x00000001
+	EV_VALUE_KEY_REPEAT evKeyAction    = 0x00000002
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (t evType) String() string {
-	switch(t) {
+	switch t {
 	case EV_SYN:
 		return "EV_SYN"
 	case EV_KEY:
@@ -91,8 +102,8 @@ func (t evType) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // WATCH
 
-func (this *InputDriver) Watch(delta time.Duration) error {
-	if err := this.poll.Watch(delta,func (fd int,flags PollMode) {
+func (this *InputDriver) Watch(delta time.Duration,callback hw.InputEventCallback) error {
+	if err := this.poll.Watch(delta, func(fd int, flags PollMode) {
 		// Obtain device
 		device, exists := this.devices[fd]
 		if exists == false {
@@ -105,13 +116,15 @@ func (this *InputDriver) Watch(delta time.Duration) error {
 			return
 		}
 		if err != nil {
-			this.log.Error("<linux.Input>Wtch Error: %v",err)
+			this.log.Error("<linux.Input>Wtch Error: %v", err)
 			return
 		}
-		// Process the event data
-		this.evDecode(&event,device)
+		// Process the event data, callback
+		if emit_event := this.evDecode(&event, device); emit_event != nil {
+			callback(emit_event,device)
+		}
 	}); err != nil {
-		return this.log.Error("<linux.Input>Watch Error: %v",err)
+		return this.log.Error("<linux.Input>Watch Error: %v", err)
 	}
 
 	// success
@@ -121,63 +134,86 @@ func (this *InputDriver) Watch(delta time.Duration) error {
 ////////////////////////////////////////////////////////////////////////////////
 // DECODE
 
-func (this *InputDriver) evDecode(raw_event *evEvent,device *evDevice) {
-	switch(raw_event.Type) {
+func (this *InputDriver) evDecode(raw_event *evEvent, device *evDevice) *hw.InputEvent {
+	switch raw_event.Type {
 	case EV_SYN:
-		this.evDecodeSyn(raw_event,device)
+		return this.evDecodeSyn(raw_event, device)
 	case EV_KEY:
-		this.evDecodeKey(raw_event,device)
+		this.evDecodeKey(raw_event, device)
 	case EV_ABS:
-		this.evDecodeAbs(raw_event,device)
+		this.evDecodeAbs(raw_event, device)
 	case EV_REL:
-		this.evDecodeRel(raw_event,device)
+		this.evDecodeRel(raw_event, device)
 	case EV_MSC:
-		this.evDecodeMsc(raw_event,device)
+		this.evDecodeMsc(raw_event, device)
 	default:
-		this.log.Warn("<linux.Input>Watch device=%v event=%v Ignoring event type",device,raw_event.Type)
+		this.log.Warn("<linux.Input>Watch device=%v event=%v Ignoring event type", device, raw_event.Type)
 	}
+
+	// Don't return an event
+	return nil
 }
 
-func (this *InputDriver) evDecodeSyn(raw_event *evEvent,device *evDevice) {
-	timestamp := time.Duration(time.Duration(raw_event.Second) * time.Second + time.Duration(raw_event.Microsecond) * time.Microsecond)
+func (this *InputDriver) evDecodeSyn(raw_event *evEvent, device *evDevice) *hw.InputEvent {
+	event := hw.InputEvent{ }
+	event.Timestamp = time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond)
+	event.DeviceType = device.device_type
+	event.Position = device.position
 
-	// Emit moved cursor
-	if device.position.Equals(device.last_position) == false {
-		this.log.Debug("%v ts=%v CURSOR_MOVE=%v",raw_event.Type,timestamp,device.position)
+	if device.rel_position.Equals(khronos.EGLZeroPoint) == false {
+		event.EventType = hw.INPUT_EVENT_RELPOSITION
+		event.Relative = device.rel_position
+		device.rel_position = khronos.EGLZeroPoint
 		device.last_position = device.position
+	} else if device.position.Equals(device.last_position) == false {
+		event.EventType = hw.INPUT_EVENT_ABSPOSITION
+		device.last_position = device.position
+	} else if device.key_action == EV_VALUE_KEY_UP {
+		event.EventType = hw.INPUT_EVENT_KEYRELEASE
+		event.Keycode = hw.InputKeyCode(device.key_code)
+		device.key_action = EV_VALUE_KEY_NONE
+	} else if device.key_action == EV_VALUE_KEY_DOWN {
+		event.EventType = hw.INPUT_EVENT_KEYPRESS
+		event.Keycode = hw.InputKeyCode(device.key_code)
+		device.key_action = EV_VALUE_KEY_NONE
+	} else if device.key_action == EV_VALUE_KEY_REPEAT {
+		event.EventType = hw.INPUT_EVENT_KEYREPEAT
+		event.Keycode = hw.InputKeyCode(device.key_code)
+		device.key_action = EV_VALUE_KEY_NONE
+	} else {
+		return nil
 	}
 
-	this.log.Debug("%v ts=%v",raw_event.Type,timestamp)
+	return &event
 }
 
-func (this *InputDriver) evDecodeKey(raw_event *evEvent,device *evDevice) {
-	key := raw_event.Code
-	action := raw_event.Value
-	this.log.Debug("%v key=%v action=%v",raw_event.Type,key,action)
+func (this *InputDriver) evDecodeKey(raw_event *evEvent, device *evDevice) {
+	device.key_code = evKeyCode(raw_event.Code)
+	device.key_action = evKeyAction(raw_event.Value)
 }
 
-func (this *InputDriver) evDecodeAbs(raw_event *evEvent,device *evDevice) {
+func (this *InputDriver) evDecodeAbs(raw_event *evEvent, device *evDevice) {
 	if raw_event.Code == EV_CODE_X {
 		device.position.X = int(raw_event.Value)
 	} else if raw_event.Code == EV_CODE_Y {
 		device.position.Y = int(raw_event.Value)
 	} else {
-		this.log.Debug("%v Ignoring code %v",raw_event.Type,raw_event.Code)
+		this.log.Debug("%v Ignoring code %v", raw_event.Type, raw_event.Code)
 	}
 }
 
-func (this *InputDriver) evDecodeRel(raw_event *evEvent,device *evDevice) {
+func (this *InputDriver) evDecodeRel(raw_event *evEvent, device *evDevice) {
 	if raw_event.Code == EV_CODE_X {
 		device.position.X = device.position.X + int(raw_event.Value)
+		device.rel_position.X = int(raw_event.Value)
 	} else if raw_event.Code == EV_CODE_Y {
 		device.position.Y = device.position.Y + int(raw_event.Value)
+		device.rel_position.Y = int(raw_event.Value)
 	} else {
-		this.log.Debug("%v Ignoring code %v",raw_event.Type,raw_event.Code)
+		this.log.Debug("%v Ignoring code %v", raw_event.Type, raw_event.Code)
 	}
 }
 
-func (this *InputDriver) evDecodeMsc(raw_event *evEvent,device *evDevice) {
-
+func (this *InputDriver) evDecodeMsc(raw_event *evEvent, device *evDevice) {
+	this.log.Debug("%v code=%v value=%v", raw_event.Type, raw_event.Code, raw_event.Value)
 }
-
-

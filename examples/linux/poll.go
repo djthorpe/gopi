@@ -20,15 +20,19 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
+func ProcessEvents(event *hw.InputEvent, device hw.InputDevice) {
+	fmt.Println(event)
+}
+
 func HelloWorld(app *app.App) error {
 
 	// open devices
-	devices, err := app.Input.OpenDevicesByName("",hw.INPUT_TYPE_ANY,hw.INPUT_BUS_ANY)
+	devices, err := app.Input.OpenDevicesByName("", hw.INPUT_TYPE_ANY, hw.INPUT_BUS_ANY)
 	if err != nil {
 		return err
 	}
 
-	app.Logger.Info("DEVICES = %v",devices)
+	app.Logger.Info("DEVICES = %v", devices)
 
 	// Watch for events and check for completed every 100 milliseconds
 	finished_channel := make(chan bool)
@@ -36,11 +40,11 @@ func HelloWorld(app *app.App) error {
 	go func() {
 		for {
 			select {
-			case _ = <- finished_channel:
+			case _ = <-finished_channel:
 				finished_watch <- true
 				return
 			default:
-				app.Input.Watch(time.Millisecond * 100)
+				app.Input.Watch(time.Millisecond * 100,ProcessEvents)
 			}
 		}
 	}()
@@ -49,7 +53,7 @@ func HelloWorld(app *app.App) error {
 
 	// Shutdown goroutine
 	finished_channel <- true
-	_ = <- finished_watch
+	_ = <-finished_watch
 
 	// Return success
 	return nil

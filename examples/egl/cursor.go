@@ -13,19 +13,54 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 import (
 	app "github.com/djthorpe/gopi/app"
 	khronos "github.com/djthorpe/gopi/khronos"
+	hw "github.com/djthorpe/gopi/hw"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
+func ProcessEvents(event *hw.InputEvent,app *app.App,cursor khronos.EGLSurface) {
+	app.EGL.MoveSurfaceOriginTo(cursor,event.Position)
+}
+
+func StartWatching(app *app.App,cursor khronos.EGLSurface) (chan bool,chan bool) {
+	// Watch for events and check for completed every 100 milliseconds
+	finished_channel := make(chan bool)
+	finished_watch := make(chan bool)
+	go func() {
+		for {
+			select {
+			case _ = <-finished_channel:
+				finished_watch <- true
+				return
+			default:
+				app.Input.Watch(time.Millisecond * 100,func (event *hw.InputEvent, device hw.InputDevice) {
+					ProcessEvents(event,app,cursor)
+				})
+			}
+		}
+	}()
+
+	// Return the channels use for completing
+	return finished_channel, finished_watch
+}
+
 func MyRunLoop(app *app.App) error {
 	egl := app.EGL.(khronos.EGLDriver)
 
-	app.Logger.Debug("INPUT=%v", app.Input)
+	// Open mouse
+	devices, err := app.Input.OpenDevicesByName("", hw.INPUT_TYPE_MOUSE, hw.INPUT_BUS_ANY)
+	if err != nil {
+		return err
+	}
+	if len(devices) == 0 {
+		return app.Logger.Error("No mouse found")
+	}
 
 	// Create a cursor
 	cursor, err := egl.CreateCursor()
@@ -34,7 +69,14 @@ func MyRunLoop(app *app.App) error {
 	}
 	defer egl.DestroySurface(cursor)
 
+	// Start watching for mouse events
+	finished_channel, finished_watch := StartWatching(app,cursor)
+
 	app.WaitUntilDone()
+
+	// Shutdown goroutine
+	finished_channel <- true
+	_ = <-finished_watch
 
 	// Return success
 	return nil

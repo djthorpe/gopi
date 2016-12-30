@@ -38,7 +38,7 @@ type InputDriver struct {
 
 const (
 	// Pattern for finding event-driven input devices
-	INPUT_PATH_DEVICES   = "/sys/class/input/event*"
+	INPUT_PATH_DEVICES = "/sys/class/input/event*"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ func (config Input) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 
 	// Set logging & devices
 	this.log = log
-	this.devices = make(map[int]*evDevice,0)
+	this.devices = make(map[int]*evDevice, 0)
 
 	// Create polling mechanism
 	if this.poll, err = NewPollDriver(this.log); err != nil {
@@ -83,17 +83,16 @@ func (this *InputDriver) Close() error {
 		}
 	}
 
-
 	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE DEVICES
 
-func (this *InputDriver) OpenDevicesByName(alias string,flags hw.InputDeviceType,bus hw.InputDeviceBus) ([]hw.InputDevice,error) {
+func (this *InputDriver) OpenDevicesByName(alias string, flags hw.InputDeviceType, bus hw.InputDeviceBus) ([]hw.InputDevice, error) {
 
-	new_devices := make([]*evDevice,0)
-	opened_devices := make([]hw.InputDevice,0)
+	new_devices := make([]*evDevice, 0)
+	opened_devices := make([]hw.InputDevice, 0)
 
 	// Discover devices using evFind and add any new ones to the new_devices
 	// array, they are left in an opened state
@@ -101,12 +100,12 @@ func (this *InputDriver) OpenDevicesByName(alias string,flags hw.InputDeviceType
 		device := this.evDeviceByPath(path)
 		if device == nil {
 			// we open the device here
-			gopi_device, err := gopi.Open(InputDevice{ Path: path },this.log)
+			gopi_device, err := gopi.Open(InputDevice{Path: path}, this.log)
 			if err != nil {
-				this.log.Warn("<linux.Input>OpenDevicesByName path=%v Error: %v",path,err)
+				this.log.Warn("<linux.Input>OpenDevicesByName path=%v Error: %v", path, err)
 				return
 			}
-			new_devices = append(new_devices,gopi_device.(*evDevice))
+			new_devices = append(new_devices, gopi_device.(*evDevice))
 		}
 	})
 
@@ -115,23 +114,23 @@ func (this *InputDriver) OpenDevicesByName(alias string,flags hw.InputDeviceType
 	for _, device := range new_devices {
 
 		// Check if device matches criteria. If not, then close it
-		if device.Matches(alias,flags,bus) == false {
+		if device.Matches(alias, flags, bus) == false {
 			if err := device.Close(); err != nil {
-				this.log.Warn("<linux.Input>OpenDevicesByName Error: %v",err)
+				this.log.Warn("<linux.Input>OpenDevicesByName Error: %v", err)
 			}
 			continue
 		}
 
 		// We have matched devices here, poll them
-		if err := this.poll.Add(device.GetFd(),POLL_MODE_READ); err != nil {
-			this.log.Warn("<linux.Input>OpenDevicesByName Error: %v",err)
+		if err := this.poll.Add(device.GetFd(), POLL_MODE_READ); err != nil {
+			this.log.Warn("<linux.Input>OpenDevicesByName Error: %v", err)
 			device.Close()
 			continue
 		}
 
 		// cleanup obtain the file descriptor
 		this.devices[device.GetFd()] = device
-		opened_devices = append(opened_devices,device)
+		opened_devices = append(opened_devices, device)
 	}
 
 	return opened_devices, nil
@@ -141,12 +140,12 @@ func (this *InputDriver) CloseDevice(device hw.InputDevice) error {
 	// Remove device from poll
 	linux_device, ok := device.(*evDevice)
 	if ok == true {
-		if err := this.poll.Remove(linux_device.GetFd(),POLL_MODE_READ); err != nil {
+		if err := this.poll.Remove(linux_device.GetFd(), POLL_MODE_READ); err != nil {
 			return err
 		}
 
 		// Remove device from list
-		delete(this.devices,int(linux_device.GetFd()))
+		delete(this.devices, int(linux_device.GetFd()))
 	}
 
 	// Close device
@@ -182,4 +181,3 @@ func (this *InputDriver) evDeviceByPath(path string) *evDevice {
 	}
 	return nil
 }
-
