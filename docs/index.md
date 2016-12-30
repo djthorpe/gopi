@@ -39,7 +39,7 @@ on the command line using the following command:
 
 ```
   linux% cd "${GOPATH}/src/github.com/djthorpe/gopi"
-  linux% etc/build_examples.sh
+  linux% examples/build_examples.sh
   linux% helloworld_example
 ```
 

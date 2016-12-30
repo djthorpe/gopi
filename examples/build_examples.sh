@@ -55,3 +55,6 @@ go install -ldflags "${LDFLAGS}" examples/egl/snapshot.go || exit -1
 
 echo "go install egl/cursor_example"
 go install -ldflags "${LDFLAGS}" examples/egl/cursor_example.go || exit -1
+
+echo "go install egl/image_example"
+go install -ldflags "${LDFLAGS}" examples/egl/image_example.go || exit -1
