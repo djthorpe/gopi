@@ -38,8 +38,8 @@ go install -ldflags "${LDFLAGS}" examples/input/input_example.go || exit -1
 echo "go install vgfont/font_example"
 go install -ldflags "${LDFLAGS}" examples/vgfont/font_example.go || exit -1
 
-echo "go install vgfont/dx_example"
-go install -ldflags "${LDFLAGS}" examples/vgfont/dx_example.go || exit -1
+echo "go install vgfont/vgfont_dx_example"
+go install -ldflags "${LDFLAGS}" examples/vgfont/vgfont_dx_example.go || exit -1
 
 echo "go install gpio/gpioctrl"
 go install -ldflags "${LDFLAGS}" examples/gpio/gpioctrl.go || exit -1
@@ -52,3 +52,6 @@ go install -ldflags "${LDFLAGS}" examples/i2c/i2cdetect.go || exit -1
 
 echo "go install egl/snapshot"
 go install -ldflags "${LDFLAGS}" examples/egl/snapshot.go || exit -1
+
+echo "go install egl/cursor_example"
+go install -ldflags "${LDFLAGS}" examples/egl/cursor_example.go || exit -1

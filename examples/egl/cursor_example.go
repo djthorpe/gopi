@@ -69,6 +69,11 @@ func MyRunLoop(app *app.App) error {
 	}
 	defer egl.DestroySurface(cursor)
 
+	// Set cursor position on all devices
+	for _, device := range devices {
+		device.SetPosition(cursor.GetOrigin())
+	}
+
 	// Start watching for mouse events
 	finished_channel, finished_watch := StartWatching(app,cursor)
 

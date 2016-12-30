@@ -27,7 +27,7 @@ func MyRunLoop(app *app.App) error {
 
 	// Opens all devices
 	app.Logger.Info("input=%v", app.Input)
-	devices, err := app.Input.OpenDevicesByName("", hw.INPUT_TYPE_ANY, nil)
+	devices, err := app.Input.OpenDevicesByName("", hw.INPUT_TYPE_ANY, hw.INPUT_BUS_ANY)
 	if err != nil {
 		return err
 	}
@@ -39,9 +39,6 @@ func MyRunLoop(app *app.App) error {
 	for _, device := range devices {
 		fmt.Printf(format, device.GetName(), device.GetType(), device.GetBus())
 	}
-
-	// Wait for termination
-	app.WaitUntilDone()
 
 	// Return success
 	return nil
