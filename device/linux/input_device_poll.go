@@ -86,6 +86,7 @@ func (this *evPoll) evPoll(callback func (*evEvent)) error {
 				return err
 			}
 		}
+		fmt.Println("n=",n)
 		if n <= 0 {
 			continue
 		}
@@ -95,7 +96,7 @@ func (this *evPoll) evPoll(callback func (*evEvent)) error {
 			}
 			err := binary.Read(this.device, binary.LittleEndian, &raw_event)
 			if err == io.EOF {
-				fmt.Println("EOF")
+				fmt.Println("EOF") // debugging
 				return nil
 			}
 			if err != nil {

@@ -22,8 +22,21 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func MyRunLoop(app *app.App) error {
-	egl := app.EGL.(khronos.EGLDriver)
+func MyRunLoop(application *app.App) error {
+	egl := application.EGL.(khronos.EGLDriver)
+
+	// Obtain filename from command line
+	args := application.FlagSet.Args()
+	if len(args) != 1 {
+		return app.ErrHelp
+	}
+
+	// Open file for writing
+	handle, err := os.Create(args[0])
+	if err != nil {
+		return err
+	}
+	defer handle.Close()
 
 	// Do snapshot
 	bitmap, err := egl.SnapshotImage()
@@ -33,13 +46,9 @@ func MyRunLoop(app *app.App) error {
 	defer egl.DestroyImage(bitmap)
 
 	// Save file as PNG
-	surface, err := egl.CreateSurfaceWithBitmap(bitmap, khronos.EGLPoint{100, 100}, 2, 0.5)
-	if err != nil {
+	if err := egl.WriteImagePNG(handle,bitmap); err != nil {
 		return err
 	}
-	defer egl.DestroySurface(surface)
-
-	app.WaitUntilDone()
 
 	// Return success
 	return nil

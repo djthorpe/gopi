@@ -7,6 +7,8 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
+package linux
+
 const (
 	INPUT_KEY_RESERVED                 = 0
 	INPUT_KEY_ESC                      = 1
@@ -449,4 +451,81 @@ const (
 	INPUT_KEY_SLOWREVERSE              = 0x276
 	INPUT_KEY_DATA                     = 0x275
 )
+
+const (
+	INPUT_BTN_MISC                     = 0x100
+	INPUT_BTN_0                        = 0x100
+	INPUT_BTN_1                        = 0x101
+	INPUT_BTN_2                        = 0x102
+	INPUT_BTN_3                        = 0x103
+	INPUT_BTN_4                        = 0x104
+	INPUT_BTN_5                        = 0x105
+	INPUT_BTN_6                        = 0x106
+	INPUT_BTN_7                        = 0x107
+	INPUT_BTN_8                        = 0x108
+	INPUT_BTN_9                        = 0x109
+	INPUT_BTN_MOUSE                    = 0x110
+	INPUT_BTN_LEFT                     = 0x110
+	INPUT_BTN_RIGHT                    = 0x111
+	INPUT_BTN_MIDDLE                   = 0x112
+	INPUT_BTN_SIDE                     = 0x113
+	INPUT_BTN_EXTRA                    = 0x114
+	INPUT_BTN_FORWARD                  = 0x115
+	INPUT_BTN_BACK                     = 0x116
+	INPUT_BTN_TASK                     = 0x117
+	INPUT_BTN_JOYSTICK                 = 0x120
+	INPUT_BTN_TRIGGER                  = 0x120
+	INPUT_BTN_THUMB                    = 0x121
+	INPUT_BTN_THUMB2                   = 0x122
+	INPUT_BTN_TOP                      = 0x123
+	INPUT_BTN_TOP2                     = 0x124
+	INPUT_BTN_PINKIE                   = 0x125
+	INPUT_BTN_BASE                     = 0x126
+	INPUT_BTN_BASE2                    = 0x127
+	INPUT_BTN_BASE3                    = 0x128
+	INPUT_BTN_BASE4                    = 0x129
+	INPUT_BTN_BASE5                    = 0x12a
+	INPUT_BTN_BASE6                    = 0x12b
+	INPUT_BTN_DEAD                     = 0x12f
+	INPUT_BTN_GAMEPAD                  = 0x130
+	INPUT_BTN_SOUTH                    = 0x130
+	INPUT_BTN_A                        = INPUT_BTN_SOUTH
+	INPUT_BTN_EAST                     = 0x131
+	INPUT_BTN_B                        = INPUT_BTN_EAST
+	INPUT_BTN_C                        = 0x132
+	INPUT_BTN_NORTH                    = 0x133
+	INPUT_BTN_X                        = INPUT_BTN_NORTH
+	INPUT_BTN_WEST                     = 0x134
+	INPUT_BTN_Y                        = INPUT_BTN_WEST
+	INPUT_BTN_Z                        = 0x135
+	INPUT_BTN_TL                       = 0x136
+	INPUT_BTN_TR                       = 0x137
+	INPUT_BTN_TL2                      = 0x138
+	INPUT_BTN_TR2                      = 0x139
+	INPUT_BTN_SELECT                   = 0x13a
+	INPUT_BTN_START                    = 0x13b
+	INPUT_BTN_MODE                     = 0x13c
+	INPUT_BTN_THUMBL                   = 0x13d
+	INPUT_BTN_THUMBR                   = 0x13e
+	INPUT_BTN_DIGI                     = 0x140
+	INPUT_BTN_TOOL_PEN                 = 0x140
+	INPUT_BTN_TOOL_RUBBER              = 0x141
+	INPUT_BTN_TOOL_BRUSH               = 0x142
+	INPUT_BTN_TOOL_PENCIL              = 0x143
+	INPUT_BTN_TOOL_AIRBRUSH            = 0x144
+	INPUT_BTN_TOOL_FINGER              = 0x145
+	INPUT_BTN_TOOL_MOUSE               = 0x146
+	INPUT_BTN_TOOL_LENS                = 0x147
+	INPUT_BTN_TOOL_QUINTTAP            = 0x148
+	INPUT_BTN_TOUCH                    = 0x14a
+	INPUT_BTN_STYLUS                   = 0x14b
+	INPUT_BTN_STYLUS2                  = 0x14c
+	INPUT_BTN_TOOL_DOUBLETAP           = 0x14d
+	INPUT_BTN_TOOL_TRIPLETAP           = 0x14e
+	INPUT_BTN_TOOL_QUADTAP             = 0x14f
+	INPUT_BTN_WHEEL                    = 0x150
+	INPUT_BTN_GEAR_DOWN                = 0x150
+	INPUT_BTN_GEAR_UP                  = 0x151
+)
+
 

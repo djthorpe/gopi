@@ -15,7 +15,7 @@ import (
 import (
 	_ "image/gif"
 	_ "image/jpeg"
-	_ "image/png"
+	png "image/png"
 )
 
 import (
@@ -63,5 +63,23 @@ func (this *eglDriver) SnapshotImage() (khronos.EGLBitmap, error) {
 
 // Write image as a PNG
 func (this *eglDriver) WriteImagePNG(w io.Writer, bitmap khronos.EGLBitmap) error {
-	return ErrNotImplemented
+	size := bitmap.GetSize()
+	image := image.NewRGBA(image.Rect(0, 0, int(size.Width), int(size.Height)))
+	data, err := dxReadBitmap(bitmap.(*DXResource),true)
+	stride := (bitmap.(*DXResource).stride >> 2)
+	if err != nil {
+		return err
+	}
+	for y := uint32(0); y < uint32(size.Height); y++ {
+		for x := uint32(0); x < uint32(size.Width); x++ {
+			source_pixel := data[x + y * stride]
+			destination_offset := image.PixOffset(int(x),int(y))
+			image.Pix[destination_offset + 0] = uint8((source_pixel & 0x000000FF) >> 0) // R
+			image.Pix[destination_offset + 1] = uint8((source_pixel & 0x0000FF00) >> 8) // G
+			image.Pix[destination_offset + 2] = uint8((source_pixel & 0x00FF0000) >> 16) // B
+			image.Pix[destination_offset + 3] = uint8((source_pixel & 0xFF000000) >> 24) // A
+		}
+	}
+
+	return png.Encode(w,image)
 }
