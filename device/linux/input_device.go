@@ -83,7 +83,24 @@ type evDevice struct {
 
 	// the current key state, which is a set of OR'd flags
 	state         hw.InputKeyState
+
+	// Multi-touch support
+	slot          int
+	slots         []evDeviceSlot
 }
+
+// Represents multi-touch slot information
+type evDeviceSlot struct {
+	id            uint32
+	position      khronos.EGLPoint
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	INPUT_MAX_MULTITOUCH_SLOTS = 32
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
@@ -151,6 +168,10 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 			return nil, err
 		}
 	}
+
+	// Set multi-touch slot array to track slots
+	this.slot = 0
+	this.slots = make([]evDeviceSlot,INPUT_MAX_MULTITOUCH_SLOTS)
 
 	// Success
 	return this, nil
