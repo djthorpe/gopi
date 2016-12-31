@@ -54,7 +54,7 @@ func MyRunLoop(app *app.App) error {
 	egl := app.EGL.(khronos.EGLDriver)
 
 	// Open mouse
-	devices, err := app.Input.OpenDevicesByName("", hw.INPUT_TYPE_MOUSE, hw.INPUT_BUS_ANY)
+	devices, err := app.Input.OpenDevicesByName("", hw.INPUT_TYPE_MOUSE | hw.INPUT_TYPE_TOUCHSCREEN, hw.INPUT_BUS_ANY)
 	if err != nil {
 		return err
 	}
