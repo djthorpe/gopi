@@ -12,6 +12,7 @@ package linux /* import "github.com/djthorpe/gopi/device/linux" */
 import (
 	"fmt"
 	"os"
+	"unsafe"
 )
 
 import (
@@ -79,28 +80,10 @@ type evDevice struct {
 
 	// exclusive access to device
 	exclusive     bool
+
+	// the current key state, which is a set of OR'd flags
+	state         hw.InputKeyState
 }
-
-type evLEDState uint8
-
-////////////////////////////////////////////////////////////////////////////////
-// CONSTANTS
-
-// LED Constants
-const (
-	EV_LED_NUML     evLEDState = 0x00
-	EV_LED_CAPSL    evLEDState = 0x01
-	EV_LED_SCROLLL  evLEDState = 0x02
-	EV_LED_COMPOSE  evLEDState = 0x03
-	EV_LED_KANA     evLEDState = 0x04
-	EV_LED_SLEEP    evLEDState = 0x05
-	EV_LED_SUSPEND  evLEDState = 0x06
-	EV_LED_MUTE     evLEDState = 0x07
-	EV_LED_MISC     evLEDState = 0x08
-	EV_LED_MAIL     evLEDState = 0x09
-	EV_LED_CHARGING evLEDState = 0x0A
-	EV_LED_MAX      evLEDState = 0x0F
-)
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
@@ -115,7 +98,8 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	this.log = log
 	this.path = config.Path
 
-	if this.handle, err = os.Open(config.Path); err != nil {
+	// Open the event stream for reading and writing
+	if this.handle, err = os.OpenFile(config.Path, os.O_RDWR, 0); err != nil {
 		return nil, err
 	}
 
@@ -168,6 +152,7 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 		}
 	}
 
+	// Success
 	return this, nil
 }
 
@@ -273,7 +258,7 @@ func (this *evDevice) Matches(alias string, device_type hw.InputDeviceType, devi
 }
 
 func (this *evDevice) GetKeyState() hw.InputKeyState {
-	current_state := hw.InputKeyState(0)
+	current_state := this.state
 	states, err := evGetLEDState(this.handle)
 	if err != nil {
 		this.log.Warn("<linux.InputDevice> Error: %v",err)
@@ -295,40 +280,42 @@ func (this *evDevice) GetKeyState() hw.InputKeyState {
 	return current_state
 }
 
+func (this *evDevice) SetKeyState(flags hw.InputKeyState,state bool) error {
+	// Set the current state
+	this.state = flags
+
+	// Iterate through the states, and set the CAPS, SCROLL and NUM indicators
+	// on the keyboard
+	num_states := int(unsafe.Sizeof(flags) << 3)
+	led := hw.InputKeyState(1)
+	for j := 0; j <= num_states; j++ {
+		if flags & 0x01 != 0x00 {
+			switch led {
+			case hw.INPUT_KEYSTATE_CAPS:
+				if err := evSetLEDState(this.handle,EV_LED_CAPSL,state); err != nil {
+					return err
+				}
+			case hw.INPUT_KEYSTATE_SCROLL:
+				if err := evSetLEDState(this.handle,EV_LED_SCROLLL,state); err != nil {
+					return err
+				}
+			case hw.INPUT_KEYSTATE_NUM:
+				if err := evSetLEDState(this.handle,EV_LED_NUML,state); err != nil {
+					return err
+				}
+			}
+		}
+		flags >>= 1
+		led <<= 1
+	}
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *evDevice) String() string {
 	return fmt.Sprintf("<linux.InputDevice>{ name=\"%s\" phys=%v uniq=%v type=%v bus=%v product=0x%04X vendor=0x%04X version=0x%04X capabilities=%v exclusive=%v fd=%v }", this.name, this.phys, this.uniq, this.device_type, this.bus, this.product, this.vendor, this.version, this.capabilities, this.exclusive, this.handle.Fd())
-}
-
-func (s evLEDState) String() string {
-	switch s {
-		case EV_LED_NUML:
-			return "EV_LED_NUML"
-		case EV_LED_CAPSL:
-			return "EV_LED_CAPSL"
-		case EV_LED_SCROLLL:
-			return "EV_LED_SCROLLL"
-		case EV_LED_COMPOSE:
-			return "EV_LED_COMPOSE"
-		case EV_LED_KANA:
-			return "EV_LED_KANA"
-		case EV_LED_SLEEP:
-			return "EV_LED_SLEEP"
-		case EV_LED_SUSPEND:
-			return "EV_LED_SUSPEND"
-		case EV_LED_MUTE:
-			return "EV_LED_MUTE"
-		case EV_LED_MISC:
-			return "EV_LED_MISC"
-		case EV_LED_MAIL:
-			return "EV_LED_MAIL"
-		case EV_LED_CHARGING:
-			return "EV_LED_CHARGING"
-		default:
-			return "[?? Invalid evLEDState value]"
-	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

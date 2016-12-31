@@ -10,6 +10,7 @@
 package linux /* import "github.com/djthorpe/gopi/device/linux" */
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 )
@@ -96,6 +97,14 @@ func (this *InputDriver) Close() error {
 	}
 
 	return nil
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (this *InputDriver) String() string {
+	return fmt.Sprintf("<linux.Input>{ exclusive=%v open_devices=%v }",this.exclusive,this.devices)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

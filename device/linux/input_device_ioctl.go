@@ -118,38 +118,18 @@ func evGetSupportedEventTypes(handle *os.File) ([]evType, error) {
 	return capabilities, nil
 }
 
-// Get LED states
-func evGetLEDState(handle *os.File) ([]evLEDState, error) {
-	evbits := new([MAX_IOCTL_SIZE_BYTES]byte)
-	err := evIoctl(handle.Fd(), uintptr(EVIOCGLED), unsafe.Pointer(evbits))
-	if err != 0 {
-		return nil, err
-	}
-	states := make([]evLEDState,0,EV_LED_MAX)
-	OuterLoop:
-		for i := 0; i < len(evbits); i++ {
-			evbyte := evbits[i]
-			for j := 0; j < 8; j++ {
-				state := evLEDState(i << 3 + j)
-				switch {
-				case state >= EV_LED_MAX:
-					break OuterLoop
-				case evbyte & 0x01 != 0x00:
-					states = append(states,state)
-				}
-				evbyte >>= 1
-			}
-		}
-	return states, nil
-}
-
 // Obtain and release exclusive device usage ("grab")
 func evSetGrabState(handle *os.File,state bool) error {
 	if state {
-		return evIoctl(handle.Fd(),C.EVIOCGRAB,unsafe.Pointer(uintptr(1)))
+		if err := evIoctl(handle.Fd(),C.EVIOCGRAB,unsafe.Pointer(uintptr(1))); err != 0 {
+			return err
+		}
 	} else {
-		return evIoctl(handle.Fd(),C.EVIOCGRAB,unsafe.Pointer(uintptr(0)))
+		if err := evIoctl(handle.Fd(),C.EVIOCGRAB,unsafe.Pointer(uintptr(0))); err != 0 {
+			return err
+		}
 	}
+	return nil
 }
 
 // Call ioctl

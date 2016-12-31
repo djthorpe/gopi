@@ -57,9 +57,9 @@ type InputDevice interface {
 	// Get key states (caps lock, shift, scroll lock, num lock, etc)
 	GetKeyState() InputKeyState
 
-	// Set key state
-	// SetKeyState(flags InputKeyState) error
-	// works for caps lock, num lock & scroll lock
+	// Set key state (or states) to on or off. Will return error
+	// for key states which are not modifiable
+	SetKeyState(flags InputKeyState,state bool) error
 
 	// Returns true if device matches conditions
 	Matches(alias string, device_type InputDeviceType, device_bus InputDeviceBus) bool
@@ -154,10 +154,13 @@ const (
 // Input key state
 const (
 	INPUT_KEYSTATE_NONE     InputKeyState = 0x0000
-	INPUT_KEYSTATE_CAPS     InputKeyState = 0x0001 // Caps Lock
-	INPUT_KEYSTATE_SCROLL   InputKeyState = 0x0002 // Scroll Lock
-	INPUT_KEYSTATE_SHIFT    InputKeyState = 0x0004 // Shift
-	INPUT_KEYSTATE_NUM      InputKeyState = 0x0008 // Num Lock
+	INPUT_KEYSTATE_CAPS     InputKeyState = 0x0002 // Caps Lock
+	INPUT_KEYSTATE_SCROLL   InputKeyState = 0x0004 // Scroll Lock
+	INPUT_KEYSTATE_SHIFT    InputKeyState = 0x0008 // Shift
+	INPUT_KEYSTATE_ALT      InputKeyState = 0x0010 // Alt
+	INPUT_KEYSTATE_CMD      InputKeyState = 0x0020 // Command
+	INPUT_KEYSTATE_NUM      InputKeyState = 0x0040 // Num Lock
+	INPUT_KEYSTATE_MAX      InputKeyState = INPUT_KEYSTATE_NUM
 )
 
 ////////////////////////////////////////////////////////////////////////////////
