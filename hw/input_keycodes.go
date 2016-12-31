@@ -150,21 +150,22 @@ const (
 )
 
 const (
-	INPUT_BTN_0      InputKeyCode = 0x100
-	INPUT_BTN_1      InputKeyCode = 0x101
-	INPUT_BTN_2      InputKeyCode = 0x102
-	INPUT_BTN_3      InputKeyCode = 0x103
-	INPUT_BTN_4      InputKeyCode = 0x104
-	INPUT_BTN_5      InputKeyCode = 0x105
-	INPUT_BTN_6      InputKeyCode = 0x106
-	INPUT_BTN_7      InputKeyCode = 0x107
-	INPUT_BTN_8      InputKeyCode = 0x108
-	INPUT_BTN_9      InputKeyCode = 0x109
-	INPUT_BTN_LEFT   InputKeyCode = 0x110
-	INPUT_BTN_RIGHT  InputKeyCode = 0x111
-	INPUT_BTN_MIDDLE InputKeyCode = 0x112
-	INPUT_BTN_SIDE   InputKeyCode = 0x113
-	INPUT_BTN_EXTRA  InputKeyCode = 0x114
+	INPUT_BTN_0      InputKeyCode = 0x0100
+	INPUT_BTN_1      InputKeyCode = 0x0101
+	INPUT_BTN_2      InputKeyCode = 0x0102
+	INPUT_BTN_3      InputKeyCode = 0x0103
+	INPUT_BTN_4      InputKeyCode = 0x0104
+	INPUT_BTN_5      InputKeyCode = 0x0105
+	INPUT_BTN_6      InputKeyCode = 0x0106
+	INPUT_BTN_7      InputKeyCode = 0x0107
+	INPUT_BTN_8      InputKeyCode = 0x0108
+	INPUT_BTN_9      InputKeyCode = 0x0109
+	INPUT_BTN_LEFT   InputKeyCode = 0x0110
+	INPUT_BTN_RIGHT  InputKeyCode = 0x0111
+	INPUT_BTN_MIDDLE InputKeyCode = 0x0112
+	INPUT_BTN_SIDE   InputKeyCode = 0x0113
+	INPUT_BTN_EXTRA  InputKeyCode = 0x0114
+	INPUT_BTN_TOUCH  InputKeyCode = 0x014A
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -462,6 +463,8 @@ func (k InputKeyCode) String() string {
 		return "INPUT_BTN_SIDE"
 	case INPUT_BTN_EXTRA:
 		return "INPUT_BTN_EXTRA"
+	case INPUT_BTN_TOUCH:
+		return "INPUT_BTN_TOUCH"
 	default:
 		return fmt.Sprintf("INPUT_KEY_0x%04X",uint16(k))
 	}
