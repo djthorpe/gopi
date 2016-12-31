@@ -139,6 +139,7 @@ type AppFlags uint
 
 const (
 	// Constants used to determine what subsystems are needed
+	APP_NONE      AppFlags = 0x0000
 	APP_DEVICE    AppFlags = 0x0001
 	APP_DISPLAY   AppFlags = 0x0002
 	APP_EGL       AppFlags = 0x0004
