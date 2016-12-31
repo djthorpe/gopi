@@ -8,7 +8,8 @@
 */
 
 // This example outputs a table of detected input devices, their types
-// and other information about them.
+// and other information about them, and optionally watches for incoming
+// events from opened devices.
 package main
 
 import (
@@ -80,8 +81,6 @@ func ParseFlags(flags *app.Flags) (string,hw.InputDeviceType,hw.InputDeviceBus,e
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-
 
 func Watch(app *app.App) {
 
