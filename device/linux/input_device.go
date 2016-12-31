@@ -95,15 +95,14 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 		return nil, err
 	}
 
-	// Get phys of device (physical connection ID)
-	if this.phys, err = evGetPhys(this.handle); err != nil {
-		this.handle.Close()
-		return nil, err
-	}
+	// Get phys of device (physical connection ID). Ignore errors here,
+	// since it seems this isn't reported by touchscreen
+	this.phys, err = evGetPhys(this.handle)
 
 	// Get information about the device
 	var bus uint16
 	if bus, this.vendor, this.product, this.version, err = evGetInfo(this.handle); err != nil {
+		log.Debug("R")
 		this.handle.Close()
 		return nil, err
 	}
@@ -112,6 +111,7 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 
 	// Get capabilities
 	if this.capabilities, err = evGetSupportedEventTypes(this.handle); err != nil {
+		log.Debug("T")
 		this.handle.Close()
 		return nil, err
 	}
