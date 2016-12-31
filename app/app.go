@@ -94,8 +94,8 @@ type App struct {
 	// Signal to place a finish bool on to indicate application should end
 	finish_channel chan bool
 
-	// debug and verbose flags
-	debug, verbose bool
+	// debug, verbose and done flags
+	debug, verbose, done bool
 }
 
 // Application configuration
@@ -471,6 +471,9 @@ func (this *App) Run(callback AppCallback) error {
 		this.finish_channel <- true
 	}()
 
+	// Mark done flag as false
+	this.done = false
+
 	if err := callback(this); err != nil {
 		return this.Logger.Error("%v", err)
 	}
@@ -485,11 +488,10 @@ func (this *App) WaitUntilDone() {
 	this.Logger.Debug2("<App>WaitUntilDone")
 
 	// Runloop accepting events, until done
-	done := false
-	for done == false {
+	for this.done == false {
 		select {
-		case done = <-this.finish_channel:
-			done = true
+		case _ = <-this.finish_channel:
+			this.done = true
 			break
 		}
 	}
@@ -499,6 +501,11 @@ func (this *App) WaitUntilDone() {
 func (this *App) Done() {
 	this.Logger.Debug2("<App>Done")
 	this.finish_channel <- true
+}
+
+// Get the Done flag
+func (this *App) GetDone() bool {
+	return this.done
 }
 
 // Return the debug flag
