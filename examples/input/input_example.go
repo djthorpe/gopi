@@ -50,6 +50,12 @@ func main() {
 	// Create the config
 	config := app.Config(app.APP_INPUT)
 
+	// Flags
+	config.FlagSet.FlagString("type", "", "Input type (any, mouse, keyboard, joystick, touchscreen)")
+	config.FlagSet.FlagString("bus", "", "Input bus (any, usb, bluetooth)")
+	config.FlagSet.FlagString("name", "", "Name of input device")
+	config.FlagSet.FlagBool("watch", false, "Watch for events from devices until CTRL+C is pressed")
+
 	// Create the application
 	myapp, err := app.NewApp(config)
 	if err != nil {
