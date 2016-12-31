@@ -23,14 +23,25 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-// Empty input configuration
-type Input struct{}
+// Input configuration
+type Input struct{
+	// Whether to try and get exclusivity when opening devices
+	Exclusive bool
+}
 
 // Driver of multiple input devices
 type InputDriver struct {
-	log     *util.LoggerDevice // logger
+	// Whether to try and get exclusivity when opening devices
+	exclusive bool
+
+	// Logger
+	log     *util.LoggerDevice
+
+	// Map of input devices (keyed by their file descriptor)
 	devices map[int]*evDevice  // input devices
-	poll    *PollDriver        // polling mechanism to check for events
+
+	// Polling mechanism to check for events
+	poll    *PollDriver
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -54,6 +65,7 @@ func (config Input) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	this := new(InputDriver)
 
 	// Set logging & devices
+	this.exclusive = config.Exclusive
 	this.log = log
 	this.devices = make(map[int]*evDevice, 0)
 
@@ -100,7 +112,7 @@ func (this *InputDriver) OpenDevicesByName(alias string, flags hw.InputDeviceTyp
 		device := this.evDeviceByPath(path)
 		if device == nil {
 			// we open the device here
-			gopi_device, err := gopi.Open(InputDevice{Path: path}, this.log)
+			gopi_device, err := gopi.Open(InputDevice{Path: path, Exclusive: this.exclusive}, this.log)
 			if err != nil {
 				this.log.Warn("<linux.Input>OpenDevicesByName path=%v Error: %v", path, err)
 				return

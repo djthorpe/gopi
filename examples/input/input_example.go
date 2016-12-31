@@ -101,7 +101,8 @@ func Watch(app *app.App) {
 			// Print out the event
 			switch(event.EventType) {
 			case hw.INPUT_EVENT_KEYPRESS, hw.INPUT_EVENT_KEYRELEASE, hw.INPUT_EVENT_KEYREPEAT:
-				fmt.Printf(format,device.GetName(),event.EventType,event.Keycode)
+				value := fmt.Sprintf("Code: %04X State: %04X",event.Keycode,device.GetKeyState())
+				fmt.Printf(format,device.GetName(),event.EventType,value)
 			case hw.INPUT_EVENT_ABSPOSITION:
 				fmt.Printf(format,device.GetName(),event.EventType,event.Position)
 			case hw.INPUT_EVENT_RELPOSITION:
@@ -146,12 +147,10 @@ func MyRunLoop(app *app.App) error {
 
 	// Watch in background
 	if watch, _ := app.FlagSet.GetBool("watch"); watch {
-		 go Watch(app)
+		go Watch(app)
+		app.WaitUntilDone()
+		// TODO: Wait for shutdown of the Watch goroutine
 	}
-
-	app.WaitUntilDone()
-
-	// TODO: Wait for shutdown of the Watch goroutine
 
 	// Return success
 	return nil

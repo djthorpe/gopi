@@ -16,8 +16,8 @@ import (
 )
 
 import (
-	khronos "github.com/djthorpe/gopi/khronos"
 	hw "github.com/djthorpe/gopi/hw"
+	khronos "github.com/djthorpe/gopi/khronos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,12 +57,12 @@ const (
 )
 
 const (
-	EV_CODE_X          evKeyCode = 0x0000
-	EV_CODE_Y          evKeyCode = 0x0001
-	EV_VALUE_KEY_NONE   evKeyAction    = 0x00000000
-	EV_VALUE_KEY_UP     evKeyAction    = 0x00000000
-	EV_VALUE_KEY_DOWN   evKeyAction    = 0x00000001
-	EV_VALUE_KEY_REPEAT evKeyAction    = 0x00000002
+	EV_CODE_X           evKeyCode   = 0x0000
+	EV_CODE_Y           evKeyCode   = 0x0001
+	EV_VALUE_KEY_NONE   evKeyAction = 0x00000000
+	EV_VALUE_KEY_UP     evKeyAction = 0x00000000
+	EV_VALUE_KEY_DOWN   evKeyAction = 0x00000001
+	EV_VALUE_KEY_REPEAT evKeyAction = 0x00000002
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,7 +102,7 @@ func (t evType) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // WATCH
 
-func (this *InputDriver) Watch(delta time.Duration,callback hw.InputEventCallback) error {
+func (this *InputDriver) Watch(delta time.Duration, callback hw.InputEventCallback) error {
 	if err := this.poll.Watch(delta, func(fd int, flags PollMode) {
 		// Obtain device
 		device, exists := this.devices[fd]
@@ -121,7 +121,7 @@ func (this *InputDriver) Watch(delta time.Duration,callback hw.InputEventCallbac
 		}
 		// Process the event data, callback
 		if emit_event := this.evDecode(&event, device); emit_event != nil {
-			callback(emit_event,device)
+			callback(emit_event, device)
 		}
 	}); err != nil {
 		return this.log.Error("<linux.Input>Watch Error: %v", err)
@@ -155,7 +155,7 @@ func (this *InputDriver) evDecode(raw_event *evEvent, device *evDevice) *hw.Inpu
 }
 
 func (this *InputDriver) evDecodeSyn(raw_event *evEvent, device *evDevice) *hw.InputEvent {
-	event := hw.InputEvent{ }
+	event := hw.InputEvent{}
 	event.Timestamp = time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond)
 	event.DeviceType = device.device_type
 	event.Position = device.position

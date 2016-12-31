@@ -50,6 +50,7 @@ var (
 	EVIOCGUNIQ = uintptr(C._EVIOCGUNIQ(MAX_IOCTL_SIZE_BYTES)) // get unique identifier
 	EVIOCGPROP = uintptr(C._EVIOCGPROP(MAX_IOCTL_SIZE_BYTES)) // get device properties
 	EVIOCGID   = uintptr(C.EVIOCGID)                          // get device ID
+	EVIOCGLED  = uintptr(C._EVIOCGLED(MAX_IOCTL_SIZE_BYTES))  // get LED states
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,6 +76,16 @@ func evGetPhys(handle *os.File) (string, error) {
 	return C.GoString(&name[0]), nil
 }
 
+// Get unique identifier
+func evGetUniq(handle *os.File) (string, error) {
+	uniq := new([MAX_IOCTL_SIZE_BYTES]C.char)
+	err := evIoctl(handle.Fd(), uintptr(EVIOCGUNIQ), unsafe.Pointer(uniq))
+	if err != 0 {
+		return "", err
+	}
+	return C.GoString(&uniq[0]), nil
+}
+
 // Get device information (bus, vendor, product, version)
 func evGetInfo(handle *os.File) (uint16, uint16, uint16, uint16, error) {
 	info := [4]uint16{}
@@ -92,7 +103,7 @@ func evGetSupportedEventTypes(handle *os.File) ([]evType, error) {
 	if err != 0 {
 		return nil, err
 	}
-	capabilities := make([]evType, 0)
+	capabilities := make([]evType,0,EV_MAX)
 	evtype := evType(0)
 	for i := 0; i < len(evbits); i++ {
 		evbyte := evbits[i]
@@ -105,6 +116,40 @@ func evGetSupportedEventTypes(handle *os.File) ([]evType, error) {
 		}
 	}
 	return capabilities, nil
+}
+
+// Get LED states
+func evGetLEDState(handle *os.File) ([]evLEDState, error) {
+	evbits := new([MAX_IOCTL_SIZE_BYTES]byte)
+	err := evIoctl(handle.Fd(), uintptr(EVIOCGLED), unsafe.Pointer(evbits))
+	if err != 0 {
+		return nil, err
+	}
+	states := make([]evLEDState,0,EV_LED_MAX)
+	OuterLoop:
+		for i := 0; i < len(evbits); i++ {
+			evbyte := evbits[i]
+			for j := 0; j < 8; j++ {
+				state := evLEDState(i << 3 + j)
+				switch {
+				case state >= EV_LED_MAX:
+					break OuterLoop
+				case evbyte & 0x01 != 0x00:
+					states = append(states,state)
+				}
+				evbyte >>= 1
+			}
+		}
+	return states, nil
+}
+
+// Obtain and release exclusive device usage ("grab")
+func evSetGrabState(handle *os.File,state bool) error {
+	if state {
+		return evIoctl(handle.Fd(),C.EVIOCGRAB,unsafe.Pointer(uintptr(1)))
+	} else {
+		return evIoctl(handle.Fd(),C.EVIOCGRAB,unsafe.Pointer(uintptr(0)))
+	}
 }
 
 // Call ioctl

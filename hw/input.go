@@ -54,6 +54,13 @@ type InputDevice interface {
 	// Set current cursor position
 	SetPosition(khronos.EGLPoint)
 
+	// Get key states (caps lock, shift, scroll lock, num lock, etc)
+	GetKeyState() InputKeyState
+
+	// Set key state
+	// SetKeyState(flags InputKeyState) error
+	// works for caps lock, num lock & scroll lock
+
 	// Returns true if device matches conditions
 	Matches(alias string, device_type InputDeviceType, device_bus InputDeviceBus) bool
 }
@@ -86,6 +93,9 @@ type InputEventType uint16
 
 // Keycode
 type InputKeyCode uint16
+
+// Keystate
+type InputKeyState uint16
 
 // Bus type (USB, Bluetooth, etc)
 type InputDeviceBus uint16
@@ -139,6 +149,15 @@ const (
 	INPUT_EVENT_KEYREPEAT   InputEventType = 0x0003
 	INPUT_EVENT_ABSPOSITION InputEventType = 0x0004
 	INPUT_EVENT_RELPOSITION InputEventType = 0x0005
+)
+
+// Input key state
+const (
+	INPUT_KEYSTATE_NONE     InputKeyState = 0x0000
+	INPUT_KEYSTATE_CAPS     InputKeyState = 0x0001 // Caps Lock
+	INPUT_KEYSTATE_SCROLL   InputKeyState = 0x0002 // Scroll Lock
+	INPUT_KEYSTATE_SHIFT    InputKeyState = 0x0004 // Shift
+	INPUT_KEYSTATE_NUM      InputKeyState = 0x0008 // Num Lock
 )
 
 ////////////////////////////////////////////////////////////////////////////////

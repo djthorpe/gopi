@@ -121,6 +121,9 @@ type AppConfig struct {
 	// Whether to append to the log file
 	LogAppend bool
 
+	// Whether to get exclusive input for devices
+	InputExclusive bool
+
 	// An array of font paths from which to load fonts
 	FontPaths []string
 }

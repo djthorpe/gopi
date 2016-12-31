@@ -27,6 +27,9 @@ import (
 type InputDevice struct {
 	// The device path
 	Path string
+
+	// Whether to obtain exclusive access to device
+	Exclusive bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,6 +46,9 @@ type evDevice struct {
 
 	// The Physical ID of the input device
 	phys string
+
+	// Unique Identifier
+	uniq string
 
 	// logging object
 	log *util.LoggerDevice
@@ -70,7 +76,31 @@ type evDevice struct {
 	rel_position  khronos.EGLPoint
 	key_code      evKeyCode
 	key_action    evKeyAction
+
+	// exclusive access to device
+	exclusive     bool
 }
+
+type evLEDState uint8
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+// LED Constants
+const (
+	EV_LED_NUML     evLEDState = 0x00
+	EV_LED_CAPSL    evLEDState = 0x01
+	EV_LED_SCROLLL  evLEDState = 0x02
+	EV_LED_COMPOSE  evLEDState = 0x03
+	EV_LED_KANA     evLEDState = 0x04
+	EV_LED_SLEEP    evLEDState = 0x05
+	EV_LED_SUSPEND  evLEDState = 0x06
+	EV_LED_MUTE     evLEDState = 0x07
+	EV_LED_MISC     evLEDState = 0x08
+	EV_LED_MAIL     evLEDState = 0x09
+	EV_LED_CHARGING evLEDState = 0x0A
+	EV_LED_MAX      evLEDState = 0x0F
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
@@ -95,14 +125,14 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 		return nil, err
 	}
 
-	// Get phys of device (physical connection ID). Ignore errors here,
+	// Get phys & uniq of device. Ignore errors here,
 	// since it seems this isn't reported by touchscreen
 	this.phys, err = evGetPhys(this.handle)
+	this.uniq, err = evGetUniq(this.handle)
 
 	// Get information about the device
 	var bus uint16
 	if bus, this.vendor, this.product, this.version, err = evGetInfo(this.handle); err != nil {
-		log.Debug("R")
 		this.handle.Close()
 		return nil, err
 	}
@@ -111,7 +141,6 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 
 	// Get capabilities
 	if this.capabilities, err = evGetSupportedEventTypes(this.handle); err != nil {
-		log.Debug("T")
 		this.handle.Close()
 		return nil, err
 	}
@@ -130,12 +159,29 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 		this.device_type = hw.INPUT_TYPE_TOUCHSCREEN
 	}
 
+	// Obtain exclusive use of device
+	this.exclusive = config.Exclusive
+	if this.exclusive {
+		if err := evSetGrabState(this.handle,true); err != nil {
+			this.handle.Close()
+			return nil, err
+		}
+	}
+
 	return this, nil
 }
 
 // Close InputDevice
 func (this *evDevice) Close() error {
 	this.log.Debug("<linux.InputDevice>Close device=%v", this)
+
+	// remove exclusive access
+	if this.exclusive {
+		if err := evSetGrabState(this.handle,false); err != nil {
+			this.log.Warn("<linux.InputDevice>Close Error: %v",err)
+		}
+		this.exclusive = false
+	}
 
 	// close file handle
 	err := this.handle.Close()
@@ -214,20 +260,75 @@ func (this *evDevice) Matches(alias string, device_type hw.InputDeviceType, devi
 	if alias == "" {
 		return true
 	}
-	if alias == this.name {
+	if alias == this.uniq {
 		return true
 	}
 	if alias == this.phys {
 		return true
 	}
+	if alias == this.name {
+		return true
+	}
 	return false
+}
+
+func (this *evDevice) GetKeyState() hw.InputKeyState {
+	current_state := hw.InputKeyState(0)
+	states, err := evGetLEDState(this.handle)
+	if err != nil {
+		this.log.Warn("<linux.InputDevice> Error: %v",err)
+		return current_state
+	}
+	if states == nil || len(states) == 0 {
+		return current_state
+	}
+	for _, state := range states {
+		switch(state) {
+			case EV_LED_NUML:
+				current_state |= hw.INPUT_KEYSTATE_NUM
+			case EV_LED_CAPSL:
+				current_state |= hw.INPUT_KEYSTATE_CAPS
+			case EV_LED_SCROLLL:
+				current_state |= hw.INPUT_KEYSTATE_SCROLL
+		}
+	}
+	return current_state
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *evDevice) String() string {
-	return fmt.Sprintf("<linux.InputDevice>{ name=\"%s\" phys=%v type=%v bus=%v product=0x%04X vendor=0x%04X version=0x%04X capabilities=%v fd=%v }", this.name, this.phys, this.device_type, this.bus, this.product, this.vendor, this.version, this.capabilities, this.handle.Fd())
+	return fmt.Sprintf("<linux.InputDevice>{ name=\"%s\" phys=%v uniq=%v type=%v bus=%v product=0x%04X vendor=0x%04X version=0x%04X capabilities=%v exclusive=%v fd=%v }", this.name, this.phys, this.uniq, this.device_type, this.bus, this.product, this.vendor, this.version, this.capabilities, this.exclusive, this.handle.Fd())
+}
+
+func (s evLEDState) String() string {
+	switch s {
+		case EV_LED_NUML:
+			return "EV_LED_NUML"
+		case EV_LED_CAPSL:
+			return "EV_LED_CAPSL"
+		case EV_LED_SCROLLL:
+			return "EV_LED_SCROLLL"
+		case EV_LED_COMPOSE:
+			return "EV_LED_COMPOSE"
+		case EV_LED_KANA:
+			return "EV_LED_KANA"
+		case EV_LED_SLEEP:
+			return "EV_LED_SLEEP"
+		case EV_LED_SUSPEND:
+			return "EV_LED_SUSPEND"
+		case EV_LED_MUTE:
+			return "EV_LED_MUTE"
+		case EV_LED_MISC:
+			return "EV_LED_MISC"
+		case EV_LED_MAIL:
+			return "EV_LED_MAIL"
+		case EV_LED_CHARGING:
+			return "EV_LED_CHARGING"
+		default:
+			return "[?? Invalid evLEDState value]"
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
