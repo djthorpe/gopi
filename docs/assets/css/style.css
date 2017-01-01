@@ -87,6 +87,7 @@ table {
 th, td {
   text-align:left;
   padding:5px 10px;
+  margin: 0px;
   border:1px solid #e5e5e5;
 }
 
@@ -94,7 +95,7 @@ th {
   color:#444;
 }
 
-td:nth-child(even) {
+tr:nth-child(even) {
 	background: #e5e5e5;
 }
 
