@@ -94,6 +94,10 @@ th {
   color:#444;
 }
 
+td:nth-child(even) {
+	background: #e5e5e5;
+}
+
 dt {
   color:#444;
   font-weight:700;
