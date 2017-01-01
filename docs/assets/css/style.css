@@ -115,7 +115,7 @@ strong {
 }
 
 section {
-  margin-left: 300px;
+  left: 300px;
   width:100%;
   float:right;
   padding-bottom:50px;
