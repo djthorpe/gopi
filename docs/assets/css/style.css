@@ -115,10 +115,10 @@ strong {
 }
 
 section {
-  left: 300px;
-  width:100%;
-  float:right;
-  padding-bottom:50px;
+  width: auto;
+  float: right;
+  padding-left: 300px;
+  padding-bottom: 50px;
 }
 
 small {
