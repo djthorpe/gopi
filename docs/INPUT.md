@@ -147,27 +147,28 @@ emitted:
 
 | **Struct** | `hw.InputEvent` |
 | -- | -- | -- |
-| **time.Duration** | Timestamp | The timestamp for an event, to nanosecond resolution |
-| **hw.InputDeviceType** | DeviceType | The type of device emitting the event |
-| **hw.EventType** | EventType | The type of event being emitted |
-| **hw.InputKeyCode** | Keycode | For press, release and repeat events, the key or mouse button |
-| **uint32** | Scancode | The keyboard scancode for press and release events |
-| **khronos.EGLPoint** | Position | For touchscreen and mouse device types, the absolute position being tracked |
-| **khronos.EGLPoint** | Relative | For mouse device types, the relative position compared to last position |
-| **uint** | Slot | For multi-touch events, the slot number |
+| **time.Duration** | `Timestamp` | The timestamp for an event, to nanosecond resolution |
+| **hw.InputDeviceType** | `DeviceType` | The type of device emitting the event |
+| **hw.EventType** | `EventType` | The type of event being emitted |
+| **hw.InputKeyCode** | `Keycode` | For press, release and repeat events, the key or mouse button |
+| **uint32** | `Scancode` | The keyboard scancode for press and release events |
+| **khronos.EGLPoint** | `Position` | For touchscreen and mouse device types, the absolute position being tracked |
+| **khronos.EGLPoint** | `Relative` | For mouse device types, the relative position compared to last position |
+| **uint** | `Slot` | For multi-touch events, the slot number |
 
-There are a number of different kinds of events which are emitted and which
-you can handle:
+There are a number of different types of events:
 
-  * `INPUT_EVENT_KEYPRESS` - A key or mouse button was pressed down
-  * `INPUT_EVENT_KEYRELEASE` - A key or mouse button was released
-  * `INPUT_EVENT_KEYREPEAT` - A key continues to be pressed and initiates a repeat
-  * `INPUT_EVENT_ABSPOSITION` - The absolute position for the device was changed (for example, a touchscreen was pressed)
-  * `INPUT_EVENT_RELPOSITION` - The relative position for the device was changed (for example, a mouse was moved)
-
-For key presses, the key code is provided as part of the event. For
-absolute and relative position changes, the `Position` parameter is set, and
-for relative position changes, the `Relative` parameter is also set.
+| **Enum** | `hw.InputEventType` |
+| -- | -- |
+| `hw.INPUT_EVENT_NONE` | Unknown event type |
+| `hw.INPUT_EVENT_KEYPRESS` | Mouse, touchscreen or keyboard key press |
+| `hw.INPUT_EVENT_KEYRELEASE` | Mouse, touchscreen or keyboard key release |
+| `hw.INPUT_EVENT_KEYREPEAT` | Keyboard key being held down |
+| `hw.INPUT_EVENT_ABSPOSITION` | Mouse or touch screen absolute position |
+| `hw.INPUT_EVENT_RELPOSITION` | Mouse or touch screen relative position change |
+| `hw.INPUT_EVENT_TOUCHPRESS` | Touchscreen press |
+| `hw.INPUT_EVENT_TOUCHRELEASE` | Touchscreen press |
+| `hw.INPUT_EVENT_TOUCHPOSITION` | Touchscreen position change |
 
 ## Input Devices
 
