@@ -15,7 +15,94 @@ There are three main concepts with input devices:
 	
 The following sections describe how to combine these concepts.
 
+## Concepts
+
+| Import | github.com/djthorpe/gopi/hw |
+| Interface | hw.InputDriver | gopi.Driver, implements driver for all devices |
+| Interface | hw.InputDevice | gopi.Driver, implements a single device |
+| Enum   | hw.InputDeviceType | Type of an input device |
+| Enum   | hw.InputDeviceBus | How the input device is connected |
+| Struct | hw.InputEvent | An event emitted by a device |
+| Enum   | hw.InputEventType | Type of event emitted |
+| Enum   | hw.InputKeyCode | The key pressed or mouse button activated |
+| Enum   | hw.InputKeyState | Keyboard state (Caps Lock, Num Lock, Shift, etc) |
+
 ## The Input Driver
+
+```
+
+
+
+type InputDriver interface {
+	// Enforces general driver
+	gopi.Driver
+
+	// Open Devices by name, type and bus
+	OpenDevicesByName(name string, flags InputDeviceType, bus InputDeviceBus) ([]InputDevice, error)
+
+	// Close Device
+	CloseDevice(device InputDevice) error
+
+	// Watch for events for an amount of time
+	Watch(delta time.Duration,callback InputEventCallback) error
+}
+
+type InputDevice interface {
+	// Enforces general driver
+	gopi.Driver
+
+	// Get the name of the input device
+	GetName() string
+
+	// Get the type of device
+	GetType() InputDeviceType
+
+	// Get the bus interface
+	GetBus() InputDeviceBus
+
+	// Get current cursor position (for mouse, joystick and touchscreen devices)
+	GetPosition() khronos.EGLPoint
+
+	// Set current cursor position
+	SetPosition(khronos.EGLPoint)
+
+	// Get key states (caps lock, shift, scroll lock, num lock, etc)
+	GetKeyState() InputKeyState
+
+	// Set key state (or states) to on or off. Will return error
+	// for key states which are not modifiable
+	SetKeyState(flags InputKeyState,state bool) error
+
+	// Returns true if device matches conditions
+	Matches(alias string, device_type InputDeviceType, device_bus InputDeviceBus) bool
+}
+
+type InputEvent struct {
+	// Timestamp of event
+	Timestamp time.Duration
+
+	// Type of device which has created the event
+	DeviceType InputDeviceType
+
+	// Event type
+	EventType InputEventType
+
+	// Key or mouse button press or release
+	Keycode InputKeyCode
+
+	// Key scancode
+	Scancode uint32
+
+	// Absolute cursor position
+	Position khronos.EGLPoint
+
+	// Relative change in position
+	Relative khronos.EGLPoint
+
+	// Multi-touch slot identifier
+	Slot uint
+}
+
 
 You can open a driver in a similar way to other drivers:
 
