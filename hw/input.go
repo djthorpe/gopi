@@ -75,14 +75,20 @@ type InputEvent struct {
 	// Event type
 	EventType InputEventType
 
-	// Key or mouse button press
+	// Key or mouse button press or release
 	Keycode InputKeyCode
+
+	// Key scancode
+	Scancode uint32
 
 	// Absolute cursor position
 	Position khronos.EGLPoint
 
 	// Relative change in position
 	Relative khronos.EGLPoint
+
+	// Multi-touch slot
+	Slot uint16
 }
 
 // Device type (keyboard, mouse, touchscreen, etc)
@@ -91,10 +97,10 @@ type InputDeviceType uint8
 // Event type (button press, button release, etc)
 type InputEventType uint16
 
-// Keycode
+// Key Code
 type InputKeyCode uint16
 
-// Keystate
+// Key State
 type InputKeyState uint16
 
 // Bus type (USB, Bluetooth, etc)
@@ -144,11 +150,20 @@ const (
 // Input events
 const (
 	INPUT_EVENT_NONE        InputEventType = 0x0000
+
+	// Mouse and/or keyboard key/button press events
 	INPUT_EVENT_KEYPRESS    InputEventType = 0x0001
 	INPUT_EVENT_KEYRELEASE  InputEventType = 0x0002
 	INPUT_EVENT_KEYREPEAT   InputEventType = 0x0003
+
+	// Mouse and/or touchscreen move events
 	INPUT_EVENT_ABSPOSITION InputEventType = 0x0004
 	INPUT_EVENT_RELPOSITION InputEventType = 0x0005
+
+	// Multi-touch events
+	INPUT_EVENT_TOUCHPRESS  InputEventType = 0x0006
+	INPUT_EVENT_TOUCHRELEASE InputEventType = 0x0007
+	INPUT_EVENT_TOUCHPOSITION InputEventType = 0x0008
 )
 
 // Input key state
@@ -169,12 +184,18 @@ const (
 
 func (e InputEvent) String() string {
 	switch(e.EventType) {
-	case INPUT_EVENT_KEYPRESS, INPUT_EVENT_KEYRELEASE, INPUT_EVENT_KEYREPEAT:
+	case INPUT_EVENT_KEYPRESS, INPUT_EVENT_KEYRELEASE:
+		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v keycode=0x%04X scancode=0x%08X ts=%v }",e.EventType,e.DeviceType,uint16(e.Keycode),e.Scancode,e.Timestamp)
+	case INPUT_EVENT_KEYREPEAT:
 		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v keycode=0x%04X ts=%v }",e.EventType,e.DeviceType,uint16(e.Keycode),e.Timestamp)
 	case INPUT_EVENT_ABSPOSITION:
 		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v position=%v ts=%v }",e.EventType,e.DeviceType,e.Position,e.Timestamp)
 	case INPUT_EVENT_RELPOSITION:
 		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v position=%v relative=%v ts=%v }",e.EventType,e.DeviceType,e.Position,e.Relative,e.Timestamp)
+	case INPUT_EVENT_TOUCHPRESS, INPUT_EVENT_TOUCHRELEASE:
+		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v slot=%v keycode=0x%04X ts=%v }",e.EventType,e.DeviceType,e.Slot,uint16(e.Keycode),e.Timestamp)
+	case INPUT_EVENT_TOUCHPOSITION:
+		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v slot=%v position=%v ts=%v }",e.EventType,e.DeviceType,e.Slot,e.Position,e.Timestamp)
 	default:
 		return fmt.Sprintf("<linux.InputEvent>{ type=%v device=%v keycode=0x%04X position=%v relative=%v ts=%v }",e.EventType,e.DeviceType,uint16(e.Keycode),e.Position,e.Relative,e.Timestamp)
 	}
@@ -258,6 +279,12 @@ func (e InputEventType) String() string {
 		return "INPUT_EVENT_ABSPOSITION"
 	case INPUT_EVENT_RELPOSITION:
 		return "INPUT_EVENT_RELPOSITION"
+	case INPUT_EVENT_TOUCHPRESS:
+		return "INPUT_EVENT_TOUCHPRESS"
+	case INPUT_EVENT_TOUCHRELEASE:
+		return "INPUT_EVENT_TOUCHRELEASE"
+	case INPUT_EVENT_TOUCHPOSITION:
+		return "INPUT_EVENT_TOUCHPOSITION"
 	default:
 		return "[?? Invalid InputEventType value]"
 	}

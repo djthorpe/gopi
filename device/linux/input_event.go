@@ -59,6 +59,7 @@ const (
 const (
 	EV_CODE_X           evKeyCode   = 0x0000
 	EV_CODE_Y           evKeyCode   = 0x0001
+	EV_CODE_SCANCODE    evKeyCode   = 0x0004 // Keyboard scan code
 	EV_CODE_SLOT        evKeyCode   = 0x002F // Slot for multi touch positon
 	EV_CODE_SLOT_X      evKeyCode   = 0x0035 // X for multi touch position
 	EV_CODE_SLOT_Y      evKeyCode   = 0x0036 // Y for multi touch position
@@ -141,7 +142,10 @@ func (this *InputDriver) Watch(delta time.Duration, callback hw.InputEventCallba
 ////////////////////////////////////////////////////////////////////////////////
 // DECODE
 
+// This function takes a raw event in and sets the device internal state, and
+// may return an abstract input event, or nil if there is no event to emit.
 func (this *InputDriver) evDecode(raw_event *evEvent, device *evDevice) *hw.InputEvent {
+	this.log.Debug2("<linux.InputDriver>evDecode{ type=%v code=%v value=0x%08X ts=%v,%v }",raw_event.Type,raw_event.Code,raw_event.Value,raw_event.Second,raw_event.Microsecond)
 	switch raw_event.Type {
 	case EV_SYN:
 		return this.evDecodeSyn(raw_event, device)
@@ -161,6 +165,7 @@ func (this *InputDriver) evDecode(raw_event *evEvent, device *evDevice) *hw.Inpu
 	return nil
 }
 
+// Decode the EV_SYN syncronization raw event.
 func (this *InputDriver) evDecodeSyn(raw_event *evEvent, device *evDevice) *hw.InputEvent {
 	event := hw.InputEvent{}
 	event.Timestamp = time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond)
@@ -178,14 +183,17 @@ func (this *InputDriver) evDecodeSyn(raw_event *evEvent, device *evDevice) *hw.I
 	} else if device.key_action == EV_VALUE_KEY_UP {
 		event.EventType = hw.INPUT_EVENT_KEYRELEASE
 		event.Keycode = hw.InputKeyCode(device.key_code)
+		event.Scancode = device.scan_code
 		device.key_action = EV_VALUE_KEY_NONE
 	} else if device.key_action == EV_VALUE_KEY_DOWN {
 		event.EventType = hw.INPUT_EVENT_KEYPRESS
 		event.Keycode = hw.InputKeyCode(device.key_code)
+		event.Scancode = device.scan_code
 		device.key_action = EV_VALUE_KEY_NONE
 	} else if device.key_action == EV_VALUE_KEY_REPEAT {
 		event.EventType = hw.INPUT_EVENT_KEYREPEAT
 		event.Keycode = hw.InputKeyCode(device.key_code)
+		event.Scancode = device.scan_code
 		device.key_action = EV_VALUE_KEY_NONE
 	} else {
 		return nil
@@ -199,35 +207,32 @@ func (this *InputDriver) evDecodeKey(raw_event *evEvent, device *evDevice) {
 	device.key_action = evKeyAction(raw_event.Value)
 }
 
-func (this *InputDriver) evDecodeAbs(raw_event *evEvent, device *evDevice) {
+func (this *InputDriver) evDecodeAbs(raw_event *evEvent, device *evDevice) *hw.InputEvent {
 	if raw_event.Code == EV_CODE_X {
 		device.position.X = int(raw_event.Value)
-		return
-	}
-	if raw_event.Code == EV_CODE_Y {
+	} else if raw_event.Code == EV_CODE_Y {
 		device.position.Y = int(raw_event.Value)
-		return
-	}
-	if raw_event.Code == EV_CODE_SLOT {
+	} else if raw_event.Code == EV_CODE_SLOT {
 		device.slot = int(raw_event.Value)
-		return
-	}
-	if raw_event.Code == EV_CODE_SLOT_ID || raw_event.Code == EV_CODE_SLOT_X || raw_event.Code == EV_CODE_SLOT_Y {
+		this.log.Debug("SLOT=%v",device.slot)
+	} else if raw_event.Code == EV_CODE_SLOT_ID || raw_event.Code == EV_CODE_SLOT_X || raw_event.Code == EV_CODE_SLOT_Y {
 		switch {
 		case device.slot >= len(device.slots):
 			this.log.Warn("<linux.InputDevice> Ignoring out-of-range slot %v",device.slot)
-			return
 		case raw_event.Code == EV_CODE_SLOT_ID:
-			device.slots[device.slot].id = raw_event.Value
+			device.slots[device.slot].id = int16(raw_event.Value)
+			this.log.Debug("SLOT %v ID=%v",device.slot,device.slots[device.slot].id)
 		case raw_event.Code == EV_CODE_SLOT_X:
 			device.slots[device.slot].position.X = int(raw_event.Value)
+			this.log.Debug("SLOT %v X=%v",device.slot,device.slots[device.slot].position.X)
 		case raw_event.Code == EV_CODE_SLOT_Y:
-			device.slots[device.slot].position.X = int(raw_event.Value)
+			device.slots[device.slot].position.Y = int(raw_event.Value)
+			this.log.Debug("SLOT %v Y=%v",device.slot,device.slots[device.slot].position.Y)
 		}
-		return
-
+	} else {
+		this.log.Debug2("%v Ignoring code %v", raw_event.Type, raw_event.Code)
 	}
-	this.log.Debug2("%v Ignoring code %v", raw_event.Type, raw_event.Code)
+	return nil
 }
 
 func (this *InputDriver) evDecodeRel(raw_event *evEvent, device *evDevice) {
@@ -245,5 +250,9 @@ func (this *InputDriver) evDecodeRel(raw_event *evEvent, device *evDevice) {
 }
 
 func (this *InputDriver) evDecodeMsc(raw_event *evEvent, device *evDevice) {
-	this.log.Debug2("%v Ignoring code=%v value=%v", raw_event.Type, raw_event.Code, raw_event.Value)
+	if raw_event.Code == EV_CODE_SCANCODE {
+		device.scan_code = raw_event.Value
+	} else {
+		this.log.Debug2("%v Ignoring code=%v value=%v", raw_event.Type, raw_event.Code, raw_event.Value)
+	}
 }

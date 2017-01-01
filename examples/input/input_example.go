@@ -90,6 +90,9 @@ func Watch(app *app.App) {
 	for app.GetDone() == false {
 
 		err := app.Input.Watch(time.Millisecond * 200,func (event *hw.InputEvent, device hw.InputDevice) {
+			// debug the event
+			app.Logger.Debug2("%v",event)
+
 			// Print table header every 40 invocations
 			if (i % 40) == 0 {
 				fmt.Println("")

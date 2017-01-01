@@ -76,6 +76,7 @@ type evDevice struct {
 	last_position khronos.EGLPoint
 	rel_position  khronos.EGLPoint
 	key_code      evKeyCode
+	scan_code     uint32
 	key_action    evKeyAction
 
 	// exclusive access to device
@@ -91,7 +92,7 @@ type evDevice struct {
 
 // Represents multi-touch slot information
 type evDeviceSlot struct {
-	id            uint32
+	id            int16
 	position      khronos.EGLPoint
 }
 
