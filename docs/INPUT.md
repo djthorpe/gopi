@@ -172,12 +172,31 @@ populated differently depending on the type of event.
 
 For **keyboard** devices, the `Keycode` and `Scancode` fields will be set, where the
 key code determines the pressed key. Scancode is usually a device-specific
-code translated into the keycode by the keyboard hardware.
+code translated into the keycode by the keyboard hardware. Here are some example key
+codes, but the full list is available in the source code:
+
+| **Enum** | `hw.InputKeyCode` |
+| -- | -- |
+| `hw.INPUT_KEY_ESC` | Escape |
+| `hw.INPUT_KEY_TAB` | Tab |
+| `hw.INPUT_KEY_ENTER` | Enter |
+| `hw.INPUT_KEY_SPACE` | Space Bar |
+| `hw.INPUT_KEY_UP` | Arrow Up |
+| `hw.INPUT_KEY_DOWN` | Arrow Down |
+| `hw.INPUT_KEY_LEFT` | Arrow Left |
+| `hw.INPUT_KEY_RIGHT` | Arrow Right |
 
 For **mouse** devices, relative positions are reported, but the absolute position
 is also set synthetically and can be changed at any time by calling the
 `SetPosition` method of `hw.InputDevice`. Mouse devices also report on button
 presses.
+
+| **Enum** | `hw.InputKeyCode` |
+| -- | -- |
+| `hw.INPUT_BTN_LEFT` | Left Mouse Button |
+| `hw.INPUT_BTN_MIDDLE` | Middle Mouse Button |
+| `hw.INPUT_BTN_RIGHT` | Right Mouse Button |
+| `hw.INPUT_BTN_SIDE` | Side Mouse Button |
 
 For **touchscreen** devices, these are generally _multi-touch_. For example, you
 can activate two different points on the touch device simultaneously with fingers
@@ -185,6 +204,10 @@ or styluses. Touchscreen devices will therefore not only report on absolute
 position changes and key press events, but also report individually using the
 `hw.INPUT_EVENT_TOUCHPRESS`, `hw.INPUT_EVENT_TOUCHRELEASE` and `hw.INPUT_EVENT_TOUCHPRESS`
 for each of the simultaneous touches, or **slots**.
+
+| **Enum** | `hw.InputKeyCode` |
+| -- | -- |
+| `hw.INPUT_BTN_TOUCH` | Touchscreen Button |
 
 ## Input Devices
 
