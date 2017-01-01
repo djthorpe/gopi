@@ -91,7 +91,8 @@ th, td {
 }
 
 th {
-  color:#444;
+	background: #e5e5e5;
+	color:#444;
 }
 
 dt {
