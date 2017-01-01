@@ -152,7 +152,7 @@ func (this *InputDriver) evDecode(raw_event *evEvent, device *evDevice) *hw.Inpu
 	case EV_KEY:
 		this.evDecodeKey(raw_event, device)
 	case EV_ABS:
-		this.evDecodeAbs(raw_event, device)
+		return this.evDecodeAbs(raw_event, device)
 	case EV_REL:
 		this.evDecodeRel(raw_event, device)
 	case EV_MSC:
@@ -172,6 +172,7 @@ func (this *InputDriver) evDecodeSyn(raw_event *evEvent, device *evDevice) *hw.I
 	event.DeviceType = device.device_type
 	event.Position = device.position
 
+	// Mouse and keyboard movements
 	if device.rel_position.Equals(khronos.EGLZeroPoint) == false {
 		event.EventType = hw.INPUT_EVENT_RELPOSITION
 		event.Relative = device.rel_position
@@ -199,6 +200,13 @@ func (this *InputDriver) evDecodeSyn(raw_event *evEvent, device *evDevice) *hw.I
 		return nil
 	}
 
+	// Check for multi-touch positional changes
+	slot := device.slots[device.slot]
+	if slot.active {
+		this.log.Debug("SLOT=%v POSITION=%v",device.slot,slot.position)
+	}
+
+
 	return &event
 }
 
@@ -213,26 +221,48 @@ func (this *InputDriver) evDecodeAbs(raw_event *evEvent, device *evDevice) *hw.I
 	} else if raw_event.Code == EV_CODE_Y {
 		device.position.Y = int(raw_event.Value)
 	} else if raw_event.Code == EV_CODE_SLOT {
-		device.slot = int(raw_event.Value)
-		this.log.Debug("SLOT=%v",device.slot)
+		device.slot = raw_event.Value
 	} else if raw_event.Code == EV_CODE_SLOT_ID || raw_event.Code == EV_CODE_SLOT_X || raw_event.Code == EV_CODE_SLOT_Y {
 		switch {
-		case device.slot >= len(device.slots):
+		case device.slot < uint32(0) || device.slot >= INPUT_MAX_MULTITOUCH_SLOTS:
 			this.log.Warn("<linux.InputDevice> Ignoring out-of-range slot %v",device.slot)
 		case raw_event.Code == EV_CODE_SLOT_ID:
-			device.slots[device.slot].id = int16(raw_event.Value)
-			this.log.Debug("SLOT %v ID=%v",device.slot,device.slots[device.slot].id)
+			return this.evDecodeAbsTouch(raw_event,device)
 		case raw_event.Code == EV_CODE_SLOT_X:
 			device.slots[device.slot].position.X = int(raw_event.Value)
-			this.log.Debug("SLOT %v X=%v",device.slot,device.slots[device.slot].position.X)
+			device.slots[device.slot].active = true
 		case raw_event.Code == EV_CODE_SLOT_Y:
 			device.slots[device.slot].position.Y = int(raw_event.Value)
-			this.log.Debug("SLOT %v Y=%v",device.slot,device.slots[device.slot].position.Y)
+			device.slots[device.slot].active = true
 		}
 	} else {
 		this.log.Debug2("%v Ignoring code %v", raw_event.Type, raw_event.Code)
 	}
 	return nil
+}
+
+func (this *InputDriver) evDecodeAbsTouch(raw_event *evEvent, device *evDevice) *hw.InputEvent {
+	event := hw.InputEvent{}
+	event.Timestamp = time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond)
+	event.DeviceType = device.device_type
+
+	// Decode the slot_id, if -1 then this is the release for a slot
+	slot_id := int16(raw_event.Value)
+	if slot_id >= 0 {
+		device.slots[device.slot].active = true
+		device.slots[device.slot].id = slot_id
+		event.EventType = hw.INPUT_EVENT_TOUCHPRESS
+	} else {
+		device.slots[device.slot].active = false
+		event.EventType = hw.INPUT_EVENT_TOUCHRELEASE
+	}
+
+	// Populate the slot and keycode
+	event.Slot = uint(device.slot)
+	event.Keycode = hw.INPUT_BTN_TOUCH
+
+	// Return the event to emit
+	return &event
 }
 
 func (this *InputDriver) evDecodeRel(raw_event *evEvent, device *evDevice) {

@@ -87,8 +87,8 @@ type InputEvent struct {
 	// Relative change in position
 	Relative khronos.EGLPoint
 
-	// Multi-touch slot
-	Slot uint16
+	// Multi-touch slot identifier
+	Slot uint
 }
 
 // Device type (keyboard, mouse, touchscreen, etc)

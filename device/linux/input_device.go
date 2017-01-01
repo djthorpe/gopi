@@ -86,7 +86,7 @@ type evDevice struct {
 	state         hw.InputKeyState
 
 	// Multi-touch support
-	slot          int
+	slot          uint32
 	slots         []evDeviceSlot
 }
 
@@ -94,13 +94,14 @@ type evDevice struct {
 type evDeviceSlot struct {
 	id            int16
 	position      khronos.EGLPoint
+	active        bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
-	INPUT_MAX_MULTITOUCH_SLOTS = 32
+	INPUT_MAX_MULTITOUCH_SLOTS uint32 = 32
 )
 
 ////////////////////////////////////////////////////////////////////////////////
