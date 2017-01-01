@@ -21,11 +21,9 @@ You can open a driver in a similar way to other drivers:
 
 ```go
 	// Create the hw.InputDriver object
-    input, err := gopi.Open(linux.InputDriver{ },logger)
+	input, err := gopi.Open(linux.InputDriver{ },logger)
 	if err != nil { /* handle error */ }
 	defer input.Close()
-	
-	/* do things here */
 ```
 
 To discover a set of devices, simply use the `OpenDevicesByName` method, which
