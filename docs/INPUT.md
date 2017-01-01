@@ -19,6 +19,7 @@ There are three main concepts with input devices:
 There are other enumerations, interfaces and structs which support these concepts:	
 
 | **Import** | `github.com/djthorpe/gopi/hw` |
+| -- | -- | -- |
 | **Interface** | `hw.InputDriver` | gopi.Driver, implements driver for all devices |
 | **Interface** | `hw.InputDevice` | gopi.Driver, implements a single device |
 | **Enum**   | `hw.InputDeviceType` | Type of an input device |
@@ -31,6 +32,7 @@ There are other enumerations, interfaces and structs which support these concept
 The concrete implementation of the driver and devices are as follows:
 
 | **Import** | `github.com/djthorpe/gopi/device/linux` |
+| -- | -- | -- |
 | **Struct** | `linux.InputDriver` | Concrete Linux input driver configuration |
 | **Struct** | `linux.InputDevice` | Concrete Linux input device |
 
@@ -47,10 +49,14 @@ defer input.Close()
 
 The `linux.InputDriver` configuration supports a single configuration parameter:
 
+| **Struct** | `linux.InputDriver` |
+| -- | -- | -- |
 | **Bool** | Exclusive | Whether to open devices for exclusive access |
 
 The `hw.InputDriver` interface should implement the following methods:
 
+| **Interface** | `linux.InputDriver` |
+| -- | -- | -- |
 | **Method** | `Close() error` | Release all devices and close |
 | **Method** | `OpenDevicesByName(name string, flags InputDeviceType, bus InputDeviceBus) ([]InputDevice, error)` | Open devices |
 | **Method** | `CloseDevice(device InputDevice) error` | Close a device |
