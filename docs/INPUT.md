@@ -10,23 +10,15 @@ describe how to combine these concepts.
 
 There are three main concepts with input devices:
 
-  * The _Input Driver_ provides a way to discover, open, close and watch devices.
-  * The _Input Device_ represents a single device such as a mouse, keyboard,
+  * The *Input Driver* provides a way to discover, open, close and watch devices.
+  * The *Input Device* represents a single device such as a mouse, keyboard,
     touchscreen or joystick
-  * An _Input Event_ is emitted when an input device changes state. For example,
+  * An *Input Event* is emitted when an input device changes state. For example,
     a key was pressed or the mouse was moved.
 
 There are other enumerations, interfaces and structs which support these concepts:	
 
 | Import | github.com/djthorpe/gopi/hw |
-| Interface | hw.InputDriver | gopi.Driver, implements driver for all devices |
-| Interface | hw.InputDevice | gopi.Driver, implements a single device |
-| Enum   | hw.InputDeviceType | Type of an input device |
-| Enum   | hw.InputDeviceBus | How the input device is connected |
-| Struct | hw.InputEvent | An event emitted by a device |
-| Enum   | hw.InputEventType | Type of event emitted |
-| Enum   | hw.InputKeyCode | The key pressed or mouse button activated |
-| Enum   | hw.InputKeyState | Keyboard state (Caps Lock, Num Lock, Shift, etc) |
 
 ## The Input Driver
 
