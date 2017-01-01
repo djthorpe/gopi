@@ -174,7 +174,7 @@ For **keyboard** devices, the `Keycode` and `Scancode` fields will be set, where
 key code determines the pressed key. Scancode is usually a device-specific
 code translated into the keycode by the keyboard hardware.
 
-For **mouse* devices, relative positions are reported, but the absolute position
+For **mouse** devices, relative positions are reported, but the absolute position
 is also set synthetically and can be changed at any time by calling the
 `SetPosition` method of `hw.InputDevice`. Mouse devices also report on button
 presses.
@@ -184,7 +184,7 @@ can activate two different points on the touch device simultaneously with finger
 or styluses. Touchscreen devices will therefore not only report on absolute
 position changes and key press events, but also report individually using the
 `hw.INPUT_EVENT_TOUCHPRESS`, `hw.INPUT_EVENT_TOUCHRELEASE` and `hw.INPUT_EVENT_TOUCHPRESS`
-for each of the simultaneous touches, or _slots_.
+for each of the simultaneous touches, or **slots**.
 
 ## Input Devices
 
