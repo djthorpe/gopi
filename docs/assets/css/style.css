@@ -53,7 +53,6 @@ a:hover small {
 }
 
 .wrapper {
-  width:860px;
   margin:0 auto;
 }
 
@@ -105,10 +104,9 @@ img {
 }
 
 header {
-  width:270px;
-  float:left;
+  width: 270px;
+  float: left;
   position:fixed;
-  -webkit-font-smoothing:subpixel-antialiased;
 }
 
 strong {
