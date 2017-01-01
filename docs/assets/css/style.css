@@ -117,7 +117,7 @@ strong {
 }
 
 section {
-  width:500px;
+  width:auto;
   float:right;
   padding-bottom:50px;
 }
