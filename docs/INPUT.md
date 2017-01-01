@@ -19,15 +19,24 @@ There are three main concepts with input devices:
 There are other enumerations, interfaces and structs which support these concepts:	
 
 | Import | github.com/djthorpe/gopi/hw |
+| Interface | hw.InputDriver | gopi.Driver, implements driver for all devices |
+| Interface | hw.InputDevice | gopi.Driver, implements a single device |
+| Enum   | hw.InputDeviceType | Type of an input device |
+| Enum   | hw.InputDeviceBus | How the input device is connected |
+| Struct | hw.InputEvent | An event emitted by a device |
+| Enum   | hw.InputEventType | Type of event emitted |
+| Enum   | hw.InputKeyCode | The key pressed or mouse button activated |
+| Enum   | hw.InputKeyState | Keyboard state (Caps Lock, Num Lock, Shift, etc) |
 
 ## The Input Driver
 
 You can open a driver in a similar way to other drivers:
 
 ```go
-input, err := gopi.Open(linux.InputDriver{ Exclusive: false },logger)
-if err != nil { /* handle error */ }
-defer input.Close()
+	// Create the hw.InputDriver object
+	input, err := gopi.Open(linux.InputDriver{ },logger)
+	if err != nil { /* handle error */ }
+	defer input.Close()
 ```
 
 To discover a set of devices, simply use the `OpenDevicesByName` method, which
