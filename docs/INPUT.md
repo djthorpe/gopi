@@ -3,7 +3,10 @@
 
 In order to obtain input from keyboards, mice, touchscreens and joysticks
 there is an abstract interface to input devices which you can use to accept
-events such as key presses and positional changes.
+events such as key presses and positional changes. The following sections
+describe how to combine these concepts.
+
+## Overview
 
 There are three main concepts with input devices:
 
@@ -12,10 +15,8 @@ There are three main concepts with input devices:
     touchscreen or joystick
   * An _Input Event_ is emitted when an input device changes state. For example,
     a key was pressed or the mouse was moved.
-	
-The following sections describe how to combine these concepts.
 
-## Concepts
+There are other enumerations, interfaces and structs which support these concepts:	
 
 | Import | github.com/djthorpe/gopi/hw |
 | Interface | hw.InputDriver | gopi.Driver, implements driver for all devices |
