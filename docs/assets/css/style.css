@@ -141,9 +141,11 @@ footer {
 }
 
 /* VIEW REPO LINK */
-.github div.view {
+div.github {
 	background: #000;
+	color: #e5e5e5;
 	padding: 10px;
+	border-radius: 5px;
 }
 
 /* TABLE OF CONTENTS */
