@@ -78,9 +78,10 @@ pre {
   overflow-x: auto;
 }
 
+/* Tables */
 table {
   width:100%;
-  border-collapse:collapse;
+  border: 1px solid #e5e5e5;
 }
 
 th, td {
@@ -89,13 +90,13 @@ th, td {
   border-bottom:1px solid #e5e5e5;
 }
 
+th {
+  color:#444;
+}
+
 dt {
   color:#444;
   font-weight:700;
-}
-
-th {
-  color:#444;
 }
 
 img {
