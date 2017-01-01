@@ -85,9 +85,9 @@ table {
 }
 
 th, td {
-  text-align:left;
-  padding:5px 10px;
-  border-bottom:1px solid #e5e5e5;
+  text-align: left;
+  padding: 5px 10px;
+  border-bottom: 1px solid #e5e5e5;
 }
 
 th {
@@ -116,7 +116,7 @@ strong {
 
 section {
   width: auto;
-  padding-left: 300px;
+  margin-left: 300px;
   padding-bottom: 50px;
 }
 
