@@ -117,9 +117,8 @@ strong {
 }
 
 section {
-  margin-left: 270px;
-  color: red;
-  width:auto;
+  margin-left: 300px;
+  width:100%;
   float:right;
   padding-bottom:50px;
 }
