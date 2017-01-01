@@ -86,13 +86,14 @@ table {
 
 th, td {
   text-align: left;
-  padding: 5px 10px;
+  padding: 5px 5px;
+  border: none;
   border-bottom: 1px solid #e5e5e5;
 }
 
 th {
 	background: #e5e5e5;
-	color:#444;
+	color: #444;
 }
 
 dt {
