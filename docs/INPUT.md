@@ -28,6 +28,7 @@ There are other enumerations, interfaces and structs which support these concept
 | **Enum**   | `hw.InputEventType` | Type of event emitted |
 | **Enum**   | `hw.InputKeyCode` | The key pressed or mouse button activated |
 | **Enum**   | `hw.InputKeyState` | Keyboard state (Caps Lock, Num Lock, Shift, etc) |
+| **Function** | `hw.InputEventCallback` | func(event *hw.InputEvent, device hw.InputDevice) |
 
 ## Concrete Implementation
 
@@ -110,24 +111,29 @@ The `bus` argument can be used to open devices on a specific bus, or use
 | `hw.INPUT_BUS_BLUETOOTH` | Bluetooth Bus |
 | `hw.INPUT_BUS_ANY` | Matches any bus when calling `OpenDevicesByName` |
 
-To close devices (which means they are no longer polled for events) use the
-`CloseDevice` method:
+To close devices use the `CloseDevice` method:
 
 ```go
   err := input.(hw.InputDriver).CloseDevice(mouse)
   if err != nil { /* handle the error */ }
 ```
 
-Finally, for all opened devices, you will want to watch for events emitted by
-the devices. The `Watch` method uses a `delta` argument which determines how
+By closing a device, it is removed from the list of opened devices,
+the device no longer emits events and any exclusivity for access is released.
+
+## Input Events
+
+For all opened devices, events are emitted and can be consumed by calling
+the `Watch` method. This method uses a `delta` argument which determines how
 long you want to watch a device for, and a `callback` method which is called
 for each event emitted. If no events are emitted within the specified time, then
-the Watch method returns `nil`:
+the Watch method returns `nil`. It will return with an error before this if
+some unexpected condition occurs:
 
 ```go
   err := input.(hw.InputDriver).Watch(time.Second * 5,func (event hw.InputEvent,device hw.InputDevice) {
-	fmt.Println("DEVICE",device)
-	fmt.Println("EVENT",event)
+	fmt.Println("DEVICE=",device)
+	fmt.Println("EVENT=",event)
   })
   if err != nil { /* handle the error */ }
 ```
@@ -136,12 +142,19 @@ Practically, you will want to continue watching for events until your applicatio
 ends, and you'll want to do it in the background. See below for information on
 how to implement this pattern.
 
-## Input Events
-
 The `hw.InputEvent` structure provides information on the event which has been
 emitted:
 
-  TODO
+| **Struct** | `hw.InputEvent` |
+| -- | -- | -- |
+| **time.Duration** | Timestamp | The timestamp for an event, to nanosecond resolution |
+| **hw.InputDeviceType** | DeviceType | The type of device emitting the event |
+| **hw.EventType** | EventType | The type of event being emitted |
+| **hw.InputKeyCode** | Keycode | For press, release and repeat events, the key or mouse button |
+| **uint32** | Scancode | The keyboard scancode for press and release events |
+| **khronos.EGLPoint** | Position | For touchscreen and mouse device types, the absolute position being tracked |
+| **khronos.EGLPoint** | Relative | For mouse device types, the relative position compared to last position |
+| **uint** | Slot | For multi-touch events, the slot number |
 
 There are a number of different kinds of events which are emitted and which
 you can handle:
