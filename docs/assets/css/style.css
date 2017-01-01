@@ -140,6 +140,12 @@ footer {
   -webkit-font-smoothing:subpixel-antialiased;
 }
 
+/* VIEW REPO LINK */
+.github div.view {
+	background: #000;
+	padding: 10px;
+}
+
 /* TABLE OF CONTENTS */
 
 div#toc {
