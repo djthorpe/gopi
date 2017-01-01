@@ -6,7 +6,7 @@ there is an abstract interface to input devices which you can use to accept
 events such as key presses and positional changes. The following sections
 describe how to combine these concepts.
 
-## Overview
+## Abstract Interface
 
 There are three main concepts with input devices:
 
@@ -29,7 +29,9 @@ There are other enumerations, interfaces and structs which support these concept
 | **Enum**   | `hw.InputKeyCode` | The key pressed or mouse button activated |
 | **Enum**   | `hw.InputKeyState` | Keyboard state (Caps Lock, Num Lock, Shift, etc) |
 
-The concrete implementation of the driver and devices are as follows:
+## Concrete Implementation
+
+The concrete implementation of the driver and devices are currently only for linux:
 
 | **Import** | `github.com/djthorpe/gopi/device/linux` |
 | -- | -- | -- |
@@ -37,6 +39,12 @@ The concrete implementation of the driver and devices are as follows:
 | **Struct** | `linux.InputDevice` | Concrete Linux input device |
 
 ## The Input Driver
+
+The `linux.InputDriver` configuration supports a single configuration parameter:
+
+| **Struct** | `linux.InputDriver` |
+| -- | -- | -- |
+| **Bool** | Exclusive | Whether to open devices for exclusive access |
 
 The input driver and input device implements the `gopi.Driver` interface so
 can be opened in the usual way:
@@ -47,20 +55,14 @@ if err != nil { /* handle error */ }
 defer input.Close()
 ```
 
-The `linux.InputDriver` configuration supports a single configuration parameter:
-
-| **Struct** | `linux.InputDriver` |
-| -- | -- | -- |
-| **Bool** | Exclusive | Whether to open devices for exclusive access |
-
 The `hw.InputDriver` interface should implement the following methods:
 
-| **Interface** | `linux.InputDriver` |
+| **Interface** | `hw.InputDriver` |
 | -- | -- | -- |
 | **Method** | `Close() error` | Release all devices and close |
-| **Method** | `OpenDevicesByName(name string, flags InputDeviceType, bus InputDeviceBus) ([]InputDevice, error)` | Open devices |
-| **Method** | `CloseDevice(device InputDevice) error` | Close a device |
-| **Method** | `Watch(delta time.Duration,callback InputEventCallback) error` | Watch for events and callback on emitted event |
+| **Method** | `OpenDevicesByName(name string, flags hw.InputDeviceType, bus hw.InputDeviceBus) ([]hw.InputDevice, error)` | Open devices |
+| **Method** | `CloseDevice(device hw.InputDevice) error` | Close a device |
+| **Method** | `Watch(delta time.Duration,callback hw.InputEventCallback) error` | Watch for events and callback on emitted event |
 
 To discover a set of devices, simply use the `OpenDevicesByName` method, which
 will return devices based on criteria you provide. You can provide a name of
@@ -76,8 +78,17 @@ empty or refer to a device by it's full name, alias or physical connection
 name. If empty, all devices discovered will be considered.
 
 The `flags` argument can either be `hw.INPUT_TYPE_ANY` to match all types of
-device, or you can provide an OR'ed set of device types. For example, to open
-any mouse and keyboard:
+device, or you can provide an OR'ed set of device types.
+
+| **Enum** | `hw.InputDeviceType` |
+| -- | -- |
+| `hw.INPUT_TYPE_NONE` | None or unknown device type |
+| `hw.INPUT_TYPE_KEYBOARD` | Keyboard |
+| `hw.INPUT_TYPE_MOUSE` | Mouse |
+| `hw.INPUT_TYPE_TOUCHSCREEN` | Multi-touch input device |
+| `hw.INPUT_TYPE_ANY` | Matches any device when calling `OpenDevicesByName` |
+
+For example, to open any mouse and keyboard:
 
 ```go
   devices, err := input.(hw.InputDriver).OpenDevicesByName("",hw.INPUT_TYPE_MOUSE | hw.INPUT_TYPE_KEYBOARD,hw.INPUT_BUS_ANY)
@@ -91,6 +102,13 @@ any mouse and keyboard:
 
 The `bus` argument can be used to open devices on a specific bus, or use
 `hw.INPUT_BUS_ANY` otherwise.
+
+| **Enum** | `hw.InputDeviceBus` |
+| -- | -- |
+| `hw.INPUT_BUS_NONE` | Unknown device bus |
+| `hw.INPUT_BUS_USB` | USB Bus |
+| `hw.INPUT_BUS_BLUETOOTH` | Bluetooth Bus |
+| `hw.INPUT_BUS_ANY` | Matches any bus when calling `OpenDevicesByName` |
 
 To close devices (which means they are no longer polled for events) use the
 `CloseDevice` method:
