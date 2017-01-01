@@ -150,6 +150,10 @@ div.github {
 	text-align: center;
 }
 
+div.github .view {
+	margin: 0;
+}
+
 /* TABLE OF CONTENTS */
 
 div#toc {
