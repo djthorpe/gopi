@@ -18,6 +18,7 @@ There are three main concepts with input devices:
 
 There are other enumerations, interfaces and structs which support these concepts:	
 
+| --- | --- | --- |
 | **Import** | `github.com/djthorpe/gopi/hw` |
 | **Interface** | `hw.InputDriver` | gopi.Driver, implements driver for all devices |
 | **Interface** | `hw.InputDevice` | gopi.Driver, implements a single device |
