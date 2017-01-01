@@ -82,21 +82,17 @@ pre {
 table {
   width:100%;
   background: #f8f8f8;
+  border-top:1px solid #e5e5e5;
 }
 
 th, td {
   text-align:left;
   padding:5px 10px;
-  margin: 0px;
-  border:1px solid #e5e5e5;
+  border-bottom:1px solid #e5e5e5;
 }
 
 th {
   color:#444;
-}
-
-tr:nth-child(even) {
-	background: #e5e5e5;
 }
 
 dt {
