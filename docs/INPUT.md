@@ -28,16 +28,33 @@ There are other enumerations, interfaces and structs which support these concept
 | **Enum**   | `hw.InputKeyCode` | The key pressed or mouse button activated |
 | **Enum**   | `hw.InputKeyState` | Keyboard state (Caps Lock, Num Lock, Shift, etc) |
 
+The concrete implementation of the driver and devices are as follows:
+
+| **Import** | `github.com/djthorpe/gopi/device/linux` |
+| **Struct** | `linux.InputDriver` | Concrete Linux input driver configuration |
+| **Struct** | `linux.InputDevice` | Concrete Linux input device |
+
 ## The Input Driver
 
-You can open a driver in a similar way to other drivers:
+The input driver and input device implements the `gopi.Driver` interface so
+can be opened in the usual way:
 
 ```go
-	// Create the hw.InputDriver object
-	input, err := gopi.Open(linux.InputDriver{ },logger)
-	if err != nil { /* handle error */ }
-	defer input.Close()
+input, err := gopi.Open(linux.InputDriver{ Exclusive: true },logger)
+if err != nil { /* handle error */ }
+defer input.Close()
 ```
+
+The `linux.InputDriver` configuration supports a single configuration parameter:
+
+| **Bool** | Exclusive | Whether to open devices for exclusive access |
+
+The `hw.InputDriver` interface should implement the following methods:
+
+| **Method** | `Close() error` | Release all devices and close |
+| **Method** | `OpenDevicesByName(name string, flags InputDeviceType, bus InputDeviceBus) ([]InputDevice, error)` | Open devices |
+| **Method** | `CloseDevice(device InputDevice) error` | Close a device |
+| **Method** | `Watch(delta time.Duration,callback InputEventCallback) error` | Watch for events and callback on emitted event |
 
 To discover a set of devices, simply use the `OpenDevicesByName` method, which
 will return devices based on criteria you provide. You can provide a name of
