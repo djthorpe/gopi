@@ -156,11 +156,11 @@ emitted:
 | **khronos.EGLPoint** | `Relative` | For mouse device types, the relative position compared to last position |
 | **uint** | `Slot` | For multi-touch events, the slot number |
 
-There are a number of different types of events:
+There are a number of different types of events. Fields of `hw.InputEvent` are
+populated differently depending on the type of event.
 
 | **Enum** | `hw.InputEventType` |
 | -- | -- |
-| `hw.INPUT_EVENT_NONE` | Unknown event type |
 | `hw.INPUT_EVENT_KEYPRESS` | Mouse, touchscreen or keyboard key press |
 | `hw.INPUT_EVENT_KEYRELEASE` | Mouse, touchscreen or keyboard key release |
 | `hw.INPUT_EVENT_KEYREPEAT` | Keyboard key being held down |
@@ -169,6 +169,22 @@ There are a number of different types of events:
 | `hw.INPUT_EVENT_TOUCHPRESS` | Touchscreen press |
 | `hw.INPUT_EVENT_TOUCHRELEASE` | Touchscreen press |
 | `hw.INPUT_EVENT_TOUCHPOSITION` | Touchscreen position change |
+
+For **keyboard** devices, the `Keycode` and `Scancode` fields will be set, where the
+key code determines the pressed key. Scancode is usually a device-specific
+code translated into the keycode by the keyboard hardware.
+
+For **mouse* devices, relative positions are reported, but the absolute position
+is also set synthetically and can be changed at any time by calling the
+`SetPosition` method of `hw.InputDevice`. Mouse devices also report on button
+presses.
+
+For **touchscreen** devices, these are generally _multi-touch_. For example, you
+can activate two different points on the touch device simultaneously with fingers
+or styluses. Touchscreen devices will therefore not only report on absolute
+position changes and key press events, but also report individually using the
+`hw.INPUT_EVENT_TOUCHPRESS`, `hw.INPUT_EVENT_TOUCHRELEASE` and `hw.INPUT_EVENT_TOUCHPRESS`
+for each of the simultaneous touches, or _slots_.
 
 ## Input Devices
 
