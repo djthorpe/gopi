@@ -353,7 +353,7 @@ demonstrates how to open devices and watch for events. For example, running the
 application with the `-watch` flag will open all devices and start watching
 for events:
 
-![alt text](/assets/img/input_example_screenshot.png "input-example.go")
+![alt text](assets/img/input_example_screenshot.png "input-example.go")
 
 ### Implementing a Watch loop
 
