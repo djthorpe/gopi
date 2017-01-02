@@ -346,6 +346,18 @@ if err != nil { /* handle error */ }
 defer device.Close()
 ```
 
+### Position information
+
+TODO: Position and State information
+
+### Keyboard state
+
+TODO: Position and State information
+
+### Implementing an input device
+
+TODO: Implementing your own device
+
 ## Example code
 
 There is an example command-line application `examples/input/input_example.go` which
@@ -355,10 +367,33 @@ for events:
 
 ![alt text](assets/img/input_example_screenshot.png "input-example.go")
 
+Using the `-help` flag shows the other flags you can use:
+
+  * `-name string` Name of input device
+  * `-bus string` Input bus (any, usb, bluetooth) (default "any")
+  * `-type string` Input type (any, mouse, keyboard, joystick, touchscreen) (default "any")
+  * `-watch` Watch for events from devices until CTRL+C is pressed
+  * `-log path` File used for logging
+  * `-debug` Trigger debugging support (which shows more information)
+  * `-verbose` Log verbosely
+
+You can also see how to move a cursor sprite on-screen in reaction to mouse and
+touchscreen events in `examples/egl/cursor_example.go`.
+
 ### Implementing a Watch loop
 
+TODO
 
 ### Implementing a Key to character map
+
+TODO
+
+## Input Devices and the Application Framework
+
+TODO
+
+
+
 
 
 
