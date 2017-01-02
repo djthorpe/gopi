@@ -31,6 +31,9 @@ type InputDriver interface {
 	// Close Device
 	CloseDevice(device InputDevice) error
 
+	// Return a list of open devices
+	GetOpenDevices() []InputDevice
+
 	// Watch for events for an amount of time
 	Watch(delta time.Duration,callback InputEventCallback) error
 }

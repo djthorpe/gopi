@@ -178,6 +178,15 @@ func (this *InputDriver) CloseDevice(device hw.InputDevice) error {
 	return nil
 }
 
+// Return all open devices as an array
+func (this *InputDriver) GetOpenDevices() []hw.InputDevice {
+	devices := make([]hw.InputDevice,len(this.devices)
+	for i, device := range this.devices {
+		devices[i] = device
+	}
+	return devices
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 

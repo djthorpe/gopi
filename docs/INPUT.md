@@ -63,6 +63,7 @@ The `hw.InputDriver` interface should implement the following methods:
 | **Method** | `Close() error` | Release all devices and close |
 | **Method** | `OpenDevicesByName(name string, flags hw.InputDeviceType, bus hw.InputDeviceBus) ([]hw.InputDevice, error)` | Open devices |
 | **Method** | `CloseDevice(device hw.InputDevice) error` | Close a device |
+| **Method** | `GetOpenDevices() []hw.InputDevice | Return array of currently open devices |
 | **Method** | `Watch(delta time.Duration,callback hw.InputEventCallback) error` | Watch for events and callback on emitted event |
 
 To discover a set of devices, simply use the `OpenDevicesByName` method, which
@@ -170,6 +171,9 @@ populated differently depending on the type of event.
 | `hw.INPUT_EVENT_TOUCHRELEASE` | Touchscreen press |
 | `hw.INPUT_EVENT_TOUCHPOSITION` | Touchscreen position change |
 
+
+### Keyboards
+
 For **keyboard** devices, the `Keycode` and `Scancode` fields will be set, where the
 key code determines the pressed key. Scancode is usually a device-specific
 code translated into the keycode by the keyboard hardware. Here are some example key
@@ -186,6 +190,35 @@ codes, but the full list is available in the source code:
 | `hw.INPUT_KEY_LEFT` | Arrow Left |
 | `hw.INPUT_KEY_RIGHT` | Arrow Right |
 
+Here is how you might want to decode keyboard information:
+
+```go
+func ProcessEvents (event hw.InputEvent,device hw.InputDevice) {
+	if event.DeviceType != hw.INPUT_TYPE_KEYBOARD {
+		// Ignore non-keyboards
+		return
+	}
+	switch event.EventType {
+	case hw.INPUT_EVENT_KEYPRESS:
+		fmt.Printf("Key pressed = %v\n",event.Keycode)
+	case hw.INPUT_EVENT_KEYRELEASE:
+		fmt.Printf("Key released = %v\n",event.Keycode)
+	case hw.INPUT_EVENT_KEYREPEAT:
+		fmt.Printf("Key held down = %v\n",event.Keycode)
+	default:
+		// Ignore all other events
+	}
+}
+```
+
+No account is taken of caps lock, number lock, shift, alt or meta keys. For that
+information, you need to read the current device state (see below). Also note
+that in order to map key presses to characters or runes, you will need to
+implement a key mapping, which takes into account the device state. For the
+moment, that exercise is left to the reader.
+
+### Mice
+
 For **mouse** devices, relative positions are reported, but the absolute position
 is also set synthetically and can be changed at any time by calling the
 `SetPosition` method of `hw.InputDevice`. Mouse devices also report on button
@@ -198,6 +231,32 @@ presses.
 | `hw.INPUT_BTN_RIGHT` | Right Mouse Button |
 | `hw.INPUT_BTN_SIDE` | Side Mouse Button |
 
+Here is an example of how you might want to decode information provided by
+mice:
+
+```go
+func ProcessEvents (event hw.InputEvent,device hw.InputDevice) {
+	if event.DeviceType != hw.INPUT_TYPE_MOUSE {
+		return
+	}
+	switch event.EventType {
+	case hw.INPUT_EVENT_KEYPRESS:
+		fmt.Printf("Mouse button pressed = %v\n",event.Keycode)
+	case hw.INPUT_EVENT_KEYRELEASE:
+		fmt.Printf("Mouse button released = %v\n",event.Keycode)
+	case hw.INPUT_EVENT_RELPOSITION:
+		fmt.Printf("Mouse moved by %v (position %v)\n",event.Relative,event.Position)
+	default:
+		// Ignore all other events
+	}
+}
+```
+
+The absolute position of the mouse pointer is calculated from the relative
+position, and can be set using the `SetPosition` method of the device.
+
+### Touchscreens
+
 For **touchscreen** devices, these are generally _multi-touch_. For example, you
 can activate two different points on the touch device simultaneously with fingers
 or styluses. Touchscreen devices will therefore not only report on absolute
@@ -208,6 +267,49 @@ for each of the simultaneous touches, or **slots**.
 | **Enum** | `hw.InputKeyCode` |
 | -- | -- |
 | `hw.INPUT_BTN_TOUCH` | Touchscreen Button |
+
+You can either treat touchscreens as single-touch devices with only one absolute
+position reported, or as multi-touch devices with several positions reported. For
+single-touch:
+
+```go
+func ProcessEvents (event hw.InputEvent,device hw.InputDevice) {
+	if event.DeviceType != hw.INPUT_TYPE_MOUSE {
+		return
+	}
+	switch event.EventType {
+	case hw.INPUT_EVENT_KEYPRESS:
+		fmt.Printf("Touch screen pressed = %v\n",event.Keycode)
+	case hw.INPUT_EVENT_KEYRELEASE:
+		fmt.Printf("Touch screen released = %v\n",event.Keycode)
+	case hw.INPUT_EVENT_ABSPOSITION:
+		fmt.Printf("Touch screen pressed at position %v\n",event.Position)
+	default:
+		// Ignore all other events
+	}
+}
+```
+
+Alternatively, for multi-touch:
+
+```go
+func ProcessEvents (event hw.InputEvent,device hw.InputDevice) {
+	if event.DeviceType != hw.INPUT_TYPE_MOUSE {
+		return
+	}
+	switch event.EventType {
+	case hw.INPUT_EVENT_TOUCHPRESS:
+		fmt.Printf("Touch screen slot %v pressed = %v\n",event.Slot,event.Keycode)
+	case hw.INPUT_EVENT_TOUCHRELEASE:
+		fmt.Printf("Touch screen slot %v released = %v\n",event.Slot,event.Keycode)
+	case hw.INPUT_EVENT_TOUCHPOSITION:
+		fmt.Printf("Touch screen slot %v pressed at position %v\n",event.Slot,event.Position)
+	default:
+		// Ignore all other events
+	}
+}
+```
+
 
 ## Input Devices
 
