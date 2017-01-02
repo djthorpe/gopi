@@ -346,5 +346,23 @@ if err != nil { /* handle error */ }
 defer device.Close()
 ```
 
+## Example code
+
+There is an example command-line application `examples/input/input_example.go` which
+demonstrates how to open devices and watch for events. For example, running the
+application with the `-watch` flag will open all devices and start watching
+for events:
+
+!(/assets/img/input_example_screenshot.png "input-example.go")
+
+### Implementing a Watch loop
+
+
+### Implementing a Key to character map
+
+
+
+
+
 
 
