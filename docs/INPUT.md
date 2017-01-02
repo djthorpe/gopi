@@ -348,15 +348,17 @@ defer device.Close()
 
 ### Position information
 
-TODO: Position and State information
+TODO: Position being tracked for mice. Setting and getting position. Multiple
+position devices.
 
 ### Keyboard state
 
-TODO: Position and State information
+TODO: State information. For example caps lock, num lock, shift, alt
+and meta.
 
 ### Implementing an input device
 
-TODO: Implementing your own device
+TODO: Implementing your own device. Emitting events.
 
 ## Example code
 
@@ -382,15 +384,16 @@ touchscreen events in `examples/egl/cursor_example.go`.
 
 ### Implementing a Watch loop
 
-TODO
+TODO (watching for input events and responding to terminations)
 
-### Implementing a Key to character map
+### Implementing Keymaps
 
-TODO
+TODO (responding to key presses and taking into account key states)
 
 ## Input Devices and the Application Framework
 
-TODO
+TODO (How to write application using the application framework and respond
+to input events)
 
 
 
