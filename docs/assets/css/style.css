@@ -101,8 +101,10 @@ dt {
   font-weight:700;
 }
 
+/* Screenshot images */
 img {
   max-width:100%;
+  border: 2px solid #000;
 }
 
 /* Page Layout */
