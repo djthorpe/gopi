@@ -63,7 +63,7 @@ The `hw.InputDriver` interface should implement the following methods:
 | **Method** | `Close() error` | Release all devices and close |
 | **Method** | `OpenDevicesByName(name string, flags hw.InputDeviceType, bus hw.InputDeviceBus) ([]hw.InputDevice, error)` | Open devices |
 | **Method** | `CloseDevice(device hw.InputDevice) error` | Close a device |
-| **Method** | `GetOpenDevices() []hw.InputDevice | Return array of currently open devices |
+| **Method** | `GetOpenDevices() []hw.InputDevice` | Return array of currently open devices |
 | **Method** | `Watch(delta time.Duration,callback hw.InputEventCallback) error` | Watch for events and callback on emitted event |
 
 To discover a set of devices, simply use the `OpenDevicesByName` method, which
@@ -313,7 +313,38 @@ func ProcessEvents (event hw.InputEvent,device hw.InputDevice) {
 
 ## Input Devices
 
-TODO
+In general you will interact with devices through an `hw.InputDriver` object but
+there's the possibility of implementing your own input device and having it emit
+events (for example, if you craft a joystick from switches on the GPIO port). The
+interface for the abstract device has the following methods:
+
+| **Interface** | `hw.InputDevice` |
+| -- | -- | -- |
+| **Method** | `Close() error` | Release resources and close |
+| **Method** | `GetName() string` | Return name of the device |
+| **Method** | `GetType() hw.InputDeviceType` | Return type of input device |
+| **Method** | `GetBus() hw.InputDeviceBus` | Return bus input device is connected to |
+| **Method** | `GetPosition() khronos.EGLPoint` | Get absolute position of mouse |
+| **Method** | `SetPosition(khronos.EGLPoint)` | Set absolute position of mouse |
+| **Method** | `GetKeyState() hw.InputKeyState` | Get state of keyboard |
+| **Method** | `SetKeyState(flags hw.InputKeyState,state bool) error` | Set state of keyboard |
+| **Method** | `Matches(alias string, device_type hw.InputDeviceType, device_bus hw.InputDeviceBus) bool` | Return true if device matches name, type and bus criteria |
+
+An input device can be opened using the usual `gopi.Open` method. There is one concrete Linux device
+implementation:
+
+| **Struct** | `linux.InputDevice` |
+| -- | -- | -- |
+| **Bool** | Exclusive | Whether to open device with exclusive access |
+| **String** | Path | The path to the linux driver |
+
+For example,
+
+```go
+device, err := gopi.Open(linux.InputDevice{ Path: '/dev/input/event0', Exclusive: true },logger)
+if err != nil { /* handle error */ }
+defer device.Close()
+```
 
 
 
