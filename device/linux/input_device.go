@@ -280,6 +280,10 @@ func (this *evDevice) Matches(alias string, device_type hw.InputDeviceType, devi
 	return false
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Keyboard State
+
 func (this *evDevice) GetKeyState() hw.InputKeyState {
 	current_state := this.state
 	states, err := evGetLEDState(this.handle)
@@ -293,11 +297,11 @@ func (this *evDevice) GetKeyState() hw.InputKeyState {
 	for _, state := range states {
 		switch(state) {
 			case EV_LED_NUML:
-				current_state |= hw.INPUT_KEYSTATE_NUM
+				current_state |= hw.INPUT_KEYSTATE_NUMLOCK
 			case EV_LED_CAPSL:
-				current_state |= hw.INPUT_KEYSTATE_CAPS
+				current_state |= hw.INPUT_KEYSTATE_CAPSLOCK
 			case EV_LED_SCROLLL:
-				current_state |= hw.INPUT_KEYSTATE_SCROLL
+				current_state |= hw.INPUT_KEYSTATE_SCROLLLOCK
 		}
 	}
 	return current_state
@@ -310,19 +314,19 @@ func (this *evDevice) SetKeyState(flags hw.InputKeyState,state bool) error {
 	// Iterate through the states, and set the CAPS, SCROLL and NUM indicators
 	// on the keyboard
 	num_states := int(unsafe.Sizeof(flags) << 3)
-	led := hw.InputKeyState(1)
+	led := hw.InputKeyState(0x0001)
 	for j := 0; j <= num_states; j++ {
-		if flags & 0x01 != 0x00 {
+		if flags & 0x0001 != 0x0000 {
 			switch led {
-			case hw.INPUT_KEYSTATE_CAPS:
+			case hw.INPUT_KEYSTATE_CAPSLOCK:
 				if err := evSetLEDState(this.handle,EV_LED_CAPSL,state); err != nil {
 					return err
 				}
-			case hw.INPUT_KEYSTATE_SCROLL:
+			case hw.INPUT_KEYSTATE_SCROLLLOCK:
 				if err := evSetLEDState(this.handle,EV_LED_SCROLLL,state); err != nil {
 					return err
 				}
-			case hw.INPUT_KEYSTATE_NUM:
+			case hw.INPUT_KEYSTATE_NUMLOCK:
 				if err := evSetLEDState(this.handle,EV_LED_NUML,state); err != nil {
 					return err
 				}

@@ -213,6 +213,57 @@ func (this *InputDriver) evDecodeSyn(raw_event *evEvent, device *evDevice) *hw.I
 func (this *InputDriver) evDecodeKey(raw_event *evEvent, device *evDevice) {
 	device.key_code = evKeyCode(raw_event.Code)
 	device.key_action = evKeyAction(raw_event.Value)
+
+	// Set the device state from the key action. For the locks (Caps, Scroll
+	// and Num) we also reflect the change with the LED and "flip" the state
+	// from the current state.
+	key_state := hw.INPUT_KEYSTATE_NONE
+
+	switch hw.InputKeyCode(device.key_code) {
+	case hw.INPUT_KEY_CAPSLOCK:
+		// Flip CAPS LOCK state and set LED
+		if device.key_action == EV_VALUE_KEY_DOWN {
+			device.state ^= hw.INPUT_KEYSTATE_CAPSLOCK
+			evSetLEDState(device.handle,EV_LED_CAPSL,device.state & hw.INPUT_KEYSTATE_CAPSLOCK != hw.INPUT_KEYSTATE_NONE)
+		}
+	case hw.INPUT_KEY_NUMLOCK:
+		// Flip NUM LOCK state and set LED
+		if device.key_action == EV_VALUE_KEY_DOWN {
+			device.state ^= hw.INPUT_KEYSTATE_NUMLOCK
+			evSetLEDState(device.handle,EV_LED_NUML,device.state & hw.INPUT_KEYSTATE_NUMLOCK != hw.INPUT_KEYSTATE_NONE)
+		}
+	case hw.INPUT_KEY_SCROLLLOCK:
+		// Flip SCROLL LOCK state and set LED
+		if device.key_action == EV_VALUE_KEY_DOWN {
+			device.state ^= hw.INPUT_KEYSTATE_SCROLLLOCK
+			evSetLEDState(device.handle,EV_LED_SCROLLL,device.state & hw.INPUT_KEYSTATE_SCROLLLOCK != hw.INPUT_KEYSTATE_NONE)
+		}
+	case hw.INPUT_KEY_LEFTSHIFT:
+		key_state = hw.INPUT_KEYSTATE_LEFTSHIFT
+	case hw.INPUT_KEY_RIGHTSHIFT:
+		key_state = hw.INPUT_KEYSTATE_RIGHTSHIFT
+	case hw.INPUT_KEY_LEFTCTRL:
+		key_state = hw.INPUT_KEYSTATE_LEFTCTRL
+	case hw.INPUT_KEY_RIGHTCTRL:
+		key_state = hw.INPUT_KEYSTATE_RIGHTCTRL
+	case hw.INPUT_KEY_LEFTALT:
+		key_state = hw.INPUT_KEYSTATE_LEFTALT
+	case hw.INPUT_KEY_RIGHTALT:
+		key_state = hw.INPUT_KEYSTATE_RIGHTALT
+	case hw.INPUT_KEY_LEFTMETA:
+		key_state = hw.INPUT_KEYSTATE_LEFTMETA
+	case hw.INPUT_KEY_RIGHTMETA:
+		key_state = hw.INPUT_KEYSTATE_RIGHTMETA
+	}
+
+	// Set state from key action
+	if key_state != hw.INPUT_KEYSTATE_NONE {
+		if device.key_action == EV_VALUE_KEY_DOWN || device.key_action == EV_VALUE_KEY_REPEAT {
+			device.state |= key_state
+		} else if device.key_action == EV_VALUE_KEY_UP {
+			device.state &= (hw.INPUT_KEYSTATE_MAX ^ key_state)
+		}
+	}
 }
 
 func (this *InputDriver) evDecodeAbs(raw_event *evEvent, device *evDevice) *hw.InputEvent {

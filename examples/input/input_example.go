@@ -104,7 +104,7 @@ func Watch(app *app.App) {
 			// Print out the event
 			switch(event.EventType) {
 			case hw.INPUT_EVENT_KEYPRESS, hw.INPUT_EVENT_KEYRELEASE, hw.INPUT_EVENT_KEYREPEAT:
-				fmt.Printf(format,device.GetName(),event.EventType,fmt.Sprintf("Keycode: %v Scancode: %v State: %04X",event.Keycode,event.Scancode,device.GetKeyState()))
+				fmt.Printf(format,device.GetName(),event.EventType,fmt.Sprintf("Keycode: %v Scancode: %v State: %v",event.Keycode,event.Scancode,device.GetKeyState()))
 			case hw.INPUT_EVENT_ABSPOSITION:
 				fmt.Printf(format,device.GetName(),event.EventType,event.Position)
 			case hw.INPUT_EVENT_RELPOSITION:

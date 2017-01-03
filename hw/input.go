@@ -11,6 +11,7 @@ package hw // import "github.com/djthorpe/gopi/hw"
 import (
 	"time"
 	"fmt"
+	"strings"
 )
 
 import (
@@ -171,14 +172,23 @@ const (
 
 // Input key state
 const (
-	INPUT_KEYSTATE_NONE     InputKeyState = 0x0000
-	INPUT_KEYSTATE_CAPS     InputKeyState = 0x0002 // Caps Lock
-	INPUT_KEYSTATE_SCROLL   InputKeyState = 0x0004 // Scroll Lock
-	INPUT_KEYSTATE_SHIFT    InputKeyState = 0x0008 // Shift
-	INPUT_KEYSTATE_ALT      InputKeyState = 0x0010 // Alt
-	INPUT_KEYSTATE_CMD      InputKeyState = 0x0020 // Command
-	INPUT_KEYSTATE_NUM      InputKeyState = 0x0040 // Num Lock
-	INPUT_KEYSTATE_MAX      InputKeyState = INPUT_KEYSTATE_NUM
+	INPUT_KEYSTATE_NONE       InputKeyState = 0x0000
+	INPUT_KEYSTATE_SCROLLLOCK InputKeyState = 0x0001 // Scroll Lock
+	INPUT_KEYSTATE_NUMLOCK    InputKeyState = 0x0002 // Num Lock
+	INPUT_KEYSTATE_CAPSLOCK   InputKeyState = 0x0004 // Caps Lock
+	INPUT_KEYSTATE_LEFTSHIFT  InputKeyState = 0x0010 // Left Shift
+	INPUT_KEYSTATE_RIGHTSHIFT InputKeyState = 0x0020 // Right Shift
+	INPUT_KEYSTATE_SHIFT      InputKeyState = 0x0030 // Either Shift
+	INPUT_KEYSTATE_LEFTALT    InputKeyState = 0x0040 // Left Alt
+	INPUT_KEYSTATE_RIGHTALT   InputKeyState = 0x0080 // Right Alt
+	INPUT_KEYSTATE_ALT        InputKeyState = 0x00C0 // Either Alt
+	INPUT_KEYSTATE_LEFTMETA   InputKeyState = 0x0100 // Left Meta/Command
+	INPUT_KEYSTATE_RIGHTMETA  InputKeyState = 0x0200 // Right Meta/Command
+	INPUT_KEYSTATE_META       InputKeyState = 0x0300 // Either Meta/Command
+	INPUT_KEYSTATE_LEFTCTRL   InputKeyState = 0x0400 // Left Control
+	INPUT_KEYSTATE_RIGHTCTRL  InputKeyState = 0x0800 // Right Control
+	INPUT_KEYSTATE_CTRL       InputKeyState = 0x0C00 // Either Control
+	INPUT_KEYSTATE_MAX        InputKeyState = 0x0CFF // Bitmask
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -293,6 +303,45 @@ func (e InputEventType) String() string {
 	}
 }
 
-
+func (s InputKeyState) String() string {
+	if s == INPUT_KEYSTATE_NONE {
+		return "INPUT_KEYSTATE_NONE"
+	}
+	flags := ""
+	if s & INPUT_KEYSTATE_SCROLLLOCK != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_SCROLLLOCK"
+	}
+	if s & INPUT_KEYSTATE_NUMLOCK != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_NUMLOCK"
+	}
+	if s & INPUT_KEYSTATE_CAPSLOCK != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_CAPSLOCK"
+	}
+	if s & INPUT_KEYSTATE_LEFTSHIFT != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_LEFTSHIFT"
+	}
+	if s & INPUT_KEYSTATE_RIGHTSHIFT != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_RIGHTSHIFT"
+	}
+	if s & INPUT_KEYSTATE_LEFTALT != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_LEFTALT"
+	}
+	if s & INPUT_KEYSTATE_RIGHTALT != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_RIGHTALT"
+	}
+	if s & INPUT_KEYSTATE_LEFTMETA != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_LEFTMETA"
+	}
+	if s & INPUT_KEYSTATE_RIGHTMETA != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_RIGHTMETA"
+	}
+	if s & INPUT_KEYSTATE_LEFTCTRL != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_LEFTCTRL"
+	}
+	if s & INPUT_KEYSTATE_RIGHTCTRL != INPUT_KEYSTATE_NONE {
+		flags = flags + "|INPUT_KEYSTATE_RIGHTCTRL"
+	}
+	return strings.Trim(flags,"|")
+}
 
 
