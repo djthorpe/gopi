@@ -310,7 +310,6 @@ func ProcessEvents (event hw.InputEvent,device hw.InputDevice) {
 }
 ```
 
-
 ## Input Devices
 
 In general you will interact with devices through an `hw.InputDriver` object but
@@ -353,8 +352,77 @@ position devices.
 
 ### Keyboard state
 
-TODO: State information. For example caps lock, num lock, shift, alt
-and meta.
+Keyboards contain a number of keys which are "stateful". That is, they either
+lock on or are tracked as they are pressed and released. For example,
+
+  * CAPS LOCK, SHIFT LOCK and NUM LOCK are keys which can be locked on and off.
+    Often there are indicators on keyboards which reflect the lock position of
+	these keys.
+  * SHIFT, ALT, CTRL and META keys are often used in combination with other keys
+    to implement keyboard shortcuts, accents and upper case variants. On Apple
+	keyboards, the META key is often referred to as COMMAND.
+
+The input device may track the state of these keys, sets the indicators on the
+keyboard and reports the state of these keys. How this is achieved may be
+implementation-specific.
+
+The key state codes are as follows:
+
+| **Enum** | `hw.InputKeyState` |
+| -- | -- |
+| `hw.INPUT_KEYSTATE_NONE` | No state |
+| `hw.INPUT_KEYSTATE_SCROLLLOCK` | Scroll Lock state |
+| `hw.INPUT_KEYSTATE_NUMLOCK` | Number lock state |
+| `hw.INPUT_KEYSTATE_CAPSLOCK` | Caps lock state |
+| `hw.INPUT_KEYSTATE_LEFTSHIFT` | Left Shift key pressed |
+| `hw.INPUT_KEYSTATE_RIGHTSHIFT` | Right Shift key pressed |
+| `hw.INPUT_KEYSTATE_SHIFT` | Any Shift key pressed |
+| `hw.INPUT_KEYSTATE_LEFTALT` | Left Alt key pressed |
+| `hw.INPUT_KEYSTATE_RIGHTALT` | Right Alt key pressed |
+| `hw.INPUT_KEYSTATE_ALT` | Any Alt key pressed |
+| `hw.INPUT_KEYSTATE_LEFTMETA` | Left Meta key pressed |
+| `hw.INPUT_KEYSTATE_RIGHTMETA` | Right Meta key pressed  |
+| `hw.INPUT_KEYSTATE_META` | Any Meta key pressed |
+| `hw.INPUT_KEYSTATE_LEFTCTRL` | Left Ctrl key pressed |
+| `hw.INPUT_KEYSTATE_RIGHTCTRL` | Right Ctrl key pressed |
+| `hw.INPUT_KEYSTATE_CTRL` | Any Ctrl key pressed |
+
+In order to query the current state, use the `GetKeyState` method, which returns
+a `hw.InputKeyState` value. For example,
+
+```go
+  device, err := gopi.Open(linux.InputDevice{ Path: '/dev/input/event0', Exclusive: true },logger)
+  if err != nil { /* handle error */ }
+  defer device.Close()
+  
+  state := device.GetKeyState()
+  if state & hw.INPUT_KEYSTATE_NUMLOCK != hw.INPUT_KEYSTATE_NONE {
+    /* Num Lock is pressed */
+  }
+  if state & hw.INPUT_KEYSTATE_SHIFT != hw.INPUT_KEYSTATE_NONE {
+    /* Either LEFT or RIGHT SHIFT keys are pressed */
+  }
+  if state & hw.INPUT_KEYSTATE_LEFTCTRL != hw.INPUT_KEYSTATE_NONE {
+    /* LEFT CTRL key is pressed */
+  }
+```
+
+Similarly, you can set the current atate of Caps Lock, Num Lock and Scroll Lock
+by calling the `SetKeyState` method. In many implementations (such as the linux
+one) this will also update any keyboard indicators to relfect the new state:
+
+```go
+  device, err := gopi.Open(linux.InputDevice{ Path: '/dev/input/event0', Exclusive: true },logger)
+  if err != nil { /* handle error */ }
+  defer device.Close()
+  
+  // Switch on both num lock and caps lock
+  err := device.SetKeyState(hw.INPUT_KEYSTATE_NUMLOCK | hw.INPUT_KEYSTATE_CAPSLOCK,true)
+  if err != nil { /* handle error */ }
+```
+
+You can also set the state for other keys, but this state may get overwritten
+when the user subsequently presses or releases the key on their keyboard.
 
 ### Implementing an input device
 
