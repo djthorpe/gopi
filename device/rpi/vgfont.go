@@ -568,12 +568,12 @@ func (this *vgfDriver) vgfontSelectCharmap(handle C.FT_Face, encoding vgfEncodin
 
 func (this *vgfDriver) vgfontLoadGlyphToFont(face *vgfFace, glyph C.FT_UInt) error {
 	// create a path
-	path := VG_PATH_NONE
+	path := VG_PATH_HANDLE_NONE
 	outline := face.handle.glyph.outline
 	if outline.n_contours != 0 {
 		path = C.vgCreatePath(VG_PATH_FORMAT_STANDARD, VG_PATH_DATATYPE_F, C.VGfloat(1.0), C.VGfloat(0.0), C.VGint(0), C.VGint(0), C.VGbitfield(VG_PATH_CAPABILITY_ALL))
-		if path == VG_PATH_NONE {
-			return vgGetError(vgErrorType(C.vgGetError()))
+		if path == VG_PATH_HANDLE_NONE {
+			return vgGetError()
 		}
 	}
 
@@ -585,7 +585,7 @@ func (this *vgfDriver) vgfontLoadGlyphToFont(face *vgfFace, glyph C.FT_UInt) err
 	*/
 
 	// destroy path
-	if path != VG_PATH_NONE {
+	if path != VG_PATH_HANDLE_NONE {
 		C.vgDestroyPath(path)
 	}
 	return nil

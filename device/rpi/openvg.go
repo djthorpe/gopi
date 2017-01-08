@@ -43,15 +43,32 @@ type vgDriver struct {
 	log     *util.LoggerDevice
 	egl     *eglDriver
 	surface khronos.EGLSurface
+
+	path map[C.VGPath]*vgPath
+	paint map[C.VGPaint]*vgPaint
 }
 
+// Paths
+type vgPath struct {
+	handle C.VGPath
+}
+
+// Paints
+type vgPaint struct {
+	handle C.VGPaint
+}
+
+// Errors
 type vgErrorType uint16
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
-	VG_PATH_NONE C.VGPath = C.VGPath(0)
+	VG_PATH_HANDLE_NONE C.VGPath = C.VGPath(0)
+	VG_PATH_CAPACITY = 100
+	VG_PAINT_HANDLE_NONE C.VGPaint = C.VGPaint(0)
+	VG_PAINT_CAPACITY = 100
 )
 
 const (
@@ -117,11 +134,16 @@ func (config OpenVG) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	this.log = log
 	this.log.Debug2("<rpi.OpenVG>Open")
 
+	// EGL driver
 	egl, ok := config.EGL.(*eglDriver)
 	if egl == nil || ok != true {
 		return nil, this.log.Error("Invalid configuration parameter: EGL")
 	}
 	this.egl = egl
+
+	// Create slice for paths and paints
+	this.path = make(map[C.VGPath]*vgPath,VG_PATH_CAPACITY)
+	this.paint = make(map[C.VGPaint]*vgPaint,VG_PAINT_CAPACITY)
 
 	// Success
 	return this, nil
@@ -129,6 +151,15 @@ func (config OpenVG) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 
 // Close the driver
 func (this *vgDriver) Close() error {
+
+	// Close path and paint objects
+	for _,path := range this.path {
+		this.DestroyPath(path)
+	}
+	for _,paint := range this.paint {
+		this.DestroyPaint(paint)
+	}
+
 	this.log.Debug2("<rpi.OpenVG>Close")
 	return nil
 }
@@ -138,13 +169,23 @@ func (this *vgDriver) String() string {
 	return fmt.Sprintf("<rpi.OpenVG>{ egl=%v surface=%v }", this.egl, this.surface)
 }
 
+// Return human-readable form of path object
+func (this *vgPath) String() string {
+	return fmt.Sprintf("<rpi.VGPath>{ handle=0x%08X}", this.handle)
+}
+
+// Return human-readable form of paint object
+func (this *vgPaint) String() string {
+	return fmt.Sprintf("<rpi.VGPaint>{ handle=0x%08X}", this.handle)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // BEGIN AND END
 
 func (this *vgDriver) Begin(surface khronos.EGLSurface) error {
 	this.log.Debug2("<rpi.OpenVG>Begin surface=%v", surface)
 	if this.surface != nil {
-		this.log.Warn("Begin() cannot be called without Flush()")
+		this.log.Warn("Begin() called before Flush()")
 		if err := this.Flush(); err != nil {
 			return err
 		}
@@ -152,14 +193,18 @@ func (this *vgDriver) Begin(surface khronos.EGLSurface) error {
 	if err := this.egl.SetCurrentContext(surface); err != nil {
 		return err
 	}
+
+	// Set identity matrix
 	this.surface = surface
+	C.vgLoadIdentity();
+
 	return nil
 }
 
 func (this *vgDriver) Flush() error {
 	this.log.Debug2("<rpi.OpenVG>Flush surface=%v", this.surface)
 	if this.surface == nil {
-		this.log.Warn("Flush() cannot be called without Begin()")
+		this.log.Warn("Flush() called before Begin()")
 		return nil
 	}
 	C.vgFlush()
@@ -171,7 +216,44 @@ func (this *vgDriver) Flush() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// CREATE PATH
+// CREATE & DESTROY PAINT
+
+func (this *vgDriver) CreatePaint() (khronos.VGPaint, error) {
+	handle := C.vgCreatePaint()
+	if handle == VG_PAINT_HANDLE_NONE {
+		return nil, vgGetError()
+	}
+	obj := &vgPaint{ handle: handle }
+	this.paint[handle] = obj
+	return obj, nil
+}
+
+func (this *vgDriver) DestroyPaint(paint khronos.VGPaint) error {
+	obj, ok := paint.(*vgPaint)
+	if ok == false {
+		return vgError(VG_BAD_HANDLE_ERROR)
+	}
+	_, ok = this.paint[obj.handle]
+	if ok == false {
+		return vgError(VG_BAD_HANDLE_ERROR)
+	}
+	delete(this.paint,obj.handle)
+	C.vgDestroyPaint(obj.handle)
+	return vgGetError()
+}
+
+func (this *vgDriver) SetStroke(paint khronos.VGPaint) error {
+	C.vgSetPaint(paint.(*vgPaint).handle,C.VGbitfield(khronos.VG_PAINT_STROKE))
+	return vgGetError()
+}
+
+func (this *vgDriver) SetFill(paint khronos.VGPaint) error {
+	C.vgSetPaint(paint.(*vgPaint).handle,C.VGbitfield(khronos.VG_PAINT_FILL))
+	return vgGetError()
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CREATE & DESTROY PATH
 
 func (this *vgDriver) CreatePath() (khronos.VGPath, error) {
 	scale := C.VGfloat(1.0)
@@ -180,29 +262,62 @@ func (this *vgDriver) CreatePath() (khronos.VGPath, error) {
 	coordCapacityHint := C.VGint(0)
 	capabilities := VG_PATH_CAPABILITY_ALL
 	handle := C.vgCreatePath(VG_PATH_FORMAT_STANDARD, VG_PATH_DATATYPE_F, C.VGfloat(scale), C.VGfloat(bias), C.VGint(segCapacityHint), C.VGint(coordCapacityHint), C.VGbitfield(capabilities))
-	return khronos.VGPath(handle), nil
-}
-
-func (this *vgDriver) DrawPath(path khronos.VGPath, stroke bool, fill bool) error {
-	var paint_mode C.VGbitfield
-	if stroke {
-		paint_mode &= VG_STROKE_PATH
+	if handle == VG_PATH_HANDLE_NONE {
+		return nil, vgGetError()
 	}
-	if fill {
-		paint_mode &= VG_FILL_PATH
-	}
-	C.vgDrawPath(C.VGPath(path), C.VGbitfield(paint_mode))
-	return nil
+	obj := &vgPath{ handle: handle }
+	this.path[handle] = obj
+	return obj, nil
 }
 
 func (this *vgDriver) DestroyPath(path khronos.VGPath) error {
-	C.vgDestroyPath(C.VGPath(path))
+	obj, ok := path.(*vgPath)
+	if ok == false {
+		return vgError(VG_BAD_HANDLE_ERROR)
+	}
+	_, ok = this.path[obj.handle]
+	if ok == false {
+		return vgError(VG_BAD_HANDLE_ERROR)
+	}
+	delete(this.path,obj.handle)
+	C.vgDestroyPath(obj.handle)
+	return vgGetError()
+}
+
+func (this *vgPath) Clear() error {
+	capabilities := VG_PATH_CAPABILITY_ALL
+	C.vgClearPath(C.VGPath(this.handle), C.VGbitfield(capabilities))
+	return vgGetError()
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// SET PAINT STATE
+
+func (this *vgPaint) SetColor(color khronos.VGColor) error {
+	// TODO
+	return vgGetError()
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// DRAW METHODS
+
+func (this *vgPath) Draw(flags khronos.VGPaintMode) error {
+	C.vgDrawPath(this.handle, C.VGbitfield(flags))
+	return vgGetError()
+}
+
+func (this *vgPath) Line(start, end khronos.VGPoint) error {
+	// TODO
 	return nil
 }
 
-func (this *vgDriver) ClearPath(path khronos.VGPath) error {
-	capabilities := VG_PATH_CAPABILITY_ALL
-	C.vgClearPath(C.VGPath(path), C.VGbitfield(capabilities))
+func (this *vgPath) Rect(origin, size khronos.VGPoint) error {
+	// TODO
+	return nil
+}
+
+func (this *vgPath) Ellipse(center, size khronos.VGPoint) error {
+	// TODO
 	return nil
 }
 
@@ -257,8 +372,10 @@ func (this *vgDriver) Clear(color khronos.VGColor) error {
 	C.vgSetfv(C.VGParamType(VG_CLEAR_COLOR), C.VGint(4), (*C.VGfloat)(unsafe.Pointer(&color)))
 	C.vgClear(C.VGint(0), C.VGint(0), C.VGint(size.Width), C.VGint(size.Height))
 
-	return nil
+	return vgGetError()
 }
+
+/*
 
 func (this *vgDriver) Line(p1 khronos.VGPoint, p2 khronos.VGPoint) error {
 	if this.surface == nil {
@@ -286,7 +403,6 @@ func (this *vgDriver) Line(p1 khronos.VGPoint, p2 khronos.VGPoint) error {
 	return nil
 }
 
-/*
 func (this *vgDriver) Ellipse(origin khronos.VGPoint,size khronos.VGSize) error {
 	if this.surface == nil {
 		return this.log.Error("<rpi.OpenVG> Ellipse() cannot be called without Begin()")
@@ -311,24 +427,31 @@ func (this *vgDriver) Ellipse(origin khronos.VGPoint,size khronos.VGSize) error 
 ////////////////////////////////////////////////////////////////////////////////
 // VGU GRAPHICS PRIMITIVES
 
-func vgGetError(err vgErrorType) error {
+func vgGetError() error {
+	err := vgErrorType(C.vgGetError())
+	if err == VG_NO_ERROR {
+		return nil
+	}
+	return vgError(err)
+}
+
+func vgError(err vgErrorType) error {
 	if err == VG_NO_ERROR {
 		return nil
 	}
 	return errors.New(err.String())
 }
 
+/*
+
 func vguLine(path khronos.VGPath, p1 khronos.VGPoint, p2 khronos.VGPoint) error {
 	return vgGetError(vgErrorType(C.vguLine(C.VGPath(path), C.VGfloat(p1.X), C.VGfloat(p1.Y), C.VGfloat(p2.X), C.VGfloat(p2.Y))))
 }
 
-/*
 func vguEllipse(path khronos.VGPath, origin khronos.VGPoint, size khronos.VGSize) error {
 	return vgGetError(vgErrorType(C.vguEllipse(C.VGPath(path), C.VGfloat(origin.X), C.VGfloat(origin.Y), C.VGfloat(size.Width), C.VGfloat(size.Height))))
 }
-*/
 
-/*
 func (this *vgDriver) vguPolygon(path khronos.VGPath, points []khronos.VGPoint, closed bool) error {
 
 }

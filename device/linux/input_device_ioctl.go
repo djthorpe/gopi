@@ -51,6 +51,7 @@ var (
 	EVIOCGPROP = uintptr(C._EVIOCGPROP(MAX_IOCTL_SIZE_BYTES)) // get device properties
 	EVIOCGID   = uintptr(C.EVIOCGID)                          // get device ID
 	EVIOCGLED  = uintptr(C._EVIOCGLED(MAX_IOCTL_SIZE_BYTES))  // get LED states
+	EVIOCGKEY  = uintptr(C._EVIOCGLED(MAX_IOCTL_SIZE_BYTES))  // get key states
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -129,6 +130,12 @@ func evSetGrabState(handle *os.File,state bool) error {
 			return err
 		}
 	}
+	return nil
+}
+
+// Return key states: TODO
+func evGetKeyState(handle *os.File) error {
+	// TODO
 	return nil
 }
 

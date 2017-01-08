@@ -31,11 +31,18 @@ type VGDriver interface {
 	// Flush
 	Flush() error
 
-	// Clear window to color
-	Clear(color VGColor) error
+	// Path methods
+	CreatePath() (VGPath, error)
+	DestroyPath(VGPath) error
 
-	// Draw a line from one point to another
-	Line(a VGPoint, b VGPoint) error
+	// Paint methods
+	CreatePaint() (VGPaint, error)
+	DestroyPaint(VGPaint) error
+	SetStroke(VGPaint) error
+	SetFill(VGPaint) error
+
+	// Clear surface to color
+	Clear(color VGColor) error
 }
 
 // Color with Alpha value
@@ -49,7 +56,40 @@ type VGPoint struct {
 }
 
 // Drawing Path
-type VGPath uint64
+type VGPath interface {
+	// Draw the path
+	Draw(flags VGPaintMode) error
+
+	// Reset to empty path
+	Clear() error
+
+	// Append a line to the path
+	Line(start, end VGPoint) error
+
+	// Append a rectangle to the path
+	Rect(origin, size VGPoint) error
+
+	// Append an ellipse to the path
+	Ellipse(center, size VGPoint) error
+}
+
+// Paint Brush
+type VGPaint interface {
+	// Set Color to paint
+	SetColor(color VGColor) error
+}
+
+// Paint mode flags (stroke and fill)
+type VGPaintMode uint32
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+// Painting modes
+const (
+	VG_PAINT_STROKE VGPaintMode = 0x01
+	VG_PAINT_FILL VGPaintMode = 0x02
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // VARIABLES

@@ -286,11 +286,18 @@ func (this *evDevice) Matches(alias string, device_type hw.InputDeviceType, devi
 
 func (this *evDevice) GetKeyState() hw.InputKeyState {
 	current_state := this.state
+
+	// Get LED states
 	states, err := evGetLEDState(this.handle)
 	if err != nil {
 		this.log.Warn("<linux.InputDevice> Error: %v",err)
 		return current_state
 	}
+
+	// Get SHIFT key state
+	
+
+
 	if states == nil || len(states) == 0 {
 		return current_state
 	}
