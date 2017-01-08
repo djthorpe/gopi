@@ -4,9 +4,12 @@
 The Raspberry Pi can render 2D vector graphics onto EGL surfaces with
 GPU acceleration. As Wikipedia says,
 
-| OpenVG is an API designed for hardware-accelerated 2D vector graphics. 
-| Its primary platforms are mobile phones, gaming & media consoles and 
-| consumer electronic devices.
+> OpenVG is an API designed for hardware-accelerated 2D vector graphics. 
+> Its primary platforms are mobile phones, gaming & media consoles and 
+> consumer electronic devices.
+
+The following sections explain the concepts behind the OpenVG
+implemenation. 
 
 ## Abstract Interface
 
@@ -42,12 +45,14 @@ The one argument to the configuration object is the "EGL" instance, which
 should also be a concrete Raspberry Pi object. For example,
 
 ```go
-  openvg, err := gopi.Open(rpi.OpenVG{ EGL: egl_object },logger)
+  egl := /* EGL object */
+  surface := /* Surface on which to draw */	
+  openvg, err := gopi.Open(rpi.OpenVG{ EGL: egl },logger)
   if err != nil { /* handle error */ }
   defer openvg.Close()
 
-  // Clear to white
-  openvg.(khronos.VGDriver).Begin()
+  // Clear surface to white
+  openvg.(khronos.VGDriver).Begin(surface)
   openvg.(khronos.VGDriver).Clear(khronos.VGColorWhite)
   openvg.(khronos.VGDriver).Flush()
 ```
