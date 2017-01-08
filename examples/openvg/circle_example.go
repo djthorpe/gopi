@@ -35,13 +35,12 @@ func Draw(surface khronos.EGLSurface, vg khronos.VGDriver) error {
 		return err
 	}
 	defer vg.DestroyPaint(fill)
-	stroke, err := vg.CreatePaint(khronos.VGColorGreen)
+	stroke, err := vg.CreatePaint(khronos.VGColorMidGrey)
 	if err != nil {
 		return err
 	}
 	defer vg.DestroyPaint(stroke)
 	stroke.SetLineWidth(10.0)
-
 
 	// Paths
 	path, err := vg.CreatePath()
@@ -49,10 +48,10 @@ func Draw(surface khronos.EGLSurface, vg khronos.VGDriver) error {
 		return err
 	}
 	defer vg.DestroyPath(path)
-	path.Circle(vg.GetPoint(khronos.EGL_ALIGN_RIGHT | khronos.EGL_ALIGN_VCENTER), 400)
+	path.Circle(vg.GetPoint(khronos.EGL_ALIGN_CENTER), 400)
 
 	// Draw
-	path.Draw(nil,fill)
+	path.Draw(stroke,fill)
 
 	// Flush graphics
 	vg.Flush()
@@ -69,7 +68,8 @@ func MyRunLoop(app *app.App) error {
 	app.Logger.Info("EGL=%v", app.EGL)
 	app.Logger.Info("OpenVG=%v", app.OpenVG)
 
-	surface, err := app.EGL.CreateBackground("OpenVG", 1.0)
+	opacity, _ := app.FlagSet.GetFloat64("opacity")
+	surface, err := app.EGL.CreateBackground("OpenVG", float32(opacity))
 	if err != nil {
 		return err
 	}
@@ -91,6 +91,8 @@ func MyRunLoop(app *app.App) error {
 func main() {
 	// Create the config
 	config := app.Config(app.APP_EGL | app.APP_OPENVG)
+
+	config.FlagSet.FlagFloat64("opacity", 1.0, "Image opacity, 0.0 -> 1.0")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

@@ -35,12 +35,6 @@ go install -ldflags "${LDFLAGS}" examples/display/display_example.go || exit -1
 echo "go install input/input_example"
 go install -ldflags "${LDFLAGS}" examples/input/input_example.go || exit -1
 
-echo "go install vgfont/font_example"
-go install -ldflags "${LDFLAGS}" examples/vgfont/font_example.go || exit -1
-
-echo "go install vgfont/vgfont_dx_example"
-go install -ldflags "${LDFLAGS}" examples/vgfont/vgfont_dx_example.go || exit -1
-
 echo "go install gpio/gpioctrl"
 go install -ldflags "${LDFLAGS}" examples/gpio/gpioctrl.go || exit -1
 
@@ -58,3 +52,12 @@ go install -ldflags "${LDFLAGS}" examples/egl/cursor_example.go || exit -1
 
 echo "go install egl/image_example"
 go install -ldflags "${LDFLAGS}" examples/egl/image_example.go || exit -1
+
+echo "go install openvg/circle_example"
+go install -ldflags "${LDFLAGS}" examples/openvg/circle_example.go || exit -1
+
+echo "go install vgfont/font_example"
+go install -ldflags "${LDFLAGS}" examples/vgfont/font_example.go || exit -1
+
+echo "go install vgfont/vgfont_dx_example"
+go install -ldflags "${LDFLAGS}" examples/vgfont/vgfont_dx_example.go || exit -1
