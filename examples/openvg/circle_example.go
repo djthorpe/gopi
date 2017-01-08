@@ -23,17 +23,41 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func Draw(app *app.App,vg khronos.VGDriver) error {
-	surface, err := app.EGL.CreateBackground("OpenVG", 1.0)
+func Draw(surface khronos.EGLSurface, vg khronos.VGDriver) error {
+	vg.Begin(surface)
+
+	// Clear to red
+	vg.Clear(khronos.VGColorRed)
+
+	// Paints
+	fill, err := vg.CreatePaint(khronos.VGColorWhite)
 	if err != nil {
 		return err
 	}
-	defer app.EGL.DestroySurface(surface)
+	defer vg.DestroyPaint(fill)
+	stroke, err := vg.CreatePaint(khronos.VGColorGreen)
+	if err != nil {
+		return err
+	}
+	defer vg.DestroyPaint(stroke)
+	stroke.SetLineWidth(10.0)
 
-	vg.Begin(surface)
-	vg.Clear(khronos.VGColorRed)
+
+	// Paths
+	path, err := vg.CreatePath()
+	if err != nil {
+		return err
+	}
+	defer vg.DestroyPath(path)
+	path.Circle(vg.GetPoint(khronos.EGL_ALIGN_RIGHT | khronos.EGL_ALIGN_VCENTER), 400)
+
+	// Draw
+	path.Draw(nil,fill)
+
+	// Flush graphics
 	vg.Flush()
 
+	// Success
 	return nil
 }
 
@@ -45,9 +69,14 @@ func MyRunLoop(app *app.App) error {
 	app.Logger.Info("EGL=%v", app.EGL)
 	app.Logger.Info("OpenVG=%v", app.OpenVG)
 
-	// Draw circle on background
-	err := Draw(app,app.OpenVG)
+	surface, err := app.EGL.CreateBackground("OpenVG", 1.0)
 	if err != nil {
+		return err
+	}
+	defer app.EGL.DestroySurface(surface)
+
+	// Draw circle on background
+	if err := Draw(surface, app.OpenVG); err != nil {
 		return err
 	}
 
@@ -79,4 +108,3 @@ func main() {
 		return
 	}
 }
-

@@ -36,13 +36,14 @@ type VGDriver interface {
 	DestroyPath(VGPath) error
 
 	// Paint methods
-	CreatePaint() (VGPaint, error)
+	CreatePaint(color VGColor) (VGPaint, error)
 	DestroyPaint(VGPaint) error
-	SetStroke(VGPaint) error
-	SetFill(VGPaint) error
 
 	// Clear surface to color
 	Clear(color VGColor) error
+
+	// Return point on screen
+	GetPoint(flags EGLFrameAlignFlag) VGPoint
 }
 
 // Color with Alpha value
@@ -50,15 +51,16 @@ type VGColor struct {
 	R, G, B, A float32
 }
 
-// Point
-type VGPoint struct {
-	X, Y float32
-}
-
 // Drawing Path
 type VGPath interface {
-	// Draw the path
-	Draw(flags VGPaintMode) error
+	// Draw the path with both stroke and fill
+	Draw(stroke, fill VGPaint) error
+
+	// Stroke the path
+	Stroke(stroke VGPaint) error
+
+	// Fill the path
+	Fill(fill VGPaint) error
 
 	// Reset to empty path
 	Clear() error
@@ -70,26 +72,26 @@ type VGPath interface {
 	Rect(origin, size VGPoint) error
 
 	// Append an ellipse to the path
-	Ellipse(center, size VGPoint) error
+	Ellipse(origin, diameter VGPoint) error
+
+	// Append a circle to the path
+	Circle(origin VGPoint, diameter float32) error
+
 }
 
-// Paint Brush
+// Point
+type VGPoint struct {
+	X, Y float32
+}
+
+// Paint Brush for Fill and Stroke
 type VGPaint interface {
-	// Set Color to paint
+	// Set color
 	SetColor(color VGColor) error
+
+	// Set stroke line width
+	SetLineWidth(width float32) error
 }
-
-// Paint mode flags (stroke and fill)
-type VGPaintMode uint32
-
-////////////////////////////////////////////////////////////////////////////////
-// CONSTANTS
-
-// Painting modes
-const (
-	VG_PAINT_STROKE VGPaintMode = 0x01
-	VG_PAINT_FILL VGPaintMode = 0x02
-)
 
 ////////////////////////////////////////////////////////////////////////////////
 // VARIABLES

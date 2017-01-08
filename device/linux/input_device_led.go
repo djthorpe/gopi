@@ -9,9 +9,9 @@
 package linux /* import "github.com/djthorpe/gopi/device/linux" */
 
 import (
+	"encoding/binary"
 	"os"
 	"unsafe"
-	"encoding/binary"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,30 +43,30 @@ const (
 
 func (s evLEDState) String() string {
 	switch s {
-		case EV_LED_NUML:
-			return "EV_LED_NUML"
-		case EV_LED_CAPSL:
-			return "EV_LED_CAPSL"
-		case EV_LED_SCROLLL:
-			return "EV_LED_SCROLLL"
-		case EV_LED_COMPOSE:
-			return "EV_LED_COMPOSE"
-		case EV_LED_KANA:
-			return "EV_LED_KANA"
-		case EV_LED_SLEEP:
-			return "EV_LED_SLEEP"
-		case EV_LED_SUSPEND:
-			return "EV_LED_SUSPEND"
-		case EV_LED_MUTE:
-			return "EV_LED_MUTE"
-		case EV_LED_MISC:
-			return "EV_LED_MISC"
-		case EV_LED_MAIL:
-			return "EV_LED_MAIL"
-		case EV_LED_CHARGING:
-			return "EV_LED_CHARGING"
-		default:
-			return "[?? Invalid evLEDState value]"
+	case EV_LED_NUML:
+		return "EV_LED_NUML"
+	case EV_LED_CAPSL:
+		return "EV_LED_CAPSL"
+	case EV_LED_SCROLLL:
+		return "EV_LED_SCROLLL"
+	case EV_LED_COMPOSE:
+		return "EV_LED_COMPOSE"
+	case EV_LED_KANA:
+		return "EV_LED_KANA"
+	case EV_LED_SLEEP:
+		return "EV_LED_SLEEP"
+	case EV_LED_SUSPEND:
+		return "EV_LED_SUSPEND"
+	case EV_LED_MUTE:
+		return "EV_LED_MUTE"
+	case EV_LED_MISC:
+		return "EV_LED_MISC"
+	case EV_LED_MAIL:
+		return "EV_LED_MAIL"
+	case EV_LED_CHARGING:
+		return "EV_LED_CHARGING"
+	default:
+		return "[?? Invalid evLEDState value]"
 	}
 }
 
@@ -80,27 +80,27 @@ func evGetLEDState(handle *os.File) ([]evLEDState, error) {
 	if err != 0 {
 		return nil, err
 	}
-	states := make([]evLEDState,0,EV_LED_MAX)
+	states := make([]evLEDState, 0, EV_LED_MAX)
 	// Shift bits to get the state of each LED value
-	OuterLoop:
-		for i := 0; i < len(evbits); i++ {
-			evbyte := evbits[i]
-			for j := 0; j < 8; j++ {
-				state := evLEDState(i << 3 + j)
-				switch {
-				case state >= EV_LED_MAX:
-					break OuterLoop
-				case evbyte & 0x01 != 0x00:
-					states = append(states,state)
-				}
-				evbyte >>= 1
+OuterLoop:
+	for i := 0; i < len(evbits); i++ {
+		evbyte := evbits[i]
+		for j := 0; j < 8; j++ {
+			state := evLEDState(i<<3 + j)
+			switch {
+			case state >= EV_LED_MAX:
+				break OuterLoop
+			case evbyte&0x01 != 0x00:
+				states = append(states, state)
 			}
+			evbyte >>= 1
 		}
+	}
 	return states, nil
 }
 
 // Set a single LED state
-func evSetLEDState(handle *os.File,led evLEDState,state bool) error {
+func evSetLEDState(handle *os.File, led evLEDState, state bool) error {
 	var event evEvent
 
 	event.Type = EV_LED

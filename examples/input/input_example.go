@@ -13,9 +13,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"errors"
 	"strings"
 	"time"
 )
@@ -28,7 +28,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 func ParseDeviceBus(value string) hw.InputDeviceBus {
-	switch(value) {
+	switch value {
 	case "usb":
 		return hw.INPUT_BUS_USB
 	case "bluetooth":
@@ -42,7 +42,7 @@ func ParseDeviceBus(value string) hw.InputDeviceBus {
 }
 
 func ParseDeviceType(value string) hw.InputDeviceType {
-	switch(value) {
+	switch value {
 	case "mouse":
 		return hw.INPUT_TYPE_MOUSE
 	case "keyboard":
@@ -58,19 +58,19 @@ func ParseDeviceType(value string) hw.InputDeviceType {
 	}
 }
 
-func ParseFlags(flags *app.Flags) (string,hw.InputDeviceType,hw.InputDeviceBus,error) {
+func ParseFlags(flags *app.Flags) (string, hw.InputDeviceType, hw.InputDeviceBus, error) {
 	// Bus
 	bus_string, _ := flags.GetString("bus")
 	bus_value := ParseDeviceBus(strings.ToLower(strings.TrimSpace(bus_string)))
 	if bus_value == hw.INPUT_BUS_NONE {
-		return "",hw.INPUT_TYPE_NONE,hw.INPUT_BUS_NONE,errors.New("Invalid -bus flag")
+		return "", hw.INPUT_TYPE_NONE, hw.INPUT_BUS_NONE, errors.New("Invalid -bus flag")
 	}
 
 	// Type
 	type_string, _ := flags.GetString("type")
 	type_value := ParseDeviceType(strings.ToLower(strings.TrimSpace(type_string)))
 	if type_value == hw.INPUT_TYPE_NONE {
-		return "",hw.INPUT_TYPE_NONE,hw.INPUT_BUS_NONE,errors.New("Invalid -type flag")
+		return "", hw.INPUT_TYPE_NONE, hw.INPUT_BUS_NONE, errors.New("Invalid -type flag")
 	}
 
 	// Name
@@ -89,9 +89,9 @@ func Watch(app *app.App) {
 
 	for app.GetDone() == false {
 
-		err := app.Input.Watch(time.Millisecond * 200,func (event *hw.InputEvent, device hw.InputDevice) {
+		err := app.Input.Watch(time.Millisecond*200, func(event *hw.InputEvent, device hw.InputDevice) {
 			// debug the event
-			app.Logger.Debug2("%v",event)
+			app.Logger.Debug2("%v", event)
 
 			// Print table header every 40 invocations
 			if (i % 40) == 0 {
@@ -102,22 +102,22 @@ func Watch(app *app.App) {
 			i += 1
 
 			// Print out the event
-			switch(event.EventType) {
+			switch event.EventType {
 			case hw.INPUT_EVENT_KEYPRESS, hw.INPUT_EVENT_KEYRELEASE, hw.INPUT_EVENT_KEYREPEAT:
-				fmt.Printf(format,device.GetName(),event.EventType,fmt.Sprintf("Keycode: %v Scancode: %v State: %v",event.Keycode,event.Scancode,device.GetKeyState()))
+				fmt.Printf(format, device.GetName(), event.EventType, fmt.Sprintf("Keycode: %v Scancode: %v State: %v", event.Keycode, event.Scancode, device.GetKeyState()))
 			case hw.INPUT_EVENT_ABSPOSITION:
-				fmt.Printf(format,device.GetName(),event.EventType,event.Position)
+				fmt.Printf(format, device.GetName(), event.EventType, event.Position)
 			case hw.INPUT_EVENT_RELPOSITION:
-				fmt.Printf(format,device.GetName(),event.EventType,event.Relative)
+				fmt.Printf(format, device.GetName(), event.EventType, event.Relative)
 			case hw.INPUT_EVENT_TOUCHPRESS, hw.INPUT_EVENT_TOUCHRELEASE:
-				fmt.Printf(format,device.GetName(),event.EventType,fmt.Sprintf("Keycode: %v Slot: %v",event.Keycode,event.Slot))
+				fmt.Printf(format, device.GetName(), event.EventType, fmt.Sprintf("Keycode: %v Slot: %v", event.Keycode, event.Slot))
 			default:
-				fmt.Printf(format,device.GetName(),event.EventType,"")
+				fmt.Printf(format, device.GetName(), event.EventType, "")
 			}
 		})
 		if err != nil {
 			// Report any errors
-			app.Logger.Error("Error: %v",err)
+			app.Logger.Error("Error: %v", err)
 		}
 	}
 }

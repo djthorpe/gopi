@@ -25,7 +25,7 @@ import (
 // TYPES
 
 // Input configuration
-type Input struct{
+type Input struct {
 	// Whether to try and get exclusivity when opening devices
 	Exclusive bool
 }
@@ -36,13 +36,13 @@ type InputDriver struct {
 	exclusive bool
 
 	// Logger
-	log     *util.LoggerDevice
+	log *util.LoggerDevice
 
 	// Map of input devices (keyed by their file descriptor)
-	devices map[int]*evDevice  // input devices
+	devices map[int]*evDevice // input devices
 
 	// Polling mechanism to check for events
-	poll    *PollDriver
+	poll *PollDriver
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -99,12 +99,11 @@ func (this *InputDriver) Close() error {
 	return nil
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *InputDriver) String() string {
-	return fmt.Sprintf("<linux.Input>{ exclusive=%v open_devices=%v }",this.exclusive,this.devices)
+	return fmt.Sprintf("<linux.Input>{ exclusive=%v open_devices=%v }", this.exclusive, this.devices)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +179,7 @@ func (this *InputDriver) CloseDevice(device hw.InputDevice) error {
 
 // Return all open devices as an array
 func (this *InputDriver) GetOpenDevices() []hw.InputDevice {
-	devices := make([]hw.InputDevice,len(this.devices))
+	devices := make([]hw.InputDevice, len(this.devices))
 	for i, device := range this.devices {
 		devices[i] = device
 	}

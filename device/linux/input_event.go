@@ -57,13 +57,13 @@ const (
 )
 
 const (
-	EV_CODE_X           evKeyCode   = 0x0000
-	EV_CODE_Y           evKeyCode   = 0x0001
-	EV_CODE_SCANCODE    evKeyCode   = 0x0004 // Keyboard scan code
-	EV_CODE_SLOT        evKeyCode   = 0x002F // Slot for multi touch positon
-	EV_CODE_SLOT_X      evKeyCode   = 0x0035 // X for multi touch position
-	EV_CODE_SLOT_Y      evKeyCode   = 0x0036 // Y for multi touch position
-	EV_CODE_SLOT_ID     evKeyCode   = 0x0039 // Unique ID for multi touch position
+	EV_CODE_X        evKeyCode = 0x0000
+	EV_CODE_Y        evKeyCode = 0x0001
+	EV_CODE_SCANCODE evKeyCode = 0x0004 // Keyboard scan code
+	EV_CODE_SLOT     evKeyCode = 0x002F // Slot for multi touch positon
+	EV_CODE_SLOT_X   evKeyCode = 0x0035 // X for multi touch position
+	EV_CODE_SLOT_Y   evKeyCode = 0x0036 // Y for multi touch position
+	EV_CODE_SLOT_ID  evKeyCode = 0x0039 // Unique ID for multi touch position
 )
 
 const (
@@ -145,7 +145,7 @@ func (this *InputDriver) Watch(delta time.Duration, callback hw.InputEventCallba
 // This function takes a raw event in and sets the device internal state, and
 // may return an abstract input event, or nil if there is no event to emit.
 func (this *InputDriver) evDecode(raw_event *evEvent, device *evDevice) *hw.InputEvent {
-	this.log.Debug2("<linux.InputDriver>evDecode{ type=%v code=%v value=0x%08X ts=%v,%v }",raw_event.Type,raw_event.Code,raw_event.Value,raw_event.Second,raw_event.Microsecond)
+	this.log.Debug2("<linux.InputDriver>evDecode{ type=%v code=%v value=0x%08X ts=%v,%v }", raw_event.Type, raw_event.Code, raw_event.Value, raw_event.Second, raw_event.Microsecond)
 	switch raw_event.Type {
 	case EV_SYN:
 		return this.evDecodeSyn(raw_event, device)
@@ -203,9 +203,8 @@ func (this *InputDriver) evDecodeSyn(raw_event *evEvent, device *evDevice) *hw.I
 	// Check for multi-touch positional changes
 	slot := device.slots[device.slot]
 	if slot.active {
-		this.log.Debug("SLOT=%v POSITION=%v",device.slot,slot.position)
+		this.log.Debug("SLOT=%v POSITION=%v", device.slot, slot.position)
 	}
-
 
 	return &event
 }
@@ -224,19 +223,19 @@ func (this *InputDriver) evDecodeKey(raw_event *evEvent, device *evDevice) {
 		// Flip CAPS LOCK state and set LED
 		if device.key_action == EV_VALUE_KEY_DOWN {
 			device.state ^= hw.INPUT_KEYSTATE_CAPSLOCK
-			evSetLEDState(device.handle,EV_LED_CAPSL,device.state & hw.INPUT_KEYSTATE_CAPSLOCK != hw.INPUT_KEYSTATE_NONE)
+			evSetLEDState(device.handle, EV_LED_CAPSL, device.state&hw.INPUT_KEYSTATE_CAPSLOCK != hw.INPUT_KEYSTATE_NONE)
 		}
 	case hw.INPUT_KEY_NUMLOCK:
 		// Flip NUM LOCK state and set LED
 		if device.key_action == EV_VALUE_KEY_DOWN {
 			device.state ^= hw.INPUT_KEYSTATE_NUMLOCK
-			evSetLEDState(device.handle,EV_LED_NUML,device.state & hw.INPUT_KEYSTATE_NUMLOCK != hw.INPUT_KEYSTATE_NONE)
+			evSetLEDState(device.handle, EV_LED_NUML, device.state&hw.INPUT_KEYSTATE_NUMLOCK != hw.INPUT_KEYSTATE_NONE)
 		}
 	case hw.INPUT_KEY_SCROLLLOCK:
 		// Flip SCROLL LOCK state and set LED
 		if device.key_action == EV_VALUE_KEY_DOWN {
 			device.state ^= hw.INPUT_KEYSTATE_SCROLLLOCK
-			evSetLEDState(device.handle,EV_LED_SCROLLL,device.state & hw.INPUT_KEYSTATE_SCROLLLOCK != hw.INPUT_KEYSTATE_NONE)
+			evSetLEDState(device.handle, EV_LED_SCROLLL, device.state&hw.INPUT_KEYSTATE_SCROLLLOCK != hw.INPUT_KEYSTATE_NONE)
 		}
 	case hw.INPUT_KEY_LEFTSHIFT:
 		key_state = hw.INPUT_KEYSTATE_LEFTSHIFT
@@ -276,9 +275,9 @@ func (this *InputDriver) evDecodeAbs(raw_event *evEvent, device *evDevice) *hw.I
 	} else if raw_event.Code == EV_CODE_SLOT_ID || raw_event.Code == EV_CODE_SLOT_X || raw_event.Code == EV_CODE_SLOT_Y {
 		switch {
 		case device.slot < uint32(0) || device.slot >= INPUT_MAX_MULTITOUCH_SLOTS:
-			this.log.Warn("<linux.InputDevice> Ignoring out-of-range slot %v",device.slot)
+			this.log.Warn("<linux.InputDevice> Ignoring out-of-range slot %v", device.slot)
 		case raw_event.Code == EV_CODE_SLOT_ID:
-			return this.evDecodeAbsTouch(raw_event,device)
+			return this.evDecodeAbsTouch(raw_event, device)
 		case raw_event.Code == EV_CODE_SLOT_X:
 			device.slots[device.slot].position.X = int(raw_event.Value)
 			device.slots[device.slot].active = true
@@ -318,7 +317,7 @@ func (this *InputDriver) evDecodeAbsTouch(raw_event *evEvent, device *evDevice) 
 
 func (this *InputDriver) evDecodeRel(raw_event *evEvent, device *evDevice) {
 	switch raw_event.Code {
-	 case EV_CODE_X:
+	case EV_CODE_X:
 		device.position.X = device.position.X + int(raw_event.Value)
 		device.rel_position.X = int(raw_event.Value)
 		return

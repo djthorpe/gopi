@@ -18,17 +18,17 @@ import (
 
 import (
 	app "github.com/djthorpe/gopi/app"
-	khronos "github.com/djthorpe/gopi/khronos"
 	hw "github.com/djthorpe/gopi/hw"
+	khronos "github.com/djthorpe/gopi/khronos"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func ProcessEvents(event *hw.InputEvent,app *app.App,cursor khronos.EGLSurface) {
-	app.EGL.MoveSurfaceOriginTo(cursor,event.Position)
+func ProcessEvents(event *hw.InputEvent, app *app.App, cursor khronos.EGLSurface) {
+	app.EGL.MoveSurfaceOriginTo(cursor, event.Position)
 }
 
-func StartWatching(app *app.App,cursor khronos.EGLSurface) (chan bool,chan bool) {
+func StartWatching(app *app.App, cursor khronos.EGLSurface) (chan bool, chan bool) {
 	// Watch for events and check for completed every 100 milliseconds
 	finished_channel := make(chan bool)
 	finished_watch := make(chan bool)
@@ -39,8 +39,8 @@ func StartWatching(app *app.App,cursor khronos.EGLSurface) (chan bool,chan bool)
 				finished_watch <- true
 				return
 			default:
-				app.Input.Watch(time.Millisecond * 100,func (event *hw.InputEvent, device hw.InputDevice) {
-					ProcessEvents(event,app,cursor)
+				app.Input.Watch(time.Millisecond*100, func(event *hw.InputEvent, device hw.InputDevice) {
+					ProcessEvents(event, app, cursor)
 				})
 			}
 		}
@@ -54,7 +54,7 @@ func MyRunLoop(app *app.App) error {
 	egl := app.EGL.(khronos.EGLDriver)
 
 	// Open mouse
-	devices, err := app.Input.OpenDevicesByName("", hw.INPUT_TYPE_MOUSE | hw.INPUT_TYPE_TOUCHSCREEN, hw.INPUT_BUS_ANY)
+	devices, err := app.Input.OpenDevicesByName("", hw.INPUT_TYPE_MOUSE|hw.INPUT_TYPE_TOUCHSCREEN, hw.INPUT_BUS_ANY)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func MyRunLoop(app *app.App) error {
 	}
 
 	// Start watching for mouse events
-	finished_channel, finished_watch := StartWatching(app,cursor)
+	finished_channel, finished_watch := StartWatching(app, cursor)
 
 	app.WaitUntilDone()
 

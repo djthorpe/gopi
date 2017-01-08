@@ -104,7 +104,7 @@ func evGetSupportedEventTypes(handle *os.File) ([]evType, error) {
 	if err != 0 {
 		return nil, err
 	}
-	capabilities := make([]evType,0,EV_MAX)
+	capabilities := make([]evType, 0, EV_MAX)
 	evtype := evType(0)
 	for i := 0; i < len(evbits); i++ {
 		evbyte := evbits[i]
@@ -120,13 +120,13 @@ func evGetSupportedEventTypes(handle *os.File) ([]evType, error) {
 }
 
 // Obtain and release exclusive device usage ("grab")
-func evSetGrabState(handle *os.File,state bool) error {
+func evSetGrabState(handle *os.File, state bool) error {
 	if state {
-		if err := evIoctl(handle.Fd(),C.EVIOCGRAB,unsafe.Pointer(uintptr(1))); err != 0 {
+		if err := evIoctl(handle.Fd(), C.EVIOCGRAB, unsafe.Pointer(uintptr(1))); err != 0 {
 			return err
 		}
 	} else {
-		if err := evIoctl(handle.Fd(),C.EVIOCGRAB,unsafe.Pointer(uintptr(0))); err != 0 {
+		if err := evIoctl(handle.Fd(), C.EVIOCGRAB, unsafe.Pointer(uintptr(0))); err != 0 {
 			return err
 		}
 	}

@@ -80,21 +80,21 @@ type evDevice struct {
 	key_action    evKeyAction
 
 	// exclusive access to device
-	exclusive     bool
+	exclusive bool
 
 	// the current key state, which is a set of OR'd flags
-	state         hw.InputKeyState
+	state hw.InputKeyState
 
 	// Multi-touch support
-	slot          uint32
-	slots         []evDeviceSlot
+	slot  uint32
+	slots []evDeviceSlot
 }
 
 // Represents multi-touch slot information
 type evDeviceSlot struct {
-	id            int16
-	position      khronos.EGLPoint
-	active        bool
+	id       int16
+	position khronos.EGLPoint
+	active   bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,7 +165,7 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	// Obtain exclusive use of device
 	this.exclusive = config.Exclusive
 	if this.exclusive {
-		if err := evSetGrabState(this.handle,true); err != nil {
+		if err := evSetGrabState(this.handle, true); err != nil {
 			this.handle.Close()
 			return nil, err
 		}
@@ -173,7 +173,7 @@ func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 
 	// Set multi-touch slot array to track slots
 	this.slot = 0
-	this.slots = make([]evDeviceSlot,INPUT_MAX_MULTITOUCH_SLOTS)
+	this.slots = make([]evDeviceSlot, INPUT_MAX_MULTITOUCH_SLOTS)
 
 	// Success
 	return this, nil
@@ -185,8 +185,8 @@ func (this *evDevice) Close() error {
 
 	// remove exclusive access
 	if this.exclusive {
-		if err := evSetGrabState(this.handle,false); err != nil {
-			this.log.Warn("<linux.InputDevice>Close Error: %v",err)
+		if err := evSetGrabState(this.handle, false); err != nil {
+			this.log.Warn("<linux.InputDevice>Close Error: %v", err)
 		}
 		this.exclusive = false
 	}
@@ -280,7 +280,6 @@ func (this *evDevice) Matches(alias string, device_type hw.InputDeviceType, devi
 	return false
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Keyboard State
 
@@ -290,31 +289,29 @@ func (this *evDevice) GetKeyState() hw.InputKeyState {
 	// Get LED states
 	states, err := evGetLEDState(this.handle)
 	if err != nil {
-		this.log.Warn("<linux.InputDevice> Error: %v",err)
+		this.log.Warn("<linux.InputDevice> Error: %v", err)
 		return current_state
 	}
 
 	// Get SHIFT key state
-	
-
 
 	if states == nil || len(states) == 0 {
 		return current_state
 	}
 	for _, state := range states {
-		switch(state) {
-			case EV_LED_NUML:
-				current_state |= hw.INPUT_KEYSTATE_NUMLOCK
-			case EV_LED_CAPSL:
-				current_state |= hw.INPUT_KEYSTATE_CAPSLOCK
-			case EV_LED_SCROLLL:
-				current_state |= hw.INPUT_KEYSTATE_SCROLLLOCK
+		switch state {
+		case EV_LED_NUML:
+			current_state |= hw.INPUT_KEYSTATE_NUMLOCK
+		case EV_LED_CAPSL:
+			current_state |= hw.INPUT_KEYSTATE_CAPSLOCK
+		case EV_LED_SCROLLL:
+			current_state |= hw.INPUT_KEYSTATE_SCROLLLOCK
 		}
 	}
 	return current_state
 }
 
-func (this *evDevice) SetKeyState(flags hw.InputKeyState,state bool) error {
+func (this *evDevice) SetKeyState(flags hw.InputKeyState, state bool) error {
 	// Set the current state
 	this.state = flags
 
@@ -323,18 +320,18 @@ func (this *evDevice) SetKeyState(flags hw.InputKeyState,state bool) error {
 	num_states := int(unsafe.Sizeof(flags) << 3)
 	led := hw.InputKeyState(0x0001)
 	for j := 0; j <= num_states; j++ {
-		if flags & 0x0001 != 0x0000 {
+		if flags&0x0001 != 0x0000 {
 			switch led {
 			case hw.INPUT_KEYSTATE_CAPSLOCK:
-				if err := evSetLEDState(this.handle,EV_LED_CAPSL,state); err != nil {
+				if err := evSetLEDState(this.handle, EV_LED_CAPSL, state); err != nil {
 					return err
 				}
 			case hw.INPUT_KEYSTATE_SCROLLLOCK:
-				if err := evSetLEDState(this.handle,EV_LED_SCROLLL,state); err != nil {
+				if err := evSetLEDState(this.handle, EV_LED_SCROLLL, state); err != nil {
 					return err
 				}
 			case hw.INPUT_KEYSTATE_NUMLOCK:
-				if err := evSetLEDState(this.handle,EV_LED_NUML,state); err != nil {
+				if err := evSetLEDState(this.handle, EV_LED_NUML, state); err != nil {
 					return err
 				}
 			}
