@@ -71,11 +71,20 @@ type VGPath interface {
 	// Append a rectangle to the path
 	Rect(origin, size VGPoint) error
 
+	// Append a round rect to the path
+	RoundRect(origin, size, arc VGPoint) error
+
 	// Append an ellipse to the path
 	Ellipse(origin, diameter VGPoint) error
 
 	// Append a circle to the path
 	Circle(origin VGPoint, diameter float32) error
+
+	// Append open or closed polygon
+	Polygon(closed bool, points ...VGPoint) error
+
+	// Move path to point
+	MoveTo(point VGPoint) error
 
 }
 

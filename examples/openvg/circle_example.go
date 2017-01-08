@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 )
 
 import (
@@ -23,7 +24,7 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func Draw(surface khronos.EGLSurface, vg khronos.VGDriver) error {
+func Draw(diameter float32,surface khronos.EGLSurface, vg khronos.VGDriver) error {
 	vg.Begin(surface)
 
 	// Clear to red
@@ -48,7 +49,7 @@ func Draw(surface khronos.EGLSurface, vg khronos.VGDriver) error {
 		return err
 	}
 	defer vg.DestroyPath(path)
-	path.Circle(vg.GetPoint(khronos.EGL_ALIGN_CENTER), 400)
+	path.Circle(vg.GetPoint(khronos.EGL_ALIGN_CENTER), diameter)
 
 	// Draw
 	path.Draw(stroke,fill)
@@ -75,13 +76,28 @@ func MyRunLoop(app *app.App) error {
 	}
 	defer app.EGL.DestroySurface(surface)
 
-	// Draw circle on background
-	if err := Draw(surface, app.OpenVG); err != nil {
-		return err
-	}
+	var diam float32 = 1
+	var inc float32 = 1
+	var max float32 = 400
+
+	go func() {
+		for app.GetDone() == false {
+			if err := Draw(diam, surface, app.OpenVG); err != nil {
+				app.Logger.Error("%v",err)
+				app.Done()
+			}
+			diam = diam + inc
+			if diam <= 1.0 || diam >= max  {
+				inc = -inc
+			}
+		}
+	}()
 
 	// Wait until done (which means CTRL+C)
 	app.WaitUntilDone()
+
+	// Wait for a while
+	time.Sleep(1 * time.Second)
 
 	return nil
 }
