@@ -69,6 +69,37 @@ TODO: Calculating points, alignment, etc.
 
 ## Drawing on surfaces
 
+In order to draw on an EGL surface, you will need to create a surface which is
+"bound" to the OpenVG API. For example,
+
+```go
+  surface, err := app.EGL.CreateBackground("OpenVG",1.0)
+  if err != nil {
+    return err
+  }
+  defer app.EGL.DestroySurface(surface)
+```
+
+Painting is an **atomic** operation. You should call the driver `Begin` method
+to start drawing and the `Flush` method to end the drawing. Once `Flush` is 
+called, the drawing is made visible. A syncronization lock will ensure you
+cannot call `Begin` more than once without flushing. If you don't want to
+lock then you should use `BeginNoWait` instead, which will return an error
+immediately if the drawing surface is already locked.
+
+For example, here's a wrapper function which could ensure the `Begin`/`Flush`
+methods are always used together:
+
+```go
+  func draw_surface(openvg khronos.VGDriver,surface khronos.EGLSurface,callback func() error) error {
+    if err := openvg.Begin(surface); err != nil {
+  	  return error
+    }
+    defer openvg.Flush()
+	return callback()
+  }
+```
+
 ## Creating and Drawing Paths
 
 ## Paintbrushes

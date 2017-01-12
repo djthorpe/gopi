@@ -25,18 +25,25 @@ type VGDriver interface {
 	// Inherit general driver interface
 	gopi.Driver
 
-	// Start drawing
+	// Start drawing, lock if already drawing
 	Begin(surface EGLSurface) error
 
-	// Flush
+	// Start drawing, return error if already drawing
+	//BeginNoWait(surface EGLSurface) error
+
+	// Flush drawing
 	Flush() error
 
-	// Path methods
+	// Create a path
 	CreatePath() (VGPath, error)
+
+	// Destroy a path
 	DestroyPath(VGPath) error
 
-	// Paint methods
+	// Create a paintbrush
 	CreatePaint(color VGColor) (VGPaint, error)
+
+	// Destroy a paintbrush
 	DestroyPaint(VGPaint) error
 
 	// Clear surface to color
@@ -44,11 +51,6 @@ type VGDriver interface {
 
 	// Return point on screen
 	GetPoint(flags EGLFrameAlignFlag) VGPoint
-}
-
-// Color with Alpha value
-type VGColor struct {
-	R, G, B, A float32
 }
 
 // Drawing Path
@@ -71,21 +73,28 @@ type VGPath interface {
 	// Append a rectangle to the path
 	Rect(origin, size VGPoint) error
 
-	// Append a round rect to the path
-	RoundRect(origin, size, arc VGPoint) error
-
 	// Append an ellipse to the path
 	Ellipse(origin, diameter VGPoint) error
 
 	// Append a circle to the path
 	Circle(origin VGPoint, diameter float32) error
+}
 
-	// Append open or closed polygon
-	Polygon(closed bool, points ...VGPoint) error
+// Paintbrush for Fill and Stroke
+type VGPaint interface {
+	// Set color
+	SetColor(color VGColor) error
 
-	// Move path to point
-	MoveTo(point VGPoint) error
+	// Set stroke width
+	SetStrokeWidth(width float32) error
 
+	// Set stroke path endpoint styles (for joins and cap)
+	SetStrokeStyle(VGStrokeJoinStyle,VGStrokeCapStyle) error
+}
+
+// Color with Alpha value
+type VGColor struct {
+	R, G, B, A float32
 }
 
 // Point
@@ -93,14 +102,26 @@ type VGPoint struct {
 	X, Y float32
 }
 
-// Paint Brush for Fill and Stroke
-type VGPaint interface {
-	// Set color
-	SetColor(color VGColor) error
+// Stroke styles
+type VGStrokeCapStyle uint16
+type VGStrokeJoinStyle uint16
 
-	// Set stroke line width
-	SetLineWidth(width float32) error
-}
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	VG_STYLE_CAP_NONE   VGStrokeCapStyle = 0x0000
+	VG_STYLE_CAP_BUTT   VGStrokeCapStyle = 0x1700
+	VG_STYLE_CAP_ROUND  VGStrokeCapStyle = 0x1701
+	VG_STYLE_CAP_SQUARE VGStrokeCapStyle = 0x1702
+)
+
+const (
+	VG_STYLE_JOIN_NONE  VGStrokeJoinStyle = 0x0000
+	VG_STYLE_JOIN_MITER VGStrokeJoinStyle = 0x1800
+	VG_STYLE_JOIN_ROUND VGStrokeJoinStyle = 0x1801
+	VG_STYLE_JOIN_BEVEL VGStrokeJoinStyle = 0x1802
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // VARIABLES

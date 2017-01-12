@@ -80,18 +80,16 @@ func MyRunLoop(app *app.App) error {
 	var inc float32 = 1
 	var max float32 = 400
 
-	go func() {
-		for app.GetDone() == false {
-			if err := Draw(diam, surface, app.OpenVG); err != nil {
-				app.Logger.Error("%v",err)
-				app.Done()
-			}
-			diam = diam + inc
-			if diam <= 1.0 || diam >= max  {
-				inc = -inc
-			}
+	for app.GetDone() == false {
+		if err := Draw(diam, surface, app.OpenVG); err != nil {
+			app.Logger.Error("%v",err)
+			app.Done()
 		}
-	}()
+		diam = diam + inc
+		if diam <= 1.0 || diam >= max  {
+			inc = -inc
+		}
+	}
 
 	// Wait until done (which means CTRL+C)
 	app.WaitUntilDone()
@@ -107,7 +105,6 @@ func MyRunLoop(app *app.App) error {
 func main() {
 	// Create the config
 	config := app.Config(app.APP_EGL | app.APP_OPENVG)
-
 	config.FlagSet.FlagFloat64("opacity", 1.0, "Image opacity, 0.0 -> 1.0")
 
 	// Create the application
