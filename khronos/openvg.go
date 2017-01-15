@@ -76,6 +76,9 @@ type VGPaint interface {
 	// Set color
 	SetColor(color VGColor) error
 
+	// Set fill rule
+	SetFillRule(style VGFillRule) error
+
 	// Set stroke width
 	SetStrokeWidth(width float32) error
 
@@ -96,25 +99,32 @@ type VGPoint struct {
 	X, Y float32
 }
 
-// Stroke styles
+// Stroke styles and Fill rule
 type VGStrokeCapStyle uint16
 type VGStrokeJoinStyle uint16
+type VGFillRule uint16
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
 	VG_STYLE_CAP_NONE   VGStrokeCapStyle = 0x0000
-	VG_STYLE_CAP_BUTT   VGStrokeCapStyle = 0x1700
+	VG_STYLE_CAP_BUTT   VGStrokeCapStyle = 0x1700 // Default
 	VG_STYLE_CAP_ROUND  VGStrokeCapStyle = 0x1701
 	VG_STYLE_CAP_SQUARE VGStrokeCapStyle = 0x1702
 )
 
 const (
 	VG_STYLE_JOIN_NONE  VGStrokeJoinStyle = 0x0000
-	VG_STYLE_JOIN_MITER VGStrokeJoinStyle = 0x1800
+	VG_STYLE_JOIN_MITER VGStrokeJoinStyle = 0x1800 // Default
 	VG_STYLE_JOIN_ROUND VGStrokeJoinStyle = 0x1801
 	VG_STYLE_JOIN_BEVEL VGStrokeJoinStyle = 0x1802
+)
+
+const (
+	VG_STYLE_FILL_NONE     VGFillRule = 0x0000
+	VG_STYLE_FILL_NONZERO  VGFillRule = 0x1900
+	VG_STYLE_FILL_EVENODD  VGFillRule = 0x1901 // Default
 )
 
 ////////////////////////////////////////////////////////////////////////////////

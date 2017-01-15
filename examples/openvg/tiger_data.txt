@@ -1,4 +1,9 @@
 
+This file contains the data required to draw the OpenVG demo tiger. See the
+file tiger_example.go to determine how this data is interpreted.
+
+Operation Codes:
+
 'F', 'N', 'B', 'M', 'M', 'L', 'L', 'L', 'E', 'F', 'N', 'B', 'M', 'M', 'C', 'C', 'C', 'E', 'N', 'S', 
 'B', 'M', 'M', 'C', 'C', 'C', 'E', 'F', 'N', 'B', 'M', 'M', 'C', 'C', 'C', 'E', 'N', 'S', 'B', 'M', 
 'M', 'C', 'C', 'C', 'E', 'F', 'N', 'B', 'M', 'M', 'C', 'C', 'C', 'E', 'N', 'S', 'B', 'M', 'M', 'C', 
@@ -207,6 +212,10 @@
 'E', 'F', 'N', 'R', 'M', 'M', 'C', 'C', 'C', 'E', 'F', 'N', 'R', 'M', 'M', 'C', 'C', 'C', 'E', 'F', 
 'N', 'R', 'M', 'M', 'L', 'C', 'L', 'N', 'S', 'R', 'M', 'M', 'L', 'N', 'S', 'R', 'M', 'M', 'C', 'N', 
 'S', 'R', 'M', 'M', 'C', 'N', 'S', 'R', 'M', 'M', 'C'
+
+
+
+Operation Values:
 
 10, 0, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 0.8f, 5, 0, 
 792, 0, 0, 612, 0, 612, 792, 10, 0, 1, 

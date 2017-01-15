@@ -62,6 +62,7 @@ type vgPaint struct {
 	join_style khronos.VGStrokeJoinStyle
 	cap_style  khronos.VGStrokeCapStyle
 	dash_pattern []float32
+	fill_rule  khronos.VGFillRule
 	log        *util.LoggerDevice
 }
 
@@ -79,6 +80,7 @@ const (
 )
 
 const (
+	VG_FILL_RULE               uint16  = 0x1101
 	VG_CLEAR_COLOR             uint16  = 0x1121
 	VG_STROKE_LINE_WIDTH       uint16  = 0x1110
 	VG_STROKE_CAP_STYLE        uint16  = 0x1111
@@ -316,6 +318,14 @@ func (this *vgPaint) SetStrokeDash(pattern ...float32) error {
 	return nil
 }
 
+func (this *vgPaint) SetFillRule(style khronos.VGFillRule) error {
+	if this.handle == VG_PAINT_HANDLE_NONE {
+		return vgError(VG_BAD_HANDLE_ERROR)
+	}
+	this.fill_rule = style
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PATH METHODS
 
@@ -376,13 +386,11 @@ func (this *vgPath) Draw(stroke, fill khronos.VGPaint) error {
 	}
 	if stroke_obj != nil && stroke_obj.handle != VG_PAINT_HANDLE_NONE {
 		flags |= VG_STROKE_PATH
-		C.vgSetPaint(stroke_obj.handle, VG_STROKE_PATH)
-		C.vgSetf(C.VGParamType(VG_STROKE_LINE_WIDTH), C.VGfloat(stroke_obj.line_width))
 		if stroke_obj.cap_style != khronos.VG_STYLE_CAP_NONE {
-			C.vgSetf(C.VGParamType(VG_STROKE_CAP_STYLE), C.VGfloat(stroke_obj.cap_style))
+			C.vgSeti(C.VGParamType(VG_STROKE_CAP_STYLE), C.VGint(stroke_obj.cap_style))
 		}
 		if stroke_obj.join_style != khronos.VG_STYLE_JOIN_NONE {
-			C.vgSetf(C.VGParamType(VG_STROKE_JOIN_STYLE), C.VGfloat(stroke_obj.join_style))
+			C.vgSeti(C.VGParamType(VG_STROKE_JOIN_STYLE), C.VGint(stroke_obj.join_style))
 		}
 		if stroke_obj.dash_pattern != nil && len(stroke_obj.dash_pattern) > 0 {
 			header := *(*reflect.SliceHeader)(unsafe.Pointer(&stroke_obj.dash_pattern))
@@ -390,6 +398,8 @@ func (this *vgPath) Draw(stroke, fill khronos.VGPaint) error {
 		} else {
 			C.vgSetfv(C.VGParamType(VG_STROKE_DASH_PATTERN),0,nil);
 		}
+		C.vgSetPaint(stroke_obj.handle, VG_STROKE_PATH)
+		C.vgSetf(C.VGParamType(VG_STROKE_LINE_WIDTH), C.VGfloat(stroke_obj.line_width))
 	}
 
 	// FILL
@@ -399,7 +409,11 @@ func (this *vgPath) Draw(stroke, fill khronos.VGPaint) error {
 	}
 	if fill_obj != nil && fill_obj.handle != VG_PAINT_HANDLE_NONE {
 		flags |= VG_FILL_PATH
+		if fill_obj.fill_rule != khronos.VG_STYLE_FILL_NONE {
+			C.vgSeti(C.VGParamType(VG_FILL_RULE),C.VGint(fill_obj.fill_rule));
+		}
 		C.vgSetPaint(fill_obj.handle, VG_FILL_PATH)
+
 	}
 
 	// DRAW PATH
