@@ -14,7 +14,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
 )
 
 import (
@@ -22,40 +21,34 @@ import (
 	khronos "github.com/djthorpe/gopi/khronos"
 )
 
+type State struct {
+	center khronos.VGPoint
+	diameter float32
+	maximum float32
+	increment float32
+	stroke, fill khronos.VGPaint
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
-func Draw(diameter float32,surface khronos.EGLSurface, vg khronos.VGDriver) error {
-	vg.Begin(surface)
-
-	// Clear to red
-	vg.Clear(khronos.VGColorRed)
-
-	// Paints
-	fill, err := vg.CreatePaint(khronos.VGColorWhite)
-	if err != nil {
-		return err
+func Increment(state *State) {
+	state.diameter += state.increment
+	if state.diameter <= 1.0 || state.diameter >= state.maximum {
+		state.increment = -state.increment
 	}
-	defer vg.DestroyPaint(fill)
-	stroke, err := vg.CreatePaint(khronos.VGColorMidGrey)
-	if err != nil {
-		return err
-	}
-	defer vg.DestroyPaint(stroke)
-	stroke.SetLineWidth(10.0)
+}
 
+func Draw(vg khronos.VGDriver,state *State) error {
 	// Paths
 	path, err := vg.CreatePath()
 	if err != nil {
 		return err
 	}
 	defer vg.DestroyPath(path)
-	path.Circle(vg.GetPoint(khronos.EGL_ALIGN_CENTER), diameter)
+	path.Circle(state.center, state.diameter)
 
 	// Draw
-	path.Draw(stroke,fill)
-
-	// Flush graphics
-	vg.Flush()
+	return path.Draw(state.stroke,state.fill)
 
 	// Success
 	return nil
@@ -64,11 +57,7 @@ func Draw(diameter float32,surface khronos.EGLSurface, vg khronos.VGDriver) erro
 ////////////////////////////////////////////////////////////////////////////////
 
 func MyRunLoop(app *app.App) error {
-	app.Logger.Info("Device=%v", app.Device)
-	app.Logger.Info("Display=%v", app.Display)
-	app.Logger.Info("EGL=%v", app.EGL)
-	app.Logger.Info("OpenVG=%v", app.OpenVG)
-
+	// Create a surface on which to draw
 	opacity, _ := app.FlagSet.GetFloat64("opacity")
 	surface, err := app.EGL.CreateBackground("OpenVG", float32(opacity))
 	if err != nil {
@@ -76,26 +65,42 @@ func MyRunLoop(app *app.App) error {
 	}
 	defer app.EGL.DestroySurface(surface)
 
-	var diam float32 = 1
-	var inc float32 = 1
-	var max float32 = 400
-
-	for app.GetDone() == false {
-		if err := Draw(diam, surface, app.OpenVG); err != nil {
-			app.Logger.Error("%v",err)
-			app.Done()
-		}
-		diam = diam + inc
-		if diam <= 1.0 || diam >= max  {
-			inc = -inc
-		}
+	// Set up state
+	state := &State{
+		center: khronos.AlignPoint(surface,khronos.EGL_ALIGN_CENTER),
+		diameter: 1.0,
+		maximum: 400.0,
+		increment: 1.0,
 	}
 
-	// Wait until done (which means CTRL+C)
-	app.WaitUntilDone()
+	// Create stroke and fill paint brushes
+	if state.fill, err = app.OpenVG.CreatePaint(khronos.VGColorWhite); err != nil {
+		return err
+	}
+	defer app.OpenVG.DestroyPaint(state.fill)
+	state.stroke, err = app.OpenVG.CreatePaint(khronos.VGColorMidGrey)
+	if err != nil {
+		return err
+	}
+	defer app.OpenVG.DestroyPaint(state.stroke)
+	state.stroke.SetStrokeWidth(10)
+	state.stroke.SetStrokeDash(10,20,30,40)
 
-	// Wait for a while
-	time.Sleep(1 * time.Second)
+	// Loop and redraw
+	for app.GetDone() == false {
+		err = app.OpenVG.Do(surface,func() error {
+			return Draw(app.OpenVG,state)
+		});
+		if err != nil {
+			app.Logger.Error("%v",err)
+			app.Done()
+			continue
+		}
+		Increment(state)
+	}
+
+	// Wait until done
+	app.WaitUntilDone()
 
 	return nil
 }

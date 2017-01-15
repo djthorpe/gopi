@@ -25,14 +25,8 @@ type VGDriver interface {
 	// Inherit general driver interface
 	gopi.Driver
 
-	// Start drawing, lock if already drawing
-	Begin(surface EGLSurface) error
-
-	// Start drawing, return error if already drawing
-	//BeginNoWait(surface EGLSurface) error
-
-	// Flush drawing
-	Flush() error
+	// Atomic drawing operation
+	Do(surface EGLSurface,callback func() error) error
 
 	// Create a path
 	CreatePath() (VGPath, error)
@@ -47,10 +41,7 @@ type VGDriver interface {
 	DestroyPaint(VGPaint) error
 
 	// Clear surface to color
-	Clear(color VGColor) error
-
-	// Return point on screen
-	GetPoint(flags EGLFrameAlignFlag) VGPoint
+	Clear(surface EGLSurface,color VGColor) error
 }
 
 // Drawing Path
@@ -90,6 +81,9 @@ type VGPaint interface {
 
 	// Set stroke path endpoint styles (for joins and cap)
 	SetStrokeStyle(VGStrokeJoinStyle,VGStrokeCapStyle) error
+
+	// Set stroke dash pattern, call with no arguments to reset
+	SetStrokeDash(...float32) error
 }
 
 // Color with Alpha value
@@ -140,3 +134,33 @@ var (
 	VGColorLightGrey = VGColor{0.75, 0.75, 0.75, 1.0}
 	VGColorMidGrey   = VGColor{0.5, 0.5, 0.5, 1.0}
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTIONS
+
+// Return point aligned to surface
+func AlignPoint(surface EGLSurface,flags EGLFrameAlignFlag) VGPoint {
+	var pt VGPoint
+
+	size := surface.GetSize()
+
+	switch { /* X */
+	case flags&EGL_ALIGN_HCENTER != 0:
+		pt.X = float32(size.Width >> 1)
+	case flags&EGL_ALIGN_LEFT != 0:
+		pt.X = 0
+	case flags&EGL_ALIGN_RIGHT != 0:
+		pt.X = float32(size.Width - 1)
+	}
+	switch { /* Y */
+	case flags&EGL_ALIGN_VCENTER != 0:
+		pt.Y = float32(size.Height >> 1)
+	case flags&EGL_ALIGN_TOP != 0:
+		pt.Y = 0
+	case flags&EGL_ALIGN_BOTTOM != 0:
+		pt.Y = float32(size.Height - 1)
+	}
+	return pt
+}
+
+

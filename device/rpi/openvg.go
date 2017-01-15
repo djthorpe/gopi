@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"sync"
 	"unsafe"
+	"reflect"
 )
 
 import (
@@ -44,7 +45,6 @@ type vgDriver struct {
 	log     *util.LoggerDevice
 	egl     *eglDriver
 	lock    sync.Mutex
-	surface khronos.EGLSurface
 	path    map[C.VGPath]*vgPath
 	paint   map[C.VGPaint]*vgPaint
 }
@@ -61,6 +61,7 @@ type vgPaint struct {
 	line_width float32
 	join_style khronos.VGStrokeJoinStyle
 	cap_style  khronos.VGStrokeCapStyle
+	dash_pattern []float32
 	log        *util.LoggerDevice
 }
 
@@ -155,7 +156,7 @@ func (config OpenVG) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	}
 	this.egl = egl
 
-	// Create slice for paths and paints
+	// Create maps for paths and paints
 	this.path = make(map[C.VGPath]*vgPath, VG_PATH_CAPACITY)
 	this.paint = make(map[C.VGPaint]*vgPaint, VG_PAINT_CAPACITY)
 
@@ -180,7 +181,7 @@ func (this *vgDriver) Close() error {
 
 // Return human-readable form of driver
 func (this *vgDriver) String() string {
-	return fmt.Sprintf("<rpi.OpenVG>{ egl=%v surface=%v }", this.egl, this.surface)
+	return fmt.Sprintf("<rpi.OpenVG>{ egl=%v }", this.egl)
 }
 
 // Return human-readable form of path object
@@ -194,80 +195,35 @@ func (this *vgPaint) String() string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// BEGIN AND END
+// FLUSH DRAWING
 
-func (this *vgDriver) Begin(surface khronos.EGLSurface) error {
-	this.log.Debug2("<rpi.OpenVG>Begin surface=%v", surface)
+func (this *vgDriver) Do(surface khronos.EGLSurface,callback func() error) error {
+	this.log.Debug2("<rpi.OpenVG>Do surface=%v", surface)
 
-	if this.surface != nil {
-		return this.log.Error("Begin() called before Flush()")
-	}
-
+	// Lock
 	this.lock.Lock()
+	defer this.lock.Unlock()
 
+	// Set Current surface
 	if err := this.egl.SetCurrentContext(surface); err != nil {
-		this.lock.Unlock()
 		return err
 	}
 
 	// Set identity matrix
-	this.surface = surface
 	C.vgLoadIdentity()
 
-	return nil
-}
-
-func (this *vgDriver) Flush() error {
-	this.log.Debug2("<rpi.OpenVG>Flush surface=%v", this.surface)
-	if this.surface == nil {
-		this.lock.Unlock()
-		return this.log.Error("Flush() called before Begin()")
+	// Draw
+	if err := callback(); err != nil {
+		return err
 	}
+
+	// Flush
 	C.vgFlush()
-	if err := vgGetError(); err != nil {
-		this.lock.Unlock()
+	if err := this.egl.FlushSurface(surface); err != nil {
 		return err
 	}
-	if err := this.egl.FlushSurface(this.surface); err != nil {
-		this.lock.Unlock()
-		return err
-	}
-	this.surface = nil
-	this.lock.Unlock()
+
 	return nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// GET SURFACE POINTS
-
-// Return point aligned to surface
-func (this *vgDriver) GetPoint(flags khronos.EGLFrameAlignFlag) khronos.VGPoint {
-	var pt khronos.VGPoint
-
-	if this.surface == nil {
-		this.log.Warn("GetPoint() called before Flush()")
-		return pt
-	}
-
-	size := this.surface.GetSize()
-
-	switch { /* Y */
-	case flags&khronos.EGL_ALIGN_VCENTER != 0:
-		pt.Y = float32(size.Height >> 1)
-	case flags&khronos.EGL_ALIGN_TOP != 0:
-		pt.Y = 0
-	case flags&khronos.EGL_ALIGN_BOTTOM != 0:
-		pt.Y = float32(size.Height - 1)
-	}
-	switch { /* X */
-	case flags&khronos.EGL_ALIGN_HCENTER != 0:
-		pt.X = float32(size.Width >> 1)
-	case flags&khronos.EGL_ALIGN_LEFT != 0:
-		pt.X = 0
-	case flags&khronos.EGL_ALIGN_RIGHT != 0:
-		pt.X = float32(size.Width - 1)
-	}
-	return pt
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -332,7 +288,7 @@ func (this *vgPaint) SetColor(color khronos.VGColor) error {
 	return vgGetError()
 }
 
-func (this *vgPaint) SetLineWidth(width float32) error {
+func (this *vgPaint) SetStrokeWidth(width float32) error {
 	if this.handle == VG_PAINT_HANDLE_NONE {
 		return vgError(VG_BAD_HANDLE_ERROR)
 	}
@@ -343,7 +299,7 @@ func (this *vgPaint) SetLineWidth(width float32) error {
 	return nil
 }
 
-func (this *vgPaint) SetStrokeStyle(join khronos.VGStrokeJoinStyle, cap VGStrokeCapStyle) error {
+func (this *vgPaint) SetStrokeStyle(join khronos.VGStrokeJoinStyle, cap khronos.VGStrokeCapStyle) error {
 	if this.handle == VG_PAINT_HANDLE_NONE {
 		return vgError(VG_BAD_HANDLE_ERROR)
 	}
@@ -352,8 +308,16 @@ func (this *vgPaint) SetStrokeStyle(join khronos.VGStrokeJoinStyle, cap VGStroke
 	return nil
 }
 
+func (this *vgPaint) SetStrokeDash(pattern ...float32) error {
+	if this.handle == VG_PAINT_HANDLE_NONE {
+		return vgError(VG_BAD_HANDLE_ERROR)
+	}
+	this.dash_pattern = pattern
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
-// CREATE & DESTROY PATH
+// PATH METHODS
 
 func (this *vgDriver) CreatePath() (khronos.VGPath, error) {
 	scale := C.VGfloat(1.0)
@@ -387,9 +351,8 @@ func (this *vgDriver) DestroyPath(path khronos.VGPath) error {
 	}
 
 	this.log.Debug2("<rpi.OpenVG>DestroyPath{ path=%v }", obj)
-
-	delete(this.path, obj.handle)
 	C.vgDestroyPath(obj.handle)
+	delete(this.path, obj.handle)
 	obj.handle = VG_PATH_HANDLE_NONE
 	return vgGetError()
 }
@@ -405,30 +368,43 @@ func (this *vgPath) Clear() error {
 
 func (this *vgPath) Draw(stroke, fill khronos.VGPaint) error {
 	var flags C.VGbitfield
+
+	// STROKE
 	stroke_obj, ok := stroke.(*vgPaint)
 	if stroke_obj != nil && ok == false {
-		return vgError(VG_BAD_HANDLE_ERROR)
-	}
-	fill_obj, ok := fill.(*vgPaint)
-	if fill_obj != nil && ok == false {
 		return vgError(VG_BAD_HANDLE_ERROR)
 	}
 	if stroke_obj != nil && stroke_obj.handle != VG_PAINT_HANDLE_NONE {
 		flags |= VG_STROKE_PATH
 		C.vgSetPaint(stroke_obj.handle, VG_STROKE_PATH)
 		C.vgSetf(C.VGParamType(VG_STROKE_LINE_WIDTH), C.VGfloat(stroke_obj.line_width))
-		if stroke_obj.cap_style != VG_STYLE_CAP_NONE {
+		if stroke_obj.cap_style != khronos.VG_STYLE_CAP_NONE {
 			C.vgSetf(C.VGParamType(VG_STROKE_CAP_STYLE), C.VGfloat(stroke_obj.cap_style))
 		}
-		if stroke_obj.cap_style != VG_STYLE_JOIN_NONE {
+		if stroke_obj.join_style != khronos.VG_STYLE_JOIN_NONE {
 			C.vgSetf(C.VGParamType(VG_STROKE_JOIN_STYLE), C.VGfloat(stroke_obj.join_style))
 		}
+		if stroke_obj.dash_pattern != nil && len(stroke_obj.dash_pattern) > 0 {
+			header := *(*reflect.SliceHeader)(unsafe.Pointer(&stroke_obj.dash_pattern))
+			C.vgSetfv(C.VGParamType(VG_STROKE_DASH_PATTERN),C.VGint(header.Len),(*C.VGfloat)(unsafe.Pointer(header.Data)));
+		} else {
+			C.vgSetfv(C.VGParamType(VG_STROKE_DASH_PATTERN),0,nil);
+		}
+	}
+
+	// FILL
+	fill_obj, ok := fill.(*vgPaint)
+	if fill_obj != nil && ok == false {
+		return vgError(VG_BAD_HANDLE_ERROR)
 	}
 	if fill_obj != nil && fill_obj.handle != VG_PAINT_HANDLE_NONE {
 		flags |= VG_FILL_PATH
 		C.vgSetPaint(fill_obj.handle, VG_FILL_PATH)
 	}
+
+	// DRAW PATH
 	C.vgDrawPath(this.handle, flags)
+
 	return vgGetError()
 }
 
@@ -468,8 +444,15 @@ func (this *vgPath) Circle(center khronos.VGPoint, diameter float32) error {
 	return this.Ellipse(center, khronos.VGPoint{diameter, diameter})
 }
 
+func (this *vgDriver) Clear(surface khronos.EGLSurface,color khronos.VGColor) error {
+	size := surface.GetSize()
+	C.vgSetfv(C.VGParamType(VG_CLEAR_COLOR), C.VGint(4), (*C.VGfloat)(unsafe.Pointer(&color)))
+	C.vgClear(C.VGint(0), C.VGint(0), C.VGint(size.Width), C.VGint(size.Height))
+	return vgGetError()
+}
+
 ////////////////////////////////////////////////////////////////////////////////
-// OTHER
+// ERROR HANDLING
 
 // Return string version of vgErrorType
 func (e vgErrorType) String() string {
@@ -507,24 +490,7 @@ func (e vgErrorType) String() string {
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// GRAPHICS PRIMITIVES
-
-func (this *vgDriver) Clear(color khronos.VGColor) error {
-	if this.surface == nil {
-		return this.log.Error("<rpi.OpenVG> Clear() cannot be called without Begin()")
-	}
-
-	size := this.surface.GetSize()
-	C.vgSetfv(C.VGParamType(VG_CLEAR_COLOR), C.VGint(4), (*C.VGfloat)(unsafe.Pointer(&color)))
-	C.vgClear(C.VGint(0), C.VGint(0), C.VGint(size.Width), C.VGint(size.Height))
-
-	return vgGetError()
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// VGU GRAPHICS PRIMITIVES
-
+// Get error from OpenVG
 func vgGetError() error {
 	err := vgErrorType(C.vgGetError())
 	if err == VG_NO_ERROR {
@@ -534,9 +500,11 @@ func vgGetError() error {
 	return vgError(err)
 }
 
+// Return error based on an OpenVG error code
 func vgError(err vgErrorType) error {
 	if err == VG_NO_ERROR {
 		return nil
 	}
 	return errors.New(err.String())
 }
+
