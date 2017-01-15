@@ -26,7 +26,7 @@ type VGDriver interface {
 	gopi.Driver
 
 	// Atomic drawing operation
-	Do(surface EGLSurface,callback func() error) error
+	Do(surface EGLSurface, callback func() error) error
 
 	// Create a path
 	CreatePath() (VGPath, error)
@@ -41,7 +41,7 @@ type VGDriver interface {
 	DestroyPaint(VGPaint) error
 
 	// Clear surface to color
-	Clear(surface EGLSurface,color VGColor) error
+	Clear(surface EGLSurface, color VGColor) error
 }
 
 // Drawing Path
@@ -83,7 +83,7 @@ type VGPaint interface {
 	SetStrokeWidth(width float32) error
 
 	// Set stroke path endpoint styles (for joins and cap)
-	SetStrokeStyle(VGStrokeJoinStyle,VGStrokeCapStyle) error
+	SetStrokeStyle(VGStrokeJoinStyle, VGStrokeCapStyle) error
 
 	// Set stroke dash pattern, call with no arguments to reset
 	SetStrokeDash(...float32) error
@@ -122,9 +122,9 @@ const (
 )
 
 const (
-	VG_STYLE_FILL_NONE     VGFillRule = 0x0000
-	VG_STYLE_FILL_NONZERO  VGFillRule = 0x1900
-	VG_STYLE_FILL_EVENODD  VGFillRule = 0x1901 // Default
+	VG_STYLE_FILL_NONE    VGFillRule = 0x0000
+	VG_STYLE_FILL_NONZERO VGFillRule = 0x1900
+	VG_STYLE_FILL_EVENODD VGFillRule = 0x1901 // Default
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -149,7 +149,7 @@ var (
 // FUNCTIONS
 
 // Return point aligned to surface
-func AlignPoint(surface EGLSurface,flags EGLFrameAlignFlag) VGPoint {
+func AlignPoint(surface EGLSurface, flags EGLFrameAlignFlag) VGPoint {
 	var pt VGPoint
 
 	size := surface.GetSize()
@@ -172,5 +172,3 @@ func AlignPoint(surface EGLSurface,flags EGLFrameAlignFlag) VGPoint {
 	}
 	return pt
 }
-
-

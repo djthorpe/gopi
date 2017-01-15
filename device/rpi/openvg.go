@@ -1,18 +1,20 @@
 /*
 	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016
+	(c) Copyright David Thorpe 2016-2017
 	All Rights Reserved
 
+    Documentation http://djthorpe.github.io/gopi/
 	For Licensing and Usage information, please see LICENSE.md
 */
+
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"unsafe"
-	"reflect"
 )
 
 import (
@@ -42,11 +44,11 @@ type OpenVG struct {
 
 // EGL driver
 type vgDriver struct {
-	log     *util.LoggerDevice
-	egl     *eglDriver
-	lock    sync.Mutex
-	path    map[C.VGPath]*vgPath
-	paint   map[C.VGPaint]*vgPaint
+	log   *util.LoggerDevice
+	egl   *eglDriver
+	lock  sync.Mutex
+	path  map[C.VGPath]*vgPath
+	paint map[C.VGPaint]*vgPaint
 }
 
 // Paths
@@ -57,13 +59,13 @@ type vgPath struct {
 
 // Paints
 type vgPaint struct {
-	handle     C.VGPaint
-	line_width float32
-	join_style khronos.VGStrokeJoinStyle
-	cap_style  khronos.VGStrokeCapStyle
+	handle       C.VGPaint
+	line_width   float32
+	join_style   khronos.VGStrokeJoinStyle
+	cap_style    khronos.VGStrokeCapStyle
 	dash_pattern []float32
-	fill_rule  khronos.VGFillRule
-	log        *util.LoggerDevice
+	fill_rule    khronos.VGFillRule
+	log          *util.LoggerDevice
 }
 
 // Errors
@@ -199,7 +201,7 @@ func (this *vgPaint) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // FLUSH DRAWING
 
-func (this *vgDriver) Do(surface khronos.EGLSurface,callback func() error) error {
+func (this *vgDriver) Do(surface khronos.EGLSurface, callback func() error) error {
 	this.log.Debug2("<rpi.OpenVG>Do surface=%v", surface)
 
 	// Lock
@@ -240,10 +242,10 @@ func (this *vgDriver) CreatePaint(color khronos.VGColor) (khronos.VGPaint, error
 
 	// Create the object
 	obj := &vgPaint{
-		handle: handle,
-		log:    this.log,
+		handle:     handle,
+		log:        this.log,
 		line_width: 1.0,
-		cap_style: khronos.VG_STYLE_CAP_NONE,
+		cap_style:  khronos.VG_STYLE_CAP_NONE,
 		join_style: khronos.VG_STYLE_JOIN_NONE,
 	}
 	this.paint[handle] = obj
@@ -394,9 +396,9 @@ func (this *vgPath) Draw(stroke, fill khronos.VGPaint) error {
 		}
 		if stroke_obj.dash_pattern != nil && len(stroke_obj.dash_pattern) > 0 {
 			header := *(*reflect.SliceHeader)(unsafe.Pointer(&stroke_obj.dash_pattern))
-			C.vgSetfv(C.VGParamType(VG_STROKE_DASH_PATTERN),C.VGint(header.Len),(*C.VGfloat)(unsafe.Pointer(header.Data)));
+			C.vgSetfv(C.VGParamType(VG_STROKE_DASH_PATTERN), C.VGint(header.Len), (*C.VGfloat)(unsafe.Pointer(header.Data)))
 		} else {
-			C.vgSetfv(C.VGParamType(VG_STROKE_DASH_PATTERN),0,nil);
+			C.vgSetfv(C.VGParamType(VG_STROKE_DASH_PATTERN), 0, nil)
 		}
 		C.vgSetPaint(stroke_obj.handle, VG_STROKE_PATH)
 		C.vgSetf(C.VGParamType(VG_STROKE_LINE_WIDTH), C.VGfloat(stroke_obj.line_width))
@@ -410,7 +412,7 @@ func (this *vgPath) Draw(stroke, fill khronos.VGPaint) error {
 	if fill_obj != nil && fill_obj.handle != VG_PAINT_HANDLE_NONE {
 		flags |= VG_FILL_PATH
 		if fill_obj.fill_rule != khronos.VG_STYLE_FILL_NONE {
-			C.vgSeti(C.VGParamType(VG_FILL_RULE),C.VGint(fill_obj.fill_rule));
+			C.vgSeti(C.VGParamType(VG_FILL_RULE), C.VGint(fill_obj.fill_rule))
 		}
 		C.vgSetPaint(fill_obj.handle, VG_FILL_PATH)
 
@@ -458,7 +460,7 @@ func (this *vgPath) Circle(center khronos.VGPoint, diameter float32) error {
 	return this.Ellipse(center, khronos.VGPoint{diameter, diameter})
 }
 
-func (this *vgDriver) Clear(surface khronos.EGLSurface,color khronos.VGColor) error {
+func (this *vgDriver) Clear(surface khronos.EGLSurface, color khronos.VGColor) error {
 	size := surface.GetSize()
 	C.vgSetfv(C.VGParamType(VG_CLEAR_COLOR), C.VGint(4), (*C.VGfloat)(unsafe.Pointer(&color)))
 	C.vgClear(C.VGint(0), C.VGint(0), C.VGint(size.Width), C.VGint(size.Height))
@@ -521,4 +523,3 @@ func vgError(err vgErrorType) error {
 	}
 	return errors.New(err.String())
 }
-

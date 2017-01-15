@@ -1,13 +1,14 @@
 /*
 	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016
+	(c) Copyright David Thorpe 2016-2017
 	All Rights Reserved
 
+    Documentation http://djthorpe.github.io/gopi/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-// This example shows how to load an image using dispmanx (DX) bitmaps onto
-// a surface, also setting a background color.
+// This example draws a circle on the screen and changes size on each
+// iteration
 package main
 
 import (
@@ -22,10 +23,10 @@ import (
 )
 
 type State struct {
-	center khronos.VGPoint
-	diameter float32
-	maximum float32
-	increment float32
+	center       khronos.VGPoint
+	diameter     float32
+	maximum      float32
+	increment    float32
 	stroke, fill khronos.VGPaint
 }
 
@@ -38,7 +39,7 @@ func Increment(state *State) {
 	}
 }
 
-func Draw(vg khronos.VGDriver,state *State) error {
+func Draw(vg khronos.VGDriver, state *State) error {
 	// Paths
 	path, err := vg.CreatePath()
 	if err != nil {
@@ -48,7 +49,7 @@ func Draw(vg khronos.VGDriver,state *State) error {
 	path.Circle(state.center, state.diameter)
 
 	// Draw
-	return path.Draw(state.stroke,state.fill)
+	return path.Draw(state.stroke, state.fill)
 
 	// Success
 	return nil
@@ -67,9 +68,9 @@ func MyRunLoop(app *app.App) error {
 
 	// Set up state
 	state := &State{
-		center: khronos.AlignPoint(surface,khronos.EGL_ALIGN_CENTER),
-		diameter: 1.0,
-		maximum: 400.0,
+		center:    khronos.AlignPoint(surface, khronos.EGL_ALIGN_CENTER),
+		diameter:  1.0,
+		maximum:   400.0,
 		increment: 1.0,
 	}
 
@@ -84,23 +85,23 @@ func MyRunLoop(app *app.App) error {
 	}
 	defer app.OpenVG.DestroyPaint(state.stroke)
 	state.stroke.SetStrokeWidth(10)
-	state.stroke.SetStrokeDash(2,2)
+	state.stroke.SetStrokeDash(2, 2)
 
 	// Loop and redraw
 	go func() {
 		for app.GetDone() == false {
-			err = app.OpenVG.Do(surface,func() error {
-				app.OpenVG.Clear(surface,khronos.VGColorBlack)
-				return Draw(app.OpenVG,state)
-			});
+			err = app.OpenVG.Do(surface, func() error {
+				app.OpenVG.Clear(surface, khronos.VGColorBlack)
+				return Draw(app.OpenVG, state)
+			})
 			if err != nil {
-				app.Logger.Error("%v",err)
+				app.Logger.Error("%v", err)
 				break
 			}
 			Increment(state)
 		}
 		app.Logger.Info("Main Loop Ending")
-	}();
+	}()
 
 	// Wait until done
 	app.WaitUntilDone()
