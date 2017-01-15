@@ -56,6 +56,9 @@ go install -ldflags "${LDFLAGS}" examples/egl/image_example.go || exit -1
 echo "go install openvg/circle_example"
 go install -ldflags "${LDFLAGS}" examples/openvg/circle_example.go || exit -1
 
+echo "go install openvg/tiger_example"
+go install -ldflags "${LDFLAGS}" examples/openvg/tiger_example.go || exit -1
+
 echo "go install vgfont/font_example"
 go install -ldflags "${LDFLAGS}" examples/vgfont/font_example.go || exit -1
 

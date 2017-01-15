@@ -78,26 +78,29 @@ func MyRunLoop(app *app.App) error {
 		return err
 	}
 	defer app.OpenVG.DestroyPaint(state.fill)
-	state.stroke, err = app.OpenVG.CreatePaint(khronos.VGColorMidGrey)
+	state.stroke, err = app.OpenVG.CreatePaint(khronos.VGColorRed)
 	if err != nil {
 		return err
 	}
 	defer app.OpenVG.DestroyPaint(state.stroke)
 	state.stroke.SetStrokeWidth(10)
-	state.stroke.SetStrokeDash(10,20,30,40)
+	state.stroke.SetStrokeDash(2,2)
 
 	// Loop and redraw
-	for app.GetDone() == false {
-		err = app.OpenVG.Do(surface,func() error {
-			return Draw(app.OpenVG,state)
-		});
-		if err != nil {
-			app.Logger.Error("%v",err)
-			app.Done()
-			continue
+	go func() {
+		for app.GetDone() == false {
+			err = app.OpenVG.Do(surface,func() error {
+				app.OpenVG.Clear(surface,khronos.VGColorBlack)
+				return Draw(app.OpenVG,state)
+			});
+			if err != nil {
+				app.Logger.Error("%v",err)
+				break
+			}
+			Increment(state)
 		}
-		Increment(state)
-	}
+		app.Logger.Info("Main Loop Ending")
+	}();
 
 	// Wait until done
 	app.WaitUntilDone()
