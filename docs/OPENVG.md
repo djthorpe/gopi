@@ -50,11 +50,6 @@ should also be a concrete Raspberry Pi object. For example,
   openvg, err := gopi.Open(rpi.OpenVG{ EGL: egl },logger)
   if err != nil { /* handle error */ }
   defer openvg.Close()
-
-  // Clear surface to white
-  openvg.(khronos.VGDriver).Begin(surface)
-  openvg.(khronos.VGDriver).Clear(khronos.VGColorWhite)
-  openvg.(khronos.VGDriver).Flush()
 ```
 
 The return value of `gopi.Open` is a `gopi.Driver` so in order to call driver
@@ -63,7 +58,9 @@ methods you need to cast to a `khronos.VGDriver`.
 ## The Coordinate system
 
 Like the EGL interface, the co-ordinate system for OpenVG has the origin pixel
-`khronos.VGPoint{ 0, 0 }` at the top left of the drawable surface.
+`khronos.VGPoint{ 0, 0 }` at the top left of the drawable surface. Unlike the
+EGL interface, points are defined as the `float32` type rather than `int`,
+so that points can be transformed (rotated, etc) by fractional amounts.
 
 TODO: Calculating points, alignment, etc.
 
@@ -80,29 +77,125 @@ In order to draw on an EGL surface, you will need to create a surface which is
   defer app.EGL.DestroySurface(surface)
 ```
 
-Painting is an **atomic** operation. You should call the driver `Begin` method
-to start drawing and the `Flush` method to end the drawing. Once `Flush` is 
-called, the drawing is made visible. A syncronization lock will ensure you
-cannot call `Begin` more than once without flushing. If you don't want to
-lock then you should use `BeginNoWait` instead, which will return an error
-immediately if the drawing surface is already locked.
-
-For example, here's a wrapper function which could ensure the `Begin`/`Flush`
-methods are always used together:
+Painting is an **atomic** operation. As such, you draw by calling the `Do` method
+with an argument to your drawing callback. Only one `Do` method can be called
+at any one time:
 
 ```go
-  func draw_surface(openvg khronos.VGDriver,surface khronos.EGLSurface,callback func() error) error {
-    if err := openvg.Begin(surface); err != nil {
-  	  return error
-    }
-    defer openvg.Flush()
-	return callback()
+  surface := /* Surface on which to draw */	
+  openvg.(khronos.VGDriver).Do(surface,func () error {
+	/* Draw on surface */
+	openvg.(khronos.VGDriver).Clear(surface,khronos.VGColorWhite)
+	
+	/* Return success */
+	return nil
+  });
+  if err != nil {
+    return err
   }
 ```
 
-## Creating and Drawing Paths
+Before the drawing begins, the point transformation identity matrix is loaded,
+so that there is a one-to-one correlation between points and pixels. You can then
+rotate or transform the co-ordinate system before you start drawing. After the
+drawing is completed, the surface is flushed.
+
+The `khronos.VGDriver` interface implements the following methods:
+
+| **Interface** | `khronos.VGDriver` |
+| -- | -- | -- |
+| **Method** | `Do(surface EGLSurface, callback func() error) error` | Draw on surface |
+| **Method** | `Clear(surface EGLSurface, color VGColor) error` | Clear surface to color |
+
+The `Clear` method will clear a surface to the specified color, without taking note of
+any co-ordinate transformations.
 
 ## Paintbrushes
+
+A paintbrush is used for drawing outlines (known as the "stroke") and filling
+shapes (known as the "path"). In order to create a paintbrush, the `khronos.VGDriver`
+interface implements the following methods:
+
+| **Interface** | `khronos.VGDriver` |
+| -- | -- | -- |
+| **Method** | `CreatePaint(color VGColor) (VGPaint, error)` | Create a paintbrush for stroking or filling |
+| **Method** | `DestroyPaint(VGPaint) error` | Destroy a created paintbrush |
+
+When creating a paintbrush, the colour of the paintbrush is provided and
+the following defaults are set:
+
+  * `VGFillRule` is set to `VG_STYLE_FILL_EVENODD`
+  * `VGStrokeWidth` is set to 1.0
+  * `VGStrokeCapStyle` is set to `VG_STYLE_CAP_BUTT`
+  * `VGStrokeJoinStyle` is set to `VG_STYLE_JOIN_MITER`
+  
+You can affect the paintbrush attributes using the following methods:
+
+| **Interface** | `khronos.VGPaint` |
+| -- | -- | -- |
+| **Method** | `SetColor(color VGColor) error` | Set paintbrush colour |
+| **Method** | `SetFillRule(style VGFillRule) error` | Set fill rule (for filling) |
+| **Method** | `SetStrokeWidth(width float32) error` | Set line width (for stroking) |
+| **Method** | `SetStrokeStyle(VGStrokeJoinStyle, VGStrokeCapStyle) error` | Set join and cap style  (for stroking) |
+| **Method** | `SetStrokeDash(...float32) error` | Set the dash pattern (for stroking) |
+
+The following system colors are defined:
+
+| **Variable** | `khronos.VGColor` |
+| -- | -- |
+| `VGColorRed` | Primary Red |
+| `VGColorGreen` | Primary Green |
+| `VGColorBlue` | Primary Blue |
+| `VGColorWhite` | Primary White |
+| `VGColorBlack` | Primary Black |
+| `VGColorPurple` | Purple |
+| `VGColorCyan` | Cyan |
+| `VGColorYellow` | Yellow |
+| `VGColorDarkGrey` | Dark Grey |
+| `VGColorLightGrey` | Light Grey |
+| `VGColorMidGrey` | Mid Grey |
+
+The following fill rules are defined:
+
+| **Enum** | `khronos.VGFillRule` |
+| -- | -- |
+| `VG_STYLE_FILL_NONE` | Default fill rule (usually `VG_STYLE_FILL_EVENODD`)  |
+| `VG_STYLE_FILL_NONZERO` | Non-zero fill rule |
+| `VG_STYLE_FILL_EVENODD` | Even odd fill rule |
+
+The following stroke cap styles are defined:
+
+| **Enum** | `khronos.VGStrokeCapStyle` |
+| -- | -- |
+| `VG_STYLE_CAP_NONE` | Default cap style, or no change |
+| `VG_STYLE_CAP_BUTT` | Butt end style, the default |
+| `VG_STYLE_CAP_ROUND` | Round end style |
+| `VG_STYLE_CAP_SQUARE` | Square end style |
+
+The following stroke join styles are defined:
+
+| **Enum** | `khronos.VGStrokeJoinStyle` |
+| -- | -- |
+| `VG_STYLE_JOIN_NONE` | Default join style, or no change |
+| `VG_STYLE_JOIN_MITER` | Mitre join style, the default |
+| `VG_STYLE_JOIN_ROUND` | Round join style |
+| `VG_STYLE_JOIN_BEVEL` | Bevel join style |
+
+The dash pattern for any strokes are defined using an on/off set of values.
+For example:
+
+TODO
+
+## Creating and Drawing Paths
+
+
+The `khronos.VGDriver` interface implements the following methods:
+
+| **Interface** | `khronos.VGDriver` |
+| -- | -- | -- |
+| **Method** | `CreatePath() (VGPath, error)` | Create a path |
+| **Method** | `DestroyPath(VGPath) error` | Destroy a path |
+
 
 
 # Links
