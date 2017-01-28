@@ -188,15 +188,32 @@ TODO
 
 ## Creating and Drawing Paths
 
-
-The `khronos.VGDriver` interface implements the following methods:
+A path is a set of commands for drawing a shape. The `khronos.VGDriver` 
+interface implements the following methods:
 
 | **Interface** | `khronos.VGDriver` |
 | -- | -- | -- |
 | **Method** | `CreatePath() (VGPath, error)` | Create a path |
 | **Method** | `DestroyPath(VGPath) error` | Destroy a path |
 
+You can append drawing segments to the path using the following methods:
 
+| **Interface** | `khronos.VGPath` |
+| -- | -- | -- |
+| **Method** | `MoveTo(VGPoint) error` | Set the beginning of the next segment to the point |
+| **Method** | `LineTo(...VGPoint) error` | Draw one or more straight line segments |
+| **Method** | `QuadTo(p1, p2 VGPoint) error` | Add a quadratic bezier segment from the last point, approaching control point p1, and ending at p2 |
+| **Method** | `CubicTo(p1, p2, p3 VGPoint) error` | Add a cubic bezier egment from the last point, approaching control points p1 and p2, and ending at p3 |
+| **Method** | `Close() error` | Close the current segment |
+
+There are some utility functions to quickly create shapes:
+
+| **Interface** | `khronos.VGPath` |
+| -- | -- | -- |
+| **Method** | `Line(start, end VGPoint) error` | Add a closed line to the path |
+| **Method** | `Rect(origin, size VGPoint) error` | Add a close rectangle to the path |
+| **Method** | `Ellipse(origin, diameter VGPoint) error` | Add a closed ellipse to the path |
+| **Method** | `Circle(origin VGPoint, diameter float32) error` | Add a closed circle to the path |
 
 # Links
 
