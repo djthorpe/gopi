@@ -64,6 +64,17 @@ so that points can be transformed (rotated, etc) by fractional amounts.
 
 TODO: Calculating points, alignment, etc.
 
+The following methods can be used for "transforming" the co-ordinate system
+when drawing:
+
+| **Interface** | `khronos.VGDriver` |
+| -- | -- | -- |
+| **Method** | `Translate(offset VGPoint) error` | Translate co-ordinate sysyetm to offset drawing |
+| **Method** | `Scale(x,y float32) error` | Scale co-ordinate system |
+| **Method** | `Shear(x,y float32) error` | Shear co-ordinate system |
+| **Method** | `Rotate(r float32) error` | Rotate co-ordinate system |
+| **Method** | `LoadIdentity() error` | Reset co-ordinate system |
+
 ## Drawing on surfaces
 
 In order to draw on an EGL surface, you will need to create a surface which is
@@ -214,6 +225,16 @@ There are some utility functions to quickly create shapes:
 | **Method** | `Rect(origin, size VGPoint) error` | Add a close rectangle to the path |
 | **Method** | `Ellipse(origin, diameter VGPoint) error` | Add a closed ellipse to the path |
 | **Method** | `Circle(origin VGPoint, diameter float32) error` | Add a closed circle to the path |
+
+Some other functions provide information about the path or affect the whole path:
+
+| **Interface** | `khronos.VGPath` |
+| -- | -- | -- |
+| **Method** | `Clear() error` | Reset to an empty path, removing all path segments |
+| **Method** | `Draw(stroke, fill VGPaint) error` | Stroke and fill path on current surface |
+| **Method** | `Stroke(stroke VGPaint) error` | Stroke path on current surface |
+| **Method** | `Fill(fill VGPaint) error` | Fill path on current surface |
+
 
 # Links
 
