@@ -468,21 +468,21 @@ func (this *vgfDriver) LoadGlyphs(face *vgfFace, w, h float32) error {
 // PRIVATE FUNCTIONS
 
 func (this *vgfDriver) vgfontInit() error {
-	return vgfontGetError(C.FT_Init_FreeType(unsafe.Pointer(&this.handle)))
+	return vgfontGetError(C.FT_Init_FreeType(&this.handle))
 }
 
 func (this *vgfDriver) vgfontDestroy() error {
-	return vgfontGetError(C.FT_Done_FreeType(unsafe.Pointer(this.handle)))
+	return vgfontGetError(C.FT_Done_FreeType(this.handle))
 }
 
 func (this *vgfDriver) vgfontLoadFace(path string, index uint) (C.FT_Face, error) {
 	var face C.FT_Face
-	ret := C.FT_New_Face(unsafe.Pointer(this.handle), C.CString(path), C.FT_Long(index), unsafe.Pointer(&face))
+	ret := C.FT_New_Face(this.handle, C.CString(path), C.FT_Long(index), &face)
 	return face, vgfontGetError(ret)
 }
 
 func (this *vgfDriver) vgfontDoneFace(handle C.FT_Face) error {
-	return vgfontGetError(C.FT_Done_Face(unsafe.Pointer(handle)))
+	return vgfontGetError(C.FT_Done_Face(handle))
 }
 
 func (this *vgfDriver) vgfontSelectCharmap(handle C.FT_Face, encoding vgfEncoding) error {
@@ -688,7 +688,7 @@ func vgfontGetError(code C.FT_Error) error {
 	case C.FT_Error(0x0C):
 		return ErrFontMissingProperty
 
-		/* glyph/character errors */
+	/* glyph/character errors */
 	case C.FT_Error(0x10):
 		return ErrFontInvalidGlyphIndex
 	case C.FT_Error(0x11):
@@ -706,7 +706,7 @@ func vgfontGetError(code C.FT_Error) error {
 	case C.FT_Error(0x17):
 		return ErrFontInvalidPixelSize
 
-		/* handle errors */
+	/* handle errors */
 	case C.FT_Error(0x20):
 		return ErrFontInvalidHandle
 	case C.FT_Error(0x21):
@@ -726,19 +726,19 @@ func vgfontGetError(code C.FT_Error) error {
 	case C.FT_Error(0x28):
 		return ErrFontInvalidStreamHandle
 
-		/* driver errors */
+	/* driver errors */
 	case C.FT_Error(0x30):
 		return ErrFontTooManyDrivers
 	case C.FT_Error(0x31):
 		return ErrFontTooManyExtensions
 
-		/* memory errors */
+	/* memory errors */
 	case C.FT_Error(0x40):
 		return ErrFontOutOfMemory
 	case C.FT_Error(0x41):
 		return ErrFontUnlistedObject
 
-		/* stream errors */
+	/* stream errors */
 	case C.FT_Error(0x51):
 		return ErrFontCannotOpenStream
 	case C.FT_Error(0x52):
@@ -756,7 +756,7 @@ func vgfontGetError(code C.FT_Error) error {
 	case C.FT_Error(0x58):
 		return ErrFontInvalidFrameRead
 
-		/* raster errors */
+	/* raster errors */
 	case C.FT_Error(0x60):
 		return ErrFontRasterUninitialized
 	case C.FT_Error(0x61):
@@ -766,11 +766,11 @@ func vgfontGetError(code C.FT_Error) error {
 	case C.FT_Error(0x63):
 		return ErrFontRasterNegativeHeight
 
-		/* cache errors */
+	/* cache errors */
 	case C.FT_Error(0x70):
 		return ErrFontTooManyCaches
 
-		/* TrueType and SFNT errors */
+	/* TrueType and SFNT errors */
 	case C.FT_Error(0x80):
 		return ErrFontInvalidOpcode
 	case C.FT_Error(0x81):
@@ -828,7 +828,7 @@ func vgfontGetError(code C.FT_Error) error {
 	case C.FT_Error(0x9B):
 		return ErrFontInvalidPostTable
 
-		/* CFF, CID, and Type 1 errors */
+	/* CFF, CID, and Type 1 errors */
 	case C.FT_Error(0xA0):
 		return ErrFontSyntaxError
 	case C.FT_Error(0xA1):
@@ -840,7 +840,7 @@ func vgfontGetError(code C.FT_Error) error {
 	case C.FT_Error(0xA4):
 		return ErrFontGlyphTooBig
 
-		/* BDF errors */
+	/* BDF errors */
 	case C.FT_Error(0xB0):
 		return ErrFontMissingStartfontField
 	case C.FT_Error(0xB1):

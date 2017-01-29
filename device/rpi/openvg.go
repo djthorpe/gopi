@@ -65,6 +65,7 @@ type vgPaint struct {
 	cap_style    khronos.VGStrokeCapStyle
 	dash_pattern []float32
 	fill_rule    khronos.VGFillRule
+	miter_limit  float32
 	log          *util.LoggerDevice
 }
 
@@ -231,6 +232,34 @@ func (this *vgDriver) Do(surface khronos.EGLSurface, callback func() error) erro
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// TRANSLATION FUNCTIONS
+
+func (this *vgDriver) Translate(offset khronos.VGPoint) error {
+	C.vgTranslate(C.VGfloat(offset.X),C.VGfloat(offset.Y))
+	return vgGetError()
+}
+
+func (this *vgDriver) Scale(x,y float32) error {
+	C.vgScale(C.VGfloat(x),C.VGfloat(y))
+	return vgGetError()
+}
+
+func (this *vgDriver) Shear(x,y float32) error {
+	C.vgShear(C.VGfloat(x),C.VGfloat(y))
+	return vgGetError()
+}
+
+func (this *vgDriver) Rotate(r float32) error {
+	C.vgRotate(C.VGfloat(r))
+	return vgGetError()
+}
+
+func (this *vgDriver) LoadIdentity() error {
+	C.vgLoadIdentity()
+	return vgGetError()
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // CREATE & DESTROY PAINT
 
 func (this *vgDriver) CreatePaint(color khronos.VGColor) (khronos.VGPaint, error) {
@@ -307,8 +336,12 @@ func (this *vgPaint) SetStrokeStyle(join khronos.VGStrokeJoinStyle, cap khronos.
 	if this.handle == VG_PAINT_HANDLE_NONE {
 		return vgError(VG_BAD_HANDLE_ERROR)
 	}
-	this.cap_style = cap
-	this.join_style = join
+	if cap != khronos.VG_STYLE_CAP_NONE {
+		this.cap_style = cap
+	}
+	if join != khronos.VG_STYLE_JOIN_NONE {
+		this.join_style = join
+	}
 	return nil
 }
 
@@ -325,6 +358,14 @@ func (this *vgPaint) SetFillRule(style khronos.VGFillRule) error {
 		return vgError(VG_BAD_HANDLE_ERROR)
 	}
 	this.fill_rule = style
+	return nil
+}
+
+func (this *vgPaint) SetMiterLimit(value float32) error {
+	if this.handle == VG_PAINT_HANDLE_NONE {
+		return vgError(VG_BAD_HANDLE_ERROR)
+	}
+	this.miter_limit = value
 	return nil
 }
 
@@ -394,6 +435,9 @@ func (this *vgPath) Draw(stroke, fill khronos.VGPaint) error {
 		if stroke_obj.join_style != khronos.VG_STYLE_JOIN_NONE {
 			C.vgSeti(C.VGParamType(VG_STROKE_JOIN_STYLE), C.VGint(stroke_obj.join_style))
 		}
+		if stroke_obj.miter_limit != 0.0 {
+			C.vgSetf(C.VGParamType(VG_STROKE_MITER_LIMIT), C.VGfloat(stroke_obj.miter_limit))
+		}
 		if stroke_obj.dash_pattern != nil && len(stroke_obj.dash_pattern) > 0 {
 			header := *(*reflect.SliceHeader)(unsafe.Pointer(&stroke_obj.dash_pattern))
 			C.vgSetfv(C.VGParamType(VG_STROKE_DASH_PATTERN), C.VGint(header.Len), (*C.VGfloat)(unsafe.Pointer(header.Data)))
@@ -458,6 +502,32 @@ func (this *vgPath) Ellipse(center, diameter khronos.VGPoint) error {
 
 func (this *vgPath) Circle(center khronos.VGPoint, diameter float32) error {
 	return this.Ellipse(center, khronos.VGPoint{diameter, diameter})
+}
+
+
+// Close Path
+func (this *vgPath) Close() error {
+	return errors.New("Not implemented")
+}
+
+// Move To
+func (this *vgPath) MoveTo(khronos.VGPoint) error {
+	return errors.New("Not implemented")
+}
+
+// Line To
+func (this *vgPath) LineTo(...khronos.VGPoint) error {
+	return errors.New("Not implemented")
+}
+
+// Quad To
+func (this *vgPath) QuadTo(p1, p2 khronos.VGPoint) error {
+	return errors.New("Not implemented")
+}
+
+// Cubic To
+func (this *vgPath) CubicTo(p1, p2, p3 khronos.VGPoint) error {
+	return errors.New("Not implemented")
 }
 
 func (this *vgDriver) Clear(surface khronos.EGLSurface, color khronos.VGColor) error {

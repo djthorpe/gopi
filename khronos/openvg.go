@@ -42,6 +42,21 @@ type VGDriver interface {
 
 	// Clear surface to color
 	Clear(surface EGLSurface, color VGColor) error
+
+	// Translate co-ordinate system
+	Translate(offset VGPoint) error
+
+	// Scale co-ordinate system
+	Scale(x,y float32) error
+
+	// Shear co-ordinate system
+	Shear(x,y float32) error
+
+	// Rotate co-ordinate system
+	Rotate(r float32) error
+
+	// Load Identity Matrix (reset co-ordinate system)
+	LoadIdentity() error
 }
 
 // Drawing Path
@@ -57,6 +72,21 @@ type VGPath interface {
 
 	// Reset to empty path
 	Clear() error
+
+	// Close Path
+	Close() error
+
+	// Move To
+	MoveTo(VGPoint) error
+
+	// Line To
+	LineTo(...VGPoint) error
+
+	// Quad To
+	QuadTo(p1, p2 VGPoint) error
+
+	// Cubic To
+	CubicTo(p1, p2, p3 VGPoint) error
 
 	// Append a line to the path
 	Line(start, end VGPoint) error
@@ -82,7 +112,11 @@ type VGPaint interface {
 	// Set stroke width
 	SetStrokeWidth(width float32) error
 
-	// Set stroke path endpoint styles (for joins and cap)
+	// Set miter limit
+	SetMiterLimit(value float32) error
+
+	// Set stroke path endpoint styles (for joins and cap). Use
+	// NONE as a value for no change
 	SetStrokeStyle(VGStrokeJoinStyle, VGStrokeCapStyle) error
 
 	// Set stroke dash pattern, call with no arguments to reset

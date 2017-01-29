@@ -61,7 +61,7 @@ type eglDriver struct {
 
 const (
 	// General constants
-	EGL_DEFAULT_DISPLAY uintptr    = 0
+	EGL_DEFAULT_DISPLAY eglDisplay = 0
 	EGL_NO_DISPLAY      eglDisplay = 0
 	EGL_NO_CONTEXT      eglContext = 0
 	EGL_NO_SURFACE      eglSurface = 0
@@ -161,14 +161,14 @@ func (config EGL) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	this.log = log
 
 	// Get EGL Display
-	this.display = eglDisplay(unsafe.Pointer(C.eglGetDisplay(EGL_DEFAULT_DISPLAY)))
+	this.display = eglDisplay(unsafe.Pointer(C.eglGetDisplay(C.EGLNativeDisplayType(EGL_DEFAULT_DISPLAY))))
 	if this.display == EGL_NO_DISPLAY {
 		return nil, this.GetError()
 	}
 
 	// Initialise
 	var major, minor C.EGLint
-	result := C.eglInitialize(this.display, (*C.EGLint)(unsafe.Pointer(&major)), (*C.EGLint)(unsafe.Pointer(&minor)))
+	result := C.eglInitialize(C.EGLDisplay(this.display), (*C.EGLint)(unsafe.Pointer(&major)), (*C.EGLint)(unsafe.Pointer(&minor)))
 	if result == C.EGLBoolean(EGL_FALSE) {
 		return nil, this.GetError()
 	}
@@ -195,7 +195,7 @@ func (config EGL) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 func (this *eglDriver) Close() error {
 	this.log.Debug2("<rpi.EGL>Close")
 
-	result := C.eglTerminate(this.display)
+	result := C.eglTerminate(C.EGLDisplay(this.display))
 	if result == C.EGLBoolean(EGL_FALSE) {
 		return this.GetError()
 	}
@@ -232,23 +232,23 @@ func (this *eglDriver) GetVersion() (int, int) {
 
 // Return vendor information
 func (this *eglDriver) GetVendorString() string {
-	return C.GoString(C.eglQueryString(this.display, C.EGLint(EGL_VENDOR)))
+	return C.GoString(C.eglQueryString(C.EGLDisplay(this.display), C.EGLint(EGL_VENDOR)))
 }
 
 // Return version information
 func (this *eglDriver) GetVersionString() string {
-	return C.GoString(C.eglQueryString(this.display, C.EGLint(EGL_VERSION)))
+	return C.GoString(C.eglQueryString(C.EGLDisplay(this.display), C.EGLint(EGL_VERSION)))
 }
 
 // Return extensions information
 func (this *eglDriver) GetExtensions() []string {
-	return strings.Split(C.GoString(C.eglQueryString(this.display, C.EGLint(EGL_EXTENSIONS))), " ")
+	return strings.Split(C.GoString(C.eglQueryString(C.EGLDisplay(this.display), C.EGLint(EGL_EXTENSIONS))), " ")
 }
 
 // Return API's information
 func (this *eglDriver) GetSupportedClientAPIs() []string {
 	// we hack in the DX client API
-	supported := DISPMANX_API_STRING + " " + C.GoString(C.eglQueryString(this.display, C.EGLint(EGL_CLIENT_APIS)))
+	supported := DISPMANX_API_STRING + " " + C.GoString(C.eglQueryString(C.EGLDisplay(this.display), C.EGLint(EGL_CLIENT_APIS)))
 	return strings.Split(supported, " ")
 }
 
@@ -338,7 +338,7 @@ func (this *eglDriver) getFrameBufferConfiguration() (eglConfig, error) {
 	}
 	var num_config C.EGLint
 	var config C.EGLConfig
-	result := C.eglChooseConfig(this.display, &attribute_list[0], &config, C.EGLint(1), &num_config)
+	result := C.eglChooseConfig(C.EGLDisplay(this.display), &attribute_list[0], &config, C.EGLint(1), &num_config)
 	if result == C.EGLBoolean(EGL_FALSE) {
 		return EGL_NO_CONFIG, this.GetError()
 	}
@@ -370,7 +370,7 @@ func (this *eglDriver) createContext(api string) (eglConfig, eglContext, error) 
 	}
 
 	// Create rendering context
-	context := eglContext(C.eglCreateContext(this.display, config, C.EGLContext(EGL_NO_CONTEXT), (*C.EGLint)(unsafe.Pointer(nil))))
+	context := eglContext(C.eglCreateContext(C.EGLDisplay(this.display), C.EGLConfig(config), C.EGLContext(EGL_NO_CONTEXT), (*C.EGLint)(unsafe.Pointer(nil))))
 	if context == EGL_NO_CONTEXT {
 		return EGL_NO_CONFIG, EGL_NO_CONTEXT, this.GetError()
 	}
@@ -380,7 +380,7 @@ func (this *eglDriver) createContext(api string) (eglConfig, eglContext, error) 
 
 // Destroy EGL Context
 func (this *eglDriver) destroyContext(context eglContext) error {
-	result := C.eglDestroyContext(this.display, C.EGLContext(context))
+	result := C.eglDestroyContext(C.EGLDisplay(this.display), C.EGLContext(context))
 	if result == C.EGLBoolean(EGL_FALSE) {
 		return this.GetError()
 	}
@@ -389,7 +389,7 @@ func (this *eglDriver) destroyContext(context eglContext) error {
 
 // Set current EGL Context
 func (this *eglDriver) makeCurrent(surface eglSurface, context eglContext) error {
-	result := C.eglMakeCurrent(this.display, C.EGLSurface(surface), C.EGLSurface(surface), C.EGLContext(context))
+	result := C.eglMakeCurrent(C.EGLDisplay(this.display), C.EGLSurface(surface), C.EGLSurface(surface), C.EGLContext(context))
 	if result == C.EGLBoolean(EGL_FALSE) {
 		return this.GetError()
 	}
@@ -399,7 +399,7 @@ func (this *eglDriver) makeCurrent(surface eglSurface, context eglContext) error
 // Create surface
 func (this *eglDriver) createSurface(config eglConfig, window *eglNativeWindow) (eglSurface, error) {
 	// Create EGL surface given a native window
-	surface := eglSurface(C.eglCreateWindowSurface(this.display, C.EGLConfig(config), (*C.EGLNativeWindowType)(unsafe.Pointer(window)), nil))
+	surface := eglSurface(C.eglCreateWindowSurface(C.EGLDisplay(this.display), C.EGLConfig(config), C.EGLNativeWindowType(window), nil))
 	if surface == EGL_NO_SURFACE {
 		return EGL_NO_SURFACE, this.GetError()
 	}
@@ -408,7 +408,7 @@ func (this *eglDriver) createSurface(config eglConfig, window *eglNativeWindow) 
 
 // Destroy EGL Surface
 func (this *eglDriver) destroySurface(surface eglSurface) error {
-	result := C.eglDestroySurface(this.display, C.EGLSurface(surface))
+	result := C.eglDestroySurface(C.EGLDisplay(this.display), C.EGLSurface(surface))
 	if result == C.EGLBoolean(EGL_FALSE) {
 		return this.GetError()
 	}
@@ -417,7 +417,7 @@ func (this *eglDriver) destroySurface(surface eglSurface) error {
 
 // Swap buffer
 func (this *eglDriver) swapBuffer(surface eglSurface) error {
-	result := C.eglSwapBuffers(this.display, surface)
+	result := C.eglSwapBuffers(C.EGLDisplay(this.display), C.EGLSurface(surface))
 	if result == C.EGLBoolean(EGL_FALSE) {
 		return this.GetError()
 	}
