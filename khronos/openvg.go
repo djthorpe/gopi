@@ -47,10 +47,10 @@ type VGDriver interface {
 	Translate(offset VGPoint) error
 
 	// Scale co-ordinate system
-	Scale(x,y float32) error
+	Scale(x, y float32) error
 
 	// Shear co-ordinate system
-	Shear(x,y float32) error
+	Shear(x, y float32) error
 
 	// Rotate co-ordinate system
 	Rotate(r float32) error
@@ -177,6 +177,11 @@ var (
 	VGColorDarkGrey  = VGColor{0.25, 0.25, 0.25, 1.0}
 	VGColorLightGrey = VGColor{0.75, 0.75, 0.75, 1.0}
 	VGColorMidGrey   = VGColor{0.5, 0.5, 0.5, 1.0}
+)
+
+// Zero Point
+var (
+	VGZeroPoint      = VGPoint{ 0, 0 }
 )
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -145,6 +145,23 @@ const (
 	VG_FILL_PATH   C.VGbitfield = (1 << 1)
 )
 
+// Path segment commands
+const (
+	VG_SEGMENT_CLOSE_PATH C.VGPathSegment = (0 << 1)
+	VG_SEGMENT_MOVE_TO    C.VGPathSegment = (1 << 1)
+	VG_SEGMENT_LINE_TO    C.VGPathSegment = (2 << 1)
+	VG_SEGMENT_HLINE_TO   C.VGPathSegment = (3 << 1)
+	VG_SEGMENT_VLINE_TO   C.VGPathSegment = (4 << 1)
+	VG_SEGMENT_QUAD_TO    C.VGPathSegment = (5 << 1)
+	VG_SEGMENT_CUBIC_TO   C.VGPathSegment = (6 << 1)
+	VG_SEGMENT_SQUAD_TO   C.VGPathSegment = (7 << 1)
+	VG_SEGMENT_SCUBIC_TO  C.VGPathSegment = (8 << 1)
+	VG_SEGMENT_SCCWARC_TO C.VGPathSegment = (9 << 1)
+	VG_SEGMENT_SCWARC_TO  C.VGPathSegment = (10 << 1)
+	VG_SEGMENT_LCCWARC_TO C.VGPathSegment = (11 << 1)
+	VG_SEGMENT_LCWARC_TO  C.VGPathSegment = (12 << 1)
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 
@@ -235,17 +252,17 @@ func (this *vgDriver) Do(surface khronos.EGLSurface, callback func() error) erro
 // TRANSLATION FUNCTIONS
 
 func (this *vgDriver) Translate(offset khronos.VGPoint) error {
-	C.vgTranslate(C.VGfloat(offset.X),C.VGfloat(offset.Y))
+	C.vgTranslate(C.VGfloat(offset.X), C.VGfloat(offset.Y))
 	return vgGetError()
 }
 
-func (this *vgDriver) Scale(x,y float32) error {
-	C.vgScale(C.VGfloat(x),C.VGfloat(y))
+func (this *vgDriver) Scale(x, y float32) error {
+	C.vgScale(C.VGfloat(x), C.VGfloat(y))
 	return vgGetError()
 }
 
-func (this *vgDriver) Shear(x,y float32) error {
-	C.vgShear(C.VGfloat(x),C.VGfloat(y))
+func (this *vgDriver) Shear(x, y float32) error {
+	C.vgShear(C.VGfloat(x), C.VGfloat(y))
 	return vgGetError()
 }
 
@@ -504,32 +521,51 @@ func (this *vgPath) Circle(center khronos.VGPoint, diameter float32) error {
 	return this.Ellipse(center, khronos.VGPoint{diameter, diameter})
 }
 
-
 // Close Path
 func (this *vgPath) Close() error {
-	return errors.New("Not implemented")
+	cmd := C.VGubyte(VG_SEGMENT_CLOSE_PATH)
+	C.vgAppendPathData(this.handle, C.VGint(1),&cmd, unsafe.Pointer(&khronos.VGZeroPoint))
+	return vgGetError()
 }
 
 // Move To
-func (this *vgPath) MoveTo(khronos.VGPoint) error {
-	return errors.New("Not implemented")
+func (this *vgPath) MoveTo(point khronos.VGPoint) error {
+	cmd := C.VGubyte(VG_SEGMENT_MOVE_TO)
+	C.vgAppendPathData(this.handle, C.VGint(1),&cmd,unsafe.Pointer(&point))
+	return vgGetError()
 }
 
 // Line To
-func (this *vgPath) LineTo(...khronos.VGPoint) error {
-	return errors.New("Not implemented")
+func (this *vgPath) LineTo(points ...khronos.VGPoint) error {
+	// Create an array of LINE_TO commands
+	cmd := make([]C.VGubyte,len(points))
+	for i, _ := range(points) {
+		cmd[i] = C.VGubyte(VG_SEGMENT_LINE_TO)
+	}
+	// Append path data
+	cmd_hdr := (*reflect.SliceHeader)(unsafe.Pointer(&cmd))
+	points_hdr := (*reflect.SliceHeader)(unsafe.Pointer(&points))
+	C.vgAppendPathData(this.handle, C.VGint(len(points)),(*C.VGubyte)(unsafe.Pointer(cmd_hdr.Data)),unsafe.Pointer(points_hdr.Data))
+	return vgGetError()
 }
 
 // Quad To
 func (this *vgPath) QuadTo(p1, p2 khronos.VGPoint) error {
-	return errors.New("Not implemented")
+	cmd := C.VGubyte(VG_SEGMENT_QUAD_TO)
+	points := []float32{ p1.X, p1.Y, p2.X, p2.Y }
+	C.vgAppendPathData(this.handle, C.VGint(1),&cmd,unsafe.Pointer(&points[0]))
+	return vgGetError()
 }
 
 // Cubic To
 func (this *vgPath) CubicTo(p1, p2, p3 khronos.VGPoint) error {
-	return errors.New("Not implemented")
+	cmd := C.VGubyte(VG_SEGMENT_QUAD_TO)
+	points := []float32{ p1.X, p1.Y, p2.X, p2.Y, p3.X, p3.Y }
+	C.vgAppendPathData(this.handle, C.VGint(1),&cmd,unsafe.Pointer(&points[0]))
+	return vgGetError()
 }
 
+// Clear surface to color
 func (this *vgDriver) Clear(surface khronos.EGLSurface, color khronos.VGColor) error {
 	size := surface.GetSize()
 	C.vgSetfv(C.VGParamType(VG_CLEAR_COLOR), C.VGint(4), (*C.VGfloat)(unsafe.Pointer(&color)))
@@ -582,7 +618,8 @@ func vgGetError() error {
 	if err == VG_NO_ERROR {
 		return nil
 	}
-	fmt.Println("******", vgError(err), "********") // REMOVE THIS CODE
+	//	fmt.Println("******", vgError(err), "********") // REMOVE THIS CODE
+	panic(vgError(err))
 	return vgError(err)
 }
 

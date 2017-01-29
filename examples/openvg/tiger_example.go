@@ -82,32 +82,34 @@ func ReadData(filename string) ([]string, []float32, error) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func (this *Operation) ParseFillOpcode(vg khronos.VGDriver,code string) error {
+func (this *Operation) ParseFillOpcode(vg khronos.VGDriver, code string) error {
 	var err error
 	switch code {
 	case "N":
 		this.fill = nil
 	case "F":
-		// TODO
 		this.fill, err = vg.CreatePaint(khronos.VGColorWhite)
 		if err != nil {
 			return err
 		}
-		fmt.Println("<fill non zero>")
+		if err := this.fill.SetFillRule(khronos.VG_STYLE_FILL_NONZERO); err != nil {
+			return err
+		}
 	case "E":
-		// TODO
 		this.fill, err = vg.CreatePaint(khronos.VGColorWhite)
 		if err != nil {
 			return err
 		}
-		fmt.Println("<fill even odd>")
+		if err := this.fill.SetFillRule(khronos.VG_STYLE_FILL_EVENODD); err != nil {
+			return err
+		}
 	default:
 		return errors.New("Invalid ParseFillOpcode value")
 	}
 	return nil
 }
 
-func (this *Operation) ParseStrokeOpcode(vg khronos.VGDriver,code string) error {
+func (this *Operation) ParseStrokeOpcode(vg khronos.VGDriver, code string) error {
 	var err error
 	switch code {
 	case "N":
@@ -124,83 +126,180 @@ func (this *Operation) ParseStrokeOpcode(vg khronos.VGDriver,code string) error 
 	return nil
 }
 
-func (this *Operation) ParseLineCapOpcode(vg khronos.VGDriver,code string) error {
+func (this *Operation) ParseLineCapOpcode(vg khronos.VGDriver, code string) error {
+	if this.stroke == nil {
+		return nil
+	}
 	switch code {
 	case "B":
-		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_NONE,khronos.VG_STYLE_CAP_BUTT)
+		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_NONE, khronos.VG_STYLE_CAP_BUTT)
 	case "R":
-		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_NONE,khronos.VG_STYLE_CAP_ROUND)
+		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_NONE, khronos.VG_STYLE_CAP_ROUND)
 	case "S":
-		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_NONE,khronos.VG_STYLE_CAP_SQUARE)
+		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_NONE, khronos.VG_STYLE_CAP_SQUARE)
 	default:
 		return errors.New("Invalid ParseLineCapOpcode value")
 	}
 	return nil
 }
 
-func (this *Operation) ParseLineJoinOpcode(vg khronos.VGDriver,code string) error {
+func (this *Operation) ParseLineJoinOpcode(vg khronos.VGDriver, code string) error {
+	if this.stroke == nil {
+		return nil
+	}
 	switch code {
 	case "M":
-		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_MITER,khronos.VG_STYLE_CAP_NONE)
+		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_MITER, khronos.VG_STYLE_CAP_NONE)
 	case "R":
-		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_ROUND,khronos.VG_STYLE_CAP_NONE)
+		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_ROUND, khronos.VG_STYLE_CAP_NONE)
 	case "B":
-		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_BEVEL,khronos.VG_STYLE_CAP_NONE)
+		return this.stroke.SetStrokeStyle(khronos.VG_STYLE_JOIN_BEVEL, khronos.VG_STYLE_CAP_NONE)
 	default:
 		return errors.New("Invalid ParseLineJoinOpcode value")
 	}
 	return nil
 }
 
-func (this *Operation) ParseMiterLimit(vg khronos.VGDriver,limit float32) error {
-	if this.stroke != nil {
-		return this.stroke.SetMiterLimit(limit)
-	} else {
+func (this *Operation) ParseMiterLimit(vg khronos.VGDriver, limit float32) error {
+	if this.stroke == nil {
 		return nil
 	}
+	return this.stroke.SetMiterLimit(limit)
 }
 
-func (this *Operation) ParseStrokeWidth(vg khronos.VGDriver,width float32) error {
-	if this.stroke != nil {
-		return this.stroke.SetStrokeWidth(width)
-	} else {
+func (this *Operation) ParseStrokeWidth(vg khronos.VGDriver, width float32) error {
+	if this.stroke == nil {
 		return nil
 	}
+	return this.stroke.SetStrokeWidth(width)
 }
 
-func (this *Operation) ParseStrokeColor(vg khronos.VGDriver,r, g, b float32) error {
-	if this.stroke != nil {
-		return this.stroke.SetColor(khronos.VGColor{r, g, b, 1.0})
-	} else {
+func (this *Operation) ParseStrokeColor(vg khronos.VGDriver, r, g, b float32) error {
+	if this.stroke == nil {
 		return nil
 	}
+	return this.stroke.SetColor(khronos.VGColor{r, g, b, 1.0})
 }
 
-func (this *Operation) ParseFillColor(vg khronos.VGDriver,r, g, b float32) error {
-	if this.fill != nil {
-		return this.fill.SetColor(khronos.VGColor{r, g, b, 1.0})
-	} else {
+func (this *Operation) ParseFillColor(vg khronos.VGDriver, r, g, b float32) error {
+	if this.fill == nil {
 		return nil
 	}
+	return this.fill.SetColor(khronos.VGColor{r, g, b, 1.0})
 }
 
-func (this *Operation) ParsePathPoint(vg khronos.VGDriver,opcode string, points []float32, i int) (int, error) {
+func (this *Operation) ParsePathPoint(vg khronos.VGDriver, opcode string, points []float32, i int) (int, error) {
 	switch opcode {
 	case "M":
-		this.path.MoveTo(khronos.VGPoint{ points[i], points[i+1] })
+		if err := this.path.MoveTo(khronos.VGPoint{points[i], points[i+1]}); err != nil {
+			return 0, err
+		}
 		return 2, nil
 	case "L":
-		this.path.LineTo(khronos.VGPoint{ points[i], points[i+1] })
+		if err := this.path.LineTo(khronos.VGPoint{points[i], points[i+1]}); err != nil {
+			return 0, err
+		}
 		return 2, nil
 	case "C":
-		this.path.CubicTo(khronos.VGPoint{ points[i], points[i+1] }, khronos.VGPoint{ points[i+2], points[i+3] },khronos.VGPoint{ points[i+4], points[i+5] })
+		if err := this.path.CubicTo(khronos.VGPoint{points[i], points[i+1]}, khronos.VGPoint{points[i+2], points[i+3]}, khronos.VGPoint{points[i+4], points[i+5]}); err != nil {
+			return 0, err
+		}
 		return 6, nil
 	case "E":
-		this.path.Close()
+		if err := this.path.Close(); err != nil {
+			return 0, err
+		}
 		return 0, nil
 	default:
 		return 0, errors.New("Invalid ParsePathPoint opcode value")
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func ProcessDataFromFile(app *app.App,filename string) ([]*Operation,error) {
+
+	// Read data from file
+	opcodes, values, err := ReadData(filename)
+	if err != nil {
+		return nil,err
+	}
+
+	// Create operations
+	operations := make([]*Operation,0,len(opcodes))
+	c := 0
+	v := 0
+	for c < len(opcodes) && v < len(values) {
+		app.Logger.Debug("=> Opcode %v", c)
+
+		op := new(Operation)
+		// Fill opcode
+		if err := op.ParseFillOpcode(app.OpenVG, opcodes[c]); err != nil {
+			return nil,err
+		}
+		c += 1
+
+		// Stroke opcode
+		if err := op.ParseStrokeOpcode(app.OpenVG, opcodes[c]); err != nil {
+			return nil,err
+		}
+		c += 1
+
+		// Line Cap
+		if err := op.ParseLineCapOpcode(app.OpenVG, opcodes[c]); err != nil {
+			return nil,err
+		}
+		c += 1
+
+		// Line Join
+		if err := op.ParseLineJoinOpcode(app.OpenVG, opcodes[c]); err != nil {
+			return nil,err
+		}
+		c += 1
+
+		// Miter Limit
+		if err := op.ParseMiterLimit(app.OpenVG, values[v]); err != nil {
+			return nil,err
+		}
+		v += 1
+
+		// Stroke Width
+		if err := op.ParseStrokeWidth(app.OpenVG, values[v]); err != nil {
+			return nil,err
+		}
+		v += 1
+
+		// Colors
+		if err := op.ParseStrokeColor(app.OpenVG, values[v], values[v+1], values[v+2]); err != nil {
+			return nil,err
+		}
+		v += 3
+		if err := op.ParseFillColor(app.OpenVG, values[v], values[v+1], values[v+2]); err != nil {
+			return nil,err
+		}
+		v += 3
+
+		// Path elements
+		elements := int(values[v])
+		if op.path, err = app.OpenVG.CreatePath(); err != nil {
+			return nil,err
+		}
+		v += 1
+
+		for i := 0; i < elements; i++ {
+			vinc, err := op.ParsePathPoint(app.OpenVG, opcodes[c], values, v)
+			if err != nil {
+				return nil,err
+			}
+			c += 1
+			v += vinc
+		}
+
+		// Append the OP into the array of ops
+		operations = append(operations,op)
+	}
+
+	return operations, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -210,81 +309,40 @@ func MyRunLoop(app *app.App) error {
 	if len(args) != 1 {
 		return app.Logger.Error("Missing data filename")
 	}
-	opcodes, values, err := ReadData(args[0])
+
+	// Create background surface
+	surface, err := app.EGL.CreateBackground("OpenVG", 1.0)
+	if err != nil {
+		return err
+	}
+	defer app.EGL.DestroySurface(surface)
+
+	// Read operations
+	operations, err := ProcessDataFromFile(app,args[0])
 	if err != nil {
 		return err
 	}
 
-	vg := app.OpenVG
-	c := 0
-	v := 0
-	for c < len(opcodes) && v < len(values) {
-		op := new(Operation)
-
-		// Fill opcode
-		if err := op.ParseFillOpcode(vg,opcodes[c]); err != nil {
-			return err
-		}
-		c += 1
-
-		// Stroke opcode
-		if err := op.ParseStrokeOpcode(vg,opcodes[c]); err != nil {
-			return err
-		}
-		c += 1
-
-		// Line Cap
-		if err := op.ParseLineCapOpcode(vg,opcodes[c]); err != nil {
-			return err
-		}
-		c += 1
-
-		// Line Join
-		if err := op.ParseLineJoinOpcode(vg,opcodes[c]); err != nil {
-			return err
-		}
-		c += 1
-
-		// Miter Limit
-		if err := op.ParseMiterLimit(vg,values[v]); err != nil {
-			return err
-		}
-		v += 1
-
-		// Stroke Width
-		if err := op.ParseStrokeWidth(vg,values[v]); err != nil {
-			return err
-		}
-		v += 1
-
-		// Colors
-		if err := op.ParseStrokeColor(vg,values[v], values[v+1], values[v+2]); err != nil {
-			return err
-		}
-		v += 3
-		if err := op.ParseFillColor(vg,values[v], values[v+1], values[v+2]); err != nil {
-			return err
-		}
-		v += 3
-
-		// Path elements
-		elements := int(values[v])
-		if op.path, err = vg.CreatePath(); err != nil {
-			return err
-		}
-		v += 1
-
-		for i := 0; i < elements; i++ {
-			vinc, err := op.ParsePathPoint(vg,opcodes[c], values, v)
-			if err != nil {
-				return err
+	r := float32(0)
+	for {
+		// Draw
+		app.OpenVG.Do(surface,func () error {
+			app.OpenVG.Clear(surface,khronos.VGColorLightGrey)
+			app.OpenVG.Rotate(r)
+			app.OpenVG.Scale(0.5,0.5)
+			for _, op := range operations {
+				if err := op.path.Draw(op.stroke,op.fill); err != nil {
+					return err
+				}
 			}
-			c += 1
-			v += vinc
-		}
-
-		// Append the OP into the array of ops
+			return nil
+		})
+		r = r + 0.5
 	}
+
+
+	// Wait until interrupted
+	app.WaitUntilDone()
 
 	return nil
 }
