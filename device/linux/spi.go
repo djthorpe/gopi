@@ -50,8 +50,8 @@ type SPI struct {
 	// Bus number
 	Bus     uint
 
-	// Channel number
-	Channel uint
+	// Slave number
+	Slave uint
 
 	// Transfer delay between blocks, in microseconds
 	Delay   uint16
@@ -67,8 +67,8 @@ type spiDriver struct {
 	// bus number
 	bus uint
 
-	// channel number
-	channel uint
+	// slave number
+	slave uint
 
 	// mode
 	mode hw.SPIMode
@@ -135,14 +135,14 @@ func (config SPI) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	// create new GPIO driver
 	this := new(spiDriver)
 	this.bus = config.Bus
-	this.channel = config.Channel
+	this.slave = config.Slave
 	this.delay_usec = config.Delay
 
 	// Set logging & device
 	this.log = log
 
 	// Open the device
-	this.dev, err = os.OpenFile(fmt.Sprintf("%v%v.%v", SPI_DEV, this.bus, this.channel), os.O_RDWR, 0)
+	this.dev, err = os.OpenFile(fmt.Sprintf("%v%v.%v", SPI_DEV, this.bus, this.slave), os.O_RDWR, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (this *spiDriver) Close() error {
 
 // Strinfigy SPI driver
 func (this *spiDriver) String() string {
-	return fmt.Sprintf("<linux.SPI>{ bus=%v channel=%v mode=%v delay=%vus max_speed=%vHz bits_per_word=%v }", this.bus, this.channel, this.mode, this.delay_usec, this.speed_hz, this.bits_per_word)
+	return fmt.Sprintf("<linux.SPI>{ bus=%v slave=%v mode=%v delay=%vus max_speed=%vHz bits_per_word=%v }", this.bus, this.slave, this.mode, this.delay_usec, this.speed_hz, this.bits_per_word)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -247,6 +247,46 @@ func (this *spiDriver) Transfer(send []byte) ([]byte,error) {
 		return nil, err
 	}
 	return recv, nil
+}
+
+func (this *spiDriver) Read(buffer_size uint32) ([]byte,error) {
+	if buffer_size == 0 {
+		return []byte{ },nil
+	}
+	recv := make([]byte,buffer_size)
+	message := spiMessage{
+		tx_buf: 0,
+		rx_buf: uint64(uintptr(unsafe.Pointer(&recv[0]))),
+		len: buffer_size,
+		speed_hz: this.speed_hz,
+		delay_usecs: this.delay_usec,
+		bits_per_word: this.bits_per_word,
+	}
+	err := this.ioctl(this.dev.Fd(),uintptr(C._SPI_IOC_MESSAGE(C.int(1))),unsafe.Pointer(&message))
+	if err != 0 {
+		return nil, err
+	}
+	return recv, nil
+}
+
+func (this *spiDriver) Write(send []byte) error {
+	buffer_size := len(send)
+	if buffer_size == 0 {
+		return nil
+	}
+	message := spiMessage{
+		tx_buf: uint64(uintptr(unsafe.Pointer(&send[0]))),
+		rx_buf: 0,
+		len: uint32(buffer_size),
+		speed_hz: this.speed_hz,
+		delay_usecs: this.delay_usec,
+		bits_per_word: this.bits_per_word,
+	}
+	err := this.ioctl(this.dev.Fd(),uintptr(C._SPI_IOC_MESSAGE(C.int(1))),unsafe.Pointer(&message))
+	if err != 0 {
+		return err
+	}
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

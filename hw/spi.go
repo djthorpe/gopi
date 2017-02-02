@@ -41,6 +41,12 @@ type SPIDriver interface {
 
 	// Read/Write
 	Transfer([]byte) ([]byte,error)
+
+	// Read
+	Read(len uint32) ([]byte,error)
+
+	// Write
+	Write([]byte) error
 }
 
 type SPIMode uint8

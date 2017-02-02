@@ -94,14 +94,14 @@ type AppConfig struct {
 	// The display number to open
 	Display uint16
 
-	// The I2C bus
+	// The I2C bus (usually 0 or 1)
 	I2CBus uint
 
-	// The SPI bus
+	// The SPI bus (usually 0)
 	SPIBus uint
 
-	// The SPI channel
-	SPIChannel uint
+	// The SPI slave (0 or 1)
+	SPISlave uint
 
 	// The file to log information to
 	LogFile string
@@ -187,10 +187,10 @@ func Config(flags AppFlags) AppConfig {
 		config.FlagSet.FlagUint("i2cbus", 1, "I2C Bus")
 	}
 
-	// Add -spibus and -spichannel
+	// Add -spibus and -spislave
 	if config.Features&(APP_SPI) != 0 {
 		config.FlagSet.FlagUint("spibus", 0, "SPI Bus")
-		config.FlagSet.FlagUint("spichannel", 0, "SPI Channel")
+		config.FlagSet.FlagUint("spislave", 0, "SPI Slave")
 	}
 
 	// Add -fontpath
@@ -395,14 +395,14 @@ func NewApp(config AppConfig) (*App, error) {
 	// Create the SPI interface
 	if config.Features&(APP_SPI) != 0 {
 		bus, exists1 := this.FlagSet.GetUint("spibus")
-		channel, exists2 := this.FlagSet.GetUint("spichannel")
+		slave, exists2 := this.FlagSet.GetUint("spislave")
 		if exists1 {
 			config.SPIBus = bus
 		}
 		if exists2 {
-			config.SPIChannel = channel
+			config.SPISlave = slave
 		}
-		spi, err := gopi.Open(linux.SPI{Bus: config.SPIBus, Channel: config.SPIChannel}, this.Logger)
+		spi, err := gopi.Open(linux.SPI{Bus: config.SPIBus, Slave: config.SPISlave}, this.Logger)
 		if err != nil {
 			this.Close()
 			return nil, err
