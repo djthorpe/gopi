@@ -139,11 +139,12 @@ In order to communicate with an SPI slave device, use the following methods:
 
 ## Example code
 
-You will find example code showing you how to develop applications here:
+You will find example code showing you how to develop applications in the `examples` directory:
 
 ### [`i2cdetect`](https://github.com/djthorpe/gopi/blob/master/examples/i2c/i2cdetect.go)
 
-Detects slaves on your I2C bus
+Detects slaves on your I2C bus. Will print a grid of devices and indicate
+which devices are connected to the I2C bus:
 
 ![alt text](assets/img/i2cdetect_screenshot.png "i2cdetect.go")
 
@@ -191,11 +192,13 @@ func main() {
 The application will create the following command-line flags which allow
 the user to select the correct bus and slave:
 
-  * `-i2cbus`
-  * `-spibus` 
-  * `-spislave` 
-  
+  * `-i2cbus` Command-line argument where `app.APP_I2C` flag is set
+  * `-spibus` Command-line argument where `app.APP_SPI` flag is set
+  * `-spislave` Command-line argument where `app.APP_SPI` flag is set
+
 It's up to your code to select the I2C slave, and so forth.
+
+
 
 
 
