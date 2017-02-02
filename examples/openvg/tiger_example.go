@@ -217,16 +217,16 @@ func (this *Operation) ParsePathPoint(vg khronos.VGDriver, opcode string, points
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func ProcessDataFromFile(app *app.App,filename string) ([]*Operation,error) {
+func ProcessDataFromFile(app *app.App, filename string) ([]*Operation, error) {
 
 	// Read data from file
 	opcodes, values, err := ReadData(filename)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	// Create operations
-	operations := make([]*Operation,0,len(opcodes))
+	operations := make([]*Operation, 0, len(opcodes))
 	c := 0
 	v := 0
 	for c < len(opcodes) && v < len(values) {
@@ -235,68 +235,68 @@ func ProcessDataFromFile(app *app.App,filename string) ([]*Operation,error) {
 		op := new(Operation)
 		// Fill opcode
 		if err := op.ParseFillOpcode(app.OpenVG, opcodes[c]); err != nil {
-			return nil,err
+			return nil, err
 		}
 		c += 1
 
 		// Stroke opcode
 		if err := op.ParseStrokeOpcode(app.OpenVG, opcodes[c]); err != nil {
-			return nil,err
+			return nil, err
 		}
 		c += 1
 
 		// Line Cap
 		if err := op.ParseLineCapOpcode(app.OpenVG, opcodes[c]); err != nil {
-			return nil,err
+			return nil, err
 		}
 		c += 1
 
 		// Line Join
 		if err := op.ParseLineJoinOpcode(app.OpenVG, opcodes[c]); err != nil {
-			return nil,err
+			return nil, err
 		}
 		c += 1
 
 		// Miter Limit
 		if err := op.ParseMiterLimit(app.OpenVG, values[v]); err != nil {
-			return nil,err
+			return nil, err
 		}
 		v += 1
 
 		// Stroke Width
 		if err := op.ParseStrokeWidth(app.OpenVG, values[v]); err != nil {
-			return nil,err
+			return nil, err
 		}
 		v += 1
 
 		// Colors
 		if err := op.ParseStrokeColor(app.OpenVG, values[v], values[v+1], values[v+2]); err != nil {
-			return nil,err
+			return nil, err
 		}
 		v += 3
 		if err := op.ParseFillColor(app.OpenVG, values[v], values[v+1], values[v+2]); err != nil {
-			return nil,err
+			return nil, err
 		}
 		v += 3
 
 		// Path elements
 		elements := int(values[v])
 		if op.path, err = app.OpenVG.CreatePath(); err != nil {
-			return nil,err
+			return nil, err
 		}
 		v += 1
 
 		for i := 0; i < elements; i++ {
 			vinc, err := op.ParsePathPoint(app.OpenVG, opcodes[c], values, v)
 			if err != nil {
-				return nil,err
+				return nil, err
 			}
 			c += 1
 			v += vinc
 		}
 
 		// Append the OP into the array of ops
-		operations = append(operations,op)
+		operations = append(operations, op)
 	}
 
 	return operations, nil
@@ -318,7 +318,7 @@ func MyRunLoop(app *app.App) error {
 	defer app.EGL.DestroySurface(surface)
 
 	// Read operations
-	operations, err := ProcessDataFromFile(app,args[0])
+	operations, err := ProcessDataFromFile(app, args[0])
 	if err != nil {
 		return err
 	}
@@ -326,12 +326,12 @@ func MyRunLoop(app *app.App) error {
 	r := float32(0)
 	for {
 		// Draw
-		app.OpenVG.Do(surface,func () error {
-			app.OpenVG.Clear(surface,khronos.VGColorLightGrey)
+		app.OpenVG.Do(surface, func() error {
+			app.OpenVG.Clear(surface, khronos.VGColorLightGrey)
 			app.OpenVG.Rotate(r)
-			app.OpenVG.Scale(0.5,0.5)
+			app.OpenVG.Scale(0.5, 0.5)
 			for _, op := range operations {
-				if err := op.path.Draw(op.stroke,op.fill); err != nil {
+				if err := op.path.Draw(op.stroke, op.fill); err != nil {
 					return err
 				}
 			}
@@ -339,7 +339,6 @@ func MyRunLoop(app *app.App) error {
 		})
 		r = r + 0.5
 	}
-
 
 	// Wait until interrupted
 	app.WaitUntilDone()

@@ -524,44 +524,44 @@ func (this *vgPath) Circle(center khronos.VGPoint, diameter float32) error {
 // Close Path
 func (this *vgPath) Close() error {
 	cmd := C.VGubyte(VG_SEGMENT_CLOSE_PATH)
-	C.vgAppendPathData(this.handle, C.VGint(1),&cmd, unsafe.Pointer(&khronos.VGZeroPoint))
+	C.vgAppendPathData(this.handle, C.VGint(1), &cmd, unsafe.Pointer(&khronos.VGZeroPoint))
 	return vgGetError()
 }
 
 // Move To
 func (this *vgPath) MoveTo(point khronos.VGPoint) error {
 	cmd := C.VGubyte(VG_SEGMENT_MOVE_TO)
-	C.vgAppendPathData(this.handle, C.VGint(1),&cmd,unsafe.Pointer(&point))
+	C.vgAppendPathData(this.handle, C.VGint(1), &cmd, unsafe.Pointer(&point))
 	return vgGetError()
 }
 
 // Line To
 func (this *vgPath) LineTo(points ...khronos.VGPoint) error {
 	// Create an array of LINE_TO commands
-	cmd := make([]C.VGubyte,len(points))
-	for i, _ := range(points) {
+	cmd := make([]C.VGubyte, len(points))
+	for i, _ := range points {
 		cmd[i] = C.VGubyte(VG_SEGMENT_LINE_TO)
 	}
 	// Append path data
 	cmd_hdr := (*reflect.SliceHeader)(unsafe.Pointer(&cmd))
 	points_hdr := (*reflect.SliceHeader)(unsafe.Pointer(&points))
-	C.vgAppendPathData(this.handle, C.VGint(len(points)),(*C.VGubyte)(unsafe.Pointer(cmd_hdr.Data)),unsafe.Pointer(points_hdr.Data))
+	C.vgAppendPathData(this.handle, C.VGint(len(points)), (*C.VGubyte)(unsafe.Pointer(cmd_hdr.Data)), unsafe.Pointer(points_hdr.Data))
 	return vgGetError()
 }
 
 // Quad To
 func (this *vgPath) QuadTo(p1, p2 khronos.VGPoint) error {
 	cmd := C.VGubyte(VG_SEGMENT_QUAD_TO)
-	points := []float32{ p1.X, p1.Y, p2.X, p2.Y }
-	C.vgAppendPathData(this.handle, C.VGint(1),&cmd,unsafe.Pointer(&points[0]))
+	points := []float32{p1.X, p1.Y, p2.X, p2.Y}
+	C.vgAppendPathData(this.handle, C.VGint(1), &cmd, unsafe.Pointer(&points[0]))
 	return vgGetError()
 }
 
 // Cubic To
 func (this *vgPath) CubicTo(p1, p2, p3 khronos.VGPoint) error {
 	cmd := C.VGubyte(VG_SEGMENT_QUAD_TO)
-	points := []float32{ p1.X, p1.Y, p2.X, p2.Y, p3.X, p3.Y }
-	C.vgAppendPathData(this.handle, C.VGint(1),&cmd,unsafe.Pointer(&points[0]))
+	points := []float32{p1.X, p1.Y, p2.X, p2.Y, p3.X, p3.Y}
+	C.vgAppendPathData(this.handle, C.VGint(1), &cmd, unsafe.Pointer(&points[0]))
 	return vgGetError()
 }
 
