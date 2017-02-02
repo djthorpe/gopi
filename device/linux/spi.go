@@ -39,6 +39,7 @@ static int _SPI_IOC_RD_MAX_SPEED_HZ() { return SPI_IOC_RD_MAX_SPEED_HZ; }
 static int _SPI_IOC_WR_MAX_SPEED_HZ() { return SPI_IOC_WR_MAX_SPEED_HZ; }
 static int _SPI_IOC_RD_MODE32() { return SPI_IOC_RD_MODE32; }
 static int _SPI_IOC_WR_MODE32() { return SPI_IOC_WR_MODE32; }
+static int _SPI_IOC_MESSAGE(int n) { return SPI_IOC_MESSAGE(n); }
 */
 import "C"
 
@@ -51,11 +52,33 @@ type SPI struct {
 }
 
 type spiDriver struct {
-	log     *util.LoggerDevice // logger
-	dev     *os.File
-	bus     uint
+	// logger
+	log *util.LoggerDevice
+
+	// device
+	dev *os.File
+
+	// bus number
+	bus uint
+
+	// channel number
 	channel uint
-	lock    sync.Mutex
+
+	// mutex lock
+	lock sync.Mutex
+}
+
+type spiMessage struct {
+	tx_buf        uint64
+	rx_buf        uint64
+	len           uint32
+	speed_hz      uint32
+	delay_usecs   uint16
+	bits_per_word uint8
+	cs_change     uint8
+	tx_nbits      uint8
+	rx_nbits      uint8
+	pad           uint16
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -131,6 +154,8 @@ func (this *spiDriver) String() string {
 
 func (this *spiDriver) GetMode() (hw.SPIMode, error) {
 	var mode uint8
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	err := spiIoctl(this.dev.Fd(), SPI_IOC_RD_MODE, unsafe.Pointer(&mode))
 	if err != 0 {
 		return hw.SPI_MODE_NONE, err
@@ -140,6 +165,8 @@ func (this *spiDriver) GetMode() (hw.SPIMode, error) {
 
 func (this *spiDriver) GetMaxSpeedHz() (uint32, error) {
 	var speed uint32
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	err := spiIoctl(this.dev.Fd(), SPI_IOC_RD_MAX_SPEED_HZ, unsafe.Pointer(&speed))
 	if err != 0 {
 		return 0, err
@@ -149,6 +176,8 @@ func (this *spiDriver) GetMaxSpeedHz() (uint32, error) {
 
 func (this *spiDriver) GetBitsPerWord() (uint8, error) {
 	var bits uint8
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	err := spiIoctl(this.dev.Fd(), SPI_IOC_RD_BITS_PER_WORD, unsafe.Pointer(&bits))
 	if err != 0 {
 		return 0, err
@@ -157,6 +186,8 @@ func (this *spiDriver) GetBitsPerWord() (uint8, error) {
 }
 
 func (this *spiDriver) SetMode(mode hw.SPIMode) error {
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	err := spiIoctl(this.dev.Fd(), SPI_IOC_WR_MODE, unsafe.Pointer(&mode))
 	if err != 0 {
 		return err
@@ -165,6 +196,8 @@ func (this *spiDriver) SetMode(mode hw.SPIMode) error {
 }
 
 func (this *spiDriver) SetMaxSpeedHz(speed uint32) error {
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	err := spiIoctl(this.dev.Fd(), SPI_IOC_WR_MAX_SPEED_HZ, unsafe.Pointer(&speed))
 	if err != 0 {
 		return err
@@ -173,6 +206,8 @@ func (this *spiDriver) SetMaxSpeedHz(speed uint32) error {
 }
 
 func (this *spiDriver) SetBitsPerWord(bits uint8) error {
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	err := spiIoctl(this.dev.Fd(), SPI_IOC_WR_BITS_PER_WORD, unsafe.Pointer(&bits))
 	if err != 0 {
 		return err

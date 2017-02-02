@@ -19,14 +19,46 @@ import (
 
 import (
 	app "github.com/djthorpe/gopi/app"
+	hw "github.com/djthorpe/gopi/hw"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func RunLoop(app *app.App) error {
-
 	// Debugging output
 	app.Logger.Debug("SPI=%v", app.SPI)
+
+	// Set mode
+	if mode, exists := app.FlagSet.GetUint("mode"); exists {
+		if err := app.SPI.SetMode(hw.SPIMode(mode)); err != nil {
+			return err
+		}
+	}
+
+	// Set bits
+	if bits, exists := app.FlagSet.GetUint("bits"); exists {
+		if err := app.SPI.SetBitsPerWord(uint8(bits)); err != nil {
+			return err
+		}
+	}
+
+	// Set speed
+	if speed, exists := app.FlagSet.GetUint("speed"); exists {
+		if err := app.SPI.SetMaxSpeedHz(uint32(speed)); err != nil {
+			return err
+		}
+	}
+
+	// Print information
+	if mode, err := app.SPI.GetMode(); err == nil {
+		fmt.Printf("Mode = %v\n",mode)
+	}
+	if bits, err := app.SPI.GetBitsPerWord(); err == nil {
+		fmt.Printf("Bits per word = %v\n",bits)
+	}
+	if speed, err := app.SPI.GetMaxSpeedHz(); err == nil {
+		fmt.Printf("Speed = %vHz\n",speed)
+	}
 
 	return nil
 }
@@ -34,6 +66,11 @@ func RunLoop(app *app.App) error {
 func main() {
 	// Create the config
 	config := app.Config(app.APP_SPI)
+
+	// Flags
+	config.FlagSet.FlagUint("mode",0, "Mode")
+	config.FlagSet.FlagUint("speed",0, "Maximum speed")
+	config.FlagSet.FlagUint("bits", 8, "Bits per word")
 
 	// Create the application
 	myapp, err := app.NewApp(config)
