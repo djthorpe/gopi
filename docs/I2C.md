@@ -145,6 +145,8 @@ You will find example code showing you how to develop applications here:
 
 Detects slaves on your I2C bus
 
+![alt text](assets/img/i2cdetect_screenshot.png "i2cdetect.go")
+
 ### [`i2cread`](https://github.com/djthorpe/gopi/blob/master/examples/i2c/i2cread.go)
 
 Reads values from an I2C slave device
