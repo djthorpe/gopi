@@ -28,7 +28,7 @@ import (
 // TYPES
 
 type I2C struct {
-	Bus    uint
+	Bus uint
 }
 
 type I2CDriver struct {

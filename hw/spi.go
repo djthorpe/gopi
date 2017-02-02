@@ -22,22 +22,22 @@ type SPIDriver interface {
 	gopi.Driver
 
 	// Set SPI mode
-	//SetMode(SPIMode) error
+	SetMode(SPIMode) error
 
 	// Get SPI mode
-	//GetMode() (SPIMode, error)
+	GetMode() (SPIMode, error)
 
 	// Set SPI speed
-	//SetMaxSpeedHz(uint32) error
+	SetMaxSpeedHz(uint32) error
 
 	// Get SPI speed
-	//GetMaxSpeedHz() (uint32, error)
+	GetMaxSpeedHz() (uint32, error)
 
 	// Set Bits Per Word
-	//SetBitsPerWord(uint8) error
+	SetBitsPerWord(uint8) error
 
 	// Get Bits Per Word
-	//GetBitsPerWord() (uint8, error)
+	GetBitsPerWord() (uint8, error)
 }
 
 type SPIMode uint8
@@ -52,13 +52,14 @@ const (
 	SPI_MODE_1    SPIMode = (0x00 | SPI_MODE_CPHA)
 	SPI_MODE_2    SPIMode = (SPI_MODE_CPOL | 0x00)
 	SPI_MODE_3    SPIMode = (SPI_MODE_CPOL | SPI_MODE_CPHA)
+	SPI_MODE_NONE SPIMode = 0xFF
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 
 func (m SPIMode) String() string {
-	switch(m) {
+	switch m {
 	case SPI_MODE_0:
 		return "SPI_MODE_0"
 	case SPI_MODE_1:
@@ -71,4 +72,3 @@ func (m SPIMode) String() string {
 		return "[?? Invalid SPIMode]"
 	}
 }
-
