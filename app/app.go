@@ -1,32 +1,14 @@
 /*
 	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016
+	(c) Copyright David Thorpe 2016-2017
 	All Rights Reserved
 
+	Documentation http://djthorpe.github.io/gopi/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-// APP
-//
-// This package provides the main application framework for developing
-// applications for the GOPI library. In order to create an application,
-// first create a configuration object, then create an application object
-// with your configuration. For example,
-//
-//    config := app.Config(flags)
-//    /* ... add additional configuration code here ... */
-//    app, err := app.NewApp(config)
-//    if err != nil { /* handle application error */ }
-//    defer app.Close()
-//
-// The application will create all the necessary subsystems you need for your
-// program, including hardware, display, GPU, GPIO, I2C and so forth. You
-// specify what features you need through the 'flags' when calling the app.Config
-// method.
-//
 package app /* import "github.com/djthorpe/gopi/app" */
 
-// import
 import (
 	"os"
 	"os/signal"
@@ -85,6 +67,9 @@ type App struct {
 	// The I2C driver
 	I2C hw.I2CDriver
 
+	// The SPI driver
+	SPI hw.SPIDriver
+
 	// The Input driver
 	Input hw.InputDriver
 
@@ -111,6 +96,12 @@ type AppConfig struct {
 
 	// The I2C bus
 	I2CBus uint
+
+	// The SPI bus
+	SPIBus uint
+
+	// The SPI channel
+	SPIChannel uint
 
 	// The file to log information to
 	LogFile string
@@ -143,12 +134,13 @@ const (
 	APP_DEVICE    AppFlags = 0x0001
 	APP_DISPLAY   AppFlags = 0x0002
 	APP_EGL       AppFlags = 0x0004
-	APP_OPENVG    AppFlags = 0x0008
-	APP_GPIO      AppFlags = 0x0010
-	APP_I2C       AppFlags = 0x0020
+	APP_OPENVG    AppFlags = 0x0010
+	APP_VGFONT    AppFlags = 0x0020
 	APP_OPENGL_ES AppFlags = 0x0040
-	APP_VGFONT    AppFlags = 0x0080
-	APP_INPUT     AppFlags = 0x0100
+	APP_GPIO      AppFlags = 0x0080
+	APP_I2C       AppFlags = 0x0100
+	APP_SPI       AppFlags = 0x0200
+	APP_INPUT     AppFlags = 0x0400
 )
 
 const (
@@ -193,6 +185,12 @@ func Config(flags AppFlags) AppConfig {
 	// Add -i2cbus
 	if config.Features&(APP_I2C) != 0 {
 		config.FlagSet.FlagUint("i2cbus", 1, "I2C Bus")
+	}
+
+	// Add -spibus and -spichannel
+	if config.Features&(APP_SPI) != 0 {
+		config.FlagSet.FlagUint("spibus", 0, "SPI Bus")
+		config.FlagSet.FlagUint("spichannel", 0, "SPI Channel")
 	}
 
 	// Add -fontpath
@@ -262,8 +260,8 @@ func NewApp(config AppConfig) (*App, error) {
 	this.Logger.SetLevel(config.LogLevel)
 
 	// Debugging
-	this.Logger.Debug("<App>Open device=%v display=%v egl=%v openvg=%v opengl_es=%v vgfont=%v input=%v gpio=%v i2c=%v",
-		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT|APP_GPIO|APP_I2C) != 0,
+	this.Logger.Debug("<App>Open device=%v display=%v egl=%v openvg=%v opengl_es=%v vgfont=%v input=%v gpio=%v i2c=%v spi=%v",
+		config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT|APP_GPIO) != 0,
 		config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT) != 0,
 		config.Features&(APP_EGL|APP_OPENVG|APP_OPENGL_ES) != 0,
 		config.Features&(APP_OPENVG) != 0,
@@ -272,6 +270,7 @@ func NewApp(config AppConfig) (*App, error) {
 		config.Features&(APP_INPUT) != 0,
 		config.Features&(APP_GPIO) != 0,
 		config.Features&(APP_I2C) != 0,
+		config.Features&(APP_SPI) != 0,
 	)
 
 	// Signal handlers
@@ -280,7 +279,7 @@ func NewApp(config AppConfig) (*App, error) {
 	signal.Notify(this.signal_channel, syscall.SIGTERM, syscall.SIGINT)
 
 	// Create the device
-	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT|APP_GPIO|APP_I2C) != 0 {
+	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT|APP_GPIO) != 0 {
 		device, err := gopi.Open(rpi.Hardware{}, this.Logger)
 		if err != nil {
 			this.Close()
@@ -393,6 +392,25 @@ func NewApp(config AppConfig) (*App, error) {
 		this.I2C = i2c.(hw.I2CDriver)
 	}
 
+	// Create the SPI interface
+	if config.Features&(APP_SPI) != 0 {
+		bus, exists1 := this.FlagSet.GetUint("spibus")
+		channel, exists2 := this.FlagSet.GetUint("spichannel")
+		if exists1 {
+			config.SPIBus = bus
+		}
+		if exists2 {
+			config.SPIChannel = channel
+		}
+		spi, err := gopi.Open(linux.SPI{Bus: config.SPIBus, Channel: config.SPIChannel}, this.Logger)
+		if err != nil {
+			this.Close()
+			return nil, err
+		}
+		// Convert device into a SPIDriver
+		this.SPI = spi.(hw.SPIDriver)
+	}
+
 	// success
 	return this, nil
 }
@@ -402,6 +420,12 @@ func NewApp(config AppConfig) (*App, error) {
 func (this *App) Close() error {
 	this.Logger.Debug2("<App>Close")
 
+	if this.SPI != nil {
+		if err := this.SPI.Close(); err != nil {
+			return err
+		}
+		this.SPI = nil
+	}
 	if this.I2C != nil {
 		if err := this.I2C.Close(); err != nil {
 			return err

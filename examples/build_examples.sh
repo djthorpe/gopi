@@ -44,6 +44,9 @@ go install -ldflags "${LDFLAGS}" examples/gpio/ledflash.go || exit -1
 echo "go install i2c/i2cdetect"
 go install -ldflags "${LDFLAGS}" examples/i2c/i2cdetect.go || exit -1
 
+echo "go install spi/spiutil"
+go install -ldflags "${LDFLAGS}" examples/spi/spiutil.go || exit -1
+
 echo "go install egl/snapshot"
 go install -ldflags "${LDFLAGS}" examples/egl/snapshot.go || exit -1
 
