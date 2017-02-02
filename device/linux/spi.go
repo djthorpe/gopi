@@ -47,8 +47,14 @@ import "C"
 // TYPES
 
 type SPI struct {
+	// Bus number
 	Bus     uint
+
+	// Channel number
 	Channel uint
+
+	// Transfer delay between blocks, in microseconds
+	Delay   uint16
 }
 
 type spiDriver struct {
@@ -63,6 +69,18 @@ type spiDriver struct {
 
 	// channel number
 	channel uint
+
+	// mode
+	mode hw.SPIMode
+
+	// maximum speed in hertz
+	speed_hz uint32
+
+	// bits per word
+	bits_per_word uint8
+
+	// Transfer delay
+	delay_usec uint16
 
 	// mutex lock
 	lock sync.Mutex
@@ -118,12 +136,27 @@ func (config SPI) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 	this := new(spiDriver)
 	this.bus = config.Bus
 	this.channel = config.Channel
+	this.delay_usec = config.Delay
 
 	// Set logging & device
 	this.log = log
 
 	// Open the device
 	this.dev, err = os.OpenFile(fmt.Sprintf("%v%v.%v", SPI_DEV, this.bus, this.channel), os.O_RDWR, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get current mode, speed and bits per word
+	this.mode, err = this.getMode()
+	if err != nil {
+		return nil, err
+	}
+	this.speed_hz, err = this.getMaxSpeedHz()
+	if err != nil {
+		return nil, err
+	}
+	this.bits_per_word, err = this.getBitsPerWord()
 	if err != nil {
 		return nil, err
 	}
@@ -143,83 +176,116 @@ func (this *spiDriver) Close() error {
 
 // Strinfigy SPI driver
 func (this *spiDriver) String() string {
-	mode, _ := this.GetMode()
-	speed, _ := this.GetMaxSpeedHz()
-	bits, _ := this.GetBitsPerWord()
-	return fmt.Sprintf("<linux.SPI>{ bus=%v channel=%v mode=%v max_speed=%vHz bits_per_word=%v }", this.bus, this.channel, mode, speed, bits)
+	return fmt.Sprintf("<linux.SPI>{ bus=%v channel=%v mode=%v delay=%vus max_speed=%vHz bits_per_word=%v }", this.bus, this.channel, this.mode, this.delay_usec, this.speed_hz, this.bits_per_word)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // READ AND WRITE MODE, SPEED AND BITS PER WORD
 
-func (this *spiDriver) GetMode() (hw.SPIMode, error) {
+func (this *spiDriver) GetMode() hw.SPIMode {
+	return this.mode
+}
+
+func (this *spiDriver) GetMaxSpeedHz() uint32 {
+	return this.speed_hz
+}
+
+func (this *spiDriver) GetBitsPerWord() uint8 {
+	return this.bits_per_word
+}
+
+func (this *spiDriver) SetMode(mode hw.SPIMode) error {
+	err := this.ioctl(this.dev.Fd(), SPI_IOC_WR_MODE, unsafe.Pointer(&mode))
+	if err != 0 {
+		return err
+	}
+	var err2 error
+	this.mode, err2 = this.getMode()
+	return err2
+}
+
+func (this *spiDriver) SetMaxSpeedHz(speed uint32) error {
+	err := this.ioctl(this.dev.Fd(), SPI_IOC_WR_MAX_SPEED_HZ, unsafe.Pointer(&speed))
+	if err != 0 {
+		return err
+	}
+	var err2 error
+	this.speed_hz, err2 = this.getMaxSpeedHz()
+	return err2
+}
+
+func (this *spiDriver) SetBitsPerWord(bits uint8) error {
+	err := this.ioctl(this.dev.Fd(), SPI_IOC_WR_BITS_PER_WORD, unsafe.Pointer(&bits))
+	if err != 0 {
+		return err
+	}
+	var err2 error
+	this.bits_per_word, err2 = this.getBitsPerWord()
+	return err2
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// TRANSFER
+
+func (this *spiDriver) Transfer(send []byte) ([]byte,error) {
+	buffer_size := len(send)
+	if buffer_size == 0 {
+		return []byte{ },nil
+	}
+	recv := make([]byte,buffer_size)
+	message := spiMessage{
+		tx_buf: uint64(uintptr(unsafe.Pointer(&send[0]))),
+		rx_buf: uint64(uintptr(unsafe.Pointer(&recv[0]))),
+		len: uint32(buffer_size),
+		speed_hz: this.speed_hz,
+		delay_usecs: this.delay_usec,
+		bits_per_word: this.bits_per_word,
+	}
+
+	err := this.ioctl(this.dev.Fd(),uintptr(C._SPI_IOC_MESSAGE(C.int(1))),unsafe.Pointer(&message))
+	if err != 0 {
+		return nil, err
+	}
+	return recv, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func (this *spiDriver) getMode() (hw.SPIMode, error) {
 	var mode uint8
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	err := spiIoctl(this.dev.Fd(), SPI_IOC_RD_MODE, unsafe.Pointer(&mode))
+
+	err := this.ioctl(this.dev.Fd(), SPI_IOC_RD_MODE, unsafe.Pointer(&mode))
 	if err != 0 {
 		return hw.SPI_MODE_NONE, err
 	}
 	return hw.SPIMode(mode), nil
 }
 
-func (this *spiDriver) GetMaxSpeedHz() (uint32, error) {
-	var speed uint32
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	err := spiIoctl(this.dev.Fd(), SPI_IOC_RD_MAX_SPEED_HZ, unsafe.Pointer(&speed))
+func (this *spiDriver) getMaxSpeedHz() (uint32, error) {
+	var speed_hz uint32
+
+	err := this.ioctl(this.dev.Fd(), SPI_IOC_RD_MAX_SPEED_HZ, unsafe.Pointer(&speed_hz))
 	if err != 0 {
 		return 0, err
 	}
-	return speed, nil
+	return speed_hz, nil
 }
 
-func (this *spiDriver) GetBitsPerWord() (uint8, error) {
-	var bits uint8
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	err := spiIoctl(this.dev.Fd(), SPI_IOC_RD_BITS_PER_WORD, unsafe.Pointer(&bits))
+func (this *spiDriver) getBitsPerWord() (uint8, error) {
+	var bits_per_word uint8
+
+	err := this.ioctl(this.dev.Fd(), SPI_IOC_RD_BITS_PER_WORD, unsafe.Pointer(&bits_per_word))
 	if err != 0 {
 		return 0, err
 	}
-	return bits, nil
+	return bits_per_word, nil
 }
-
-func (this *spiDriver) SetMode(mode hw.SPIMode) error {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	err := spiIoctl(this.dev.Fd(), SPI_IOC_WR_MODE, unsafe.Pointer(&mode))
-	if err != 0 {
-		return err
-	}
-	return nil
-}
-
-func (this *spiDriver) SetMaxSpeedHz(speed uint32) error {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	err := spiIoctl(this.dev.Fd(), SPI_IOC_WR_MAX_SPEED_HZ, unsafe.Pointer(&speed))
-	if err != 0 {
-		return err
-	}
-	return nil
-}
-
-func (this *spiDriver) SetBitsPerWord(bits uint8) error {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	err := spiIoctl(this.dev.Fd(), SPI_IOC_WR_BITS_PER_WORD, unsafe.Pointer(&bits))
-	if err != 0 {
-		return err
-	}
-	return nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
 
 // Call ioctl
-func spiIoctl(fd uintptr, name uintptr, data unsafe.Pointer) syscall.Errno {
+func (this *spiDriver) ioctl(fd uintptr, name uintptr, data unsafe.Pointer) syscall.Errno {
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	_, _, err := syscall.RawSyscall(syscall.SYS_IOCTL, fd, name, uintptr(data))
 	return err
 }

@@ -50,15 +50,15 @@ func RunLoop(app *app.App) error {
 	}
 
 	// Print information
-	if mode, err := app.SPI.GetMode(); err == nil {
-		fmt.Printf("Mode = %v\n",mode)
+	fmt.Printf("Mode = %v\n",app.SPI.GetMode())
+	fmt.Printf("Bits per word = %v\n",app.SPI.GetBitsPerWord())
+	fmt.Printf("Speed = %vHz\n",app.SPI.GetMaxSpeedHz())
+
+	bytes, err := app.SPI.Transfer([]byte{ 0x00 })
+	if err != nil {
+		return err
 	}
-	if bits, err := app.SPI.GetBitsPerWord(); err == nil {
-		fmt.Printf("Bits per word = %v\n",bits)
-	}
-	if speed, err := app.SPI.GetMaxSpeedHz(); err == nil {
-		fmt.Printf("Speed = %vHz\n",speed)
-	}
+	fmt.Printf("Bytes = %v\n",bytes)
 
 	return nil
 }

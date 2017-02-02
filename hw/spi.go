@@ -25,19 +25,22 @@ type SPIDriver interface {
 	SetMode(SPIMode) error
 
 	// Get SPI mode
-	GetMode() (SPIMode, error)
+	GetMode() SPIMode
 
 	// Set SPI speed
 	SetMaxSpeedHz(uint32) error
 
 	// Get SPI speed
-	GetMaxSpeedHz() (uint32, error)
+	GetMaxSpeedHz() uint32
 
 	// Set Bits Per Word
 	SetBitsPerWord(uint8) error
 
 	// Get Bits Per Word
-	GetBitsPerWord() (uint8, error)
+	GetBitsPerWord() uint8
+
+	// Read/Write
+	Transfer([]byte) ([]byte,error)
 }
 
 type SPIMode uint8
