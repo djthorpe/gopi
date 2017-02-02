@@ -141,23 +141,17 @@ In order to communicate with an SPI slave device, use the following methods:
 
 You will find example code showing you how to develop applications here:
 
-### `i2cdetect`
+### [`i2cdetect`](https://github.com/djthorpe/gopi/blob/master/examples/i2c/i2cdetect.go)
 
 Detects slaves on your I2C bus
 
-[link](https://github.com/djthorpe/gopi/blob/master/examples/i2c/i2cdetect.go)
-
-### `i2cread`
+### [`i2cread`](https://github.com/djthorpe/gopi/blob/master/examples/i2c/i2cread.go)
 
 Reads values from an I2C slave device
 
-[link](https://github.com/djthorpe/gopi/blob/master/examples/i2c/i2cread.go)
-
-### `spiutil`
+### [`spiutil`](https://github.com/djthorpe/gopi/blob/master/examples/spi/spiutil.go)
 
 Set speed, mode and number of bits
-
-[link](https://github.com/djthorpe/gopi/blob/master/examples/spi/spiutil.go)
 
 ## Device communication and the Application Framework
 
