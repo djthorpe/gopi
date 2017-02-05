@@ -227,7 +227,7 @@ func (this *spiDriver) SetBitsPerWord(bits uint8) error {
 ////////////////////////////////////////////////////////////////////////////////
 // TRANSFER
 
-func (this *spiDriver) Transfer(send []byte) ([]byte,error) {
+func (this *spiDriver) Transfer(send []byte,cs_change bool) ([]byte,error) {
 	buffer_size := len(send)
 	if buffer_size == 0 {
 		return []byte{ },nil
@@ -240,6 +240,7 @@ func (this *spiDriver) Transfer(send []byte) ([]byte,error) {
 		speed_hz: this.speed_hz,
 		delay_usecs: this.delay_usec,
 		bits_per_word: this.bits_per_word,
+		cs_change: to_uint8(cs_change),
 	}
 
 	err := this.ioctl(this.dev.Fd(),uintptr(C._SPI_IOC_MESSAGE(C.int(1))),unsafe.Pointer(&message))
@@ -249,7 +250,7 @@ func (this *spiDriver) Transfer(send []byte) ([]byte,error) {
 	return recv, nil
 }
 
-func (this *spiDriver) Read(buffer_size uint32) ([]byte,error) {
+func (this *spiDriver) Read(buffer_size uint32,cs_change bool) ([]byte,error) {
 	if buffer_size == 0 {
 		return []byte{ },nil
 	}
@@ -261,6 +262,7 @@ func (this *spiDriver) Read(buffer_size uint32) ([]byte,error) {
 		speed_hz: this.speed_hz,
 		delay_usecs: this.delay_usec,
 		bits_per_word: this.bits_per_word,
+		cs_change: to_uint8(cs_change),
 	}
 	err := this.ioctl(this.dev.Fd(),uintptr(C._SPI_IOC_MESSAGE(C.int(1))),unsafe.Pointer(&message))
 	if err != 0 {
@@ -269,7 +271,7 @@ func (this *spiDriver) Read(buffer_size uint32) ([]byte,error) {
 	return recv, nil
 }
 
-func (this *spiDriver) Write(send []byte) error {
+func (this *spiDriver) Write(send []byte,cs_change bool) error {
 	buffer_size := len(send)
 	if buffer_size == 0 {
 		return nil
@@ -281,6 +283,7 @@ func (this *spiDriver) Write(send []byte) error {
 		speed_hz: this.speed_hz,
 		delay_usecs: this.delay_usec,
 		bits_per_word: this.bits_per_word,
+		cs_change: to_uint8(cs_change),
 	}
 	err := this.ioctl(this.dev.Fd(),uintptr(C._SPI_IOC_MESSAGE(C.int(1))),unsafe.Pointer(&message))
 	if err != 0 {
@@ -329,3 +332,12 @@ func (this *spiDriver) ioctl(fd uintptr, name uintptr, data unsafe.Pointer) sysc
 	_, _, err := syscall.RawSyscall(syscall.SYS_IOCTL, fd, name, uintptr(data))
 	return err
 }
+
+// CS Change
+func to_uint8(value bool) uint8 {
+	if value {
+		return 1
+	}
+	return 0
+}
+

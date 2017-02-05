@@ -9,6 +9,16 @@
 
 package linux /* import "github.com/djthorpe/gopi/device/linux" */
 
+import (
+	"fmt"
+)
+
+import (
+	gopi "github.com/djthorpe/gopi"
+	util "github.com/djthorpe/gopi/util"
+	hw "github.com/djthorpe/gopi/hw"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -30,7 +40,6 @@ const (
 // OPEN AND CLOSE
 
 func (config GPIO) Open(log *util.LoggerDevice) (gopi.Driver, error) {
-	var err error
 	log.Debug("<linux.GPIO>Open")
 
 	// create new GPIO driver
@@ -38,6 +47,8 @@ func (config GPIO) Open(log *util.LoggerDevice) (gopi.Driver, error) {
 
 	// Set logging & device
 	this.log = log
+
+	// TODO
 
 	// success
 	return this, nil
