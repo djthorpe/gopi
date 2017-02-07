@@ -40,13 +40,13 @@ type SPIDriver interface {
 	GetBitsPerWord() uint8
 
 	// Read/Write
-	Transfer(send []byte,cs_change bool) ([]byte,error)
+	Transfer(send []byte) ([]byte,error)
 
 	// Read
-	Read(len uint32,cs_change bool) ([]byte,error)
+	Read(len uint32) ([]byte,error)
 
 	// Write
-	Write(send []byte,cs_change bool) error
+	Write(send []byte) error
 }
 
 type SPIMode uint8
