@@ -79,6 +79,9 @@ type App struct {
 	// Signal to place a finish bool on to indicate application should end
 	finish_channel chan bool
 
+	// Array of done channels which receive signals when the app is signaled as done
+	done_channels []chan bool
+
 	// debug, verbose and done flags
 	debug, verbose, done bool
 }
@@ -273,9 +276,10 @@ func NewApp(config AppConfig) (*App, error) {
 		config.Features&(APP_SPI) != 0,
 	)
 
-	// Signal handlers
+	// Signal handlers and channels
 	this.signal_channel = make(chan os.Signal, 1)
 	this.finish_channel = make(chan bool, 1)
+	this.done_channels = make([]chan bool, 0)
 	signal.Notify(this.signal_channel, syscall.SIGTERM, syscall.SIGINT)
 
 	// Create the device
@@ -512,17 +516,40 @@ func (this *App) Run(callback AppCallback) error {
 }
 
 // Wait until the finish channel has an event on it
-func (this *App) WaitUntilDone() {
+func (this *App) WaitUntilDone(finished_channels ...chan bool) {
 	this.Logger.Debug2("<App>WaitUntilDone")
 
 	// Runloop accepting events, until done
 	for this.done == false {
 		select {
-		case _ = <-this.finish_channel:
+		case <-this.finish_channel:
 			this.done = true
 			break
 		}
 	}
+
+	// Signal done and then wait for finishes
+	if len(this.done_channels) > 0 {
+		this.Logger.Debug2("<App>Signalling all tasks done")
+	}
+	for _, done_channel := range this.done_channels {
+		done_channel <- true
+	}
+
+	// Wait for all finished_channels to complete
+	if len(finished_channels) > 0 {
+		this.Logger.Debug2("<App>Waiting for all finished signals to return")
+	}
+	for _, finish_channel := range finished_channels {
+		<- finish_channel
+	}
+}
+
+// Return new channel which is signalled when Done has been set
+func (this *App) GetDoneChannel() chan bool {
+	done_channel := make(chan bool)
+	this.done_channels = append(this.done_channels,done_channel)
+	return done_channel
 }
 
 // Set the Done signal which terminates the WaitUntilDone loop

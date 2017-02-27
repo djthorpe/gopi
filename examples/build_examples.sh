@@ -23,11 +23,14 @@ fi
 ##############################################################
 # install
 
-echo "go install helloworld/helloworld_example"
-go install -ldflags "${LDFLAGS}" examples/helloworld/helloworld_example.go || exit -1
+echo "go install app/helloworld_example"
+go install -ldflags "${LDFLAGS}" examples/app/helloworld_example.go || exit -1
 
 echo "go install app/log_example"
 go install -ldflags "${LDFLAGS}" examples/app/log_example.go || exit -1
+
+echo "go install app/task_example"
+go install -ldflags "${LDFLAGS}" examples/app/task_example.go || exit -1
 
 echo "go install display/display_example"
 go install -ldflags "${LDFLAGS}" examples/display/display_example.go || exit -1
