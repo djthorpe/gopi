@@ -21,7 +21,6 @@ import (
 
 import (
 	gopi "github.com/djthorpe/gopi"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,7 +31,7 @@ type I2C struct {
 }
 
 type I2CDriver struct {
-	log   *util.LoggerDevice // logger
+	log   gopi.Logger
 	bus   uint
 	slave uint8
 	dev   *os.File
@@ -124,7 +123,7 @@ var (
 // OPEN AND CLOSE
 
 // Create new I2C object, returns error if not possible
-func (config I2C) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config I2C) Open(log gopi.Logger) (gopi.Driver, error) {
 	log.Debug("<linux.I2C>Open")
 
 	var err error

@@ -19,7 +19,6 @@ import (
 	gopi "github.com/djthorpe/gopi"
 	hw "github.com/djthorpe/gopi/hw"
 	khronos "github.com/djthorpe/gopi/khronos"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +51,7 @@ type evDevice struct {
 	uniq string
 
 	// logging object
-	log *util.LoggerDevice
+	log gopi.Logger
 
 	// The type of device, or NONE if not known
 	device_type hw.InputDeviceType
@@ -108,7 +107,7 @@ const (
 // OPEN AND CLOSE
 
 // Create new InputDevice object or return error
-func (config InputDevice) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config InputDevice) Open(log gopi.Logger) (gopi.Driver, error) {
 	var err error
 
 	log.Debug("<linux.InputDevice>Open path=%v", config.Path)

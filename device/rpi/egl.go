@@ -16,7 +16,6 @@ import (
 import (
 	gopi "github.com/djthorpe/gopi"
 	khronos "github.com/djthorpe/gopi/khronos"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +52,7 @@ type eglDriver struct {
 	major, minor int
 	dx           *DXDisplay
 	display      eglDisplay
-	log          *util.LoggerDevice
+	log          gopi.Logger
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,7 +155,7 @@ var (
 // PUBLIC FUNCTIONS
 
 // Open
-func (config EGL) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config EGL) Open(log gopi.Logger) (gopi.Driver, error) {
 	this := new(eglDriver)
 	this.log = log
 
@@ -218,11 +217,6 @@ func (this *eglDriver) String() string {
 	}
 
 	return "<rpi.EGL>{ " + strings.Join(parts, " ") + "}"
-}
-
-// Return the logging object
-func (this *eglDriver) Log() *util.LoggerDevice {
-	return this.log
 }
 
 // Return major and minor version of EGL

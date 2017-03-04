@@ -16,7 +16,6 @@ import (
 import (
 	gopi "github.com/djthorpe/gopi"
 	khronos "github.com/djthorpe/gopi/khronos"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -48,7 +47,7 @@ type DXDisplay struct {
 	height  uint32
 	ppi     uint32
 	handle  dxDisplayHandle
-	log     *util.LoggerDevice
+	log     gopi.Logger
 }
 
 type DXModeInfo struct {
@@ -73,7 +72,7 @@ const (
 // OPEN AND CLOSE
 
 // Create new Display object, returns error if not possible
-func (config DXDisplayConfig) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config DXDisplayConfig) Open(log gopi.Logger) (gopi.Driver, error) {
 	log.Debug("<rpi.DXDisplay>Open display=%v", config.Display)
 
 	// create new display object

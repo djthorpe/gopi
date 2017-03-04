@@ -22,7 +22,6 @@ import (
 import (
 	gopi "github.com/djthorpe/gopi"
 	khronos "github.com/djthorpe/gopi/khronos"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +49,7 @@ type VGFont struct {
 // VGFont driver
 type vgfDriver struct {
 	handle C.FT_Library
-	log    *util.LoggerDevice
+	log    gopi.Logger
 	count  uint
 	lock   sync.Mutex
 	faces  []*vgfFace
@@ -119,7 +118,7 @@ const (
 // PUBLIC FUNCTIONS
 
 // Open the driver
-func (config VGFont) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config VGFont) Open(log gopi.Logger) (gopi.Driver, error) {
 	this := new(vgfDriver)
 	this.log = log
 	this.count = 0

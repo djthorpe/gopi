@@ -129,6 +129,6 @@ func NewError(err error) Error {
 	return Error{reason: err.Error()}
 }
 
-func (this *Error) Error() string {
-	return this.reason
+func (err Error) Error() string {
+	return err.reason
 }

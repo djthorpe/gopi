@@ -20,7 +20,6 @@ import (
 import (
 	gopi "github.com/djthorpe/gopi"
 	hw "github.com/djthorpe/gopi/hw"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -31,7 +30,7 @@ type GPIO struct {
 }
 
 type GPIODriver struct {
-	log      *util.LoggerDevice // logger
+	log      gopi.Logger
 	memlock  sync.Mutex
 	model    Model               // Device model
 	revision PCBRevision         // PCB revision
@@ -126,7 +125,7 @@ var (
 // OPEN AND CLOSE
 
 // Create new Display object, returns error if not possible
-func (config GPIO) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config GPIO) Open(log gopi.Logger) (gopi.Driver, error) {
 	var err error
 	log.Debug("<rpi.GPIO>Open")
 

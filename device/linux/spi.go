@@ -20,7 +20,6 @@ import (
 import (
 	gopi "github.com/djthorpe/gopi"
 	hw "github.com/djthorpe/gopi/hw"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,7 +58,7 @@ type SPI struct {
 
 type spiDriver struct {
 	// logger
-	log *util.LoggerDevice
+	log gopi.Logger
 
 	// device
 	dev *os.File
@@ -127,7 +126,7 @@ var (
 // OPEN AND CLOSE
 
 // Create new SPI object, returns error if not possible
-func (config SPI) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config SPI) Open(log gopi.Logger) (gopi.Driver, error) {
 	log.Debug("<linux.SPI>Open")
 
 	var err error

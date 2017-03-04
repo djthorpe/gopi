@@ -18,7 +18,6 @@ import (
 
 import (
 	gopi "github.com/djthorpe/gopi"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,7 +29,7 @@ type I2C struct {
 }
 
 type I2CDriver struct {
-	log     *util.LoggerDevice // logger
+	log     gopi.Logger
 	memlock sync.Mutex
 	master  uint
 	mem8    []uint8  // access I2C registers as bytes
@@ -69,7 +68,7 @@ const (
 // OPEN AND CLOSE
 
 // Create new I2C object, returns error if not possible
-func (config I2C) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config I2C) Open(log gopi.Logger) (gopi.Driver, error) {
 	var err error
 	log.Debug("<rpi.I2C>Open")
 

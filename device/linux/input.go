@@ -18,7 +18,6 @@ import (
 import (
 	gopi "github.com/djthorpe/gopi"
 	hw "github.com/djthorpe/gopi/hw"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +35,7 @@ type InputDriver struct {
 	exclusive bool
 
 	// Logger
-	log *util.LoggerDevice
+	log gopi.Logger
 
 	// Map of input devices (keyed by their file descriptor)
 	devices map[int]*evDevice // input devices
@@ -57,7 +56,7 @@ const (
 // OPEN AND CLOSE
 
 // Create new Input object, returns error if not possible
-func (config Input) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config Input) Open(log gopi.Logger) (gopi.Driver, error) {
 	var err error
 
 	log.Debug("<linux.Input>Open")
@@ -120,12 +119,13 @@ func (this *InputDriver) OpenDevicesByName(alias string, flags hw.InputDeviceTyp
 		device := this.evDeviceByPath(path)
 		if device == nil {
 			// we open the device here
-			gopi_device, err := gopi.Open(InputDevice{Path: path, Exclusive: this.exclusive}, this.log)
-			if err != nil {
+			var err gopi.Error
+			if gopi_device, ok := gopi.Open2(InputDevice{Path: path, Exclusive: this.exclusive}, this.log, &err).(*evDevice); !ok {
 				this.log.Warn("<linux.Input>OpenDevicesByName path=%v Error: %v", path, err)
 				return
+			} else {
+				new_devices = append(new_devices, gopi_device)
 			}
-			new_devices = append(new_devices, gopi_device.(*evDevice))
 		}
 	})
 

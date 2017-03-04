@@ -17,7 +17,6 @@ import (
 
 import (
 	gopi "github.com/djthorpe/gopi"
-	util "github.com/djthorpe/gopi/util"
 )
 
 /*
@@ -38,7 +37,7 @@ import "C"
 type Hardware struct{}
 
 type Device struct {
-	log      *util.LoggerDevice // logger
+	log      gopi.Logger
 	service  int                // service number
 	serial   uint64
 	revision uint32
@@ -83,7 +82,7 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // Open and close device
 
-func (config Hardware) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config Hardware) Open(log gopi.Logger) (gopi.Driver, error) {
 	log.Debug2("<rpi.Device>Open")
 	if err := bcmHostInit(); err != nil {
 		return nil, err
@@ -414,7 +413,7 @@ func bcmHostTerminate() error {
 	return nil
 }
 
-func vcGencmdInit(log *util.LoggerDevice) (int, error) {
+func vcGencmdInit(log gopi.Logger) (int, error) {
 	service := int(C.vc_gencmd_init())
 	if service < 0 {
 		return -1, log.Error("vc_gencmd_init failed")

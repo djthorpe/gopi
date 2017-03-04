@@ -18,7 +18,7 @@ import (
 )
 
 import (
-	util "github.com/djthorpe/gopi/util"
+	gopi "github.com/djthorpe/gopi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -31,7 +31,7 @@ type PollDriver struct {
 	handle int
 
 	// Logging
-	log *util.LoggerDevice
+	log gopi.Logger
 
 	// Exclusive lock
 	lock sync.Mutex
@@ -70,7 +70,7 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
 
-func NewPollDriver(log *util.LoggerDevice) (*PollDriver, error) {
+func NewPollDriver(log gopi.Logger) (*PollDriver, error) {
 	var err error
 
 	log.Debug("<linux.Poll>Open")

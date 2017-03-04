@@ -20,7 +20,6 @@ import (
 import (
 	gopi "github.com/djthorpe/gopi"
 	khronos "github.com/djthorpe/gopi/khronos"
-	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,7 +43,7 @@ type OpenVG struct {
 
 // EGL driver
 type vgDriver struct {
-	log   *util.LoggerDevice
+	log   gopi.Logger
 	egl   *eglDriver
 	lock  sync.Mutex
 	path  map[C.VGPath]*vgPath
@@ -54,7 +53,7 @@ type vgDriver struct {
 // Paths
 type vgPath struct {
 	handle C.VGPath
-	log    *util.LoggerDevice
+	log    gopi.Logger
 }
 
 // Paints
@@ -66,7 +65,7 @@ type vgPaint struct {
 	dash_pattern []float32
 	fill_rule    khronos.VGFillRule
 	miter_limit  float32
-	log          *util.LoggerDevice
+	log          gopi.Logger
 }
 
 // Errors
@@ -166,7 +165,7 @@ const (
 // PUBLIC FUNCTIONS
 
 // Open
-func (config OpenVG) Open(log *util.LoggerDevice) (gopi.Driver, error) {
+func (config OpenVG) Open(log gopi.Logger) (gopi.Driver, error) {
 	this := new(vgDriver)
 	this.log = log
 	this.log.Debug2("<rpi.OpenVG>Open")

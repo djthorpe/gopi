@@ -213,6 +213,7 @@ func Config(flags AppFlags) AppConfig {
 // application. Other errors might occur depending what features have been
 // requests for the application.
 func NewApp(config AppConfig) (*App, error) {
+	var gopi_err gopi.Error
 	var err error
 
 	// Parse command-line flags
@@ -287,13 +288,10 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Create the device
 	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT|APP_GPIO) != 0 {
-		device, err := gopi.Open(rpi.Hardware{}, this.Logger)
-		if err != nil {
+		if this.Device = gopi.Open2(rpi.Hardware{}, this.Logger,&gopi_err).(gopi.HardwareDriver); this.Device == nil {
 			this.Close()
-			return nil, err
+			return nil, gopi_err
 		}
-		// Convert device into a HardwareDriver
-		this.Device = device.(gopi.HardwareDriver)
 	}
 
 	// Create the display
