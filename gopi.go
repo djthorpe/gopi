@@ -76,7 +76,22 @@ type DisplayDriver interface {
 // concrete driver
 type Config interface {
 	// Opens the driver from configuration, or returns error
-	Open(*util.LoggerDevice) (Driver, error)
+	Open(Logger) (Driver, error)
+}
+
+// Abstract logging interface
+type Logger interface {
+	Fatal(format string, v ...interface{}) error
+	Error(format string, v ...interface{}) error
+	Warn(format string, v ...interface{})
+	Info(format string, v ...interface{})
+	Debug(format string, v ...interface{})
+	Debug2(format string, v ...interface{})
+}
+
+// Error type
+type Error struct {
+	reason string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,4 +112,45 @@ func Open(config Config, log *util.LoggerDevice) (Driver, error) {
 		return nil, err
 	}
 	return driver, nil
+}
+
+// Open a driver - opens the concrete version given the config method
+// and only returns the driver (or nil). Will return an error as a
+// passes argument.
+func Open2(config Config, log Logger, error_ref *Error) Driver {
+	var err error
+	var driver Driver
+
+	// Create a null logging object if no logger specified
+	if log == nil {
+		log, err = util.Logger(util.NullLogger{})
+	}
+
+	// Create driver
+	if err == nil {
+		driver, err = config.Open(log)
+	}
+
+	// Return error
+	if err != nil {
+		if error_ref != nil {
+			*error_ref = NewError(err)
+		}
+		return nil
+	}
+
+	// Return success
+	return driver
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ERROR IMPLEMENTATION
+
+// Create a gopi.Error object
+func NewError(err error) Error {
+	return Error{reason: err.Error()}
+}
+
+func (this *Error) Error() string {
+	return this.reason
 }
