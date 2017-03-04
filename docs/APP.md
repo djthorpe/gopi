@@ -14,6 +14,8 @@ func main() {
 	// Create the configuration
 	config := app.Config(app.APP_GPIO)
 
+	// TODO: Add command-line flags required here
+
 	// Create the application
 	myapp, err := app.NewApp(config)
 	if err != nil {
@@ -23,7 +25,7 @@ func main() {
 	defer myapp.Close()
 
 	// Run the application
-	if err := myapp.Run(RunLoop); err != nil {
+	if err := myapp.Run(RunTasks); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
 	}
@@ -35,6 +37,25 @@ Here, you are creating a configuration file which indicates you want to use
 the GPIO subsystem. You can combine with other subsystem flags, for example,
 `app.APP_GPIO | app.APP_I2C` could be used to indicate you want to use
 both the GPIO and I2C peripheral interfaces.
+
+Your `RunTasks` function may simply kick off some background tasks, and wait
+for completion:
+
+```go
+func RunTasks(app *app.App) error {
+
+	// Run two tasks in the background and wait until CTRL+C is pressed and/or
+	// both tasks complete
+	app.WaitUntilDone(app.RunTask(TaskA,"app.TaskA"),app.RunTask(TaskB,"app.TaskB"))
+
+	// Return success
+	return nil
+}
+```
+
+The application framework supports both command applications (which take in
+flags and arguments, perform operations and then return) and run-loop based
+applications (which continue running and processing events until interrupted).
 
 The following documentaton covers the following topics:
 
