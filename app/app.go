@@ -123,7 +123,10 @@ type AppConfig struct {
 }
 
 // Run callback
-type AppCallback func(*App) error
+type AppCallback func(app *App) error
+
+// Task callback
+type TaskCallback func(app *App,name string,done chan bool)
 
 // Application flags
 type AppFlags uint
@@ -513,6 +516,15 @@ func (this *App) Run(callback AppCallback) error {
 	// TODO: Remove signal handlers
 
 	return nil
+}
+
+// Start an application task in the background and return
+// a messaging channel
+func (this *App) RunTask(task TaskCallback,name string) chan bool {
+	this.Logger.Debug2("<App>RunTask{ name=%v }",name)
+	task_done := make(chan bool)
+	go task(this,name,task_done)
+	return task_done
 }
 
 // Wait until the finish channel has an event on it

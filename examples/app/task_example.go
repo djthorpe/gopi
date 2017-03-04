@@ -22,9 +22,9 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func Task(app *app.App,tick_duration time.Duration,name string,task_done chan bool) {
+func Task(app *app.App,task_name string,task_done chan bool) {
 	// Tick every second
-	ticker := time.Tick(tick_duration)
+	ticker := time.Tick(time.Second)
 
 	// Get done channel
 	finish := app.GetDoneChannel()
@@ -33,37 +33,27 @@ func Task(app *app.App,tick_duration time.Duration,name string,task_done chan bo
 	outer_loop: for {
 		select {
 		case <- ticker:
-			app.Logger.Info("Task %v: Tick",name)
+			app.Logger.Info("Task %v: Tick",task_name)
 		case <- finish:
-			app.Logger.Info("Task %v: App Done Signal",name)
+			app.Logger.Info("Task %v: App Done Signal",task_name)
 			break outer_loop
 		}
 	}
 
 	// Cleanup task
-	app.Logger.Info("Task %v: Cleanup",name)
+	app.Logger.Info("Task %v: Cleanup",task_name)
 
 	// Close
 	task_done <- true
-	app.Logger.Info("Task %v: Closed",name)
+	app.Logger.Info("Task %v: Closed",task_name)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func RunTasks(app *app.App) error {
 
-	// Start task A
-	task_done_a := make(chan bool)
-	go Task(app,time.Second,"A",task_done_a)
-
-	// Start task B
-	task_done_b := make(chan bool)
-	go Task(app,time.Millisecond * 2500,"B",task_done_b)
-
 	// Wait until CTRL+C is pressed and all tasks have signalled completion
-	app.WaitUntilDone(task_done_a,task_done_b)
-
-	app.Logger.Info("Returning from RunTasks")
+	app.WaitUntilDone(app.RunTask(Task,"app.TaskA"),app.RunTask(Task,"app.TaskB"))
 
 	// Return success
 	return nil
@@ -75,7 +65,7 @@ func main() {
 
 	// Create the configuration, we want to use the DEVICE
 	// subsystem
-	config := app.Config(app.APP_DEVICE)
+	config := app.Config(app.APP_NONE)
 
 	// Create the application
 	myapp, err := app.NewApp(config)

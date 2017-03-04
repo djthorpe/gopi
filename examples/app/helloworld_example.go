@@ -12,6 +12,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
 )
 
 import (
@@ -22,14 +23,11 @@ import (
 
 func HelloWorld(app *app.App) error {
 
-	// Get serial number of the device
-	serial_number, err := app.Device.GetSerialNumber()
-	if err != nil {
-		return err
-	}
+	// Get name argument
+	name, _ := app.FlagSet.GetString("name")
 
 	// Output message to stdout
-	fmt.Fprintf(os.Stdout, "Hello %08X!!\n", serial_number)
+	fmt.Fprintf(os.Stdout, "Hello %v!!\n", name)
 
 	// Return success
 	return nil
@@ -39,9 +37,18 @@ func HelloWorld(app *app.App) error {
 
 func main() {
 
-	// Create the configuration, we want to use the DEVICE
-	// subsystem
-	config := app.Config(app.APP_DEVICE)
+	// Create the configuration
+	config := app.Config(app.APP_NONE)
+
+	// Get Current user
+	usr, err := user.Current()
+    if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		return
+    }
+
+	// Add -name argument
+	config.FlagSet.FlagString("name",usr.Username,"Your name")
 
 	// Create the application
 	myapp, err := app.NewApp(config)
