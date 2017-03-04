@@ -47,13 +47,13 @@ import "C"
 
 type SPI struct {
 	// Bus number
-	Bus     uint
+	Bus uint
 
 	// Slave number
 	Slave uint
 
 	// Transfer delay between blocks, in microseconds
-	Delay   uint16
+	Delay uint16
 }
 
 type spiDriver struct {
@@ -226,42 +226,42 @@ func (this *spiDriver) SetBitsPerWord(bits uint8) error {
 ////////////////////////////////////////////////////////////////////////////////
 // TRANSFER
 
-func (this *spiDriver) Transfer(send []byte) ([]byte,error) {
+func (this *spiDriver) Transfer(send []byte) ([]byte, error) {
 	buffer_size := len(send)
 	if buffer_size == 0 {
-		return []byte{ },nil
+		return []byte{}, nil
 	}
-	recv := make([]byte,buffer_size)
+	recv := make([]byte, buffer_size)
 	message := spiMessage{
-		tx_buf: uint64(uintptr(unsafe.Pointer(&send[0]))),
-		rx_buf: uint64(uintptr(unsafe.Pointer(&recv[0]))),
-		len: uint32(buffer_size),
-		speed_hz: this.speed_hz,
-		delay_usecs: this.delay_usec,
+		tx_buf:        uint64(uintptr(unsafe.Pointer(&send[0]))),
+		rx_buf:        uint64(uintptr(unsafe.Pointer(&recv[0]))),
+		len:           uint32(buffer_size),
+		speed_hz:      this.speed_hz,
+		delay_usecs:   this.delay_usec,
 		bits_per_word: this.bits_per_word,
 	}
 
-	err := this.ioctl(this.dev.Fd(),uintptr(C._SPI_IOC_MESSAGE(C.int(1))),unsafe.Pointer(&message))
+	err := this.ioctl(this.dev.Fd(), uintptr(C._SPI_IOC_MESSAGE(C.int(1))), unsafe.Pointer(&message))
 	if err != 0 {
 		return nil, err
 	}
 	return recv, nil
 }
 
-func (this *spiDriver) Read(buffer_size uint32) ([]byte,error) {
+func (this *spiDriver) Read(buffer_size uint32) ([]byte, error) {
 	if buffer_size == 0 {
-		return []byte{ },nil
+		return []byte{}, nil
 	}
-	recv := make([]byte,buffer_size)
+	recv := make([]byte, buffer_size)
 	message := spiMessage{
-		tx_buf: 0,
-		rx_buf: uint64(uintptr(unsafe.Pointer(&recv[0]))),
-		len: buffer_size,
-		speed_hz: this.speed_hz,
-		delay_usecs: this.delay_usec,
+		tx_buf:        0,
+		rx_buf:        uint64(uintptr(unsafe.Pointer(&recv[0]))),
+		len:           buffer_size,
+		speed_hz:      this.speed_hz,
+		delay_usecs:   this.delay_usec,
 		bits_per_word: this.bits_per_word,
 	}
-	err := this.ioctl(this.dev.Fd(),uintptr(C._SPI_IOC_MESSAGE(C.int(1))),unsafe.Pointer(&message))
+	err := this.ioctl(this.dev.Fd(), uintptr(C._SPI_IOC_MESSAGE(C.int(1))), unsafe.Pointer(&message))
 	if err != 0 {
 		return nil, err
 	}
@@ -274,14 +274,14 @@ func (this *spiDriver) Write(send []byte) error {
 		return nil
 	}
 	message := spiMessage{
-		tx_buf: uint64(uintptr(unsafe.Pointer(&send[0]))),
-		rx_buf: 0,
-		len: uint32(buffer_size),
-		speed_hz: this.speed_hz,
-		delay_usecs: this.delay_usec,
+		tx_buf:        uint64(uintptr(unsafe.Pointer(&send[0]))),
+		rx_buf:        0,
+		len:           uint32(buffer_size),
+		speed_hz:      this.speed_hz,
+		delay_usecs:   this.delay_usec,
 		bits_per_word: this.bits_per_word,
 	}
-	err := this.ioctl(this.dev.Fd(),uintptr(C._SPI_IOC_MESSAGE(C.int(1))),unsafe.Pointer(&message))
+	err := this.ioctl(this.dev.Fd(), uintptr(C._SPI_IOC_MESSAGE(C.int(1))), unsafe.Pointer(&message))
 	if err != 0 {
 		return err
 	}

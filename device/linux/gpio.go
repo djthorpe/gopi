@@ -15,25 +15,25 @@ import (
 
 import (
 	gopi "github.com/djthorpe/gopi"
-	util "github.com/djthorpe/gopi/util"
 	hw "github.com/djthorpe/gopi/hw"
+	util "github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type GPIO struct { }
+type GPIO struct{}
 
 type gpioDriver struct {
-	log      *util.LoggerDevice // logger
-	pins     map[hw.GPIOPin]uint // map of logical to physical pins
+	log  *util.LoggerDevice  // logger
+	pins map[hw.GPIOPin]uint // map of logical to physical pins
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
-	GPIO_DEV        = "/sys/class/gpio"
+	GPIO_DEV = "/sys/class/gpio"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,4 +65,3 @@ func (this *gpioDriver) Close() error {
 func (this *gpioDriver) String() string {
 	return fmt.Sprintf("<linux.GOPI>{ }")
 }
-

@@ -66,7 +66,7 @@ func (this *Flags) Flags() []string {
 		return []string{}
 	}
 	flags := make([]string, 0)
-	for k, _ := range this.flagmap {
+	for k := range this.flagmap {
 		flags = append(flags, k)
 	}
 	return flags

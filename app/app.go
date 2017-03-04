@@ -126,7 +126,7 @@ type AppConfig struct {
 type AppCallback func(app *App) error
 
 // Task callback
-type TaskCallback func(app *App,name string,done chan bool)
+type TaskCallback func(app *App, name string, done chan bool)
 
 // Application flags
 type AppFlags uint
@@ -214,7 +214,7 @@ func Config(flags AppFlags) AppConfig {
 // requests for the application.
 func NewApp(config AppConfig) (*App, error) {
 	var gopi_err gopi.Error
-	var err error
+	var ok bool
 
 	// Parse command-line flags
 	if config.FlagSet != nil {
@@ -288,7 +288,7 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Create the device
 	if config.Features&(APP_DEVICE|APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT|APP_GPIO) != 0 {
-		if this.Device = gopi.Open2(rpi.Hardware{}, this.Logger,&gopi_err).(gopi.HardwareDriver); this.Device == nil {
+		if this.Device, ok = gopi.Open2(rpi.Hardware{}, this.Logger, &gopi_err).(gopi.HardwareDriver); !ok {
 			this.Close()
 			return nil, gopi_err
 		}
@@ -296,39 +296,26 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Create the display
 	if config.Features&(APP_DISPLAY|APP_EGL|APP_OPENVG|APP_VGFONT) != 0 {
-		display, err := gopi.Open(rpi.DXDisplayConfig{
-			Device:         this.Device,
-			Display:        display,
-			PhysicalInches: screensize,
-		}, this.Logger)
-		if err != nil {
+		if this.Display, ok = gopi.Open2(rpi.DXDisplayConfig{Device: this.Device, Display: display, PhysicalInches: screensize}, this.Logger, &gopi_err).(gopi.DisplayDriver); !ok {
 			this.Close()
-			return nil, err
+			return nil, gopi_err
 		}
-		// Convert device into a DisplayDriver
-		this.Display = display.(gopi.DisplayDriver)
 	}
 
 	// Create the EGL interface
 	if config.Features&(APP_EGL|APP_OPENVG) != 0 {
-		egl, err := gopi.Open(rpi.EGL{Display: this.Display}, this.Logger)
-		if err != nil {
+		if this.EGL, ok = gopi.Open2(rpi.EGL{Display: this.Display}, this.Logger, &gopi_err).(khronos.EGLDriver); !ok {
 			this.Close()
-			return nil, err
+			return nil, gopi_err
 		}
-		// Convert device into a EGLDriver
-		this.EGL = egl.(khronos.EGLDriver)
 	}
 
 	// Create the OpenVG interface
 	if config.Features&(APP_OPENVG) != 0 {
-		openvg, err := gopi.Open(rpi.OpenVG{EGL: this.EGL}, this.Logger)
-		if err != nil {
+		if this.OpenVG, ok = gopi.Open2(rpi.OpenVG{EGL: this.EGL}, this.Logger, &gopi_err).(khronos.VGDriver); !ok {
 			this.Close()
-			return nil, err
+			return nil, gopi_err
 		}
-		// Convert device into a VGDriver
-		this.OpenVG = openvg.(khronos.VGDriver)
 	}
 
 	// Create the Font driver subsystem
@@ -337,15 +324,12 @@ func NewApp(config AppConfig) (*App, error) {
 		if this.Display != nil {
 			ppi = uint(this.Display.GetPixelsPerInch())
 		}
-		fontdriver, err := gopi.Open(rpi.VGFont{PPI: ppi}, this.Logger)
-		if err != nil {
+		if this.Fonts, ok = gopi.Open2(rpi.VGFont{PPI: ppi}, this.Logger, &gopi_err).(khronos.VGFontDriver); !ok {
 			this.Close()
-			return nil, err
+			return nil, gopi_err
 		}
-		// Convert fontdriver into a VGFontDriver
-		this.Fonts = fontdriver.(khronos.VGFontDriver)
-
 		// Load fonts
+		var err error
 		if config.FontPaths != nil {
 			err = this.loadFonts(config.FontPaths)
 		} else {
@@ -361,25 +345,18 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Create the Input subsystem
 	if config.Features&(APP_INPUT) != 0 {
-		input, err := gopi.Open(linux.Input{}, this.Logger)
-		if err != nil {
-			this.Logger.Info("Error %v", err)
+		if this.Input, ok = gopi.Open2(linux.Input{}, this.Logger, &gopi_err).(hw.InputDriver); !ok {
 			this.Close()
-			return nil, err
+			return nil, gopi_err
 		}
-		// Convert device into an InputDriver
-		this.Input = input.(hw.InputDriver)
 	}
 
 	// Create the GPIO interface
 	if config.Features&(APP_GPIO) != 0 {
-		gpio, err := gopi.Open(rpi.GPIO{Device: this.Device}, this.Logger)
-		if err != nil {
+		if this.GPIO, ok = gopi.Open2(rpi.GPIO{Device: this.Device}, this.Logger, &gopi_err).(hw.GPIODriver); !ok {
 			this.Close()
-			return nil, err
+			return nil, gopi_err
 		}
-		// Convert device into a GPIODriver
-		this.GPIO = gpio.(hw.GPIODriver)
 	}
 
 	// Create the I2C interface
@@ -388,13 +365,10 @@ func NewApp(config AppConfig) (*App, error) {
 		if exists {
 			config.I2CBus = bus
 		}
-		i2c, err := gopi.Open(linux.I2C{Bus: config.I2CBus}, this.Logger)
-		if err != nil {
+		if this.I2C, ok = gopi.Open2(linux.I2C{Bus: config.I2CBus}, this.Logger, &gopi_err).(hw.I2CDriver); !ok {
 			this.Close()
-			return nil, err
+			return nil, gopi_err
 		}
-		// Convert device into a GPIODriver
-		this.I2C = i2c.(hw.I2CDriver)
 	}
 
 	// Create the SPI interface
@@ -407,13 +381,10 @@ func NewApp(config AppConfig) (*App, error) {
 		if exists2 {
 			config.SPISlave = slave
 		}
-		spi, err := gopi.Open(linux.SPI{Bus: config.SPIBus, Slave: config.SPISlave}, this.Logger)
-		if err != nil {
+		if this.SPI, ok = gopi.Open2(linux.SPI{Bus: config.SPIBus, Slave: config.SPISlave}, this.Logger, &gopi_err).(hw.SPIDriver); !ok {
 			this.Close()
-			return nil, err
+			return nil, gopi_err
 		}
-		// Convert device into a SPIDriver
-		this.SPI = spi.(hw.SPIDriver)
 	}
 
 	// success
@@ -518,10 +489,10 @@ func (this *App) Run(callback AppCallback) error {
 
 // Start an application task in the background and return
 // a messaging channel
-func (this *App) RunTask(task TaskCallback,name string) chan bool {
-	this.Logger.Debug2("<App>RunTask{ name=%v }",name)
+func (this *App) RunTask(task TaskCallback, name string) chan bool {
+	this.Logger.Debug2("<App>RunTask{ name=%v }", name)
 	task_done := make(chan bool)
-	go task(this,name,task_done)
+	go task(this, name, task_done)
 	return task_done
 }
 
@@ -551,14 +522,14 @@ func (this *App) WaitUntilDone(finished_channels ...chan bool) {
 		this.Logger.Debug2("<App>Waiting for all finished signals to return")
 	}
 	for _, finish_channel := range finished_channels {
-		<- finish_channel
+		<-finish_channel
 	}
 }
 
 // Return new channel which is signalled when Done has been set
 func (this *App) GetDoneChannel() chan bool {
 	done_channel := make(chan bool)
-	this.done_channels = append(this.done_channels,done_channel)
+	this.done_channels = append(this.done_channels, done_channel)
 	return done_channel
 }
 

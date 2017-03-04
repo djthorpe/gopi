@@ -144,7 +144,7 @@ func (config GPIO) Open(log gopi.Logger) (gopi.Driver, error) {
 	// Create pin mappings. Because there is some variation between the different
 	// models and revisions, we use some logic in a private method to fudge
 	this.pins = make(map[hw.GPIOPin]uint)
-	for pin, _ := range pinmap {
+	for pin := range pinmap {
 		if logical := this.PhysicalPin(pin); logical != hw.GPIO_PIN_NONE {
 			this.pins[logical] = pin
 		}

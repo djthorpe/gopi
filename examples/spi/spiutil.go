@@ -50,15 +50,15 @@ func RunLoop(app *app.App) error {
 	}
 
 	// Print information
-	fmt.Printf("Mode = %v\n",app.SPI.GetMode())
-	fmt.Printf("Bits per word = %v\n",app.SPI.GetBitsPerWord())
-	fmt.Printf("Speed = %vHz\n",app.SPI.GetMaxSpeedHz())
+	fmt.Printf("Mode = %v\n", app.SPI.GetMode())
+	fmt.Printf("Bits per word = %v\n", app.SPI.GetBitsPerWord())
+	fmt.Printf("Speed = %vHz\n", app.SPI.GetMaxSpeedHz())
 
-	bytes, err := app.SPI.Transfer([]byte{ 0x00 })
+	bytes, err := app.SPI.Transfer([]byte{0x00})
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Bytes = %v\n",bytes)
+	fmt.Printf("Bytes = %v\n", bytes)
 
 	return nil
 }
@@ -68,8 +68,8 @@ func main() {
 	config := app.Config(app.APP_SPI)
 
 	// Flags
-	config.FlagSet.FlagUint("mode",0, "Mode")
-	config.FlagSet.FlagUint("speed",0, "Maximum speed")
+	config.FlagSet.FlagUint("mode", 0, "Mode")
+	config.FlagSet.FlagUint("speed", 0, "Maximum speed")
 	config.FlagSet.FlagUint("bits", 8, "Bits per word")
 
 	// Create the application

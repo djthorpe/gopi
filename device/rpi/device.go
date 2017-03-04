@@ -38,7 +38,7 @@ type Hardware struct{}
 
 type Device struct {
 	log      gopi.Logger
-	service  int                // service number
+	service  int // service number
 	serial   uint64
 	revision uint32
 }

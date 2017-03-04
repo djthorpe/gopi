@@ -202,7 +202,7 @@ func Open(config Config) (*Device, error) {
 		// set slot to zero, create the slots, set slot values
 		device.slot = 0
 		device.slots = make([]*InputEvent, driver.GetSlots())
-		for i, _ := range device.slots {
+		for i := range device.slots {
 			device.slots[i] = &InputEvent{Slot: uint32(i)}
 		}
 	}

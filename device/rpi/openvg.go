@@ -538,7 +538,7 @@ func (this *vgPath) MoveTo(point khronos.VGPoint) error {
 func (this *vgPath) LineTo(points ...khronos.VGPoint) error {
 	// Create an array of LINE_TO commands
 	cmd := make([]C.VGubyte, len(points))
-	for i, _ := range points {
+	for i := range points {
 		cmd[i] = C.VGubyte(VG_SEGMENT_LINE_TO)
 	}
 	// Append path data

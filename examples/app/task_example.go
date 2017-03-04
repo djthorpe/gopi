@@ -22,7 +22,7 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func Task(app *app.App,task_name string,task_done chan bool) {
+func Task(app *app.App, task_name string, task_done chan bool) {
 	// Tick every second
 	ticker := time.Tick(time.Second)
 
@@ -30,22 +30,23 @@ func Task(app *app.App,task_name string,task_done chan bool) {
 	finish := app.GetDoneChannel()
 
 	// Loop until app is done
-	outer_loop: for {
+outer_loop:
+	for {
 		select {
-		case <- ticker:
-			app.Logger.Info("Task %v: Tick",task_name)
-		case <- finish:
-			app.Logger.Info("Task %v: App Done Signal",task_name)
+		case <-ticker:
+			app.Logger.Info("Task %v: Tick", task_name)
+		case <-finish:
+			app.Logger.Info("Task %v: App Done Signal", task_name)
 			break outer_loop
 		}
 	}
 
 	// Cleanup task
-	app.Logger.Info("Task %v: Cleanup",task_name)
+	app.Logger.Info("Task %v: Cleanup", task_name)
 
 	// Close
 	task_done <- true
-	app.Logger.Info("Task %v: Closed",task_name)
+	app.Logger.Info("Task %v: Closed", task_name)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +54,7 @@ func Task(app *app.App,task_name string,task_done chan bool) {
 func RunTasks(app *app.App) error {
 
 	// Wait until CTRL+C is pressed and all tasks have signalled completion
-	app.WaitUntilDone(app.RunTask(Task,"app.TaskA"),app.RunTask(Task,"app.TaskB"))
+	app.WaitUntilDone(app.RunTask(Task, "app.TaskA"), app.RunTask(Task, "app.TaskB"))
 
 	// Return success
 	return nil

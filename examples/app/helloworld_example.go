@@ -42,13 +42,13 @@ func main() {
 
 	// Get Current user
 	usr, err := user.Current()
-    if err != nil {
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
-    }
+	}
 
 	// Add -name argument
-	config.FlagSet.FlagString("name",usr.Username,"Your name")
+	config.FlagSet.FlagString("name", usr.Username, "Your name")
 
 	// Create the application
 	myapp, err := app.NewApp(config)

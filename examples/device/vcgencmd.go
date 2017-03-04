@@ -245,7 +245,7 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s <command>\n", path.Base(os.Args[0]))
 		fmt.Fprintf(os.Stderr, " <command> can be one of the following: ")
-		for k, _ := range commandmap {
+		for k := range commandmap {
 			fmt.Fprintf(os.Stderr, "%s, ", k)
 		}
 		vccommands, _ := rpi.GetCommands()
