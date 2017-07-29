@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/djthorpe/gopi/util"
@@ -31,8 +32,8 @@ type AppConfig struct {
 // AppInstance defines the running application instance with modules
 type AppInstance struct {
 	Logger   Logger
-	Hardware Driver
-	Display  Driver
+	Hardware HardwareDriver2
+	Display  DisplayDriver2
 	Bitmap   Driver
 	Vector   Driver
 	VGFont   Driver
@@ -94,9 +95,10 @@ func NewAppConfig(modules ...ModuleType) AppConfig {
 // configuration
 func NewAppInstance(config AppConfig) (*AppInstance, error) {
 
-	// Parse flags
+	// Parse flags. We want to ignore flags which start with "-test."
+	// in the testing environment
 	if config.Flags != nil && config.Flags.Parsed() == false {
-		if err := config.Flags.Parse(os.Args[1:]); err != nil {
+		if err := config.Flags.Parse(getTestlessArguments(os.Args[1:])); err != nil {
 			return nil, err
 		}
 	}
@@ -202,7 +204,7 @@ func (this *AppInstance) setModuleInstance(t ModuleType, driver Driver) error {
 			return fmt.Errorf("Module of type %v cannot be cast to gopi.Logger", t)
 		}
 	case MODULE_TYPE_HARDWARE:
-		if this.Hardware, ok = driver.(Hardware); ok != true {
+		if this.Hardware, ok = driver.(HardwareDriver2); ok != true {
 			return fmt.Errorf("Module of type %v cannot be cast to gopi.Hardware", t)
 		}
 	default:
@@ -210,4 +212,15 @@ func (this *AppInstance) setModuleInstance(t ModuleType, driver Driver) error {
 	}
 	// success
 	return nil
+}
+
+func getTestlessArguments(input []string) []string {
+	output := make([]string, 0, len(input))
+	for _, arg := range input {
+		if strings.HasPrefix(arg, "-test.") {
+			continue
+		}
+		output = append(output, arg)
+	}
+	return output
 }

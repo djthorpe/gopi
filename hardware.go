@@ -8,10 +8,33 @@
 
 package gopi // import "github.com/djthorpe/gopi"
 
-type Hardware interface {
+// HardwareDriver2 implements the hardware driver interface, which
+// provides information about the hardware that the software is
+// running on
+type HardwareDriver2 interface {
 	Driver
 
-	GetName() string
-	GetSerialNumber() string
+	// Return name of the hardware platform
+	Name() string
+
+	// Return unique serial number of this hardware
+	SerialNumber() string
+
+	// Return the number of possible displays for this hardware
 	NumberOfDisplays() uint
+}
+
+// DisplayDriver2 implements a pixel display device description
+type DisplayDriver2 interface {
+	Driver
+
+	// Return display number
+	Display() uint
+
+	// Return display size for nominated display number, or (0,0) if display
+	// does not exist
+	Size() (uint32, uint32)
+
+	// Return the PPI (pixels-per-inch) for the display, or return zero if unknown
+	PixelsPerInch() uint32
 }
