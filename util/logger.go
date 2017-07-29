@@ -123,6 +123,10 @@ func (l LogLevel) String() string {
 	}
 }
 
+func (this *LoggerDevice) String() string {
+	return fmt.Sprintf("util.Logger{ level=%v }", this.level)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Get and set level
 

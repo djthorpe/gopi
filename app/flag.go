@@ -9,7 +9,6 @@
 
 package app /* import "github.com/djthorpe/gopi/app" */
 
-// import
 import (
 	"flag"
 	"fmt"

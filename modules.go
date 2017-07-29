@@ -11,6 +11,9 @@ package gopi // import "github.com/djthorpe/gopi"
 import (
 	"fmt"
 	"os"
+	"path"
+
+	"github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,15 +24,10 @@ type ModuleType uint
 
 // Module is a structure which determines details about a module
 type Module struct {
-	Name   string
-	Type   ModuleType
-	Config ModuleConfigFunc
-	New    ModuleNewFunc
+	Name string
+	Type ModuleType
+	New  ModuleNewFunc
 }
-
-// ModuleConfigFunc is the signature for altering the configuration before
-// the application instance is made
-type ModuleConfigFunc func(*AppConfig)
 
 // ModuleNewFunc is the signature for creating a new module instance
 type ModuleNewFunc func(*AppConfig) (Driver, error)
@@ -57,14 +55,22 @@ const (
 // GLOBAL VARIABLES
 
 var (
+	flags           = util.NewFlags(path.Base(os.Args[0]))
 	modules_by_name = make(map[string]Module)
 	modules_by_type = make(map[ModuleType]Module)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// INIT METHOD
+
+func init() {
+	flags.FlagBool("debug", false, "Set debugging mode")
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func RegisterModule(module Module) {
+func RegisterModule(module Module) *util.Flags {
 	// Register by name
 	if _, exists := modules_by_name[module.Name]; exists {
 		fmt.Fprintln(os.Stderr, "Duplicate Module registered:", &module)
@@ -81,6 +87,8 @@ func RegisterModule(module Module) {
 			modules_by_type[module.Type] = module
 		}
 	}
+	// Return flags to add configuration options onto
+	return flags
 }
 
 func ModuleByType(t ModuleType) (*Module, error) {

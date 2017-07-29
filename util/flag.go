@@ -54,6 +54,11 @@ func (this *Flags) Parse(args []string) error {
 	return nil
 }
 
+// Parsed reports whether the command-line flags have been parsed
+func (this *Flags) Parsed() bool {
+	return this.flagset.Parsed()
+}
+
 // Args returns the command line arguments as an array which aren't flags
 func (this *Flags) Args() []string {
 	return this.flagset.Args()
@@ -82,7 +87,7 @@ func (this *Flags) HasFlag(name string) bool {
 
 // String returns a human-readable form of the Flags object
 func (this *Flags) String() string {
-	return fmt.Sprintf("<app.Flags>{ flags=%v args=%v }", this.Flags(), this.Args())
+	return fmt.Sprintf("<app.Flags>{ parsed=%v flags=%v args=%v }", this.Parsed(), this.Flags(), this.Args())
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -11,7 +11,6 @@ package gopi // import "github.com/djthorpe/gopi"
 import (
 	"fmt"
 	"os"
-	"path"
 	"runtime"
 	"sync"
 
@@ -26,6 +25,7 @@ type AppConfig struct {
 	LogLevel util.LogLevel
 	Modules  []ModuleType
 	Flags    *util.Flags
+	Debug    bool
 }
 
 // AppInstance defines the running application instance with modules
@@ -41,6 +41,8 @@ type AppInstance struct {
 	I2C      Driver
 	SPI      Driver
 	Input    Driver
+
+	debug bool
 }
 
 // Task defines a function which can run, and has a channel which
@@ -80,16 +82,9 @@ func NewAppConfig(modules ...ModuleType) AppConfig {
 		config.Modules = append(config.Modules, k)
 	}
 
-	// Create the flags
-	config.Flags = util.NewFlags(path.Base(os.Args[0]))
-
-	// For each module, now call the configuration if the module
-	// is registered
-	for _, t := range config.Modules {
-		if module, err := ModuleByType(t); err == nil {
-			module.Config(&config)
-		}
-	}
+	// Set the flags
+	config.Flags = flags
+	config.Debug = false
 
 	// Return the configuration
 	return config
@@ -98,14 +93,32 @@ func NewAppConfig(modules ...ModuleType) AppConfig {
 // NewAppInstance method will create a new application object given an application
 // configuration
 func NewAppInstance(config AppConfig) (*AppInstance, error) {
+
+	// Parse flags
+	if config.Flags != nil && config.Flags.Parsed() == false {
+		if err := config.Flags.Parse(os.Args[1:]); err != nil {
+			return nil, err
+		}
+	}
+
+	// Set debug flag
+	if debug, exists := config.Flags.GetBool("debug"); exists {
+		config.Debug = debug
+	}
+
+	// Create instance
 	this := new(AppInstance)
+	this.debug = config.Debug
 
 	// Create subsystems
 	for _, t := range config.Modules {
-		if module, err := ModuleByType(t); err == nil {
-			module.Config(&config)
+		if module, err := ModuleByType(t); err != nil {
+			return nil, err
+		} else if driver, err := module.New(&config); err != nil {
+			return nil, err
+		} else if err := this.setModuleInstance(t, driver); err != nil {
+			return nil, err
 		}
-		fmt.Println("TODO: Creating subsystem", t)
 	}
 
 	return this, nil
@@ -171,4 +184,28 @@ func (this *AppInstance) Run(tasks ...Task) error {
 	}
 
 	return err
+}
+
+// Debug returns whether the application has the debug flag set
+func (this *AppInstance) Debug() bool {
+	return this.debug
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func (this *AppInstance) setModuleInstance(t ModuleType, driver Driver) error {
+	var ok bool
+	switch t {
+	case MODULE_TYPE_LOGGER:
+		if this.Logger, ok = driver.(Logger); ok != true {
+			return fmt.Errorf("Module of type %v cannot be cast to gopi.Logger", t)
+		}
+	case MODULE_TYPE_HARDWARE:
+		this.Hardware = driver
+	default:
+		return fmt.Errorf("Not implmenented: setModuleInstance: %v", t)
+	}
+	// success
+	return nil
 }
