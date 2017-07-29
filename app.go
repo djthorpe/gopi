@@ -202,7 +202,9 @@ func (this *AppInstance) setModuleInstance(t ModuleType, driver Driver) error {
 			return fmt.Errorf("Module of type %v cannot be cast to gopi.Logger", t)
 		}
 	case MODULE_TYPE_HARDWARE:
-		this.Hardware = driver
+		if this.Hardware, ok = driver.(Hardware); ok != true {
+			return fmt.Errorf("Module of type %v cannot be cast to gopi.Hardware", t)
+		}
 	default:
 		return fmt.Errorf("Not implmenented: setModuleInstance: %v", t)
 	}

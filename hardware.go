@@ -12,4 +12,6 @@ type Hardware interface {
 	Driver
 
 	GetName() string
+	GetSerialNumber() string
+	NumberOfDisplays() uint
 }
