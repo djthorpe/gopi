@@ -116,7 +116,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	for _, t := range config.Modules {
 		if module, err := ModuleByType(t); err != nil {
 			return nil, err
-		} else if driver, err := module.New(&config); err != nil {
+		} else if driver, err := module.New(&config, this.Logger); err != nil {
 			return nil, err
 		} else if err := this.setModuleInstance(t, driver); err != nil {
 			return nil, err
@@ -200,12 +200,16 @@ func (this *AppInstance) setModuleInstance(t ModuleType, driver Driver) error {
 	var ok bool
 	switch t {
 	case MODULE_TYPE_LOGGER:
-		if this.Logger, ok = driver.(Logger); ok != true {
+		if this.Logger, ok = driver.(Logger); !ok {
 			return fmt.Errorf("Module of type %v cannot be cast to gopi.Logger", t)
 		}
 	case MODULE_TYPE_HARDWARE:
-		if this.Hardware, ok = driver.(HardwareDriver2); ok != true {
+		if this.Hardware, ok = driver.(HardwareDriver2); !ok {
 			return fmt.Errorf("Module of type %v cannot be cast to gopi.Hardware", t)
+		}
+	case MODULE_TYPE_DISPLAY:
+		if this.Display, ok = driver.(DisplayDriver2); !ok {
+			return fmt.Errorf("Module of type %v cannot be cast to gopi.Display", t)
 		}
 	default:
 		return fmt.Errorf("Not implmenented: setModuleInstance: %v", t)
@@ -223,4 +227,11 @@ func getTestlessArguments(input []string) []string {
 		output = append(output, arg)
 	}
 	return output
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (this *AppInstance) String() string {
+	return fmt.Sprintf("gopi.App{ debug=%v }", this.debug)
 }

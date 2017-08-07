@@ -5,14 +5,24 @@ import (
 	"strings"
 
 	"github.com/djthorpe/gopi"
+	"github.com/djthorpe/gopi/util"
 	"github.com/rs/xid"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
+type Hardware struct{}
+
+type Display struct {
+	Display uint
+}
+
 type hardwareDriver struct{}
-type displayDriver struct{}
+
+type displayDriver struct {
+	id uint
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
@@ -20,15 +30,39 @@ type displayDriver struct{}
 func init() {
 	// Register hardware and display
 	gopi.RegisterModule(gopi.Module{Name: "mock/hardware", Type: gopi.MODULE_TYPE_HARDWARE, New: newHardware})
-	gopi.RegisterModule(gopi.Module{Name: "mock/display", Type: gopi.MODULE_TYPE_DISPLAY, New: newDisplay})
+	registerDisplayFlags(gopi.RegisterModule(gopi.Module{
+		Name: "mock/display",
+		Type: gopi.MODULE_TYPE_DISPLAY,
+		New:  newDisplay,
+	}))
 }
 
-func newHardware(config *gopi.AppConfig) (gopi.Driver, error) {
-	return new(hardwareDriver), nil
+func registerDisplayFlags(flags *util.Flags) {
+	flags.FlagUint("display", 0, "Display")
 }
 
-func newDisplay(config *gopi.AppConfig) (gopi.Driver, error) {
-	return new(displayDriver), nil
+func newHardware(config *gopi.AppConfig, logger gopi.Logger) (gopi.Driver, error) {
+	var err gopi.Error
+	if driver, ok := gopi.Open2(Hardware{}, logger, &err).(gopi.HardwareDriver2); !ok {
+		return nil, err
+	} else {
+		return driver, nil
+	}
+}
+
+func newDisplay(config *gopi.AppConfig, logger gopi.Logger) (gopi.Driver, error) {
+	var err gopi.Error
+	var display Display
+
+	// set display argument
+	if display_number, exists := config.Flags.GetUint("display"); exists {
+		display.Display = display_number
+	}
+	if driver, ok := gopi.Open2(display, logger, &err).(gopi.DisplayDriver2); !ok {
+		return nil, err
+	} else {
+		return driver, nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -40,6 +74,11 @@ var (
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - HARDWARE
+
+// Open
+func (config Hardware) Open(logger gopi.Logger) (gopi.Driver, error) {
+	return new(hardwareDriver), nil
+}
 
 // GetName returns the name of the hardware (ie, mock, mac, linux, rpi, etc)
 func (this *hardwareDriver) Name() string {
@@ -62,8 +101,35 @@ func (this *hardwareDriver) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - DISPLAY
 
+// Open
+func (config Display) Open(logger gopi.Logger) (gopi.Driver, error) {
+	logger.Debug("sys.mock.Display.Open{ }")
+
+	this := new(displayDriver)
+	this.id = config.Display
+
+	// Success
+	return this, nil
+}
+
+// Close
 func (this *displayDriver) Close() error {
 	return nil
+}
+
+// Return display number
+func (this *displayDriver) Display() uint {
+	return 0
+}
+
+// Return size
+func (this *displayDriver) Size() (uint32, uint32) {
+	return 0, 0
+}
+
+// Return pixels-per-inch
+func (this *displayDriver) PixelsPerInch() uint32 {
+	return 0
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,5 +140,5 @@ func (this *hardwareDriver) String() string {
 }
 
 func (this *displayDriver) String() string {
-	return fmt.Sprintf("sys.mock.Display{ }")
+	return fmt.Sprintf("sys.mock.Display{ id=%v }", this.id)
 }

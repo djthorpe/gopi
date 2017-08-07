@@ -6,61 +6,34 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-// The canonical hello world example
+// The canonical hello world example demonstrates printing
+// hello world and then exiting. Here we use the 'generic'
+// set of modules which provide generic system services
 package main
 
 import (
 	"fmt"
 	"os"
-	"os/user"
-)
 
-import (
-	app "github.com/djthorpe/gopi/app"
+	"github.com/djthorpe/gopi"
+	_ "github.com/djthorpe/gopi/sys/mock"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func HelloWorld(app *app.App) error {
-
-	// Get name argument
-	name, _ := app.FlagSet.GetString("name")
-
-	// Output message to stdout
-	fmt.Fprintf(os.Stdout, "Hello %v!!\n", name)
-
-	// Return success
+func helloWorld(app *gopi.AppInstance, done chan struct{}) error {
+	fmt.Println("Hello, World")
 	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
-
-	// Create the configuration
-	config := app.Config(app.APP_NONE)
-
-	// Get Current user
-	usr, err := user.Current()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		return
-	}
-
-	// Add -name argument
-	config.FlagSet.FlagString("name", usr.Username, "Your name")
-
-	// Create the application
-	myapp, err := app.NewApp(config)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		return
-	}
-	defer myapp.Close()
-
-	// Run the application
-	if err := myapp.Run(HelloWorld); err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		return
+	if app, err := gopi.NewAppInstance(gopi.NewAppConfig()); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	} else if err := app.Run(helloWorld); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
 	}
 }

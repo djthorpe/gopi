@@ -10,6 +10,7 @@
 package util /* import "github.com/djthorpe/gopi/util" */
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"time"
@@ -21,7 +22,8 @@ type Flags struct {
 }
 
 var (
-	ErrHelp = flag.ErrHelp
+	ErrHelp    = flag.ErrHelp
+	ErrBadFlag = errors.New("Invalid flag")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +93,7 @@ func (this *Flags) String() string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// SET FLAGS
+// DEFINE FLAGS
 
 // FlagString defines string flag and return pointer to the flag value
 func (this *Flags) FlagString(name string, value string, usage string) *string {
@@ -195,4 +197,16 @@ func (this *Flags) GetFloat64(name string) (float64, bool) {
 		return 0.0, false
 	}
 	return value.Value.(flag.Getter).Get().(float64), this.HasFlag(name)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// SET FLAGS
+
+// Get value for a flag
+func (this *Flags) SetUint(name string, value uint) error {
+	f := this.flagset.Lookup(name)
+	if f == nil {
+		return ErrBadFlag
+	}
+	return f.Value.Set(fmt.Sprintf("%v", value))
 }

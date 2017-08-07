@@ -25,7 +25,7 @@ func registerLoggerFlags(flags *util.Flags) {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func newLogger(config *gopi.AppConfig) (gopi.Driver, error) {
+func newLogger(config *gopi.AppConfig, _ gopi.Logger) (gopi.Driver, error) {
 	logger, err := getLoggerForConfig(config)
 	if err != nil {
 		return nil, err
