@@ -9,7 +9,6 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 // CREATE HARDWARE MODULE
-
 func TestHardware_000(t *testing.T) {
 	// Create a configuration with debug
 	config := gopi.NewAppConfig(gopi.MODULE_TYPE_HARDWARE)
@@ -18,16 +17,20 @@ func TestHardware_000(t *testing.T) {
 	// Create an application with a hardware module
 	app, err := gopi.NewAppInstance(config)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
+		return
 	}
 	if app == nil {
-		t.Error("Expecting app object")
+		t.Fatal("Expecting app object")
+		return
 	}
 	if app.Logger == nil {
-		t.Error("Expecting app.Logger object")
+		t.Fatal("Expecting app.Logger object")
+		return
 	}
 	if app.Hardware == nil {
-		t.Error("Expecting app.Hardware object")
+		t.Fatal("Expecting app.Hardware object")
+		return
 	}
 	app.Logger.Info("hardware=%v", app.Hardware)
 }
@@ -40,14 +43,38 @@ func TestHardware_001(t *testing.T) {
 	// Create an application with a hardware module
 	app, err := gopi.NewAppInstance(config)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	// Get name and serial number, neither should be empty
 	if app.Hardware.Name() == "" {
-		t.Error("Expecting a name")
+		t.Fatal("Expecting a name")
 	}
 	if app.Hardware.SerialNumber() == "" {
-		t.Error("Expecting a serial number")
+		t.Fatal("Expecting a serial number")
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CREATE DISPLAY MODULE
+
+func TestDisplay_001(t *testing.T) {
+	// Create a configuration with debug
+	config := gopi.NewAppConfig(gopi.MODULE_TYPE_DISPLAY)
+	config.Debug = true
+	config.Flags.SetUint("display", 0)
+
+	// Create an application with a hardware module
+	app, err := gopi.NewAppInstance(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Get name and serial number, neither should be empty
+	if app.Display == nil {
+		t.Fatal("Expecting app.Display object")
+	}
+
+	app.Logger.Info("app=%v", app)
+	app.Logger.Info("display=%v", app.Display)
 }

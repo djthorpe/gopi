@@ -30,7 +30,7 @@ type Module struct {
 }
 
 // ModuleNewFunc is the signature for creating a new module instance
-type ModuleNewFunc func(*AppConfig) (Driver, error)
+type ModuleNewFunc func(*AppConfig, Logger) (Driver, error)
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS

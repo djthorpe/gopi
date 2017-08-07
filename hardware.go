@@ -24,7 +24,7 @@ type HardwareDriver2 interface {
 	NumberOfDisplays() uint
 }
 
-// DisplayDriver2 implements a pixel display device description
+// DisplayDriver2 implements a pixel-based display device description
 type DisplayDriver2 interface {
 	Driver
 
