@@ -1,4 +1,4 @@
-package mock /* import "github.com/djthorpe/gopi/sys/mock" */
+package hardware /* import "github.com/djthorpe/gopi/sys/mock/hardware" */
 
 import (
 	"fmt"
