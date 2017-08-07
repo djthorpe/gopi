@@ -5,6 +5,7 @@ import (
 
 	"github.com/djthorpe/gopi"
 	_ "github.com/djthorpe/gopi/sys/default/layout"
+	_ "github.com/djthorpe/gopi/sys/default/logger"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -14,20 +15,26 @@ func TestLayout_000(t *testing.T) {
 	// Create a configuration with debug
 	config := gopi.NewAppConfig(gopi.MODULE_TYPE_LAYOUT)
 	config.Debug = true
+	config.Verbose = true
 
 	// Create an application with a hardware module
 	app, err := gopi.NewAppInstance(config)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+	defer func() {
+		if err := app.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 	if app == nil {
-		t.Error("Expecting app object")
+		t.Fatal("Expecting app object")
 	}
 	if app.Logger == nil {
-		t.Error("Expecting app.Logger object")
+		t.Fatal("Expecting app.Logger object")
 	}
 	if app.Layout == nil {
-		t.Error("Expecting app.Layout object")
+		t.Fatal("Expecting app.Layout object")
 	}
 	app.Logger.Info("layout=%v", app.Layout)
 }

@@ -25,8 +25,8 @@ type EncodeIndentOptions uint
 // CONSTANTS
 
 const (
-	LAYOUT_DIRECTION_NONE    Direction = iota
-	LAYOUT_DIRECTION_INHERIT           = LAYOUT_DIRECTION_NONE
+	LAYOUT_DIRECTION_NONE    LayoutDirection = iota
+	LAYOUT_DIRECTION_INHERIT                 = LAYOUT_DIRECTION_NONE
 	LAYOUT_DIRECTION_LEFTRIGHT
 	LAYOUT_DIRECTION_RIGHTLEFT
 )
@@ -55,11 +55,3 @@ type Layout interface {
 	// Return XML encoded version of the layout
 	Encode(w io.Writer, indent EncodeIndentOptions) error
 }
-
-/*
-type LayoutConfig struct {
-	Direction Direction
-	Width     float32
-	Height    float32
-}
-*/

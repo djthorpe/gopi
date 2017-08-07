@@ -27,6 +27,7 @@ type AppConfig struct {
 	Modules  []ModuleType
 	Flags    *util.Flags
 	Debug    bool
+	Verbose  bool
 }
 
 // AppInstance defines the running application instance with modules
@@ -38,12 +39,14 @@ type AppInstance struct {
 	Vector   Driver
 	VGFont   Driver
 	OpenGL   Driver
+	Layout   Layout
 	GPIO     Driver
 	I2C      Driver
 	SPI      Driver
 	Input    Driver
 
-	debug bool
+	debug   bool
+	verbose bool
 }
 
 // Task defines a function which can run, and has a channel which
@@ -86,6 +89,7 @@ func NewAppConfig(modules ...ModuleType) AppConfig {
 	// Set the flags
 	config.Flags = flags
 	config.Debug = false
+	config.Verbose = false
 
 	// Return the configuration
 	return config
@@ -103,17 +107,28 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 		}
 	}
 
-	// Set debug flag
+	// Set debug and verbose flags
 	if debug, exists := config.Flags.GetBool("debug"); exists {
 		config.Debug = debug
+	}
+	if verbose, exists := config.Flags.GetBool("verbose"); exists {
+		config.Verbose = verbose
 	}
 
 	// Create instance
 	this := new(AppInstance)
 	this.debug = config.Debug
+	this.verbose = config.Verbose
 
 	// Create subsystems
+	var once sync.Once
 	for _, t := range config.Modules {
+		// Report open (once after logger module is created)
+		if this.Logger != nil {
+			once.Do(func() {
+				this.Logger.Debug2("gopi.AppInstance.Open()")
+			})
+		}
 		if module, err := ModuleByType(t); err != nil {
 			return nil, err
 		} else if driver, err := module.New(&config, this.Logger); err != nil {
@@ -193,6 +208,41 @@ func (this *AppInstance) Debug() bool {
 	return this.debug
 }
 
+// Verbose returns whether the application has the verbose flag set
+func (this *AppInstance) Verbose() bool {
+	return this.verbose
+}
+
+// Close method for app
+func (this *AppInstance) Close() error {
+	this.Logger.Debug2("gopi.AppInstance.Close()")
+	if this.Layout != nil {
+		if err := this.Layout.Close(); err != nil {
+			return err
+		}
+		this.Layout = nil
+	}
+	if this.Display != nil {
+		if err := this.Display.Close(); err != nil {
+			return err
+		}
+		this.Display = nil
+	}
+	if this.Hardware != nil {
+		if err := this.Hardware.Close(); err != nil {
+			return err
+		}
+		this.Hardware = nil
+	}
+	if this.Logger != nil {
+		if err := this.Logger.Close(); err != nil {
+			return err
+		}
+		this.Logger = nil
+	}
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
@@ -211,8 +261,12 @@ func (this *AppInstance) setModuleInstance(t ModuleType, driver Driver) error {
 		if this.Display, ok = driver.(DisplayDriver2); !ok {
 			return fmt.Errorf("Module of type %v cannot be cast to gopi.Display", t)
 		}
+	case MODULE_TYPE_LAYOUT:
+		if this.Layout, ok = driver.(Layout); !ok {
+			return fmt.Errorf("Module of type %v cannot be cast to gopi.Layout", t)
+		}
 	default:
-		return fmt.Errorf("Not implmenented: setModuleInstance: %v", t)
+		return fmt.Errorf("Not implemented: setModuleInstance: %v", t)
 	}
 	// success
 	return nil
@@ -233,5 +287,5 @@ func getTestlessArguments(input []string) []string {
 // STRINGIFY
 
 func (this *AppInstance) String() string {
-	return fmt.Sprintf("gopi.App{ debug=%v }", this.debug)
+	return fmt.Sprintf("gopi.App{ debug=%v verbose=%v }", this.debug, this.verbose)
 }

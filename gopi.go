@@ -59,6 +59,8 @@ type Config interface {
 
 // Abstract logging interface
 type Logger interface {
+	Driver
+
 	Fatal(format string, v ...interface{}) error
 	Error(format string, v ...interface{}) error
 	Warn(format string, v ...interface{})
