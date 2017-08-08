@@ -3,6 +3,7 @@ package layout /* import "github.com/djthorpe/gopi/sys/default/layout" */
 import (
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/util"
@@ -33,6 +34,11 @@ type driver struct {
 
 var (
 	ErrNotImplemented = errors.New("Not Implemented")
+)
+
+var (
+	// class names are similar to identifiers, must start with alpha followed by alphanumeric (plus - and _)
+	reViewClassName = regexp.MustCompile("^[A-Za-z][A-Za-z0-9\\-\\_]*$")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,38 +95,80 @@ func (this *driver) Close() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS
+// PUBLIC METHODS FOR DRIVER
 
+// Direction returns default direction for new root views
 func (this *driver) Direction() gopi.LayoutDirection {
 	return this.direction
 }
 
-func (this *driver) NewRootViewWithTag(tag uint) gopi.View {
+// NewRootView creates a new root view (which is usually the backing
+// element of a drawable surface) with a view class and unique tag
+func (this *driver) NewRootView(tag uint, class string) gopi.View {
+	// Check for pre-existing view with this tag
 	if _, exists := this.root[tag]; exists {
-		this.log.Error("Tag %v already exists", tag)
+		this.log.Error("View tag %v: already exists", tag)
+		return nil
+	}
+
+	// Ensure tag is non-zero for root views
+	if tag == 0 {
+		this.log.Error("View tag %v: cannot be zero", tag)
 		return nil
 	}
 
 	// create the new view
-	root := newViewWithTag(tag)
-	this.root[tag] = root
+	if root := this.newView(tag, class); root == nil {
+		this.log.Error("View tag %v: Unable to create a new root view", tag)
+		return nil
+	} else {
+		// Append the view
+		this.root[tag] = root
 
-	// return the view
-	return root
+		// return the view
+		return root
+	}
 }
 
+// Returns root view for a particular tag or returns nil
 func (this *driver) RootViewForTag(tag uint) gopi.View {
 	root := this.root[tag]
 	return root
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS FOR VIEW
+
+// Return view tag or zero if not defined
+func (this *view) Tag() uint {
+	return this.tag
+}
+
+// Return view class
+func (this *view) Class() string {
+	return this.class
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func newViewWithTag(tag uint) *view {
+func (this *driver) newView(tag uint, class string) *view {
+	// Check for valid view class
+	if this.isValidViewClass(class) == false {
+		return nil
+	}
+
+	// Create view with tag and class
 	v := new(view)
 	v.tag = tag
+	v.class = class
+
+	// Return view
 	return v
+}
+
+func (this *driver) isValidViewClass(class string) bool {
+	return reViewClassName.MatchString(class)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

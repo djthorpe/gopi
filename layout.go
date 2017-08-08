@@ -48,9 +48,10 @@ type Layout interface {
 	// Return default view direction
 	Direction() LayoutDirection
 
-	// Create a root view with a particular tag, returns
-	// a nil object if the view could not be created
-	NewRootViewWithTag(tag uint) View
+	// Create a root view with a particular tag and view class,
+	// returns a nil object if the view could not be created
+	// due to invalid class or pre-existing tag
+	NewRootView(tag uint, class string) View
 
 	// Return the root view for a particular tag, returns
 	// a nil object if the view could not be found
