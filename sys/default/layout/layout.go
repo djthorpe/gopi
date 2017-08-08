@@ -2,7 +2,7 @@ package layout /* import "github.com/djthorpe/gopi/sys/default/layout" */
 
 import (
 	"errors"
-	"io"
+	"fmt"
 
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/util"
@@ -16,8 +16,16 @@ type Config struct {
 	Direction gopi.LayoutDirection
 }
 
+type view struct {
+	root  bool
+	tag   uint
+	class string
+}
+
 type driver struct {
-	log gopi.Logger
+	log       gopi.Logger
+	direction gopi.LayoutDirection
+	root      map[uint]*view
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,6 +69,17 @@ func (config Config) Open(logger gopi.Logger) (gopi.Driver, error) {
 
 	this.log.Debug2("gopi.sys.default.layout.Open()")
 
+	// If direction is INHERIT or NONE, then choose LEFTRIGHT
+	if config.Direction == gopi.LAYOUT_DIRECTION_NONE {
+		this.direction = gopi.LAYOUT_DIRECTION_LEFTRIGHT
+	} else {
+		this.direction = config.Direction
+	}
+
+	// Create a map for tag to root view, with an initial
+	// capacity of 1
+	this.root = make(map[uint]*view, 1)
+
 	return this, nil
 }
 
@@ -72,21 +91,41 @@ func (this *driver) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *driver) View() gopi.View {
-	return nil
+func (this *driver) Direction() gopi.LayoutDirection {
+	return this.direction
 }
 
-// CalculateLayout performs the layout using the root node as the correct size
-func (this *driver) CalculateLayout() bool {
-	return false
+func (this *driver) NewRootViewWithTag(tag uint) gopi.View {
+	if _, exists := this.root[tag]; exists {
+		this.log.Error("Tag %v already exists", tag)
+		return nil
+	}
+
+	// create the new view
+	root := newViewWithTag(tag)
+	this.root[tag] = root
+
+	// return the view
+	return root
 }
 
-// CalculateLayoutWithSize calculates layout with a new root size
-func (this *driver) CalculateLayoutWithSize(w, h float32) bool {
-	return false
+func (this *driver) RootViewForTag(tag uint) gopi.View {
+	root := this.root[tag]
+	return root
 }
 
-// Encode return XML encoded version of the layout
-func (this *driver) Encode(w io.Writer, indent gopi.EncodeIndentOptions) error {
-	return ErrNotImplemented
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func newViewWithTag(tag uint) *view {
+	v := new(view)
+	v.tag = tag
+	return v
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (this *driver) String() string {
+	return fmt.Sprintf("gopi.sys.default.Layout{ direction=%v }", this.direction)
 }
