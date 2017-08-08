@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/djthorpe/gopi"
+	"github.com/djthorpe/gopi/third_party/flex"
 	"github.com/djthorpe/gopi/util"
 )
 
@@ -21,6 +22,7 @@ type view struct {
 	root  bool
 	tag   uint
 	class string
+	node  *flex.Node
 }
 
 type driver struct {
@@ -149,6 +151,11 @@ func (this *view) Class() string {
 	return this.class
 }
 
+// Style returns style object
+func (this *view) Style() *gopi.ViewStyle {
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
@@ -158,10 +165,33 @@ func (this *driver) newView(tag uint, class string) *view {
 		return nil
 	}
 
+	// Create a configuration
+	flexconfig := flex.NewConfig()
+	flexconfig.Logger = func(config *flex.Config, node *flex.Node, level flex.LogLevel, format string, args ...interface{}) int {
+		switch level {
+		case flex.LogLevelError:
+			this.log.Error(format, args)
+		case flex.LogLevelFatal:
+			this.log.Fatal(format, args)
+		case flex.LogLevelWarn:
+			this.log.Warn(format, args)
+		case flex.LogLevelInfo:
+			this.log.Info(format, args)
+		case flex.LogLevelDebug:
+			this.log.Debug(format, args)
+		case flex.LogLevelVerbose:
+			this.log.Debug2(format, args)
+		}
+		return 0
+	}
+
 	// Create view with tag and class
 	v := new(view)
 	v.tag = tag
 	v.class = class
+	v.node = flex.NewNodeWithConfig(flexconfig)
+
+	// TODO: Copy style across to node
 
 	// Return view
 	return v

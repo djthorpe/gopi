@@ -29,6 +29,18 @@ const (
 )
 
 /////////////////////////////////////////////////////////////////////
+// STRUCTS
+
+type ViewStyle struct {
+	Top    string
+	Left   string
+	Bottom string
+	Right  string
+	Width  string
+	Height string
+}
+
+/////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 // View defines a 2D rectangular drawable element
@@ -38,6 +50,9 @@ type View interface {
 
 	// Return class for this view
 	Class() string
+
+	// Return style for this view
+	Style() *ViewStyle
 }
 
 // Layout defines the methods of calculating layout of views within
