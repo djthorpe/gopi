@@ -202,8 +202,8 @@ func (this *view) Wrap() gopi.ViewWrap {
 
 func (this *view) Align() gopi.ViewAlign {
 	switch this.node.Style.AlignContent {
-	case flex.WrapWrap:
-		return gopi.VIEW_WRAP_ON
+	case flex.AlignAuto:
+		return gopi.VIEW_ALIGN
 	case flex.WrapNoWrap:
 		return gopi.VIEW_WRAP_OFF
 	default:
