@@ -16,13 +16,8 @@ import (
 // Config defines a default configuration for a layout
 type Config struct {
 	Direction gopi.LayoutDirection
-}
-
-type view struct {
-	root  bool
-	tag   uint
-	class string
-	node  *flex.Node
+	Width     float32
+	Height    float32
 }
 
 type driver struct {
@@ -151,9 +146,95 @@ func (this *view) Class() string {
 	return this.class
 }
 
-// Style returns style object
-func (this *view) Style() *gopi.ViewStyle {
-	return nil
+func (this *view) Position() gopi.ViewPosition {
+	switch this.node.Style.PositionType {
+	case flex.PositionTypeRelative:
+		return gopi.VIEW_POSITION_RELATIVE
+	case flex.PositionTypeAbsolute:
+		return gopi.VIEW_POSITION_ABSOLUTE
+	default:
+		panic("Invalid ViewPosition value")
+	}
+}
+
+func (this *view) Direction() gopi.ViewDirection {
+	switch this.node.Style.FlexDirection {
+	case flex.FlexDirectionColumn:
+		return gopi.VIEW_DIRECTION_COLUMN
+	case flex.FlexDirectionColumnReverse:
+		return gopi.VIEW_DIRECTION_COLUMN_REVERSE
+	case flex.FlexDirectionRow:
+		return gopi.VIEW_DIRECTION_ROW
+	case flex.FlexDirectionRowReverse:
+		return gopi.VIEW_DIRECTION_ROW_REVERSE
+	default:
+		panic("Invalid ViewDirection value")
+	}
+}
+
+func (this *view) Justify() gopi.ViewJustify {
+	switch this.node.Style.JustifyContent {
+	case flex.JustifyCenter:
+		return gopi.VIEW_JUSTIFY_CENTER
+	case flex.JustifyFlexEnd:
+		return gopi.VIEW_JUSTIFY_END
+	case flex.JustifyFlexStart:
+		return gopi.VIEW_JUSTIFY_START
+	case flex.JustifySpaceAround:
+		return gopi.VIEW_JUSTIFY_SPACE_AROUND
+	case flex.JustifySpaceBetween:
+		return gopi.VIEW_JUSTIFY_SPACE_BETWEEN
+	default:
+		panic("Invalid ViewJustify value")
+	}
+}
+
+func (this *view) Wrap() gopi.ViewWrap {
+	switch this.node.Style.FlexWrap {
+	case flex.WrapWrap:
+		return gopi.VIEW_WRAP_ON
+	case flex.WrapNoWrap:
+		return gopi.VIEW_WRAP_OFF
+	default:
+		panic("Invalid ViewWrap value")
+	}
+}
+
+func (this *view) Align() gopi.ViewAlign {
+	switch this.node.Style.AlignContent {
+	case flex.WrapWrap:
+		return gopi.VIEW_WRAP_ON
+	case flex.WrapNoWrap:
+		return gopi.VIEW_WRAP_OFF
+	default:
+		panic("Invalid ViewWrap value")
+	}
+}
+
+func (this *view) SetDirection(value gopi.ViewDirection) {
+
+}
+
+func (this *view) SetJustify(value gopi.ViewJustify) {
+
+}
+
+func (this *view) SetWrap(value gopi.ViewWrap) {
+
+}
+
+func (this *view) SetAlign(value gopi.ViewAlign) {
+
+}
+
+func (this *view) SetPositionAbsolute(left, right, top, bottom, start, end float) {
+	this.node.StyleSetPositionType(flex.PositionTypeAbsolute)
+	this.node.StyleSetPosition(flex.EdgeLeft, left)
+	this.node.StyleSetPosition(flex.EdgeRight, right)
+	this.node.StyleSetPosition(flex.EdgeTop, top)
+	this.node.StyleSetPosition(flex.EdgeBottom, bottom)
+	this.node.StyleSetPosition(flex.EdgeStart, start)
+	this.node.StyleSetPosition(flex.EdgeEnd, end)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -190,6 +271,9 @@ func (this *driver) newView(tag uint, class string) *view {
 	v.tag = tag
 	v.class = class
 	v.node = flex.NewNodeWithConfig(flexconfig)
+
+	// Set default style
+	v.node.Style.PositionType = flex.PositionTypeRelative
 
 	// TODO: Copy style across to node
 
