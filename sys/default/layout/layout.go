@@ -115,7 +115,7 @@ func (this *driver) NewRootView(tag uint, class string) gopi.View {
 	}
 
 	// create the new view
-	if root := this.newView(tag, class); root == nil {
+	if root := this.newView(tag, class, gopi.VIEW_POSITIONING_ABSOLUTE); root == nil {
 		this.log.Error("View tag %v: Unable to create a new root view", tag)
 		return nil
 	} else {
@@ -134,113 +134,9 @@ func (this *driver) RootViewForTag(tag uint) gopi.View {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS FOR VIEW
-
-// Return view tag or zero if not defined
-func (this *view) Tag() uint {
-	return this.tag
-}
-
-// Return view class
-func (this *view) Class() string {
-	return this.class
-}
-
-func (this *view) Position() gopi.ViewPosition {
-	switch this.node.Style.PositionType {
-	case flex.PositionTypeRelative:
-		return gopi.VIEW_POSITION_RELATIVE
-	case flex.PositionTypeAbsolute:
-		return gopi.VIEW_POSITION_ABSOLUTE
-	default:
-		panic("Invalid ViewPosition value")
-	}
-}
-
-func (this *view) Direction() gopi.ViewDirection {
-	switch this.node.Style.FlexDirection {
-	case flex.FlexDirectionColumn:
-		return gopi.VIEW_DIRECTION_COLUMN
-	case flex.FlexDirectionColumnReverse:
-		return gopi.VIEW_DIRECTION_COLUMN_REVERSE
-	case flex.FlexDirectionRow:
-		return gopi.VIEW_DIRECTION_ROW
-	case flex.FlexDirectionRowReverse:
-		return gopi.VIEW_DIRECTION_ROW_REVERSE
-	default:
-		panic("Invalid ViewDirection value")
-	}
-}
-
-func (this *view) Justify() gopi.ViewJustify {
-	switch this.node.Style.JustifyContent {
-	case flex.JustifyCenter:
-		return gopi.VIEW_JUSTIFY_CENTER
-	case flex.JustifyFlexEnd:
-		return gopi.VIEW_JUSTIFY_END
-	case flex.JustifyFlexStart:
-		return gopi.VIEW_JUSTIFY_START
-	case flex.JustifySpaceAround:
-		return gopi.VIEW_JUSTIFY_SPACE_AROUND
-	case flex.JustifySpaceBetween:
-		return gopi.VIEW_JUSTIFY_SPACE_BETWEEN
-	default:
-		panic("Invalid ViewJustify value")
-	}
-}
-
-func (this *view) Wrap() gopi.ViewWrap {
-	switch this.node.Style.FlexWrap {
-	case flex.WrapWrap:
-		return gopi.VIEW_WRAP_ON
-	case flex.WrapNoWrap:
-		return gopi.VIEW_WRAP_OFF
-	default:
-		panic("Invalid ViewWrap value")
-	}
-}
-
-func (this *view) Align() gopi.ViewAlign {
-	switch this.node.Style.AlignContent {
-	case flex.AlignAuto:
-		return gopi.VIEW_ALIGN
-	case flex.WrapNoWrap:
-		return gopi.VIEW_WRAP_OFF
-	default:
-		panic("Invalid ViewWrap value")
-	}
-}
-
-func (this *view) SetDirection(value gopi.ViewDirection) {
-
-}
-
-func (this *view) SetJustify(value gopi.ViewJustify) {
-
-}
-
-func (this *view) SetWrap(value gopi.ViewWrap) {
-
-}
-
-func (this *view) SetAlign(value gopi.ViewAlign) {
-
-}
-
-func (this *view) SetPositionAbsolute(left, right, top, bottom, start, end float) {
-	this.node.StyleSetPositionType(flex.PositionTypeAbsolute)
-	this.node.StyleSetPosition(flex.EdgeLeft, left)
-	this.node.StyleSetPosition(flex.EdgeRight, right)
-	this.node.StyleSetPosition(flex.EdgeTop, top)
-	this.node.StyleSetPosition(flex.EdgeBottom, bottom)
-	this.node.StyleSetPosition(flex.EdgeStart, start)
-	this.node.StyleSetPosition(flex.EdgeEnd, end)
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *driver) newView(tag uint, class string) *view {
+func (this *driver) newView(tag uint, class string, positioning gopi.ViewPositioning) *view {
 	// Check for valid view class
 	if this.isValidViewClass(class) == false {
 		return nil
@@ -272,10 +168,16 @@ func (this *driver) newView(tag uint, class string) *view {
 	v.class = class
 	v.node = flex.NewNodeWithConfig(flexconfig)
 
-	// Set default style
-	v.node.Style.PositionType = flex.PositionTypeRelative
-
-	// TODO: Copy style across to node
+	// Set positioning with all edges as auto
+	switch positioning {
+	case gopi.VIEW_POSITIONING_ABSOLUTE:
+		v.node.StyleSetPositionType(flex.PositionTypeAbsolute)
+	case gopi.VIEW_POSITIONING_RELATIVE:
+		v.node.StyleSetPositionType(flex.PositionTypeRelative)
+	default:
+		return nil
+	}
+	v.node.StyleSetPosition(flex.EdgeAll, gopi.EdgeUndefined)
 
 	// Return view
 	return v
@@ -289,5 +191,5 @@ func (this *driver) isValidViewClass(class string) bool {
 // STRINGIFY
 
 func (this *driver) String() string {
-	return fmt.Sprintf("gopi.sys.default.Layout{ direction=%v }", this.direction)
+	return fmt.Sprintf("gopi.sys.default.Layout{ direction=%v views=%v }", this.direction, this.root)
 }

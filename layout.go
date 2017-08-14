@@ -23,6 +23,12 @@ type LayoutDirection uint
 // columnereverse, row, rowreverse
 type ViewDirection uint
 
+// ViewDisplay is either flex (default) or none
+type ViewDisplay uint
+
+// ViewOverflow is either visible, hidden or scroll
+type ViewOverflow uint
+
 // ViewJustify is how view children are aligned within a parent
 // START is default
 type ViewJustify uint
@@ -38,7 +44,10 @@ type ViewAlign uint
 // ViewPosition is by default relative. When absolute, uses
 // only left, right, top, bottom, start and end in order to
 // set position
-type ViewPosition uint
+type ViewPositioning uint
+
+// ViewEdge defines an edge
+type ViewEdge uint
 
 /////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -58,6 +67,17 @@ const (
 )
 
 const (
+	VIEW_DISPLAY_FLEX ViewDisplay = iota
+	VIEW_DISPLAY_NONE
+)
+
+const (
+	VIEW_OVERFLOW_VISIBLE ViewOverflow = iota
+	VIEW_OVERFLOW_HIDDEN
+	VIEW_OVERFLOW_SCROLL
+)
+
+const (
 	VIEW_JUSTIFY_FLEX_START ViewJustify = iota
 	VIEW_JUSTIFY_FLEX_END
 	VIEW_JUSTIFY_CENTER
@@ -69,6 +89,7 @@ const (
 const (
 	VIEW_WRAP_ON ViewWrap = iota
 	VIEW_WRAP_OFF
+	VIEW_WRAP_REVERSE
 )
 
 const (
@@ -84,16 +105,28 @@ const (
 )
 
 const (
-	VIEW_POSITION_RELATIVE ViewPosition = iota
-	VIEW_POSITION_ABSOLUTE
+	VIEW_POSITIONING_RELATIVE ViewPositioning = iota
+	VIEW_POSITIONING_ABSOLUTE
+)
+
+const (
+	VIEW_EDGE_NONE ViewEdge = iota
+	VIEW_EDGE_TOP
+	VIEW_EDGE_BOTTOM
+	VIEW_EDGE_LEFT
+	VIEW_EDGE_RIGHT
+	VIEW_EDGE_ALL
 )
 
 /////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 
 var (
-	// Undefined is used to set a position as "not defined" or "auto"
-	Undefined float32 = float32(math.NaN())
+	// EdgeUndefined is used to set a position as "not defined" or "auto"
+	EdgeUndefined float32 = float32(math.NaN())
+
+	// TagNone is when there is no tag associated with a view
+	TagNone uint = 0
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -107,27 +140,76 @@ type View interface {
 	// Return class for this view
 	Class() string
 
+	// Return positioning
+	Positioning() ViewPositioning
+
 	// Get Style Attributes
-	Position() ViewPosition
+	Display() ViewDisplay
+	Overflow() ViewOverflow
 	Direction() ViewDirection
 	Justify() ViewJustify
 	Wrap() ViewWrap
 	Align() ViewAlign
 
 	// Set Style Attributes
+	SetDisplay(value ViewDisplay)
+	SetOverflow(value ViewOverflow)
 	SetDirection(value ViewDirection)
 	SetJustify(value ViewJustify)
 	SetWrap(value ViewWrap)
 	SetAlign(value ViewAlign)
 
-	// Set Absolute positioning
-	SetPositionAbsolute()
-	SetPositionPixel(ViewEdge, float32)
-	SetPositionPercent(ViewEdge, float32)
-	SetPositionAuto(ViewEdge)
+	// Set position
+	SetPositionValue(value float32, edges ...ViewEdge)
+	SetPositionPercent(percent float32, edges ...ViewEdge)
 
-	// Determine if view changes require layout
+	// Set padding
+	SetPaddingValue(value float32, edges ...ViewEdge)
+	SetPaddingPercent(percent float32, edges ...ViewEdge)
+
+	// Set margin
+	SetMarginValue(value float32, edges ...ViewEdge)
+	SetMarginPercent(percent float32, edges ...ViewEdge)
+	SetMarginAuto(edges ...ViewEdge)
+
+	// Set width and height
+	SetWidthValue(value float32)
+	SetWidthPercent(percent float32)
+	SetWidthAuto()
+	SetHeightValue(value float32)
+	SetHeightPercent(percent float32)
+	SetHeightAuto()
+
+	// Minimum and maximum widths
+	SetMinWidthValue(value float32)
+	SetMinWidthPercent(percent float32)
+	SetMaxWidthValue(value float32)
+	SetMaxWidthPercent(percent float32)
+
+	// Minimum and maximum heights
+	SetMinHeightValue(value float32)
+	SetMinHeightPercent(percent float32)
+	SetMaxHeightValue(value float32)
+	SetMaxHeightPercent(percent float32)
+
+	// Get strings for position, margin and padding, each edge is separated by a space
+	PositionString(edges ...ViewEdge) string
+	MarginString(edges ...ViewEdge) string
+	PaddingString(edges ...ViewEdge) string
+	WidthString() string
+	HeightString() string
+	MinWidthString() string
+	MinHeightString() string
+	MaxWidthString() string
+	MaxHeightString() string
+
+	// Determine if view changes on this element require layout
 	IsDirty() bool
+
+	// Get layout values
+	LayoutValue(edge ViewEdge) float32
+	LayoutWidth() float32
+	LayoutHeight() float32
 }
 
 // Layout defines the methods of calculating layout of views within
@@ -159,6 +241,41 @@ type Layout interface {
 
 /////////////////////////////////////////////////////////////////////
 // STRINGIFY
+
+func (v ViewPositioning) String() string {
+	switch v {
+	case VIEW_POSITIONING_RELATIVE:
+		return "VIEW_POSITIONING_RELATIVE"
+	case VIEW_POSITIONING_ABSOLUTE:
+		return "VIEW_POSITIONING_ABSOLUTE"
+	default:
+		return "[?? Invalid ViewPositioning value]"
+	}
+}
+
+func (v ViewDisplay) String() string {
+	switch v {
+	case VIEW_DISPLAY_FLEX:
+		return "VIEW_DISPLAY_FLEX"
+	case VIEW_DISPLAY_NONE:
+		return "VIEW_DISPLAY_NONE"
+	default:
+		return "[?? Invalid ViewDisplay value]"
+	}
+}
+
+func (v ViewOverflow) String() string {
+	switch v {
+	case VIEW_OVERFLOW_VISIBLE:
+		return "VIEW_OVERFLOW_VISIBLE"
+	case VIEW_OVERFLOW_HIDDEN:
+		return "VIEW_OVERFLOW_HIDDEN"
+	case VIEW_OVERFLOW_SCROLL:
+		return "VIEW_OVERFLOW_SCROLL"
+	default:
+		return "[?? Invalid ViewOverflow value]"
+	}
+}
 
 func (d LayoutDirection) String() string {
 	switch d {
@@ -239,13 +356,21 @@ func (v ViewAlign) String() string {
 	}
 }
 
-func (v ViewPosition) String() string {
+func (v ViewEdge) String() string {
 	switch v {
-	case VIEW_POSITION_RELATIVE:
-		return "VIEW_POSITION_RELATIVE"
-	case VIEW_POSITION_ABSOLUTE:
-		return "VIEW_POSITION_ABSOLUTE"
+	case VIEW_EDGE_NONE:
+		return "VIEW_EDGE_NONE"
+	case VIEW_EDGE_TOP:
+		return "VIEW_EDGE_TOP"
+	case VIEW_EDGE_BOTTOM:
+		return "VIEW_EDGE_BOTTOM"
+	case VIEW_EDGE_LEFT:
+		return "VIEW_EDGE_LEFT"
+	case VIEW_EDGE_RIGHT:
+		return "VIEW_EDGE_RIGHT"
+	case VIEW_EDGE_ALL:
+		return "VIEW_EDGE_ALL"
 	default:
-		return "[?? Invalid ViewPosition value]"
+		return "[?? Invalid ViewEdge value]"
 	}
 }
