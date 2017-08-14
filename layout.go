@@ -206,7 +206,8 @@ type View interface {
 	// Determine if view changes on this element require layout
 	IsDirty() bool
 
-	// Get layout values
+	// Get layout values which are provided once 'CalculateLayout'
+	// has been called in the Layout object
 	LayoutValue(edge ViewEdge) float32
 	LayoutWidth() float32
 	LayoutHeight() float32
