@@ -129,6 +129,32 @@ func (this *view) Align() gopi.ViewAlign {
 	}
 }
 
+// Return display value
+func (this *view) Display() gopi.ViewDisplay {
+	switch this.node.Style.Display {
+	case flex.DisplayFlex:
+		return gopi.VIEW_DISPLAY_FLEX
+	case flex.DisplayNone:
+		return gopi.VIEW_DISPLAY_NONE
+	default:
+		panic("Invalid ViewDisplay value")
+	}
+}
+
+// Return overflow value
+func (this *view) Overflow() gopi.ViewOverflow {
+	switch this.node.Style.Overflow {
+	case flex.OverflowVisible:
+		return gopi.VIEW_OVERFLOW_VISIBLE
+	case flex.OverflowScroll:
+		return gopi.VIEW_OVERFLOW_SCROLL
+	case flex.OverflowHidden:
+		return gopi.VIEW_OVERFLOW_HIDDEN
+	default:
+		panic("Invalid ViewOverflow value")
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - SETTERS
 
@@ -197,6 +223,30 @@ func (this *view) SetAlign(value gopi.ViewAlign) {
 		this.node.StyleSetAlignContent(flex.AlignSpaceAround)
 	default:
 		panic("Invalid ViewAlign value")
+	}
+}
+
+func (this *view) SetDisplay(value gopi.ViewDisplay) {
+	switch value {
+	case gopi.VIEW_DISPLAY_FLEX:
+		this.node.StyleSetDisplay(flex.DisplayFlex)
+	case gopi.VIEW_DISPLAY_NONE:
+		this.node.StyleSetDisplay(flex.DisplayNone)
+	default:
+		panic("Invalid ViewDisplay value")
+	}
+}
+
+func (this *view) SetOverflow(value gopi.ViewOverflow) {
+	switch value {
+	case gopi.VIEW_OVERFLOW_VISIBLE:
+		this.node.StyleSetOverflow(flex.OverflowVisible)
+	case gopi.VIEW_OVERFLOW_SCROLL:
+		this.node.StyleSetOverflow(flex.OverflowScroll)
+	case gopi.VIEW_OVERFLOW_HIDDEN:
+		this.node.StyleSetOverflow(flex.OverflowHidden)
+	default:
+		panic("Invalid ViewOverflow value")
 	}
 }
 
