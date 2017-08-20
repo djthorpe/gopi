@@ -179,6 +179,18 @@ func (this *driver) newView(tag uint, class string, positioning gopi.ViewPositio
 	}
 	v.node.StyleSetPosition(flex.EdgeAll, gopi.EdgeUndefined)
 
+	// Set default attributes
+	v.SetDisplay(gopi.VIEW_DISPLAY_FLEX)
+	v.SetOverflow(gopi.VIEW_OVERFLOW_VISIBLE)
+	v.SetDirection(gopi.VIEW_DIRECTION_ROW)
+	v.SetWrap(gopi.VIEW_WRAP_OFF)
+	v.SetJustifyContent(gopi.VIEW_JUSTIFY_FLEX_START)
+	v.SetAlignItems(gopi.VIEW_ALIGN_STRETCH)
+	v.SetAlignContent(gopi.VIEW_ALIGN_STRETCH)
+	v.SetAlignSelf(gopi.VIEW_ALIGN_AUTO)
+	v.SetGrow(0.0)
+	v.SetShrink(1.0)
+
 	// Return view
 	return v
 }

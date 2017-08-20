@@ -9,6 +9,7 @@
 package gopi // import "github.com/djthorpe/gopi"
 
 import (
+	"encoding/xml"
 	"math"
 )
 
@@ -60,10 +61,10 @@ const (
 )
 
 const (
-	VIEW_DIRECTION_COLUMN ViewDirection = iota
-	VIEW_DIRECTION_COLUMN_REVERSE
-	VIEW_DIRECTION_ROW
+	VIEW_DIRECTION_ROW ViewDirection = iota
+	VIEW_DIRECTION_COLUMN
 	VIEW_DIRECTION_ROW_REVERSE
+	VIEW_DIRECTION_COLUMN_REVERSE
 )
 
 const (
@@ -125,6 +126,9 @@ var (
 	// EdgeUndefined is used to set a position as "not defined" or "auto"
 	EdgeUndefined float32 = float32(math.NaN())
 
+	// BasisAuto is the 'auto' setting for basis
+	BasisAuto float32 = float32(math.NaN())
+
 	// TagNone is when there is no tag associated with a view
 	TagNone uint = 0
 )
@@ -147,17 +151,29 @@ type View interface {
 	Display() ViewDisplay
 	Overflow() ViewOverflow
 	Direction() ViewDirection
-	Justify() ViewJustify
 	Wrap() ViewWrap
-	Align() ViewAlign
+	JustifyContent() ViewJustify
+	AlignItems() ViewAlign
+	AlignContent() ViewAlign
+	AlignSelf() ViewAlign
+	Grow() float32
+	Shrink() float32
+	BasisString() string
 
 	// Set Style Attributes
 	SetDisplay(value ViewDisplay)
 	SetOverflow(value ViewOverflow)
 	SetDirection(value ViewDirection)
-	SetJustify(value ViewJustify)
 	SetWrap(value ViewWrap)
-	SetAlign(value ViewAlign)
+	SetJustifyContent(value ViewJustify)
+	SetAlignItems(value ViewAlign)
+	SetAlignContent(value ViewAlign)
+	SetAlignSelf(value ViewAlign)
+	SetGrow(value float32)
+	SetShrink(value float32)
+	SetBasisValue(value float32)
+	SetBasisPercent(value float32)
+	SetBasisAuto()
 
 	// Set position
 	SetPositionValue(value float32, edges ...ViewEdge)
@@ -173,7 +189,7 @@ type View interface {
 	SetMarginAuto(edges ...ViewEdge)
 
 	// Set width and height
-	SetWidthValue(value float32)
+	/*SetWidthValue(value float32)
 	SetWidthPercent(percent float32)
 	SetWidthAuto()
 	SetHeightValue(value float32)
@@ -190,18 +206,18 @@ type View interface {
 	SetMinHeightValue(value float32)
 	SetMinHeightPercent(percent float32)
 	SetMaxHeightValue(value float32)
-	SetMaxHeightPercent(percent float32)
+	SetMaxHeightPercent(percent float32)*/
 
 	// Get strings for position, margin and padding, each edge is separated by a space
 	PositionString(edges ...ViewEdge) string
 	MarginString(edges ...ViewEdge) string
 	PaddingString(edges ...ViewEdge) string
-	WidthString() string
+	/*WidthString() string
 	HeightString() string
 	MinWidthString() string
 	MinHeightString() string
 	MaxWidthString() string
-	MaxHeightString() string
+	MaxHeightString() string*/
 
 	// Determine if view changes on this element require layout
 	IsDirty() bool
@@ -211,6 +227,9 @@ type View interface {
 	LayoutValue(edge ViewEdge) float32
 	LayoutWidth() float32
 	LayoutHeight() float32
+
+	// Require ability to marshall XML
+	xml.Marshaler
 }
 
 // Layout defines the methods of calculating layout of views within
@@ -329,6 +348,8 @@ func (v ViewWrap) String() string {
 		return "VIEW_WRAP_ON"
 	case VIEW_WRAP_OFF:
 		return "VIEW_WRAP_OFF"
+	case VIEW_WRAP_REVERSE:
+		return "VIEW_WRAP_REVERSE"
 	default:
 		return "[?? Invalid ViewWrap value]"
 	}

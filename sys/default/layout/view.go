@@ -1,6 +1,7 @@
 package layout /* import "github.com/djthorpe/gopi/sys/default/layout" */
 
 import (
+	"encoding/xml"
 	"fmt"
 	"math"
 	"strings"
@@ -74,7 +75,7 @@ func (this *view) Direction() gopi.ViewDirection {
 }
 
 // Return justify value
-func (this *view) Justify() gopi.ViewJustify {
+func (this *view) JustifyContent() gopi.ViewJustify {
 	switch this.node.Style.JustifyContent {
 	case flex.JustifyCenter:
 		return gopi.VIEW_JUSTIFY_CENTER
@@ -105,9 +106,50 @@ func (this *view) Wrap() gopi.ViewWrap {
 	}
 }
 
-// Return align value
-func (this *view) Align() gopi.ViewAlign {
+// Return align-content value
+// Typical values: flex-start | flex-end | center | space-around | space-between | stretch
+func (this *view) AlignContent() gopi.ViewAlign {
 	switch this.node.Style.AlignContent {
+	case flex.AlignFlexStart:
+		return gopi.VIEW_ALIGN_FLEX_START
+	case flex.AlignCenter:
+		return gopi.VIEW_ALIGN_CENTER
+	case flex.AlignFlexEnd:
+		return gopi.VIEW_ALIGN_FLEX_END
+	case flex.AlignStretch:
+		return gopi.VIEW_ALIGN_STRETCH
+	case flex.AlignSpaceAround:
+		return gopi.VIEW_ALIGN_SPACE_AROUND
+	case flex.AlignSpaceBetween:
+		return gopi.VIEW_ALIGN_SPACE_BETWEEN
+	default:
+		panic("Invalid ViewAlign value for AlignContent")
+	}
+}
+
+// Return align-items value
+// Typical values: flex-start | flex-end | center | baseline | stretch
+func (this *view) AlignItems() gopi.ViewAlign {
+	switch this.node.Style.AlignItems {
+	case flex.AlignFlexStart:
+		return gopi.VIEW_ALIGN_FLEX_START
+	case flex.AlignCenter:
+		return gopi.VIEW_ALIGN_CENTER
+	case flex.AlignFlexEnd:
+		return gopi.VIEW_ALIGN_FLEX_END
+	case flex.AlignStretch:
+		return gopi.VIEW_ALIGN_STRETCH
+	case flex.AlignBaseline:
+		return gopi.VIEW_ALIGN_BASELINE
+	default:
+		panic("Invalid ViewAlign value for AlignItems")
+	}
+}
+
+// Return align-self value
+// Typical values: auto | flex-start | flex-end | center | baseline | stretch
+func (this *view) AlignSelf() gopi.ViewAlign {
+	switch this.node.Style.AlignSelf {
 	case flex.AlignAuto:
 		return gopi.VIEW_ALIGN_AUTO
 	case flex.AlignFlexStart:
@@ -120,12 +162,8 @@ func (this *view) Align() gopi.ViewAlign {
 		return gopi.VIEW_ALIGN_STRETCH
 	case flex.AlignBaseline:
 		return gopi.VIEW_ALIGN_BASELINE
-	case flex.AlignSpaceAround:
-		return gopi.VIEW_ALIGN_SPACE_AROUND
-	case flex.AlignSpaceBetween:
-		return gopi.VIEW_ALIGN_SPACE_BETWEEN
 	default:
-		panic("Invalid ViewAlign value")
+		panic("Invalid ViewAlign value for AlignSelf")
 	}
 }
 
@@ -155,6 +193,34 @@ func (this *view) Overflow() gopi.ViewOverflow {
 	}
 }
 
+// Return grow value
+func (this *view) Grow() float32 {
+	return this.node.Style.FlexGrow
+}
+
+// Return shrink value
+func (this *view) Shrink() float32 {
+	return this.node.Style.FlexShrink
+}
+
+// Return basis string
+func (this *view) BasisString() string {
+	value := this.node.Style.FlexBasis
+	if value.Unit == flex.UnitAuto {
+		return "auto"
+	}
+	if math.IsNaN(float64(value.Value)) {
+		return "auto"
+	}
+	if value.Unit == flex.UnitPercent {
+		return fmt.Sprintf("%v%%", value.Value)
+	}
+	if value.Unit == flex.UnitPoint {
+		return fmt.Sprintf("%v", value.Value)
+	}
+	return "[?? Invalid Basis value]"
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - SETTERS
 
@@ -173,7 +239,7 @@ func (this *view) SetDirection(value gopi.ViewDirection) {
 	}
 }
 
-func (this *view) SetJustify(value gopi.ViewJustify) {
+func (this *view) SetJustifyContent(value gopi.ViewJustify) {
 	switch value {
 	case gopi.VIEW_JUSTIFY_FLEX_START:
 		this.node.StyleSetJustifyContent(flex.JustifyFlexStart)
@@ -203,26 +269,58 @@ func (this *view) SetWrap(value gopi.ViewWrap) {
 	}
 }
 
-func (this *view) SetAlign(value gopi.ViewAlign) {
+func (this *view) SetAlignItems(value gopi.ViewAlign) {
 	switch value {
-	case gopi.VIEW_ALIGN_AUTO:
-		this.node.StyleSetAlignContent(flex.AlignAuto)
+	case gopi.VIEW_ALIGN_STRETCH:
+		this.node.StyleSetAlignItems(flex.AlignStretch)
 	case gopi.VIEW_ALIGN_FLEX_START:
-		this.node.StyleSetAlignContent(flex.AlignFlexStart)
-	case gopi.VIEW_ALIGN_CENTER:
-		this.node.StyleSetAlignContent(flex.AlignCenter)
+		this.node.StyleSetAlignItems(flex.AlignFlexStart)
 	case gopi.VIEW_ALIGN_FLEX_END:
-		this.node.StyleSetAlignContent(flex.AlignFlexEnd)
+		this.node.StyleSetAlignItems(flex.AlignFlexEnd)
+	case gopi.VIEW_ALIGN_CENTER:
+		this.node.StyleSetAlignItems(flex.AlignCenter)
+	case gopi.VIEW_ALIGN_BASELINE:
+		this.node.StyleSetAlignItems(flex.AlignBaseline)
+	default:
+		panic("Invalid ViewAlign value for AlignItems")
+	}
+}
+
+func (this *view) SetAlignContent(value gopi.ViewAlign) {
+	switch value {
 	case gopi.VIEW_ALIGN_STRETCH:
 		this.node.StyleSetAlignContent(flex.AlignStretch)
-	case gopi.VIEW_ALIGN_BASELINE:
-		this.node.StyleSetAlignContent(flex.AlignBaseline)
+	case gopi.VIEW_ALIGN_FLEX_START:
+		this.node.StyleSetAlignContent(flex.AlignFlexStart)
+	case gopi.VIEW_ALIGN_FLEX_END:
+		this.node.StyleSetAlignContent(flex.AlignFlexEnd)
+	case gopi.VIEW_ALIGN_CENTER:
+		this.node.StyleSetAlignContent(flex.AlignCenter)
 	case gopi.VIEW_ALIGN_SPACE_BETWEEN:
 		this.node.StyleSetAlignContent(flex.AlignSpaceBetween)
 	case gopi.VIEW_ALIGN_SPACE_AROUND:
 		this.node.StyleSetAlignContent(flex.AlignSpaceAround)
 	default:
-		panic("Invalid ViewAlign value")
+		panic("Invalid ViewAlign value for AlignContent")
+	}
+}
+
+func (this *view) SetAlignSelf(value gopi.ViewAlign) {
+	switch value {
+	case gopi.VIEW_ALIGN_AUTO:
+		this.node.StyleSetAlignSelf(flex.AlignAuto)
+	case gopi.VIEW_ALIGN_FLEX_START:
+		this.node.StyleSetAlignSelf(flex.AlignFlexStart)
+	case gopi.VIEW_ALIGN_CENTER:
+		this.node.StyleSetAlignSelf(flex.AlignCenter)
+	case gopi.VIEW_ALIGN_FLEX_END:
+		this.node.StyleSetAlignSelf(flex.AlignFlexEnd)
+	case gopi.VIEW_ALIGN_STRETCH:
+		this.node.StyleSetAlignSelf(flex.AlignStretch)
+	case gopi.VIEW_ALIGN_BASELINE:
+		this.node.StyleSetAlignSelf(flex.AlignBaseline)
+	default:
+		panic("Invalid ViewAlign value for AlignSelf")
 	}
 }
 
@@ -248,6 +346,37 @@ func (this *view) SetOverflow(value gopi.ViewOverflow) {
 	default:
 		panic("Invalid ViewOverflow value")
 	}
+}
+
+// Set grow value
+func (this *view) SetGrow(value float32) {
+	if value < 0.0 {
+		panic("Invalid Grow value")
+	}
+	this.node.StyleSetFlexGrow(value)
+}
+
+// Set shrink value
+func (this *view) SetShrink(value float32) {
+	if value < 0.0 {
+		panic("Invalid Shrink value")
+	}
+	this.node.StyleSetFlexShrink(value)
+}
+
+// Set basis value
+func (this *view) SetBasisValue(value float32) {
+	this.node.StyleSetFlexBasis(value)
+}
+
+// Set basis percent
+func (this *view) SetBasisPercent(value float32) {
+	this.node.StyleSetFlexBasisPercent(value)
+}
+
+// Set basis auto
+func (this *view) SetBasisAuto() {
+	this.SetBasisValue(gopi.BasisAuto)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -367,6 +496,51 @@ func (this *view) IsDirty() bool {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - LAYOUT
+
+func (this *view) LayoutValue(edge gopi.ViewEdge) float32 {
+	switch edge {
+	case gopi.VIEW_EDGE_TOP:
+		return this.node.LayoutGetTop()
+	case gopi.VIEW_EDGE_BOTTOM:
+		return this.node.LayoutGetBottom()
+	case gopi.VIEW_EDGE_LEFT:
+		return this.node.LayoutGetLeft()
+	case gopi.VIEW_EDGE_RIGHT:
+		return this.node.LayoutGetRight()
+	}
+	panic("Invalid ViewEdge value")
+}
+
+func (this *view) LayoutWidth() float32 {
+	return this.node.LayoutGetWidth()
+}
+
+func (this *view) LayoutHeight() float32 {
+	return this.node.LayoutGetHeight()
+}
+
+func (this *view) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	attr := make([]xml.Attr, 0, 5)
+	if this.Tag() != gopi.TagNone {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "tag"}, Value: fmt.Sprintf("%v", this.Tag())})
+	}
+	if this.Class() != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "class"}, Value: this.Class()})
+	}
+	start.Attr = attr
+	e.EncodeToken(start)
+
+	// display
+	e.EncodeElement(this.Display(), xml.StartElement{Name: xml.Name{Local: "display"}})
+	e.EncodeElement(this.Positioning(), xml.StartElement{Name: xml.Name{Local: "position"}})
+	e.EncodeElement(this.Overflow(), xml.StartElement{Name: xml.Name{Local: "overflow"}})
+
+	e.EncodeToken(xml.EndElement{Name: start.Name})
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
 func flexEdge(edge gopi.ViewEdge) flex.Edge {
@@ -410,9 +584,12 @@ func (this *view) String() string {
 		parts = append(parts, fmt.Sprintf("position=\"%v\"", this.PositionString(gopi.VIEW_EDGE_ALL)))
 	case gopi.VIEW_POSITIONING_RELATIVE:
 		parts = append(parts, fmt.Sprintf("direction=\"%v\"", this.Direction()))
-		parts = append(parts, fmt.Sprintf("justify=\"%v\"", this.Justify()))
 		parts = append(parts, fmt.Sprintf("wrap=\"%v\"", this.Wrap()))
-		parts = append(parts, fmt.Sprintf("align=\"%v\"", this.Align()))
+		parts = append(parts, fmt.Sprintf("justify-content=\"%v\"", this.JustifyContent()))
+		parts = append(parts, fmt.Sprintf("align-content=\"%v\"", this.AlignContent()))
+		parts = append(parts, fmt.Sprintf("align-items=\"%v\"", this.AlignItems()))
+		parts = append(parts, fmt.Sprintf("grow=%v", this.Grow()))
+		parts = append(parts, fmt.Sprintf("shrink=%v", this.Shrink()))
 	}
 	parts = append(parts, fmt.Sprintf("margin=\"%v\"", this.MarginString(gopi.VIEW_EDGE_ALL)))
 	parts = append(parts, fmt.Sprintf("padding=\"%v\"", this.PaddingString(gopi.VIEW_EDGE_ALL)))
