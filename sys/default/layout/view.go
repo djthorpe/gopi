@@ -531,10 +531,21 @@ func (this *view) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Attr = attr
 	e.EncodeToken(start)
 
-	// display
-	e.EncodeElement(this.Display(), xml.StartElement{Name: xml.Name{Local: "display"}})
-	e.EncodeElement(this.Positioning(), xml.StartElement{Name: xml.Name{Local: "position"}})
-	e.EncodeElement(this.Overflow(), xml.StartElement{Name: xml.Name{Local: "overflow"}})
+	// display, position, overflow
+	e.EncodeElement(flex.DisplayToString(this.node.Style.Display), xml.StartElement{Name: xml.Name{Local: "display"}})
+	e.EncodeElement(flex.OverflowToString(this.node.Style.Overflow), xml.StartElement{Name: xml.Name{Local: "overflow"}})
+	e.EncodeElement(flex.PositionTypeToString(this.node.Style.PositionType), xml.StartElement{Name: xml.Name{Local: "position"}})
+
+	// absolute positioning
+	if this.Positioning() == gopi.VIEW_POSITIONING_ABSOLUTE {
+		e.EncodeElement(this.PositionString(gopi.VIEW_EDGE_ALL), xml.StartElement{Name: xml.Name{Local: "position"}})
+	}
+	// relative positioning
+	if this.Positioning() == gopi.VIEW_POSITIONING_RELATIVE {
+		// TODO
+	}
+	e.EncodeElement(this.MarginString(gopi.VIEW_EDGE_ALL), xml.StartElement{Name: xml.Name{Local: "margin"}})
+	e.EncodeElement(this.PaddingString(gopi.VIEW_EDGE_ALL), xml.StartElement{Name: xml.Name{Local: "padding"}})
 
 	e.EncodeToken(xml.EndElement{Name: start.Name})
 	return nil
