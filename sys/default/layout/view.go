@@ -385,7 +385,8 @@ func (this *view) SetBasisAuto() {
 func (this *view) SetPositionValue(value float32, edges ...gopi.ViewEdge) {
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			this.SetPositionValue(value, gopi.VIEW_EDGE_ALL, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.SetPositionValue(value, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.node.StyleSetPosition(flexEdge(edge), value)
 			return
 		}
 		this.node.StyleSetPosition(flexEdge(edge), value)
@@ -395,7 +396,8 @@ func (this *view) SetPositionValue(value float32, edges ...gopi.ViewEdge) {
 func (this *view) SetPositionPercent(percent float32, edges ...gopi.ViewEdge) {
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			this.SetPositionPercent(percent, gopi.VIEW_EDGE_ALL, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.SetPositionPercent(percent, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.node.StyleSetPositionPercent(flexEdge(edge), percent)
 			return
 		}
 		this.node.StyleSetPositionPercent(flexEdge(edge), percent)
@@ -405,7 +407,8 @@ func (this *view) SetPositionPercent(percent float32, edges ...gopi.ViewEdge) {
 func (this *view) SetMarginValue(value float32, edges ...gopi.ViewEdge) {
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			this.SetMarginValue(value, gopi.VIEW_EDGE_ALL, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.SetMarginValue(value, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.node.StyleSetMargin(flexEdge(edge), value)
 			return
 		}
 		this.node.StyleSetMargin(flexEdge(edge), value)
@@ -415,7 +418,8 @@ func (this *view) SetMarginValue(value float32, edges ...gopi.ViewEdge) {
 func (this *view) SetMarginPercent(percent float32, edges ...gopi.ViewEdge) {
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			this.SetMarginPercent(percent, gopi.VIEW_EDGE_ALL, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.SetMarginPercent(percent, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.node.StyleSetMarginPercent(flexEdge(edge), percent)
 			return
 		}
 		this.node.StyleSetMarginPercent(flexEdge(edge), percent)
@@ -425,7 +429,8 @@ func (this *view) SetMarginPercent(percent float32, edges ...gopi.ViewEdge) {
 func (this *view) SetMarginAuto(edges ...gopi.ViewEdge) {
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			this.SetMarginAuto(gopi.VIEW_EDGE_ALL, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.SetMarginAuto(gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.node.StyleSetMarginAuto(flexEdge(edge))
 			return
 		}
 		this.node.StyleSetMarginAuto(flexEdge(edge))
@@ -435,7 +440,8 @@ func (this *view) SetMarginAuto(edges ...gopi.ViewEdge) {
 func (this *view) SetPaddingValue(value float32, edges ...gopi.ViewEdge) {
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			this.SetPaddingValue(value, gopi.VIEW_EDGE_ALL, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.SetPaddingValue(value, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.node.StyleSetPadding(flexEdge(edge), value)
 			return
 		}
 		this.node.StyleSetPadding(flexEdge(edge), value)
@@ -445,7 +451,8 @@ func (this *view) SetPaddingValue(value float32, edges ...gopi.ViewEdge) {
 func (this *view) SetPaddingPercent(percent float32, edges ...gopi.ViewEdge) {
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			this.SetPaddingPercent(percent, gopi.VIEW_EDGE_ALL, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.SetPaddingPercent(percent, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			this.node.StyleSetPaddingPercent(flexEdge(edge), percent)
 			return
 		}
 		this.node.StyleSetPaddingPercent(flexEdge(edge), percent)
@@ -459,7 +466,7 @@ func (this *view) PositionString(edges ...gopi.ViewEdge) string {
 	edges_string := make([]string, 0, len(edges))
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			return this.PositionString(gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			return boxString(this.PositionString(gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT))
 		}
 		edges_string = append(edges_string, flexEdgeString(this.node.StyleGetPosition(flexEdge(edge))))
 	}
@@ -470,7 +477,7 @@ func (this *view) MarginString(edges ...gopi.ViewEdge) string {
 	edges_string := make([]string, 0, len(edges))
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			return this.MarginString(gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			return boxString(this.MarginString(gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT))
 		}
 		edges_string = append(edges_string, flexEdgeString(this.node.StyleGetMargin(flexEdge(edge))))
 	}
@@ -481,7 +488,7 @@ func (this *view) PaddingString(edges ...gopi.ViewEdge) string {
 	edges_string := make([]string, 0, len(edges))
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
-			return this.PaddingString(gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT)
+			return boxString(this.PaddingString(gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_RIGHT, gopi.VIEW_EDGE_BOTTOM, gopi.VIEW_EDGE_LEFT))
 		}
 		edges_string = append(edges_string, flexEdgeString(this.node.StyleGetPadding(flexEdge(edge))))
 	}
@@ -576,6 +583,30 @@ func flexEdgeString(value flex.Value) string {
 		return fmt.Sprintf("%v", value.Value)
 	}
 	panic(value.Value == gopi.EdgeUndefined)
+}
+
+func boxString(box string) string {
+	edges := strings.Split(box, " ")
+	if len(edges) != 4 {
+		return box
+	}
+	top_bottom := (edges[0] == edges[2])
+	left_right := (edges[1] == edges[3])
+	all := top_bottom && left_right && (edges[0] == edges[1])
+	// 1 value: all edges are the same
+	if all {
+		return edges[0]
+	}
+	// 2 values: top & bottom is set to the first value, the left and right are set to the second
+	if top_bottom && left_right {
+		return strings.Join(edges[0:2], " ")
+	}
+	// 3 values: top is set to the 1st value, the left and right are set to the 2nd, & the bottom is set to the 3rd
+	if left_right {
+		return strings.Join(edges[0:3], " ")
+	}
+	// Else all the values are different, return the original
+	return box
 }
 
 ////////////////////////////////////////////////////////////////////////////////

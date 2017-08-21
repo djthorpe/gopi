@@ -519,6 +519,36 @@ func TestLayout_012(t *testing.T) {
 	app.Logger.Info("view=%v", view)
 }
 
+func TestLayout_013(t *testing.T) {
+	config := gopi.NewAppConfig(gopi.MODULE_TYPE_LAYOUT)
+	config.Debug = true
+	config.Verbose = true
+	// Create an application with a layout module
+	app, err := gopi.NewAppInstance(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := app.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	view := app.Layout.NewRootView(1, "root")
+	if view == nil {
+		t.Fatal("View could not be created")
+	}
+
+	// Check position value to be 0
+	view.SetPositionValue(0, gopi.VIEW_EDGE_ALL)
+	if view.PositionString() != "0" {
+		t.Errorf("SetPositionValue(0) expected string to be \"0\", returned \"%v\"", view.PositionString())
+	}
+	view.SetPositionPercent(0, gopi.VIEW_EDGE_ALL)
+	if view.PositionString() != "0%" {
+		t.Errorf("SetPositionPercent(0) expected string to be \"0%%\", returned \"%v\"", view.PositionString())
+	}
+}
+
 func TestLayout_020(t *testing.T) {
 	config := gopi.NewAppConfig(gopi.MODULE_TYPE_LAYOUT)
 	config.Debug = true
