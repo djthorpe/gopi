@@ -189,7 +189,7 @@ type View interface {
 	SetMarginAuto(edges ...ViewEdge)
 
 	// Set width and height
-	/*SetWidthValue(value float32)
+	SetWidthValue(value float32)
 	SetWidthPercent(percent float32)
 	SetWidthAuto()
 	SetHeightValue(value float32)
@@ -197,27 +197,30 @@ type View interface {
 	SetHeightAuto()
 
 	// Minimum and maximum widths
-	SetMinWidthValue(value float32)
-	SetMinWidthPercent(percent float32)
-	SetMaxWidthValue(value float32)
-	SetMaxWidthPercent(percent float32)
-
-	// Minimum and maximum heights
-	SetMinHeightValue(value float32)
-	SetMinHeightPercent(percent float32)
-	SetMaxHeightValue(value float32)
-	SetMaxHeightPercent(percent float32)*/
+	/*	SetMinWidthValue(value float32)
+		SetMinWidthPercent(percent float32)
+		SetMaxWidthValue(value float32)
+		SetMaxWidthPercent(percent float32)*/
+	/*
+		// Minimum and maximum heights
+		SetMinHeightValue(value float32)
+		SetMinHeightPercent(percent float32)
+		SetMaxHeightValue(value float32)
+		SetMaxHeightPercent(percent float32)
+	*/
 
 	// Get strings for position, margin and padding, each edge is separated by a space
 	PositionString(edges ...ViewEdge) string
 	MarginString(edges ...ViewEdge) string
 	PaddingString(edges ...ViewEdge) string
-	/*WidthString() string
+	WidthString() string
 	HeightString() string
-	MinWidthString() string
-	MinHeightString() string
-	MaxWidthString() string
-	MaxHeightString() string*/
+	/*
+		MinWidthString() string
+		MinHeightString() string
+		MaxWidthString() string
+		MaxHeightString() string
+	*/
 
 	// Determine if view changes on this element require layout
 	IsDirty() bool

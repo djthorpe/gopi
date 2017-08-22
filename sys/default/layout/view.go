@@ -460,9 +460,39 @@ func (this *view) SetPaddingPercent(percent float32, edges ...gopi.ViewEdge) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - SET WIDTH, HEIGHT
+
+func (this *view) SetWidthValue(value float32) {
+	this.node.StyleSetWidth(value)
+}
+
+func (this *view) SetWidthPercent(percent float32) {
+	this.node.StyleSetWidthPercent(percent)
+}
+
+func (this *view) SetWidthAuto() {
+	this.node.StyleSetWidthAuto()
+}
+
+func (this *view) SetHeightValue(value float32) {
+	this.node.StyleSetHeight(value)
+}
+
+func (this *view) SetHeightPercent(percent float32) {
+	this.node.StyleSetHeightPercent(percent)
+}
+
+func (this *view) SetHeightAuto() {
+	this.node.StyleSetHeightAuto()
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - GET POSITION, MARGIN AND PADDING
 
 func (this *view) PositionString(edges ...gopi.ViewEdge) string {
+	if len(edges) == 0 {
+		panic("PositionString expects non-empty edges argument")
+	}
 	edges_string := make([]string, 0, len(edges))
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
@@ -474,6 +504,9 @@ func (this *view) PositionString(edges ...gopi.ViewEdge) string {
 }
 
 func (this *view) MarginString(edges ...gopi.ViewEdge) string {
+	if len(edges) == 0 {
+		panic("MarginString expects non-empty edges argument")
+	}
 	edges_string := make([]string, 0, len(edges))
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
@@ -485,6 +518,9 @@ func (this *view) MarginString(edges ...gopi.ViewEdge) string {
 }
 
 func (this *view) PaddingString(edges ...gopi.ViewEdge) string {
+	if len(edges) == 0 {
+		panic("PaddingString expects non-empty edges argument")
+	}
 	edges_string := make([]string, 0, len(edges))
 	for _, edge := range edges {
 		if edge == gopi.VIEW_EDGE_ALL {
@@ -493,6 +529,43 @@ func (this *view) PaddingString(edges ...gopi.ViewEdge) string {
 		edges_string = append(edges_string, flexEdgeString(this.node.StyleGetPadding(flexEdge(edge))))
 	}
 	return strings.Join(edges_string, " ")
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - GET WIDTH, HEIGHT
+
+func (this *view) WidthString() string {
+	value := this.node.StyleGetWidth()
+	if value.Unit == flex.UnitAuto {
+		return "auto"
+	}
+	if math.IsNaN(float64(value.Value)) {
+		return "auto"
+	}
+	if value.Unit == flex.UnitPercent {
+		return fmt.Sprintf("%v%%", value.Value)
+	}
+	if value.Unit == flex.UnitPoint {
+		return fmt.Sprintf("%v", value.Value)
+	}
+	return "[?? Invalid Width value]"
+}
+
+func (this *view) HeightString() string {
+	value := this.node.StyleGetHeight()
+	if value.Unit == flex.UnitAuto {
+		return "auto"
+	}
+	if math.IsNaN(float64(value.Value)) {
+		return "auto"
+	}
+	if value.Unit == flex.UnitPercent {
+		return fmt.Sprintf("%v%%", value.Value)
+	}
+	if value.Unit == flex.UnitPoint {
+		return fmt.Sprintf("%v", value.Value)
+	}
+	return "[?? Invalid Height value]"
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -527,6 +600,9 @@ func (this *view) LayoutHeight() float32 {
 	return this.node.LayoutGetHeight()
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - XML
+
 func (this *view) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	attr := make([]xml.Attr, 0, 5)
 	if this.Tag() != gopi.TagNone {
@@ -541,20 +617,34 @@ func (this *view) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	// display, position, overflow
 	e.EncodeElement(flex.DisplayToString(this.node.Style.Display), xml.StartElement{Name: xml.Name{Local: "display"}})
 	e.EncodeElement(flex.OverflowToString(this.node.Style.Overflow), xml.StartElement{Name: xml.Name{Local: "overflow"}})
-	e.EncodeElement(flex.PositionTypeToString(this.node.Style.PositionType), xml.StartElement{Name: xml.Name{Local: "position"}})
 
 	// absolute positioning
 	if this.Positioning() == gopi.VIEW_POSITIONING_ABSOLUTE {
 		e.EncodeElement(this.PositionString(gopi.VIEW_EDGE_ALL), xml.StartElement{Name: xml.Name{Local: "position"}})
 	}
+
 	// relative positioning
 	if this.Positioning() == gopi.VIEW_POSITIONING_RELATIVE {
-		// TODO
+		e.EncodeElement(fmt.Sprintf("%v %v %v", this.Grow(), this.Shrink(), this.BasisString()), xml.StartElement{Name: xml.Name{Local: "flex"}})
+		e.EncodeElement(flexFlowString(this.node), xml.StartElement{Name: xml.Name{Local: "flex-flow"}})
+		e.EncodeElement(flex.AlignToString(this.node.Style.AlignSelf), xml.StartElement{Name: xml.Name{Local: "align-self"}})
+		e.EncodeElement(flex.AlignToString(this.node.Style.AlignContent), xml.StartElement{Name: xml.Name{Local: "align-content"}})
+		e.EncodeElement(flex.JustifyToString(this.node.Style.JustifyContent), xml.StartElement{Name: xml.Name{Local: "justify-content"}})
+		e.EncodeElement(flex.AlignToString(this.node.Style.AlignItems), xml.StartElement{Name: xml.Name{Local: "align-items"}})
 	}
+
+	// margin and padding
 	e.EncodeElement(this.MarginString(gopi.VIEW_EDGE_ALL), xml.StartElement{Name: xml.Name{Local: "margin"}})
 	e.EncodeElement(this.PaddingString(gopi.VIEW_EDGE_ALL), xml.StartElement{Name: xml.Name{Local: "padding"}})
 
+	// width and height
+	e.EncodeElement(this.WidthString(), xml.StartElement{Name: xml.Name{Local: "width"}})
+	e.EncodeElement(this.HeightString(), xml.StartElement{Name: xml.Name{Local: "height"}})
+
+	// end view element
 	e.EncodeToken(xml.EndElement{Name: start.Name})
+
+	// return success
 	return nil
 }
 
@@ -583,6 +673,10 @@ func flexEdgeString(value flex.Value) string {
 		return fmt.Sprintf("%v", value.Value)
 	}
 	panic(value.Value == gopi.EdgeUndefined)
+}
+
+func flexFlowString(node *flex.Node) string {
+	return fmt.Sprintf("%v %v", flex.DirectionToString(node.Style.Direction), flex.WrapToString(node.Style.FlexWrap))
 }
 
 func boxString(box string) string {
@@ -625,14 +719,14 @@ func (this *view) String() string {
 	case gopi.VIEW_POSITIONING_ABSOLUTE:
 		parts = append(parts, fmt.Sprintf("position=\"%v\"", this.PositionString(gopi.VIEW_EDGE_ALL)))
 	case gopi.VIEW_POSITIONING_RELATIVE:
-		parts = append(parts, fmt.Sprintf("direction=\"%v\"", this.Direction()))
-		parts = append(parts, fmt.Sprintf("wrap=\"%v\"", this.Wrap()))
-		parts = append(parts, fmt.Sprintf("justify-content=\"%v\"", this.JustifyContent()))
+		parts = append(parts, fmt.Sprintf("flex=\"%v %v %v\"", this.Grow(), this.Shrink(), this.BasisString()))
+		parts = append(parts, fmt.Sprintf("flex-flow=\"%v %v\"", this.Direction(), this.Wrap()))
 		parts = append(parts, fmt.Sprintf("align-content=\"%v\"", this.AlignContent()))
+		parts = append(parts, fmt.Sprintf("justify-content=\"%v\"", this.JustifyContent()))
 		parts = append(parts, fmt.Sprintf("align-items=\"%v\"", this.AlignItems()))
-		parts = append(parts, fmt.Sprintf("grow=%v", this.Grow()))
-		parts = append(parts, fmt.Sprintf("shrink=%v", this.Shrink()))
 	}
+	parts = append(parts, fmt.Sprintf("width=\"%v\"", this.WidthString()))
+	parts = append(parts, fmt.Sprintf("height=\"%v\"", this.HeightString()))
 	parts = append(parts, fmt.Sprintf("margin=\"%v\"", this.MarginString(gopi.VIEW_EDGE_ALL)))
 	parts = append(parts, fmt.Sprintf("padding=\"%v\"", this.PaddingString(gopi.VIEW_EDGE_ALL)))
 	return fmt.Sprintf("gopi.View{ %v }", strings.Join(parts, " "))

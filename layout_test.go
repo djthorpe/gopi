@@ -2,6 +2,7 @@ package gopi_test
 
 import (
 	"encoding/xml"
+	"fmt"
 	"os"
 	"testing"
 
@@ -538,14 +539,99 @@ func TestLayout_013(t *testing.T) {
 		t.Fatal("View could not be created")
 	}
 
-	// Check position value to be 0
+	// Check position value to be 0 or 0%
 	view.SetPositionValue(0, gopi.VIEW_EDGE_ALL)
-	if view.PositionString() != "0" {
-		t.Errorf("SetPositionValue(0) expected string to be \"0\", returned \"%v\"", view.PositionString())
+	if view.PositionString(gopi.VIEW_EDGE_ALL) != "0" {
+		t.Errorf("SetPositionValue(0) expected string to be \"0\", returned \"%v\"", view.PositionString(gopi.VIEW_EDGE_ALL))
 	}
 	view.SetPositionPercent(0, gopi.VIEW_EDGE_ALL)
-	if view.PositionString() != "0%" {
-		t.Errorf("SetPositionPercent(0) expected string to be \"0%%\", returned \"%v\"", view.PositionString())
+	if view.PositionString(gopi.VIEW_EDGE_ALL) != "0%" {
+		t.Errorf("SetPositionPercent(0) expected string to be \"0%%\", returned \"%v\"", view.PositionString(gopi.VIEW_EDGE_ALL))
+	}
+
+	// Check margin value to be 0 or 0%
+	view.SetMarginValue(0, gopi.VIEW_EDGE_ALL)
+	if view.MarginString(gopi.VIEW_EDGE_ALL) != "0" {
+		t.Errorf("SetMarginValue(0) expected string to be \"0\", returned \"%v\"", view.MarginString(gopi.VIEW_EDGE_ALL))
+	}
+	view.SetMarginPercent(0, gopi.VIEW_EDGE_ALL)
+	if view.MarginString(gopi.VIEW_EDGE_ALL) != "0%" {
+		t.Errorf("SetMarginPercent(0) expected string to be \"0%%\", returned \"%v\"", view.MarginString(gopi.VIEW_EDGE_ALL))
+	}
+
+	// Check padding value to be 0 or 0%
+	view.SetPaddingValue(0, gopi.VIEW_EDGE_ALL)
+	if view.PaddingString(gopi.VIEW_EDGE_ALL) != "0" {
+		t.Errorf("SetPaddingValue(0) expected string to be \"0\", returned \"%v\"", view.PaddingString(gopi.VIEW_EDGE_ALL))
+	}
+	view.SetMarginPercent(0, gopi.VIEW_EDGE_ALL)
+	if view.MarginString(gopi.VIEW_EDGE_ALL) != "0%" {
+		t.Errorf("SetPaddingPercent(0) expected string to be \"0%%\", returned \"%v\"", view.PaddingString(gopi.VIEW_EDGE_ALL))
+	}
+
+	// Check top-bottom left-right for position
+	view.SetPositionValue(0, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_BOTTOM)
+	view.SetPositionValue(100, gopi.VIEW_EDGE_LEFT, gopi.VIEW_EDGE_RIGHT)
+	if view.PositionString(gopi.VIEW_EDGE_ALL) != "0 100" {
+		t.Errorf("SetPositionValue(0,T-B) SetPositionValue(0,L-R)  expected string to be \"0 100\", returned \"%v\"", view.PositionString(gopi.VIEW_EDGE_ALL))
+	}
+	view.SetPositionPercent(50, gopi.VIEW_EDGE_TOP, gopi.VIEW_EDGE_BOTTOM)
+	if view.PositionString(gopi.VIEW_EDGE_ALL) != "50% 100" {
+		t.Errorf("SetPositionPercent(50,T-B) SetPositionValue(0,L-R)  expected string to be \"50% 100\", returned \"%v\"", view.PositionString(gopi.VIEW_EDGE_ALL))
+	}
+
+	// Check top, left-right bottom for position
+	view.SetPositionValue(25, gopi.VIEW_EDGE_TOP)
+	view.SetPositionValue(75, gopi.VIEW_EDGE_BOTTOM)
+	view.SetPositionPercent(100, gopi.VIEW_EDGE_LEFT, gopi.VIEW_EDGE_RIGHT)
+	if view.PositionString(gopi.VIEW_EDGE_ALL) != "25 100% 75" {
+		t.Errorf("SetPositionValue(25,T) SetPositionValue(75,B) SetPositionPercent(100,L-R)  expected string to be \"25 100% 75\", returned \"%v\"", view.PositionString(gopi.VIEW_EDGE_ALL))
+	}
+}
+
+func TestLayout_014(t *testing.T) {
+	config := gopi.NewAppConfig(gopi.MODULE_TYPE_LAYOUT)
+	config.Debug = true
+	config.Verbose = true
+	// Create an application with a layout module
+	app, err := gopi.NewAppInstance(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := app.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	view := app.Layout.NewRootView(1, "root")
+	if view == nil {
+		t.Fatal("View could not be created")
+	}
+	// Check width and height as auto
+	if view.WidthString() != "auto" {
+		t.Errorf("Expected default width to be auto, got %v", view.WidthString())
+	}
+	if view.HeightString() != "auto" {
+		t.Errorf("Expected default height to be auto, got %v", view.HeightString())
+	}
+	// Check values for width and height
+	view.SetWidthValue(50)
+	view.SetHeightValue(50)
+	wh := fmt.Sprintf("%v %v", view.WidthString(), view.HeightString())
+	if wh != "50 50" {
+		t.Errorf("Expected width & height to be 50 50, got %v", wh)
+	}
+	view.SetWidthPercent(75)
+	view.SetHeightPercent(25)
+	wh = fmt.Sprintf("%v %v", view.WidthString(), view.HeightString())
+	if wh != "75% 25%" {
+		t.Errorf("Expected width & height to be 75% 25%, got %v", wh)
+	}
+	view.SetWidthAuto()
+	view.SetHeightAuto()
+	wh = fmt.Sprintf("%v %v", view.WidthString(), view.HeightString())
+	if wh != "auto auto" {
+		t.Errorf("Expected width & height to be auto auto, got %v", wh)
 	}
 }
 
