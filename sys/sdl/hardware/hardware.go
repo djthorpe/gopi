@@ -13,13 +13,33 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // STRUCT
 
-// Empty Hardware configuration
+// Subsystem initialization flags
+type SDLInitFlags uint32
+
+// Hardware configuration
 type Hardware struct {
+	Init SDLInitFlags
 }
 
 type hardware struct {
 	log gopi.Logger
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	// Which subsystems to start, the default is everything
+	SDL_INIT_NONE           SDLInitFlags = iota
+	SDL_INIT_EVERYTHING     SDLInitFlags = C.SDL_INIT_EVERYTHING
+	SDL_INIT_TIMER          SDLInitFlags = C.SDL_INIT_TIMER
+	SDL_INIT_AUDIO          SDLInitFlags = C.SDL_INIT_AUDIO
+	SDL_INIT_VIDEO          SDLInitFlags = C.SDL_INIT_VIDEO
+	SDL_INIT_JOYSTICK       SDLInitFlags = C.SDL_INIT_JOYSTICK
+	SDL_INIT_HAPTIC         SDLInitFlags = C.SDL_INIT_HAPTIC
+	SDL_INIT_GAMECONTROLLER SDLInitFlags = C.SDL_INIT_GAMECONTROLLER
+	SDL_INIT_EVENTS         SDLInitFlags = C.SDL_INIT_EVENTS
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
@@ -45,9 +65,14 @@ func newHardware(config *gopi.AppConfig, logger gopi.Logger) (gopi.Driver, error
 func (config Hardware) Open(logger gopi.Logger) (gopi.Driver, error) {
 	this := new(hardware)
 	this.log = logger
-	this.log.Debug("sdl.Hardware.Open()")
 
-	if C.SDL_Init(C.Uint32(C.SDL_INIT_EVERYTHING)) != 0 {
+	if config.Init == SDL_INIT_NONE {
+		config.Init = SDL_INIT_EVERYTHING
+	}
+
+	this.log.Debug("sdl.Hardware.Open(Init=%v)", config.Init)
+
+	if C.SDL_Init(C.Uint32(config.Init)) != 0 {
 		return nil, getError()
 	}
 
@@ -61,6 +86,11 @@ func (this *hardware) Name() string {
 
 // Return serial number
 func (this *hardware) SerialNumber() string {
+	return "NOT IMPLEMENTED"
+}
+
+// Revision returns the SDL revision string
+func (this *hardware) Revision() string {
 	return (string)(C.GoString(C.SDL_GetRevision()))
 }
 
@@ -82,7 +112,32 @@ func (this *hardware) Close() error {
 // STRINGIFY
 
 func (this *hardware) String() string {
-	return fmt.Sprintf("sys.sdl.Hardware{ name=\"%v\" serial=\"%v\" number_of_displays=%v }", this.Name(), this.SerialNumber(), this.NumberOfDisplays())
+	return fmt.Sprintf("sys.sdl.Hardware{ name=\"%v\" revision=\"%v\" number_of_displays=%v }", this.Name(), this.Revision(), this.NumberOfDisplays())
+}
+
+func (v SDLInitFlags) String() string {
+	switch v {
+	case SDL_INIT_NONE:
+		return "SDL_INIT_NONE"
+	case SDL_INIT_EVERYTHING:
+		return "SDL_INIT_EVERYTHING"
+	case SDL_INIT_TIMER:
+		return "SDL_INIT_TIMER"
+	case SDL_INIT_AUDIO:
+		return "SDL_INIT_AUDIO"
+	case SDL_INIT_VIDEO:
+		return "SDL_INIT_VIDEO"
+	case SDL_INIT_JOYSTICK:
+		return "SDL_INIT_JOYSTICK"
+	case SDL_INIT_HAPTIC:
+		return "SDL_INIT_HAPTIC"
+	case SDL_INIT_GAMECONTROLLER:
+		return "SDL_INIT_GAMECONTROLLER"
+	case SDL_INIT_EVENTS:
+		return "SDL_INIT_EVENTS"
+	default:
+		return "[?? Invalid SDLInitFlags value]"
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
