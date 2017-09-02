@@ -2,7 +2,6 @@ package gopi_test
 
 import (
 	"encoding/xml"
-	"fmt"
 	"os"
 	"testing"
 
@@ -608,30 +607,112 @@ func TestLayout_014(t *testing.T) {
 		t.Fatal("View could not be created")
 	}
 	// Check width and height as auto
-	if view.WidthString() != "auto" {
-		t.Errorf("Expected default width to be auto, got %v", view.WidthString())
+	if view.DimensionString(gopi.VIEW_DIMENSION_WIDTH) != "auto" {
+		t.Errorf("Expected default width to be auto, got %v", view.DimensionString(gopi.VIEW_DIMENSION_WIDTH))
 	}
-	if view.HeightString() != "auto" {
-		t.Errorf("Expected default height to be auto, got %v", view.HeightString())
+	if view.DimensionString(gopi.VIEW_DIMENSION_HEIGHT) != "auto" {
+		t.Errorf("Expected default height to be auto, got %v", view.DimensionString(gopi.VIEW_DIMENSION_HEIGHT))
+	}
+	if view.DimensionString(gopi.VIEW_DIMENSION_ALL) != "auto auto" {
+		t.Errorf("Expected default width/height to be auto auto, got %v", view.DimensionString(gopi.VIEW_DIMENSION_ALL))
 	}
 	// Check values for width and height
-	view.SetWidthValue(50)
-	view.SetHeightValue(50)
-	wh := fmt.Sprintf("%v %v", view.WidthString(), view.HeightString())
+	view.SetDimensionValue(50, gopi.VIEW_DIMENSION_ALL)
+	wh := view.DimensionString(gopi.VIEW_DIMENSION_ALL)
 	if wh != "50 50" {
 		t.Errorf("Expected width & height to be 50 50, got %v", wh)
 	}
-	view.SetWidthPercent(75)
-	view.SetHeightPercent(25)
-	wh = fmt.Sprintf("%v %v", view.WidthString(), view.HeightString())
+	view.SetDimensionPercent(75, gopi.VIEW_DIMENSION_WIDTH)
+	view.SetDimensionPercent(25, gopi.VIEW_DIMENSION_HEIGHT)
+	wh = view.DimensionString(gopi.VIEW_DIMENSION_ALL)
 	if wh != "75% 25%" {
 		t.Errorf("Expected width & height to be 75% 25%, got %v", wh)
 	}
-	view.SetWidthAuto()
-	view.SetHeightAuto()
-	wh = fmt.Sprintf("%v %v", view.WidthString(), view.HeightString())
+	view.SetDimensionAuto(gopi.VIEW_DIMENSION_ALL)
+	wh = view.DimensionString(gopi.VIEW_DIMENSION_ALL)
 	if wh != "auto auto" {
 		t.Errorf("Expected width & height to be auto auto, got %v", wh)
+	}
+}
+
+func TestLayout_015(t *testing.T) {
+	config := gopi.NewAppConfig(gopi.MODULE_TYPE_LAYOUT)
+	config.Debug = true
+	config.Verbose = true
+	// Create an application with a layout module
+	app, err := gopi.NewAppInstance(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := app.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	view := app.Layout.NewRootView(1, "root")
+	if view == nil {
+		t.Fatal("View could not be created")
+	}
+	// Check minimum and maxium width and height as auto
+	if view.DimensionMinString(gopi.VIEW_DIMENSION_WIDTH) != "auto" {
+		t.Errorf("Expected default min-width to be auto, got %v", view.DimensionString(gopi.VIEW_DIMENSION_WIDTH))
+	}
+	if view.DimensionMinString(gopi.VIEW_DIMENSION_HEIGHT) != "auto" {
+		t.Errorf("Expected default min-height to be auto, got %v", view.DimensionString(gopi.VIEW_DIMENSION_HEIGHT))
+	}
+	if view.DimensionMaxString(gopi.VIEW_DIMENSION_WIDTH) != "auto" {
+		t.Errorf("Expected default max-width to be auto, got %v", view.DimensionString(gopi.VIEW_DIMENSION_WIDTH))
+	}
+	if view.DimensionMaxString(gopi.VIEW_DIMENSION_HEIGHT) != "auto" {
+		t.Errorf("Expected default max-height to be auto, got %v", view.DimensionString(gopi.VIEW_DIMENSION_HEIGHT))
+	}
+
+	// Set minimum values as absolute
+	view.SetDimensionMinValue(75, gopi.VIEW_DIMENSION_ALL)
+	if view.DimensionMinString(gopi.VIEW_DIMENSION_ALL) != "75 75" {
+		t.Errorf("Expected default min values to be 75 75, got %v", view.DimensionMinString(gopi.VIEW_DIMENSION_ALL))
+	}
+
+	// Set maximum values as absolute
+	view.SetDimensionMaxValue(25, gopi.VIEW_DIMENSION_ALL)
+	if view.DimensionMaxString(gopi.VIEW_DIMENSION_ALL) != "25 25" {
+		t.Errorf("Expected default min values to be 25 25, got %v", view.DimensionMaxString(gopi.VIEW_DIMENSION_ALL))
+	}
+
+	// Set minimum values as percentage
+	view.SetDimensionMinPercent(25, gopi.VIEW_DIMENSION_ALL)
+	if view.DimensionMinString(gopi.VIEW_DIMENSION_ALL) != "25% 25%" {
+		t.Errorf("Expected default min values to be 25%% 25%%, got %v", view.DimensionMinString(gopi.VIEW_DIMENSION_ALL))
+	}
+
+	// Set maximum values as percentage
+	view.SetDimensionMaxPercent(75, gopi.VIEW_DIMENSION_ALL)
+	if view.DimensionMaxString(gopi.VIEW_DIMENSION_ALL) != "75% 75%" {
+		t.Errorf("Expected default max values to be 75%% 75%%, got %v", view.DimensionMaxString(gopi.VIEW_DIMENSION_ALL))
+	}
+
+	// Set min values
+	view.SetDimensionMinPercent(60, gopi.VIEW_DIMENSION_WIDTH)
+	view.SetDimensionMinAuto(gopi.VIEW_DIMENSION_HEIGHT)
+	if view.DimensionMinString(gopi.VIEW_DIMENSION_ALL) != "60% auto" {
+		t.Errorf("Expected default min values to be 60%% auto, got %v", view.DimensionMinString(gopi.VIEW_DIMENSION_ALL))
+	}
+
+	// Set max values
+	view.SetDimensionMaxValue(50, gopi.VIEW_DIMENSION_HEIGHT)
+	view.SetDimensionMaxAuto(gopi.VIEW_DIMENSION_WIDTH)
+	if view.DimensionMaxString(gopi.VIEW_DIMENSION_ALL) != "auto 50" {
+		t.Errorf("Expected default max values to be auto 50, got %v", view.DimensionMaxString(gopi.VIEW_DIMENSION_ALL))
+	}
+
+	// Set all to auto
+	view.SetDimensionMinAuto(gopi.VIEW_DIMENSION_ALL)
+	view.SetDimensionMaxAuto(gopi.VIEW_DIMENSION_ALL)
+	if view.DimensionMinString(gopi.VIEW_DIMENSION_ALL) != "auto auto" {
+		t.Errorf("Expected default min values to be auto auto, got %v", view.DimensionMinString(gopi.VIEW_DIMENSION_ALL))
+	}
+	if view.DimensionMaxString(gopi.VIEW_DIMENSION_ALL) != "auto auto" {
+		t.Errorf("Expected default max values to be auto auto, got %v", view.DimensionMaxString(gopi.VIEW_DIMENSION_ALL))
 	}
 }
 

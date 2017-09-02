@@ -190,6 +190,9 @@ func (this *driver) newView(tag uint, class string, positioning gopi.ViewPositio
 	v.SetAlignSelf(gopi.VIEW_ALIGN_AUTO)
 	v.SetGrow(0.0)
 	v.SetShrink(1.0)
+	v.SetDimensionAuto(gopi.VIEW_DIMENSION_ALL)
+	v.SetDimensionMinAuto(gopi.VIEW_DIMENSION_ALL)
+	v.SetDimensionMaxAuto(gopi.VIEW_DIMENSION_ALL)
 
 	// Return view
 	return v

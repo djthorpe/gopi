@@ -462,28 +462,78 @@ func (this *view) SetPaddingPercent(percent float32, edges ...gopi.ViewEdge) {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - SET WIDTH, HEIGHT
 
-func (this *view) SetWidthValue(value float32) {
-	this.node.StyleSetWidth(value)
+func (this *view) SetDimensionValue(value float32, dimension gopi.ViewDimension) {
+	if dimension == gopi.VIEW_DIMENSION_WIDTH || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetWidth(value)
+	}
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetHeight(value)
+	}
 }
 
-func (this *view) SetWidthPercent(percent float32) {
-	this.node.StyleSetWidthPercent(percent)
+func (this *view) SetDimensionPercent(percent float32, dimension gopi.ViewDimension) {
+	if dimension == gopi.VIEW_DIMENSION_WIDTH || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetWidthPercent(percent)
+	}
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetHeightPercent(percent)
+	}
 }
 
-func (this *view) SetWidthAuto() {
-	this.node.StyleSetWidthAuto()
+func (this *view) SetDimensionAuto(dimension gopi.ViewDimension) {
+	if dimension == gopi.VIEW_DIMENSION_WIDTH || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetWidthAuto()
+	}
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetHeightAuto()
+	}
 }
 
-func (this *view) SetHeightValue(value float32) {
-	this.node.StyleSetHeight(value)
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - SET MINIUMUM & MAXIMUM DIMENSIONS
+
+func (this *view) SetDimensionMinValue(value float32, dimension gopi.ViewDimension) {
+	if dimension == gopi.VIEW_DIMENSION_WIDTH || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetMinWidth(value)
+	}
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetMinHeight(value)
+	}
 }
 
-func (this *view) SetHeightPercent(percent float32) {
-	this.node.StyleSetHeightPercent(percent)
+func (this *view) SetDimensionMinPercent(percent float32, dimension gopi.ViewDimension) {
+	if dimension == gopi.VIEW_DIMENSION_WIDTH || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetMinWidthPercent(percent)
+	}
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetMinHeightPercent(percent)
+	}
 }
 
-func (this *view) SetHeightAuto() {
-	this.node.StyleSetHeightAuto()
+func (this *view) SetDimensionMinAuto(dimension gopi.ViewDimension) {
+	this.SetDimensionMinValue(gopi.ValueAuto, dimension)
+}
+
+func (this *view) SetDimensionMaxValue(value float32, dimension gopi.ViewDimension) {
+	if dimension == gopi.VIEW_DIMENSION_WIDTH || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetMaxWidth(value)
+	}
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetMaxHeight(value)
+	}
+}
+
+func (this *view) SetDimensionMaxPercent(percent float32, dimension gopi.ViewDimension) {
+	if dimension == gopi.VIEW_DIMENSION_WIDTH || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetMaxWidthPercent(percent)
+	}
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT || dimension == gopi.VIEW_DIMENSION_ALL {
+		this.node.StyleSetMaxHeightPercent(percent)
+	}
+}
+
+func (this *view) SetDimensionMaxAuto(dimension gopi.ViewDimension) {
+	this.SetDimensionMaxValue(gopi.ValueAuto, dimension)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -532,40 +582,45 @@ func (this *view) PaddingString(edges ...gopi.ViewEdge) string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS - GET WIDTH, HEIGHT
+// PUBLIC METHODS - DIMENSION STRINGS
 
-func (this *view) WidthString() string {
-	value := this.node.StyleGetWidth()
-	if value.Unit == flex.UnitAuto {
-		return "auto"
+func (this *view) DimensionString(dimension gopi.ViewDimension) string {
+	if dimension == gopi.VIEW_DIMENSION_ALL {
+		return fmt.Sprintf("%v %v", flexDimensionString(this.node.StyleGetWidth()), flexDimensionString(this.node.StyleGetHeight()))
 	}
-	if math.IsNaN(float64(value.Value)) {
-		return "auto"
+	if dimension == gopi.VIEW_DIMENSION_WIDTH {
+		return flexDimensionString(this.node.StyleGetWidth())
 	}
-	if value.Unit == flex.UnitPercent {
-		return fmt.Sprintf("%v%%", value.Value)
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT {
+		return flexDimensionString(this.node.StyleGetHeight())
 	}
-	if value.Unit == flex.UnitPoint {
-		return fmt.Sprintf("%v", value.Value)
-	}
-	return "[?? Invalid Width value]"
+	return ""
 }
 
-func (this *view) HeightString() string {
-	value := this.node.StyleGetHeight()
-	if value.Unit == flex.UnitAuto {
-		return "auto"
+func (this *view) DimensionMinString(dimension gopi.ViewDimension) string {
+	if dimension == gopi.VIEW_DIMENSION_ALL {
+		return fmt.Sprintf("%v %v", flexDimensionString(this.node.StyleGetMinWidth()), flexDimensionString(this.node.StyleGetMinHeight()))
 	}
-	if math.IsNaN(float64(value.Value)) {
-		return "auto"
+	if dimension == gopi.VIEW_DIMENSION_WIDTH {
+		return flexDimensionString(this.node.StyleGetMinWidth())
 	}
-	if value.Unit == flex.UnitPercent {
-		return fmt.Sprintf("%v%%", value.Value)
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT {
+		return flexDimensionString(this.node.StyleGetMinHeight())
 	}
-	if value.Unit == flex.UnitPoint {
-		return fmt.Sprintf("%v", value.Value)
+	return ""
+}
+
+func (this *view) DimensionMaxString(dimension gopi.ViewDimension) string {
+	if dimension == gopi.VIEW_DIMENSION_ALL {
+		return fmt.Sprintf("%v %v", flexDimensionString(this.node.StyleGetMaxWidth()), flexDimensionString(this.node.StyleGetMaxHeight()))
 	}
-	return "[?? Invalid Height value]"
+	if dimension == gopi.VIEW_DIMENSION_WIDTH {
+		return flexDimensionString(this.node.StyleGetMaxWidth())
+	}
+	if dimension == gopi.VIEW_DIMENSION_HEIGHT {
+		return flexDimensionString(this.node.StyleGetMaxHeight())
+	}
+	return ""
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -638,8 +693,24 @@ func (this *view) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	e.EncodeElement(this.PaddingString(gopi.VIEW_EDGE_ALL), xml.StartElement{Name: xml.Name{Local: "padding"}})
 
 	// width and height
-	e.EncodeElement(this.WidthString(), xml.StartElement{Name: xml.Name{Local: "width"}})
-	e.EncodeElement(this.HeightString(), xml.StartElement{Name: xml.Name{Local: "height"}})
+	e.EncodeElement(this.DimensionString(gopi.VIEW_DIMENSION_WIDTH), xml.StartElement{Name: xml.Name{Local: "width"}})
+	e.EncodeElement(this.DimensionString(gopi.VIEW_DIMENSION_HEIGHT), xml.StartElement{Name: xml.Name{Local: "height"}})
+
+	// minimum & maximum width
+	if this.node.StyleGetMinWidth().Unit != flex.UnitAuto {
+		e.EncodeElement(this.DimensionMinString(gopi.VIEW_DIMENSION_WIDTH), xml.StartElement{Name: xml.Name{Local: "min-width"}})
+	}
+	if this.node.StyleGetMaxWidth().Unit != flex.UnitAuto {
+		e.EncodeElement(this.DimensionMaxString(gopi.VIEW_DIMENSION_WIDTH), xml.StartElement{Name: xml.Name{Local: "max-width"}})
+	}
+
+	// minimum & maximum height
+	if this.node.StyleGetMinHeight().Unit != flex.UnitAuto {
+		e.EncodeElement(this.DimensionMinString(gopi.VIEW_DIMENSION_HEIGHT), xml.StartElement{Name: xml.Name{Local: "min-height"}})
+	}
+	if this.node.StyleGetMaxHeight().Unit != flex.UnitAuto {
+		e.EncodeElement(this.DimensionMaxString(gopi.VIEW_DIMENSION_HEIGHT), xml.StartElement{Name: xml.Name{Local: "max-height"}})
+	}
 
 	// end view element
 	e.EncodeToken(xml.EndElement{Name: start.Name})
@@ -673,6 +744,22 @@ func flexEdgeString(value flex.Value) string {
 		return fmt.Sprintf("%v", value.Value)
 	}
 	panic(value.Value == gopi.EdgeUndefined)
+}
+
+func flexDimensionString(value flex.Value) string {
+	if value.Unit == flex.UnitAuto {
+		return "auto"
+	}
+	if math.IsNaN(float64(value.Value)) {
+		return "auto"
+	}
+	if value.Unit == flex.UnitPercent {
+		return fmt.Sprintf("%v%%", value.Value)
+	}
+	if value.Unit == flex.UnitPoint {
+		return fmt.Sprintf("%v", value.Value)
+	}
+	return ""
 }
 
 func flexFlowString(node *flex.Node) string {
@@ -725,8 +812,7 @@ func (this *view) String() string {
 		parts = append(parts, fmt.Sprintf("justify-content=\"%v\"", this.JustifyContent()))
 		parts = append(parts, fmt.Sprintf("align-items=\"%v\"", this.AlignItems()))
 	}
-	parts = append(parts, fmt.Sprintf("width=\"%v\"", this.WidthString()))
-	parts = append(parts, fmt.Sprintf("height=\"%v\"", this.HeightString()))
+	parts = append(parts, fmt.Sprintf("width_height=\"%v\"", this.DimensionString(gopi.VIEW_DIMENSION_ALL)))
 	parts = append(parts, fmt.Sprintf("margin=\"%v\"", this.MarginString(gopi.VIEW_EDGE_ALL)))
 	parts = append(parts, fmt.Sprintf("padding=\"%v\"", this.PaddingString(gopi.VIEW_EDGE_ALL)))
 	return fmt.Sprintf("gopi.View{ %v }", strings.Join(parts, " "))

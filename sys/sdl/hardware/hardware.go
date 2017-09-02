@@ -1,8 +1,11 @@
 package hardware /* import "github.com/djthorpe/gopi/sys/sdl/hardware" */
 
+// Macintosh framework version
+
 // #cgo LDFLAGS: -framework SDL2
 // #include <SDL2/SDL.h>
 import "C"
+
 import (
 	"errors"
 	"fmt"

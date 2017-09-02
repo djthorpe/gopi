@@ -38,3 +38,30 @@ type DisplayDriver2 interface {
 	// Return the PPI (pixels-per-inch) for the display, or return zero if unknown
 	PixelsPerInch() uint32
 }
+
+// I2CDriver implements the I2C interface for sensors, etc.
+type I2CDriver interface {
+	Driver
+
+	// Set current slave address
+	SetSlave(uint8) error
+
+	// Get current slave address
+	GetSlave() uint8
+
+	// Return true if a slave was detected at a particular address
+	DetectSlave(uint8) (bool, error)
+
+	// Read Byte (8-bits), Word (16-bits) & Block ([]byte) from registers
+	ReadUint8(reg uint8) (uint8, error)
+	ReadInt8(reg uint8) (int8, error)
+	ReadUint16(reg uint8) (uint16, error)
+	ReadInt16(reg uint8) (int16, error)
+	ReadBlock(reg, length uint8) ([]byte, error)
+
+	// Write Byte (8-bits) & Word (16-bits) to registers
+	WriteUint8(reg, value uint8) error
+	WriteInt8(reg uint8, value int8) error
+	WriteUint16(reg uint8, value uint16) error
+	WriteInt16(reg uint8, value int16) error
+}

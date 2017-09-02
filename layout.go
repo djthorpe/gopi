@@ -50,6 +50,9 @@ type ViewPositioning uint
 // ViewEdge defines an edge
 type ViewEdge uint
 
+// ViewDimension defines width or height
+type ViewDimension uint
+
 /////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
@@ -119,12 +122,22 @@ const (
 	VIEW_EDGE_ALL
 )
 
+const (
+	VIEW_DIMENSION_NONE ViewDimension = iota
+	VIEW_DIMENSION_WIDTH
+	VIEW_DIMENSION_HEIGHT
+	VIEW_DIMENSION_ALL
+)
+
 /////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 
 var (
 	// EdgeUndefined is used to set a position as "not defined" or "auto"
 	EdgeUndefined float32 = float32(math.NaN())
+
+	// ValueAuto is used to set a value to "auto"
+	ValueAuto float32 = float32(math.NaN())
 
 	// BasisAuto is the 'auto' setting for basis
 	BasisAuto float32 = float32(math.NaN())
@@ -189,38 +202,25 @@ type View interface {
 	SetMarginAuto(edges ...ViewEdge)
 
 	// Set width and height
-	SetWidthValue(value float32)
-	SetWidthPercent(percent float32)
-	SetWidthAuto()
-	SetHeightValue(value float32)
-	SetHeightPercent(percent float32)
-	SetHeightAuto()
+	SetDimensionValue(value float32, dimension ViewDimension)
+	SetDimensionPercent(percent float32, dimension ViewDimension)
+	SetDimensionAuto(dimension ViewDimension)
 
-	// Minimum and maximum widths
-	/*	SetMinWidthValue(value float32)
-		SetMinWidthPercent(percent float32)
-		SetMaxWidthValue(value float32)
-		SetMaxWidthPercent(percent float32)*/
-	/*
-		// Minimum and maximum heights
-		SetMinHeightValue(value float32)
-		SetMinHeightPercent(percent float32)
-		SetMaxHeightValue(value float32)
-		SetMaxHeightPercent(percent float32)
-	*/
+	// Minimum and maximum dimensions
+	SetDimensionMinValue(value float32, dimension ViewDimension)
+	SetDimensionMinPercent(percent float32, dimension ViewDimension)
+	SetDimensionMinAuto(dimension ViewDimension)
+	SetDimensionMaxValue(value float32, dimension ViewDimension)
+	SetDimensionMaxPercent(percent float32, dimension ViewDimension)
+	SetDimensionMaxAuto(dimension ViewDimension)
 
 	// Get strings for position, margin and padding, each edge is separated by a space
 	PositionString(edges ...ViewEdge) string
 	MarginString(edges ...ViewEdge) string
 	PaddingString(edges ...ViewEdge) string
-	WidthString() string
-	HeightString() string
-	/*
-		MinWidthString() string
-		MinHeightString() string
-		MaxWidthString() string
-		MaxHeightString() string
-	*/
+	DimensionString(dimension ViewDimension) string
+	DimensionMinString(dimension ViewDimension) string
+	DimensionMaxString(dimension ViewDimension) string
 
 	// Determine if view changes on this element require layout
 	IsDirty() bool
@@ -397,5 +397,20 @@ func (v ViewEdge) String() string {
 		return "VIEW_EDGE_ALL"
 	default:
 		return "[?? Invalid ViewEdge value]"
+	}
+}
+
+func (v ViewDimension) String() string {
+	switch v {
+	case VIEW_DIMENSION_NONE:
+		return "VIEW_DIMENSION_NONE"
+	case VIEW_DIMENSION_WIDTH:
+		return "VIEW_DIMENSION_WIDTH"
+	case VIEW_DIMENSION_HEIGHT:
+		return "VIEW_DIMENSION_HEIGHT"
+	case VIEW_DIMENSION_ALL:
+		return "VIEW_DIMENSION_ALL"
+	default:
+		return "[?? Invalid ViewDimension value]"
 	}
 }
