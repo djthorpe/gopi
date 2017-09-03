@@ -151,6 +151,9 @@ var (
 
 // View defines a 2D rectangular drawable element
 type View interface {
+	// Require ability to marshall XML
+	xml.Marshaler
+
 	// Return tag for this view
 	Tag() uint
 
@@ -230,9 +233,6 @@ type View interface {
 	LayoutValue(edge ViewEdge) float32
 	LayoutWidth() float32
 	LayoutHeight() float32
-
-	// Require ability to marshall XML
-	xml.Marshaler
 }
 
 // Layout defines the methods of calculating layout of views within

@@ -2,6 +2,7 @@ package gopi_test
 
 import (
 	"encoding/xml"
+	"fmt"
 	"os"
 	"testing"
 
@@ -730,7 +731,7 @@ func TestLayout_020(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	// Check basis value
+	// Output XML
 	view := app.Layout.NewRootView(1, "root")
 	if view == nil {
 		t.Fatal("View could not be created")
@@ -744,4 +745,31 @@ func TestLayout_020(t *testing.T) {
 	if err := encoder.Flush(); err != nil {
 		t.Errorf("error: %v\n", err)
 	}
+}
+
+func TestLayout_021(t *testing.T) {
+	config := gopi.NewAppConfig(gopi.MODULE_TYPE_LAYOUT)
+	config.Debug = true
+	config.Verbose = true
+	// Create an application with a layout module
+	app, err := gopi.NewAppInstance(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := app.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+
+	// Read in XML into a view
+	var view gopi.View
+	data := []byte(`<view tag="1" class="root"></view>`)
+	if err := xml.Unmarshal(data, &view); err != nil {
+		t.Error(err)
+	}
+	if view == nil {
+		t.Error("view is <nil>")
+	}
+	fmt.Println(view)
 }
