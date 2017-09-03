@@ -419,6 +419,26 @@ func TestDict_011(t *testing.T) {
 	}
 }
 
+func TestUnmarshall_001(t *testing.T) {
+	// Create an empty dict object
+	var dict *util.Dict
+	if err := xml.Unmarshal([]byte("<dict></dict>"), &dict); err != nil {
+		t.Errorf("Unmarshal error: %v", err)
+	} else if dict.IsEmpty() == false {
+		t.Errorf("Unmarshal error: Dictionary not empty")
+	}
+}
+
+func TestUnmarshall_002(t *testing.T) {
+	// Create an empty dict object
+	var dict *util.Dict
+	if err := xml.Unmarshal([]byte("<dict><key>test</key><string>test</string></dict>"), &dict); err != nil {
+		t.Errorf("Unmarshal error: %v", err)
+	} else if len(dict.Keys()) != 1 {
+		t.Errorf("Unmarshal error: Dictionary should contain 'test' string value: %v", dict)
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func xmlstring(t *testing.T, dict *util.Dict) string {

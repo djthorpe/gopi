@@ -77,6 +77,10 @@ func (this *Dict) Keys() []string {
 	return keys
 }
 
+func (this *Dict) IsEmpty() bool {
+	return len(this.values) == 0
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - SETTERS
 
