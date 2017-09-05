@@ -1,9 +1,9 @@
 /*
-Go Language Raspberry Pi Interface
-(c) Copyright David Thorpe 2016
-All Rights Reserved
+  Go Language Raspberry Pi Interface
+  (c) Copyright David Thorpe 2016
+  All Rights Reserved
 
-For Licensing and Usage information, please see LICENSE.md
+  For Licensing and Usage information, please see LICENSE.md
 */
 
 package util /* import "github.com/djthorpe/gopi/util" */
@@ -11,12 +11,20 @@ package util /* import "github.com/djthorpe/gopi/util" */
 import (
 	"encoding/hex"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 )
+
+/*
+	This file implements a "Dict" structure which can be read and written
+	to XML and JSON files in a similar way to Apple's Property Lists
+	(see https://en.wikipedia.org/wiki/Property_list) implements simple
+	storage types and compound types like dict. It adds the
+	duration scalar type but currently does not implement the
+	compound array type.
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
@@ -24,21 +32,87 @@ import (
 // Dict defines a dictionary of values, somewhat similar to
 // Apple property lists
 type Dict struct {
-	// Require ability to marshall XML
+	// Require ability to marshall and unmarshall XML
 	xml.Marshaler
+	xml.Unmarshaler
 
 	values map[string]*v
 }
 
+type xmlState uint
+type xmlType uint
+type goType uint
+type goTypeCastFunction func(*v) interface{}
+
 type v struct {
 	v interface{}
+	t xmlType
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	xmlStateKeyStart    xmlState = iota // we expect a key start element
+	xmlStateKeyString                   // we expect key data
+	xmlStateKeyEnd                      // we expect key end element
+	xmlStateValueStart                  // we expect value start element
+	xmlStateValueString                 // we expect value string
+	xmlStateValueEnd                    // we expect value end element
+)
+
+const (
+	xmlTypeString xmlType = iota
+	xmlTypeInteger
+	xmlTypeReal
+	xmlTypeBool
+	xmlTypeData
+	xmlTypeDate
+	xmlTypeDuration
+	xmlTypeDict
+)
+
+const (
+	goTypeString goType = iota
+	goTypeInt
+	goTypeUint
+	goTypeFloat32
+	goTypeFloat64
+	goTypeBool
+	goTypeByteArray
+	goTypeTime
+	goTypeDuration
+	goTypeDict
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 
 var (
-	ErrUnsupportedType = errors.New("Unsupported type")
+	xmlScalarTypes = map[string]xmlType{
+		"string":   xmlTypeString,
+		"integer":  xmlTypeInteger,
+		"real":     xmlTypeReal,
+		"bool":     xmlTypeBool,
+		"data":     xmlTypeData,
+		"date":     xmlTypeDate,
+		"duration": xmlTypeDuration,
+	}
+	xmlCompoundTypes = map[string]xmlType{
+		"dict": xmlTypeDict,
+	}
+	goTypeCast = map[goType]goTypeCastFunction{
+		goTypeString:    castString,
+		goTypeInt:       castInt,
+		goTypeUint:      castUint,
+		goTypeFloat32:   castFloat32,
+		goTypeFloat64:   castFloat64,
+		goTypeBool:      castBool,
+		goTypeByteArray: castData,
+		goTypeDuration:  castDuration,
+		goTypeTime:      castDate,
+		goTypeDict:      castDict,
+	}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -86,55 +160,55 @@ func (this *Dict) IsEmpty() bool {
 
 // SetString sets string value for key
 func (this *Dict) SetString(key string, value string) {
-	this.values[key] = &v{v: value}
+	this.values[key] = &v{t: xmlTypeString, v: value}
 }
 
 // SetInt sets int value for key
 func (this *Dict) SetInt(key string, value int) {
-	this.values[key] = &v{v: value}
+	this.values[key] = &v{t: xmlTypeInteger, v: value}
 }
 
 // SetUint sets uint value for key
 func (this *Dict) SetUint(key string, value uint) {
-	this.values[key] = &v{v: value}
+	this.values[key] = &v{t: xmlTypeInteger, v: value}
 }
 
 // SetFloat64 sets float64 value for key
 func (this *Dict) SetFloat64(key string, value float64) {
-	this.values[key] = &v{v: value}
+	this.values[key] = &v{t: xmlTypeReal, v: value}
 }
 
 // SetFloat32 sets float32 value for key
 func (this *Dict) SetFloat32(key string, value float32) {
-	this.values[key] = &v{v: value}
+	this.values[key] = &v{t: xmlTypeReal, v: value}
 }
 
 // SetData sets []byte value for key
 func (this *Dict) SetData(key string, value []byte) {
-	this.values[key] = &v{v: value}
+	this.values[key] = &v{t: xmlTypeData, v: value}
 }
 
 // SetDate sets time.Time value for key
 func (this *Dict) SetDate(key string, value time.Time) {
-	this.values[key] = &v{v: value}
+	this.values[key] = &v{t: xmlTypeDate, v: value}
 }
 
 // SetDuration sets time.Duration value for key
 func (this *Dict) SetDuration(key string, value time.Duration) {
-	this.values[key] = &v{v: value}
+	this.values[key] = &v{t: xmlTypeDuration, v: value}
 }
 
 // SetBool sets bool value for key
 func (this *Dict) SetBool(key string, value bool) {
-	this.values[key] = &v{v: value}
+	this.values[key] = &v{t: xmlTypeBool, v: value}
 }
 
 // SetDict sets dict value for key
 func (this *Dict) SetDict(key string, value *Dict) {
 	if value != nil {
-		this.values[key] = &v{v: CopyDict(value)}
+		this.values[key] = &v{t: xmlTypeDict, v: CopyDict(value)}
 	} else {
-		this.values[key] = &v{v: NewDict(0)}
+		this.values[key] = &v{t: xmlTypeDict, v: NewDict(0)}
 	}
 }
 
@@ -142,111 +216,117 @@ func (this *Dict) SetDict(key string, value *Dict) {
 // PUBLIC METHODS - STRINGIFY
 
 func (this *Dict) String() string {
+	if this.values == nil {
+		return "<dict>{ nil }"
+	}
 	parts := make([]string, 0, len(this.values))
 	for k, v := range this.values {
-		s, _ := v.String()
-		parts = append(parts, fmt.Sprintf("%v=%v", k, s))
+		s := v.cast(goTypeString).(string)
+		parts = append(parts, fmt.Sprintf("%v=<%v>%v", k, v.t, s))
 	}
 	return fmt.Sprintf("<dict>{ %v }", strings.Join(parts, ","))
+}
+
+func (v xmlState) String() string {
+	switch v {
+	case xmlStateKeyStart:
+		return "xmlStateKeyStart"
+	case xmlStateKeyString:
+		return "xmlStateKeyString"
+	case xmlStateKeyEnd:
+		return "xmlStateKeyEnd"
+	case xmlStateValueStart:
+		return "xmlStateValueStart"
+	case xmlStateValueString:
+		return "xmlStateValueString"
+	case xmlStateValueEnd:
+		return "xmlStateValueEnd"
+	default:
+		return "[?? Invalid xmlState value]"
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - GETTERS
 
 func (this *Dict) GetString(key string) (string, bool) {
-	if v, exists := this.values[key]; !exists {
-		return "", false
-	} else if s, err := v.String(); err != nil {
-		return s, false
-	} else {
-		return s, true
+	if v := this.values[key]; v != nil {
+		s, ok := v.cast(goTypeString).(string)
+		return s, ok
 	}
+	return "", false
 }
 
 func (this *Dict) GetInt(key string) (int, bool) {
-	if v, exists := this.values[key]; !exists {
-		return 0, false
-	} else if i, err := v.Int(); err != nil {
-		return i, false
-	} else {
-		return i, true
+	if v := this.values[key]; v != nil {
+		i, ok := v.cast(goTypeInt).(int)
+		return i, ok
 	}
+	return 0, false
 }
 
 func (this *Dict) GetUint(key string) (uint, bool) {
-	if v, exists := this.values[key]; !exists {
-		return 0, false
-	} else if i, err := v.Uint(); err != nil {
-		return i, false
-	} else {
-		return i, true
+	if v := this.values[key]; v != nil {
+		u, ok := v.cast(goTypeUint).(uint)
+		return u, ok
 	}
+	return 0, false
 }
 
 func (this *Dict) GetFloat64(key string) (float64, bool) {
-	if v, exists := this.values[key]; !exists {
-		return 0, false
-	} else {
-		i, err := v.Float64()
-		return i, err == nil
+	if v := this.values[key]; v != nil {
+		r, ok := v.cast(goTypeFloat64).(float64)
+		return r, ok
 	}
+	return 0, false
 }
 
 func (this *Dict) GetFloat32(key string) (float32, bool) {
-	if v, exists := this.values[key]; !exists {
-		return 0, false
-	} else {
-		i, err := v.Float32()
-		return i, err == nil
+	if v := this.values[key]; v != nil {
+		r, ok := v.cast(goTypeFloat32).(float32)
+		return r, ok
 	}
+	return 0, false
 }
+
 func (this *Dict) GetBool(key string) (bool, bool) {
-	if v, exists := this.values[key]; !exists {
-		return false, false
-	} else {
-		i, err := v.Bool()
-		return i, err == nil
+	if v := this.values[key]; v != nil {
+		b, ok := v.cast(goTypeBool).(bool)
+		return b, ok
 	}
+	return false, false
 }
 
 func (this *Dict) GetData(key string) ([]byte, bool) {
-	if v, exists := this.values[key]; !exists {
-		return nil, false
-	} else {
-		i, err := v.Data()
-		return i, err == nil
+	if v := this.values[key]; v != nil {
+		a, ok := v.cast(goTypeByteArray).([]byte)
+		return a, ok
 	}
+	return nil, false
 }
 
 func (this *Dict) GetDate(key string) (time.Time, bool) {
-	if v, exists := this.values[key]; !exists {
-		return time.Time{}, false
-	} else {
-		i, err := v.Date()
-		return i, err == nil
+	if v := this.values[key]; v != nil {
+		t, ok := v.cast(goTypeTime).(time.Time)
+		return t, ok
 	}
+	return time.Time{}, false
 }
 
 func (this *Dict) GetDuration(key string) (time.Duration, bool) {
-	if v, exists := this.values[key]; !exists {
-		return time.Duration(0), false
-	} else {
-		i, err := v.Duration()
-		return i, err == nil
+	if v := this.values[key]; v != nil {
+		t, ok := v.cast(goTypeDuration).(time.Duration)
+		return t, ok
 	}
+	return 0, false
 }
 
 func (this *Dict) GetDict(key string) (*Dict, bool) {
-	if v, exists := this.values[key]; !exists {
-		return nil, false
-	} else {
-		switch v.v.(type) {
-		case *Dict:
-			return v.v.(*Dict), true
-		default:
-			return nil, false
-		}
+	if v := this.values[key]; v != nil {
+		d, ok := v.cast(goTypeDict).(*Dict)
+		return d, ok
 	}
+	return nil, false
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -283,8 +363,8 @@ func (this *v) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		return e.Encode(this.v.(*Dict))
 	}
 
-	value, err := this.String()
-	if err != nil {
+	value, ok := this.cast(goTypeString).(string)
+	if !ok {
 		return err
 	}
 	switch name {
@@ -292,10 +372,83 @@ func (this *v) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		return e.EncodeElement(value, xml.StartElement{Name: xml.Name{Local: name}})
 	case "bool":
 		// TODO: Currently outputs <true></true> but we want <true/> for example
+		// encoding/xml may not support this
 		return e.EncodeElement("", xml.StartElement{Name: xml.Name{Local: value}})
 	default:
 		return ErrUnsupportedType
 	}
+}
+
+func (this *Dict) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+
+	// Create the this.values member variable
+	this.values = make(map[string]*v, 0)
+
+	// Check for name being 'dict'
+	if start.Name.Local != "dict" {
+		return ErrParseError
+	}
+	// Read key/value pairs in and end when we reach the 'dict' element
+	// also ignore comments and attributes
+	state := xmlStateKeyStart
+	for true {
+		t, err := d.Token()
+		if err != nil {
+			// Error occurred
+			return err
+		}
+		if t == nil {
+			// At EOF but without closing dict tag
+			return ErrParseError
+		}
+
+		fmt.Printf("state = %v token = %v\n", state, t)
+
+		switch t.(type) {
+		case xml.Comment:
+			fmt.Println("...in xml.Comment")
+			break // Ignore all comments
+		case xml.Attr:
+			fmt.Println("...in xml.Attr")
+			break // Ignore all attributes
+		case xml.StartElement:
+			fmt.Println("...in xml.StartElement")
+			name := t.(xml.StartElement).Name.Local
+			if state == xmlStateKeyStart && name == "key" {
+				state = xmlStateKeyString
+			} else if state == xmlStateValueStart && isXMLScalarNameOrTrueFalse(name) {
+				state = xmlStateValueString
+			} else {
+				return ErrParseError
+			}
+		case xml.EndElement:
+			fmt.Println("...in xml.EndElement")
+			name := t.(xml.EndElement).Name.Local
+			if state == xmlStateKeyStart && name == "dict" {
+				return nil
+			} else if (state == xmlStateKeyEnd || state == xmlStateKeyString) && name == "key" {
+				state = xmlStateValueStart
+			} else if (state == xmlStateValueEnd || state == xmlStateValueString) && isXMLScalarNameOrTrueFalse(name) {
+				state = xmlStateKeyStart
+			} else {
+				return ErrParseError
+			}
+		case xml.CharData:
+			fmt.Println("...in xml.CharData")
+			if state == xmlStateKeyString {
+				fmt.Println("chardata key =", string(t.(xml.CharData)))
+				state = xmlStateKeyEnd
+			} else if state == xmlStateValueString {
+				fmt.Println("chardata value =", string(t.(xml.CharData)))
+				state = xmlStateValueEnd
+			} else {
+				return ErrParseError
+			}
+		default:
+			return ErrParseError
+		}
+	}
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -324,150 +477,26 @@ func (this *v) xmlTypeString() (string, error) {
 	return "", fmt.Errorf("%v: %v", ErrUnsupportedType, this.v)
 }
 
-// Return string value, which doesn't support
-// *Dict or array values
-func (this *v) String() (string, error) {
-	switch this.v.(type) {
-	case string:
-		return this.v.(string), nil
-	case int:
-		return strconv.FormatInt(int64(this.v.(int)), 10), nil
-	case uint:
-		return strconv.FormatUint(uint64(this.v.(uint)), 10), nil
-	case float32:
-		return strconv.FormatFloat(float64(this.v.(float32)), 'G', -1, 32), nil
-	case float64:
-		return strconv.FormatFloat(this.v.(float64), 'G', -1, 64), nil
-	case bool:
-		if this.v.(bool) {
-			return "true", nil
-		} else {
-			return "false", nil
-		}
-	case []byte:
-		return strings.ToUpper(hex.EncodeToString(this.v.([]byte))), nil
-	case time.Time:
-		return this.v.(time.Time).Format(time.RFC3339), nil
-	case time.Duration:
-		return this.v.(time.Duration).String(), nil
-	default:
-		return "", ErrUnsupportedType
-	}
+// Return true if it's a scalar
+func isXMLScalarName(name string) bool {
+	_, exists := xmlScalarTypes[name]
+	return exists
 }
 
-// Return int value
-func (this *v) Int() (int, error) {
-	switch this.v.(type) {
-	case int:
-		return this.v.(int), nil
-	case uint:
-		return int(this.v.(uint)), nil
-	case float32:
-		return int(this.v.(float32)), nil
-	case float64:
-		return int(this.v.(float64)), nil
-	default:
-		return 0, ErrUnsupportedType
+// Return true if it's not bool or a scalar, true or false
+func isXMLScalarNameOrTrueFalse(name string) bool {
+	if name == "bool" {
+		return false
 	}
+	if name == "true" || name == "false" {
+		return true
+	}
+	_, exists := xmlScalarTypes[name]
+	return exists
 }
 
-// Return uint value
-func (this *v) Uint() (uint, error) {
-	switch this.v.(type) {
-	case int:
-		return uint(this.v.(int)), nil
-	case uint:
-		return this.v.(uint), nil
-	case float32:
-		return uint(this.v.(float32)), nil
-	case float64:
-		return uint(this.v.(float64)), nil
-	default:
-		return 0, ErrUnsupportedType
-	}
-}
-
-// Return float64 value
-func (this *v) Float64() (float64, error) {
-	switch this.v.(type) {
-	case int:
-		return float64(this.v.(int)), nil
-	case uint:
-		return float64(this.v.(uint)), nil
-	case float32:
-		return float64(this.v.(float32)), nil
-	case float64:
-		return float64(this.v.(float64)), nil
-	default:
-		return 0, ErrUnsupportedType
-	}
-}
-
-// Return float32 value
-func (this *v) Float32() (float32, error) {
-	switch this.v.(type) {
-	case int:
-		return float32(this.v.(int)), nil
-	case uint:
-		return float32(this.v.(uint)), nil
-	case float32:
-		return float32(this.v.(float32)), nil
-	case float64:
-		return float32(this.v.(float64)), nil
-	default:
-		return 0, ErrUnsupportedType
-	}
-}
-
-// Return bool value
-func (this *v) Bool() (bool, error) {
-	switch this.v.(type) {
-	case int:
-		return this.v.(int) != 0, nil
-	case uint:
-		return this.v.(uint) != 0, nil
-	case float32:
-		return this.v.(float32) != 0, nil
-	case float64:
-		return this.v.(float64) != 0, nil
-	case string:
-		return this.v.(string) != "", nil
-	default:
-		return false, ErrUnsupportedType
-	}
-}
-
-// Return time.Time value
-func (this *v) Date() (time.Time, error) {
-	switch this.v.(type) {
-	case time.Time:
-		return this.v.(time.Time), nil
-	default:
-		return time.Time{}, ErrUnsupportedType
-	}
-}
-
-// Return time.Duration value
-func (this *v) Duration() (time.Duration, error) {
-	switch this.v.(type) {
-	case time.Duration:
-		return this.v.(time.Duration), nil
-	default:
-		return time.Duration(0), ErrUnsupportedType
-	}
-}
-
-// Return data value
-func (this *v) Data() ([]byte, error) {
-	switch this.v.(type) {
-	case []byte:
-		return this.v.([]byte), nil
-	case string:
-		return []byte(this.v.(string)), nil
-	default:
-		return nil, ErrUnsupportedType
-	}
-}
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS - COPY VALUES
 
 // Copy creates a copy of v if necessary, which is only necessary
 // for *Dict since it's the only mutable type
@@ -484,6 +513,172 @@ func (this *v) Copy() *v {
 		return &v{v: CopyDict(this.v.(*Dict))}
 	default:
 		panic(fmt.Sprint("Cannot copy: ", this.v))
+		return nil
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS - CASTING FROM ONE GO TYPE TO ANOTHER
+
+// Return value cast to a different value, or nil
+func (this *v) cast(t goType) interface{} {
+	if f, ok := goTypeCast[t]; ok {
+		return f(this)
+	} else {
+		return nil
+	}
+}
+
+func castString(this *v) interface{} {
+	switch this.v.(type) {
+	case string:
+		return this.v.(string)
+	case int:
+		return strconv.FormatInt(int64(this.v.(int)), 10)
+	case uint:
+		return strconv.FormatUint(uint64(this.v.(uint)), 10)
+	case float32:
+		return strconv.FormatFloat(float64(this.v.(float32)), 'G', -1, 32)
+	case float64:
+		return strconv.FormatFloat(this.v.(float64), 'G', -1, 64)
+	case bool:
+		return fmt.Sprint(this.v.(bool))
+	case []byte:
+		return strings.ToUpper(hex.EncodeToString(this.v.([]byte)))
+	case time.Time:
+		return this.v.(time.Time).Format(time.RFC3339)
+	case time.Duration:
+		return this.v.(time.Duration).String()
+	default:
+		return nil
+	}
+}
+
+func castInt(this *v) interface{} {
+	switch this.v.(type) {
+	case int:
+		return this.v.(int)
+	case uint:
+		return int(this.v.(uint))
+	case float32:
+		return int(this.v.(float32))
+	case float64:
+		return int(this.v.(float64))
+	default:
+		return nil
+	}
+}
+
+func castUint(this *v) interface{} {
+	switch this.v.(type) {
+	case int:
+		return uint(this.v.(int))
+	case uint:
+		return uint(this.v.(uint))
+	case float32:
+		return uint(this.v.(float32))
+	case float64:
+		return uint(this.v.(float64))
+	default:
+		return nil
+	}
+}
+
+func castFloat64(this *v) interface{} {
+	switch this.v.(type) {
+	case int:
+		return float64(this.v.(int))
+	case uint:
+		return float64(this.v.(uint))
+	case float32:
+		return float64(this.v.(float32))
+	case float64:
+		return float64(this.v.(float64))
+	default:
+		return nil
+	}
+}
+
+func castFloat32(this *v) interface{} {
+	switch this.v.(type) {
+	case int:
+		return float32(this.v.(int))
+	case uint:
+		return float32(this.v.(uint))
+	case float32:
+		return float32(this.v.(float32))
+	case float64:
+		return float32(this.v.(float64))
+	default:
+		return nil
+	}
+}
+
+func castBool(this *v) interface{} {
+	switch this.v.(type) {
+	case int:
+		return this.v.(int) != 0
+	case uint:
+		return this.v.(uint) != 0
+	case float32:
+		return this.v.(float32) != 0
+	case float64:
+		return this.v.(float64) != 0
+	case bool:
+		return this.v.(bool)
+	case string:
+		return this.v.(string) != ""
+	default:
+		return nil
+	}
+}
+
+func castDate(this *v) interface{} {
+	switch this.v.(type) {
+	case string:
+		if time, err := time.Parse(time.RFC3339, this.v.(string)); err == nil {
+			return time
+		} else {
+			return nil
+		}
+	case time.Time:
+		return this.v.(time.Time)
+	default:
+		return nil
+	}
+}
+
+func castDuration(this *v) interface{} {
+	switch this.v.(type) {
+	case string:
+		if duration, err := time.ParseDuration(this.v.(string)); err == nil {
+			return duration
+		} else {
+			return nil
+		}
+	case time.Duration:
+		return this.v.(time.Duration)
+	default:
+		return nil
+	}
+}
+
+func castData(this *v) interface{} {
+	switch this.v.(type) {
+	case []byte:
+		return this.v.([]byte)
+	case string:
+		return []byte(this.v.(string))
+	default:
+		return nil
+	}
+}
+
+func castDict(this *v) interface{} {
+	switch this.v.(type) {
+	case *Dict:
+		return this.v.(*Dict)
+	default:
 		return nil
 	}
 }

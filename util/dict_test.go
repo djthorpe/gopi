@@ -432,10 +432,20 @@ func TestUnmarshall_001(t *testing.T) {
 func TestUnmarshall_002(t *testing.T) {
 	// Create an empty dict object
 	var dict *util.Dict
-	if err := xml.Unmarshal([]byte("<dict><key>test</key><string>test</string></dict>"), &dict); err != nil {
+	if err := xml.Unmarshal([]byte("<dict><key>test</key><string test=\"1\">test <!-- comment --></string></dict>"), &dict); err != nil {
 		t.Errorf("Unmarshal error: %v", err)
 	} else if len(dict.Keys()) != 1 {
 		t.Errorf("Unmarshal error: Dictionary should contain 'test' string value: %v", dict)
+	}
+}
+
+func TestUnmarshall_003(t *testing.T) {
+	// Create an empty dict object
+	var dict *util.Dict
+	if err := xml.Unmarshal([]byte("<dict><key>test_true</key><true/><key>test_false</key><false/></dict>"), &dict); err != nil {
+		t.Errorf("Unmarshal error: %v", err)
+	} else if len(dict.Keys()) != 2 {
+		t.Errorf("Unmarshal error: Dictionary should contain 'test' bool values: %v", dict)
 	}
 }
 

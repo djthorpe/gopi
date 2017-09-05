@@ -10,7 +10,6 @@
 package util /* import "github.com/djthorpe/gopi/util" */
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"time"
@@ -20,11 +19,6 @@ type Flags struct {
 	flagset *flag.FlagSet
 	flagmap map[string]bool
 }
-
-var (
-	ErrHelp    = flag.ErrHelp
-	ErrBadFlag = errors.New("Invalid flag")
-)
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
