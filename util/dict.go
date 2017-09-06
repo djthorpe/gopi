@@ -45,8 +45,9 @@ type goType uint
 type goTypeCastFunction func(*v) interface{}
 
 type v struct {
-	v interface{}
-	t xmlType
+	k string      // key
+	t xmlType     // xml type
+	v interface{} // go value
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,55 +161,55 @@ func (this *Dict) IsEmpty() bool {
 
 // SetString sets string value for key
 func (this *Dict) SetString(key string, value string) {
-	this.values[key] = &v{t: xmlTypeString, v: value}
+	this.values[key] = &v{k: key, t: xmlTypeString, v: value}
 }
 
 // SetInt sets int value for key
 func (this *Dict) SetInt(key string, value int) {
-	this.values[key] = &v{t: xmlTypeInteger, v: value}
+	this.values[key] = &v{k: key, t: xmlTypeInteger, v: value}
 }
 
 // SetUint sets uint value for key
 func (this *Dict) SetUint(key string, value uint) {
-	this.values[key] = &v{t: xmlTypeInteger, v: value}
+	this.values[key] = &v{k: key, t: xmlTypeInteger, v: value}
 }
 
 // SetFloat64 sets float64 value for key
 func (this *Dict) SetFloat64(key string, value float64) {
-	this.values[key] = &v{t: xmlTypeReal, v: value}
+	this.values[key] = &v{k: key, t: xmlTypeReal, v: value}
 }
 
 // SetFloat32 sets float32 value for key
 func (this *Dict) SetFloat32(key string, value float32) {
-	this.values[key] = &v{t: xmlTypeReal, v: value}
+	this.values[key] = &v{k: key, t: xmlTypeReal, v: value}
 }
 
 // SetData sets []byte value for key
 func (this *Dict) SetData(key string, value []byte) {
-	this.values[key] = &v{t: xmlTypeData, v: value}
+	this.values[key] = &v{k: key, t: xmlTypeData, v: value}
 }
 
 // SetDate sets time.Time value for key
 func (this *Dict) SetDate(key string, value time.Time) {
-	this.values[key] = &v{t: xmlTypeDate, v: value}
+	this.values[key] = &v{k: key, t: xmlTypeDate, v: value}
 }
 
 // SetDuration sets time.Duration value for key
 func (this *Dict) SetDuration(key string, value time.Duration) {
-	this.values[key] = &v{t: xmlTypeDuration, v: value}
+	this.values[key] = &v{k: key, t: xmlTypeDuration, v: value}
 }
 
 // SetBool sets bool value for key
 func (this *Dict) SetBool(key string, value bool) {
-	this.values[key] = &v{t: xmlTypeBool, v: value}
+	this.values[key] = &v{k: key, t: xmlTypeBool, v: value}
 }
 
 // SetDict sets dict value for key
 func (this *Dict) SetDict(key string, value *Dict) {
 	if value != nil {
-		this.values[key] = &v{t: xmlTypeDict, v: CopyDict(value)}
+		this.values[key] = &v{k: key, t: xmlTypeDict, v: CopyDict(value)}
 	} else {
-		this.values[key] = &v{t: xmlTypeDict, v: NewDict(0)}
+		this.values[key] = &v{k: key, t: xmlTypeDict, v: NewDict(0)}
 	}
 }
 
@@ -243,6 +244,29 @@ func (v xmlState) String() string {
 		return "xmlStateValueEnd"
 	default:
 		return "[?? Invalid xmlState value]"
+	}
+}
+
+func (v xmlType) String() string {
+	switch v {
+	case xmlTypeString:
+		return "xmlTypeString"
+	case xmlTypeInteger:
+		return "xmlTypeInteger"
+	case xmlTypeReal:
+		return "xmlTypeReal"
+	case xmlTypeBool:
+		return "xmlTypeBool"
+	case xmlTypeData:
+		return "xmlTypeData"
+	case xmlTypeDate:
+		return "xmlTypeDate"
+	case xmlTypeDuration:
+		return "xmlTypeDuration"
+	case xmlTypeDict:
+		return "xmlTypeDict"
+	default:
+		return "[?? Invalid xmlType value]"
 	}
 }
 
@@ -391,6 +415,7 @@ func (this *Dict) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	// Read key/value pairs in and end when we reach the 'dict' element
 	// also ignore comments and attributes
 	state := xmlStateKeyStart
+	value := &v{}
 	for true {
 		t, err := d.Token()
 		if err != nil {
@@ -402,44 +427,41 @@ func (this *Dict) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			return ErrParseError
 		}
 
-		fmt.Printf("state = %v token = %v\n", state, t)
-
 		switch t.(type) {
 		case xml.Comment:
-			fmt.Println("...in xml.Comment")
 			break // Ignore all comments
 		case xml.Attr:
-			fmt.Println("...in xml.Attr")
 			break // Ignore all attributes
 		case xml.StartElement:
-			fmt.Println("...in xml.StartElement")
 			name := t.(xml.StartElement).Name.Local
 			if state == xmlStateKeyStart && name == "key" {
 				state = xmlStateKeyString
-			} else if state == xmlStateValueStart && isXMLScalarNameOrTrueFalse(name) {
+			} else if state == xmlStateValueStart && isXMLScalarNameOrTrueFalse(name, &value.t) {
 				state = xmlStateValueString
 			} else {
 				return ErrParseError
 			}
 		case xml.EndElement:
-			fmt.Println("...in xml.EndElement")
 			name := t.(xml.EndElement).Name.Local
 			if state == xmlStateKeyStart && name == "dict" {
+				// Successfully completed
 				return nil
 			} else if (state == xmlStateKeyEnd || state == xmlStateKeyString) && name == "key" {
 				state = xmlStateValueStart
-			} else if (state == xmlStateValueEnd || state == xmlStateValueString) && isXMLScalarNameOrTrueFalse(name) {
+			} else if (state == xmlStateValueEnd || state == xmlStateValueString) && isXMLScalarNameOrTrueFalse(name, &value.t) {
+				// Eject
+				fmt.Println("EJECT", value)
 				state = xmlStateKeyStart
+				value = &v{}
 			} else {
 				return ErrParseError
 			}
 		case xml.CharData:
-			fmt.Println("...in xml.CharData")
 			if state == xmlStateKeyString {
-				fmt.Println("chardata key =", string(t.(xml.CharData)))
+				value.k = string(t.(xml.CharData))
 				state = xmlStateKeyEnd
 			} else if state == xmlStateValueString {
-				fmt.Println("chardata value =", string(t.(xml.CharData)))
+				value.v = string(t.(xml.CharData))
 				state = xmlStateValueEnd
 			} else {
 				return ErrParseError
@@ -484,14 +506,16 @@ func isXMLScalarName(name string) bool {
 }
 
 // Return true if it's not bool or a scalar, true or false
-func isXMLScalarNameOrTrueFalse(name string) bool {
+func isXMLScalarNameOrTrueFalse(name string, t *xmlType) bool {
 	if name == "bool" {
 		return false
 	}
 	if name == "true" || name == "false" {
+		*t = xmlTypeBool
 		return true
 	}
-	_, exists := xmlScalarTypes[name]
+	exists := false
+	*t, exists = xmlScalarTypes[name]
 	return exists
 }
 
