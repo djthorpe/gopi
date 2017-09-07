@@ -425,17 +425,34 @@ func TestUnmarshall_001(t *testing.T) {
 	if err := xml.Unmarshal([]byte("<dict></dict>"), &dict); err != nil {
 		t.Errorf("Unmarshal error: %v", err)
 	} else if dict.IsEmpty() == false {
-		t.Errorf("Unmarshal error: Dictionary not empty")
+		t.Errorf("Dictionary not empty")
+	}
+	// Create a dict object, and ensure it's empty when reading in XML
+	dict2 := util.NewDict(1)
+	dict2.SetBool("test_value", true)
+	dict2.SetString("test_value2", "test string")
+	if dict2.IsEmpty() == true {
+		t.Errorf("Dictionary Empty")
+	}
+	if err := xml.Unmarshal([]byte("<dict></dict>"), &dict2); err != nil {
+		t.Errorf("Unmarshal error: %v", err)
+	} else if dict2.IsEmpty() == false {
+		t.Errorf("Dictionary not empty")
 	}
 }
 
 func TestUnmarshall_002(t *testing.T) {
 	// Create an empty dict object
 	var dict *util.Dict
-	if err := xml.Unmarshal([]byte("<dict><key>test</key><string test=\"1\">test <!-- comment --></string></dict>"), &dict); err != nil {
+	if err := xml.Unmarshal([]byte("<dict><key>test</key><string test=\"1\">test<!-- comment --></string></dict>"), &dict); err != nil {
 		t.Errorf("Unmarshal error: %v", err)
 	} else if len(dict.Keys()) != 1 {
-		t.Errorf("Unmarshal error: Dictionary should contain 'test' string value: %v", dict)
+		t.Errorf("Dictionary should contain 1 key: %v", dict)
+	}
+	if value, ok := dict.GetString("test"); !ok {
+		t.Errorf("Expected 'test' value to be retrieved from dict: %v", dict)
+	} else if value != "test" {
+		t.Errorf("Expected 'test' value to be retrieved from dict: %v", dict)
 	}
 }
 
@@ -445,7 +462,42 @@ func TestUnmarshall_003(t *testing.T) {
 	if err := xml.Unmarshal([]byte("<dict><key>test_true</key><true/><key>test_false</key><false/></dict>"), &dict); err != nil {
 		t.Errorf("Unmarshal error: %v", err)
 	} else if len(dict.Keys()) != 2 {
-		t.Errorf("Unmarshal error: Dictionary should contain 'test' bool values: %v", dict)
+		t.Errorf("Dictionary should contain 2 keys: %v", dict)
+	}
+	if value, ok := dict.GetBool("test_true"); !ok {
+		t.Errorf("Expected 'test_true' value to be retrieved from dict: %v", dict)
+	} else if value != true {
+		t.Errorf("Expected 'test_true' value to be retrieved from dict: %v", dict)
+	}
+	if value, ok := dict.GetBool("test_false"); !ok {
+		t.Errorf("Expected 'test_false' value to be retrieved from dict: %v", dict)
+	} else if value != false {
+		t.Errorf("Expected 'test_false' value to be retrieved from dict: %v", dict)
+	}
+}
+
+func TestUnmarshall_004(t *testing.T) {
+	// Create an empty dict object
+	var dict *util.Dict
+	if err := xml.Unmarshal([]byte("<dict><key>test_int1</key><integer>100</integer><key>test_int2</key><integer>-100</integer></dict>"), &dict); err != nil {
+		t.Errorf("Unmarshal error: %v", err)
+	} else if len(dict.Keys()) != 2 {
+		t.Errorf("Dictionary should contain 2 keys: %v", dict)
+	}
+	if value, ok := dict.GetUint("test_int1"); !ok {
+		t.Errorf("Expected 'test_int1' value to be retrieved from dict: %v", dict)
+	} else if value != 100 {
+		t.Errorf("Expected 'test_int1' value to be retrieved from dict: %v", dict)
+	}
+	if value, ok := dict.GetInt("test_int1"); !ok {
+		t.Errorf("Expected 'test_int1' value to be retrieved from dict: %v", dict)
+	} else if value != 100 {
+		t.Errorf("Expected 'test_int1' value to be retrieved from dict: %v", dict)
+	}
+	if value, ok := dict.GetInt("test_int2"); !ok {
+		t.Errorf("Expected 'test_int2' value to be retrieved from dict: %v", dict)
+	} else if value != -100 {
+		t.Errorf("Expected 'test_int2' value to be retrieved from dict: %v", dict)
 	}
 }
 

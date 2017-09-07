@@ -114,6 +114,10 @@ var (
 		goTypeTime:      castDate,
 		goTypeDict:      castDict,
 	}
+	xmlBoolValue = map[string]bool{
+		"true":  true,
+		"false": false,
+	}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -268,6 +272,10 @@ func (v xmlType) String() string {
 	default:
 		return "[?? Invalid xmlType value]"
 	}
+}
+
+func (v *v) String() string {
+	return fmt.Sprintf("v{ key=%v type=%v value=%v }", v.k, v.t, v.v)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -438,6 +446,14 @@ func (this *Dict) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				state = xmlStateKeyString
 			} else if state == xmlStateValueStart && isXMLScalarNameOrTrueFalse(name, &value.t) {
 				state = xmlStateValueString
+				// Handle true and false values
+				if value.t == xmlTypeBool {
+					if v, ok := xmlBoolValue[name]; !ok {
+						return ErrParseError
+					} else {
+						value.v = v
+					}
+				}
 			} else {
 				return ErrParseError
 			}
@@ -449,9 +465,9 @@ func (this *Dict) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			} else if (state == xmlStateKeyEnd || state == xmlStateKeyString) && name == "key" {
 				state = xmlStateValueStart
 			} else if (state == xmlStateValueEnd || state == xmlStateValueString) && isXMLScalarNameOrTrueFalse(name, &value.t) {
-				// Eject
-				fmt.Println("EJECT", value)
+				// Eject the value, and move back to the start state
 				state = xmlStateKeyStart
+				this.values[value.k] = value
 				value = &v{}
 			} else {
 				return ErrParseError
@@ -461,7 +477,9 @@ func (this *Dict) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				value.k = string(t.(xml.CharData))
 				state = xmlStateKeyEnd
 			} else if state == xmlStateValueString {
-				value.v = string(t.(xml.CharData))
+				if ok := value.setValue(string(t.(xml.CharData))); !ok {
+					return ErrParseError
+				}
 				state = xmlStateValueEnd
 			} else {
 				return ErrParseError
@@ -497,6 +515,28 @@ func (this *v) xmlTypeString() (string, error) {
 		return "dict", nil
 	}
 	return "", fmt.Errorf("%v: %v", ErrUnsupportedType, this.v)
+}
+
+func (this *v) setValue(s string) bool {
+	switch this.t {
+	case xmlTypeString:
+		this.v = s
+		return true
+	case xmlTypeBool:
+		// we expect an empty string and the value has already been set
+		if s != "" {
+			return false
+		}
+		switch this.v.(type) {
+		case bool:
+			return true
+		default:
+			return false
+		}
+	default:
+		return false
+	}
+	return true
 }
 
 // Return true if it's a scalar
