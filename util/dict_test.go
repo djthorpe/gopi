@@ -501,6 +501,47 @@ func TestUnmarshall_004(t *testing.T) {
 	}
 }
 
+func TestUnmarshall_005(t *testing.T) {
+	// Create an empty dict object
+	var dict *util.Dict
+	if err := xml.Unmarshal([]byte("<dict><key>test_real1</key><real>3.14</real><key>test_real2</key><real>1E10</real></dict>"), &dict); err != nil {
+		t.Errorf("Unmarshal error: %v", err)
+	} else if len(dict.Keys()) != 2 {
+		t.Errorf("Dictionary should contain 2 keys: %v", dict)
+	}
+	if value, ok := dict.GetFloat32("test_real1"); !ok {
+		t.Errorf("Expected 'test_real1' value to be retrieved from dict: %v", dict)
+	} else if value != 3.14 {
+		t.Errorf("Expected 'test_real1' value to be retrieved from dict: %v", dict)
+	}
+	if value, ok := dict.GetFloat64("test_real1"); !ok {
+		t.Errorf("Expected 'test_real1' value to be retrieved from dict: %v", dict)
+	} else if value != 3.14 {
+		t.Errorf("Expected 'test_real1' value to be retrieved from dict: %v", dict)
+	}
+	if value, ok := dict.GetInt("test_real1"); !ok {
+		t.Errorf("Expected 'test_real1' value to be retrieved from dict: %v", dict)
+	} else if value != 3 {
+		t.Errorf("Expected 'test_real1' value to be retrieved from dict: %v", dict)
+	}
+
+	if value, ok := dict.GetFloat32("test_real2"); !ok {
+		t.Errorf("Expected 'test_real2' value to be retrieved from dict: %v", dict)
+	} else if value != 1E10 {
+		t.Errorf("Expected 'test_real2' value to be retrieved from dict: %v", dict)
+	}
+	if value, ok := dict.GetFloat64("test_real2"); !ok {
+		t.Errorf("Expected 'test_real2' value to be retrieved from dict: %v", dict)
+	} else if value != 1E10 {
+		t.Errorf("Expected 'test_real2' value to be retrieved from dict: %v", dict)
+	}
+	if value, ok := dict.GetInt("test_real2"); !ok {
+		t.Errorf("Expected 'test_real2' value to be retrieved from dict: %v", dict)
+	} else if value != 1E10 {
+		t.Errorf("Expected 'test_real2' value to be retrieved from dict: %v", dict)
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func xmlstring(t *testing.T, dict *util.Dict) string {
