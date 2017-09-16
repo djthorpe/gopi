@@ -12,8 +12,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-
-	"github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,7 +54,7 @@ const (
 // GLOBAL VARIABLES
 
 var (
-	flags           = util.NewFlags(path.Base(os.Args[0]))
+	flags           = NewFlags(path.Base(os.Args[0]))
 	modules_by_name = make(map[string]Module)
 	modules_by_type = make(map[ModuleType]Module)
 )
@@ -66,12 +64,13 @@ var (
 
 func init() {
 	flags.FlagBool("debug", false, "Set debugging mode")
+	flags.FlagBool("verbose", false, "Verbose logging")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func RegisterModule(module Module) *util.Flags {
+func RegisterModule(module Module) *Flags {
 	// Register by name
 	if _, exists := modules_by_name[module.Name]; exists {
 		fmt.Fprintln(os.Stderr, "Duplicate Module registered:", &module)

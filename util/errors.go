@@ -10,7 +10,6 @@ package util /* import "github.com/djthorpe/gopi/util" */
 
 import (
 	"errors"
-	"flag"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -18,7 +17,5 @@ import (
 
 var (
 	ErrUnsupportedType = errors.New("Unsupported type")
-	ErrHelp            = flag.ErrHelp
-	ErrBadFlag         = errors.New("Invalid flag")
 	ErrParseError      = errors.New("Syntax error in input")
 )

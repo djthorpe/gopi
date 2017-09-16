@@ -7,7 +7,7 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-package util /* import "github.com/djthorpe/gopi/util" */
+package gopi /* import "github.com/djthorpe/gopi" */
 
 import (
 	"flag"
@@ -18,6 +18,7 @@ import (
 type Flags struct {
 	flagset *flag.FlagSet
 	flagmap map[string]bool
+	name    string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -28,6 +29,7 @@ func NewFlags(name string) *Flags {
 	this := new(Flags)
 	this.flagset = flag.NewFlagSet(name, flag.ContinueOnError)
 	this.flagmap = nil
+	this.name = name
 	return this
 }
 
@@ -191,16 +193,4 @@ func (this *Flags) GetFloat64(name string) (float64, bool) {
 		return 0.0, false
 	}
 	return value.Value.(flag.Getter).Get().(float64), this.HasFlag(name)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// SET FLAGS
-
-// Get value for a flag
-func (this *Flags) SetUint(name string, value uint) error {
-	f := this.flagset.Lookup(name)
-	if f == nil {
-		return ErrBadFlag
-	}
-	return f.Value.Set(fmt.Sprintf("%v", value))
 }

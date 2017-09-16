@@ -25,13 +25,14 @@ import (
 type AppConfig struct {
 	LogLevel util.LogLevel
 	Modules  []ModuleType
-	Flags    *util.Flags
+	AppFlags *Flags
 	Debug    bool
 	Verbose  bool
 }
 
 // AppInstance defines the running application instance with modules
 type AppInstance struct {
+	AppFlags *Flags
 	Logger   Logger
 	Hardware HardwareDriver2
 	Display  DisplayDriver2
@@ -87,7 +88,7 @@ func NewAppConfig(modules ...ModuleType) AppConfig {
 	}
 
 	// Set the flags
-	config.Flags = flags
+	config.AppFlags = flags
 	config.Debug = false
 	config.Verbose = false
 
@@ -101,17 +102,17 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 
 	// Parse flags. We want to ignore flags which start with "-test."
 	// in the testing environment
-	if config.Flags != nil && config.Flags.Parsed() == false {
-		if err := config.Flags.Parse(getTestlessArguments(os.Args[1:])); err != nil {
+	if config.AppFlags != nil && config.AppFlags.Parsed() == false {
+		if err := config.AppFlags.Parse(getTestlessArguments(os.Args[1:])); err != nil {
 			return nil, err
 		}
 	}
 
 	// Set debug and verbose flags
-	if debug, exists := config.Flags.GetBool("debug"); exists {
+	if debug, exists := config.AppFlags.GetBool("debug"); exists {
 		config.Debug = debug
 	}
-	if verbose, exists := config.Flags.GetBool("verbose"); exists {
+	if verbose, exists := config.AppFlags.GetBool("verbose"); exists {
 		config.Verbose = verbose
 	}
 
@@ -119,6 +120,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	this := new(AppInstance)
 	this.debug = config.Debug
 	this.verbose = config.Verbose
+	this.AppFlags = config.AppFlags
 
 	// Create subsystems
 	var once sync.Once
