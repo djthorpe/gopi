@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	"github.com/djthorpe/gopi"
-	"github.com/djthorpe/gopi/util"
-	"github.com/rs/xid"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,7 +35,7 @@ func init() {
 	}))
 }
 
-func registerDisplayFlags(flags *util.Flags) {
+func registerDisplayFlags(flags *gopi.Flags) {
 	flags.FlagUint("display", 0, "Display")
 }
 
@@ -55,7 +53,7 @@ func newDisplay(config *gopi.AppConfig, logger gopi.Logger) (gopi.Driver, error)
 	var display Display
 
 	// set display argument
-	if display_number, exists := config.Flags.GetUint("display"); exists {
+	if display_number, exists := config.AppFlags.GetUint("display"); exists {
 		display.Display = display_number
 	}
 	if driver, ok := gopi.Open2(display, logger, &err).(gopi.DisplayDriver2); !ok {
@@ -64,13 +62,6 @@ func newDisplay(config *gopi.AppConfig, logger gopi.Logger) (gopi.Driver, error)
 		return driver, nil
 	}
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// GLOBAL VARIABLES
-
-var (
-	guid = xid.New() // unique id we can use as a fake serial number
-)
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - HARDWARE
@@ -87,7 +78,7 @@ func (this *hardwareDriver) Name() string {
 
 // GetName returns the name of the hardware (ie, mock, mac, linux, rpi, etc)
 func (this *hardwareDriver) SerialNumber() string {
-	return strings.ToUpper(guid.String())
+	return strings.ToUpper("SERIAL_NUMBER")
 }
 
 func (this *hardwareDriver) NumberOfDisplays() uint {

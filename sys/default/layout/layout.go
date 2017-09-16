@@ -7,7 +7,6 @@ import (
 
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/third_party/flex"
-	"github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +49,7 @@ func init() {
 	}))
 }
 
-func registerFlags(flags *util.Flags) {
+func registerFlags(flags *gopi.Flags) {
 	/* no flags for the layout module */
 }
 

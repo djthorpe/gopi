@@ -23,6 +23,6 @@ var (
 	ErrAppError = errors.New("General application error")
 	// ErrModuleNotFound is an error when module cannot be found by name or type
 	ErrModuleNotFound = errors.New("Module not found")
-	// -help was called for on the command line
+	// ErrHelp is returned when -help was called for on the command line
 	ErrHelp = flag.ErrHelp
 )

@@ -63,7 +63,7 @@ func TestDisplay_001(t *testing.T) {
 	// Create a configuration with debug
 	config := gopi.NewAppConfig(gopi.MODULE_TYPE_DISPLAY)
 	config.Debug = true
-	config.Flags.SetUint("display", 0)
+	//	config.AppFlags.SetUint("display", 0)
 
 	// Create an application with a hardware module
 	app, err := gopi.NewAppInstance(config)

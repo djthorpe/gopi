@@ -57,6 +57,11 @@ func (this *Flags) Parsed() bool {
 	return this.flagset.Parsed()
 }
 
+// Name returns the name of the flagset (usually same as application)
+func (this *Flags) Name() string {
+	return this.name
+}
+
 // Args returns the command line arguments as an array which aren't flags
 func (this *Flags) Args() []string {
 	return this.flagset.Args()

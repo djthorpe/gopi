@@ -17,7 +17,7 @@ func init() {
 	}))
 }
 
-func registerLoggerFlags(flags *util.Flags) {
+func registerLoggerFlags(flags *gopi.Flags) {
 	flags.FlagString("log", "", "File for logging (default: log to stderr)")
 }
 
@@ -34,7 +34,7 @@ func newLogger(config *gopi.AppConfig, _ gopi.Logger) (gopi.Driver, error) {
 }
 
 func getLoggerForConfig(config *gopi.AppConfig) (*util.LoggerDevice, error) {
-	file, exists := config.Flags.GetString("log")
+	file, exists := config.AppFlags.GetString("log")
 	if exists {
 		return util.Logger(util.FileLogger{Filename: file, Append: false})
 	} else {
