@@ -10,31 +10,32 @@ import (
 
 func init() {
 	// Register logger
-	registerLoggerFlags(gopi.RegisterModule(gopi.Module{
-		Name: "default/logger",
-		Type: gopi.MODULE_TYPE_LOGGER,
-		New:  newLogger,
-	}))
-}
-
-func registerLoggerFlags(flags *gopi.Flags) {
-	flags.FlagString("log", "", "File for logging (default: log to stderr)")
+	gopi.RegisterModule(gopi.Module{
+		Name:   "default/logger",
+		Type:   gopi.MODULE_TYPE_LOGGER,
+		Config: configLogger,
+		New:    newLogger,
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func newLogger(config *gopi.AppConfig, _ gopi.Logger) (gopi.Driver, error) {
-	logger, err := getLoggerForConfig(config)
+func configLogger(config *gopi.AppConfig) {
+	config.AppFlags.FlagString("log", "", "File for logging (default: log to stderr)")
+}
+
+func newLogger(app *gopi.AppInstance) (gopi.Driver, error) {
+	logger, err := getLoggerForApp(app)
 	if err != nil {
 		return nil, err
 	}
-	logger.SetLevel(getLevelForConfig(config))
+	logger.SetLevel(getLevelForApp(app))
 	return logger, nil
 }
 
-func getLoggerForConfig(config *gopi.AppConfig) (*util.LoggerDevice, error) {
-	file, exists := config.AppFlags.GetString("log")
+func getLoggerForApp(app *gopi.AppInstance) (*util.LoggerDevice, error) {
+	file, exists := app.AppFlags.GetString("log")
 	if exists {
 		return util.Logger(util.FileLogger{Filename: file, Append: false})
 	} else {
@@ -42,15 +43,15 @@ func getLoggerForConfig(config *gopi.AppConfig) (*util.LoggerDevice, error) {
 	}
 }
 
-func getLevelForConfig(config *gopi.AppConfig) util.LogLevel {
-	if config.Debug {
-		if config.Verbose {
+func getLevelForApp(app *gopi.AppInstance) util.LogLevel {
+	if app.Debug() {
+		if app.Verbose() {
 			return util.LOG_DEBUG2
 		} else {
 			return util.LOG_DEBUG
 		}
 	}
-	if config.Verbose {
+	if app.Verbose() {
 		return util.LOG_INFO
 	} else {
 		return util.LOG_WARN

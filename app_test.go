@@ -11,6 +11,78 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// CREATE MODULE LISTS
+
+func TestCreateConfig_000(t *testing.T) {
+	// Create config file
+	config := gopi.NewAppConfig()
+	// First item in the configuration should be a logger module
+	if len(config.Modules) != 1 {
+		t.Fatalf("Expected one module to be in the list, modules=%v", config.Modules)
+	}
+	if config.Modules[0].Type != gopi.MODULE_TYPE_LOGGER {
+		t.Fatalf("Expected MODULE_TYPE_LOGGER, modules=%v", config.Modules)
+	}
+}
+
+func TestCreateConfig_001(t *testing.T) {
+	// Register Mock1 and Mock2 modules
+	gopi.RegisterModule(gopi.Module{
+		Name: "test/mock1",
+		Type: gopi.MODULE_TYPE_OTHER,
+	})
+	gopi.RegisterModule(gopi.Module{
+		Name:     "test/mock2",
+		Type:     gopi.MODULE_TYPE_OTHER,
+		Requires: []interface{}{"test/mock1"},
+	})
+	// Create config file
+	config := gopi.NewAppConfig("test/mock1")
+	// Should be two modules
+	if len(config.Modules) != 2 {
+		t.Fatalf("Expected 2 modules to be in the list, modules=%v", config.Modules)
+	}
+	// First item in the configuration should be a logger module
+	if config.Modules[0].Type != gopi.MODULE_TYPE_LOGGER {
+		t.Fatalf("Expected MODULE_TYPE_LOGGER, modules=%v", config.Modules)
+	}
+	// Second item in the configuration should be a mock1 module
+	if config.Modules[1].Type != gopi.MODULE_TYPE_OTHER {
+		t.Fatalf("Expected MODULE_TYPE_OTHER, modules=%v", config.Modules)
+	}
+	if config.Modules[1].Name != "test/mock1" {
+		t.Fatalf("Expected test/mock1, modules=%v", config.Modules)
+	}
+
+	// Create config file
+	config2 := gopi.NewAppConfig("test/mock2")
+
+	// Should be three modules
+	if len(config2.Modules) != 3 {
+		t.Fatalf("Expected 3 modules to be in the list, modules=%v", config2.Modules)
+	}
+	// First item in the configuration should be a logger module
+	if config2.Modules[0].Type != gopi.MODULE_TYPE_LOGGER {
+		t.Fatalf("Expected MODULE_TYPE_LOGGER, modules=%v", config2.Modules)
+	}
+	// Second item in the configuration should be a mock1 module
+	if config2.Modules[1].Type != gopi.MODULE_TYPE_OTHER {
+		t.Fatalf("Expected MODULE_TYPE_OTHER, modules=%v", config2.Modules)
+	}
+	if config2.Modules[1].Name != "test/mock1" {
+		t.Fatalf("Expected test/mock1, modules=%v", config2.Modules)
+	}
+	// Third item in the configuration should be a mock2 module
+	if config2.Modules[2].Type != gopi.MODULE_TYPE_OTHER {
+		t.Fatalf("Expected MODULE_TYPE_OTHER, modules=%v", config2.Modules)
+	}
+	if config2.Modules[2].Name != "test/mock2" {
+		t.Fatalf("Expected test/mock2, modules=%v", config2.Modules)
+	}
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // CREATE APPLICATION TESTS
 
 func TestCreateApp_000(t *testing.T) {

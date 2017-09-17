@@ -11,7 +11,6 @@ package gopi // import "github.com/djthorpe/gopi"
 import (
 	"fmt"
 	"os"
-	"path"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,13 +21,19 @@ type ModuleType uint
 
 // Module is a structure which determines details about a module
 type Module struct {
-	Name string
-	Type ModuleType
-	New  ModuleNewFunc
+	Name     string
+	Type     ModuleType
+	Config   ModuleConfigFunc
+	New      ModuleNewFunc
+	Requires []interface{}
 }
 
 // ModuleNewFunc is the signature for creating a new module instance
-type ModuleNewFunc func(*AppConfig, Logger) (Driver, error)
+type ModuleNewFunc func(*AppInstance) (Driver, error)
+
+// ModuleConfigFunc is the signature for setting up the configuration
+// for creating the app
+type ModuleConfigFunc func(*AppConfig)
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -54,23 +59,16 @@ const (
 // GLOBAL VARIABLES
 
 var (
-	flags           = NewFlags(path.Base(os.Args[0]))
 	modules_by_name = make(map[string]Module)
 	modules_by_type = make(map[ModuleType]Module)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// INIT METHOD
-
-func init() {
-	flags.FlagBool("debug", false, "Set debugging mode")
-	flags.FlagBool("verbose", false, "Verbose logging")
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func RegisterModule(module Module) *Flags {
+// RegisterModule registers the Config and New functions
+// for creating a module, there is no return value
+func RegisterModule(module Module) {
 	// Register by name
 	if _, exists := modules_by_name[module.Name]; exists {
 		fmt.Fprintln(os.Stderr, "Duplicate Module registered:", &module)
@@ -87,24 +85,93 @@ func RegisterModule(module Module) *Flags {
 			modules_by_type[module.Type] = module
 		}
 	}
-	// Return flags to add configuration options onto
-	return flags
 }
 
-func ModuleByType(t ModuleType) (*Module, error) {
+// ModuleByType returns a module given the type. It will
+// return nil if the module is not registered
+func ModuleByType(t ModuleType) *Module {
 	if module, exists := modules_by_type[t]; exists {
-		return &module, nil
+		return &module
 	} else {
-		return nil, ErrModuleNotFound
+		return nil
 	}
 }
 
-func ModuleByName(n string) (*Module, error) {
+// ModuleByName returns a module given the name. It will
+// return nil if the module is not registered
+func ModuleByName(n string) *Module {
 	if module, exists := modules_by_name[n]; exists {
-		return &module, nil
+		return &module
 	} else {
-		return nil, ErrModuleNotFound
+		return nil
 	}
+}
+
+// ModuleByValue returns a module given either a type
+// or a name. It will return nil if the module is
+// not registered
+func ModuleByValue(v interface{}) *Module {
+	switch v.(type) {
+	case string:
+		return ModuleByName(v.(string))
+	case ModuleType:
+		return ModuleByType(v.(ModuleType))
+	default:
+		return nil
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+// appendModule will append a module to the array, satisfying dependencies
+// by appending them to the array as well. It won't currently detect any
+// endless recursion, but should probably do that
+func appendModule(modules []*Module, name interface{}) ([]*Module, error) {
+	var err error
+
+	// Create modules array
+	if modules == nil {
+		modules = make([]*Module, 0, 1)
+	}
+	// Find module
+	if module := ModuleByValue(name); module == nil {
+		return nil, fmt.Errorf("Module not found: %v", name)
+	} else {
+		// Satisfy dependencies
+		if len(module.Requires) > 0 {
+			for _, dependency := range module.Requires {
+				if modules, err = appendModule(modules, dependency); err != nil {
+					return nil, err
+				}
+			}
+		}
+		// Append module if it doesn't exist in the list of modules
+		if existsModule(modules, module) == false {
+			modules = append(modules, module)
+		}
+	}
+	// Return modules
+	return modules, nil
+}
+
+// existsModule returns true if the module already exists
+// in the array of modules by type (or if MODULE_TYPE_OTHER)
+// then by name
+func existsModule(modules []*Module, module *Module) bool {
+	for _, other := range modules {
+		if module.Type == MODULE_TYPE_OTHER || module.Type == MODULE_TYPE_NONE {
+			if module.Name == other.Name {
+				return true
+			}
+		} else {
+			if module.Type == other.Type {
+				return true
+			}
+		}
+	}
+	// No module found
+	return false
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,5 +213,5 @@ func (t ModuleType) String() string {
 }
 
 func (this *Module) String() string {
-	return fmt.Sprintf("gopi.Module{ name=%v type=%v }", this.Name, this.Type)
+	return fmt.Sprintf("gopi.Module{ name=\"%v\" type=%v }", this.Name, this.Type)
 }

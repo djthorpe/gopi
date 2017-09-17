@@ -11,11 +11,10 @@ package gopi // import "github.com/djthorpe/gopi"
 import (
 	"fmt"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 	"sync"
-
-	"github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,12 +22,11 @@ import (
 
 // AppConfig defines how an application should be created
 type AppConfig struct {
-	LogLevel    util.LogLevel
-	ModuleTypes []ModuleType
-	ModuleNames []string
-	AppFlags    *Flags
-	Debug       bool
-	Verbose     bool
+	Modules  []*Module
+	AppArgs  []string
+	AppFlags *Flags
+	Debug    bool
+	Verbose  bool
 }
 
 // AppInstance defines the running application instance with modules
@@ -69,40 +67,55 @@ var (
 // modules which should be created, the arguments are either by type
 // or by name
 func NewAppConfig(modules ...interface{}) AppConfig {
+	var err error
+
 	config := AppConfig{}
 
-	// Only allow each module type once, and don't allow NONE or OTHER
-	// plus add logger as a mandatory module later
-	module_type_hash := make(map[ModuleType]bool, len(modules))
-	module_string_hash := make(map[string]bool, len(modules))
-	for _, v := range modules {
-		switch v.(type) {
-		case ModuleType:
-			t := v.(ModuleType)
-			if t != MODULE_TYPE_NONE && t != MODULE_TYPE_OTHER && t != MODULE_TYPE_LOGGER {
-				module_type_hash[t] = true
-			}
-		case string:
-			s := v.(string)
-			module_string_hash[s] = true
+	// retrieve modules and dependencies, using appendModule
+	if config.Modules, err = appendModule(nil, MODULE_TYPE_LOGGER); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v", err)
+		return AppConfig{}
+	}
+	for _, module := range modules {
+		if config.Modules, err = appendModule(config.Modules, module); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v", err)
+			return AppConfig{}
 		}
 	}
+	/*
+			switch v.(type) {
+			case ModuleType:
+				t := v.(ModuleType)
+				if t != MODULE_TYPE_NONE && t != MODULE_TYPE_OTHER && t != MODULE_TYPE_LOGGER {
+					module_type_hash[t] = true
+				}
+			case string:
+				s := v.(string)
+				module_string_hash[s] = true
+			}
+		}
 
-	// Now enumerate the modules, we always have the LOGGER type first
-	config.ModuleTypes = make([]ModuleType, 1, len(module_type_hash)+1)
-	config.ModuleNames = make([]string, 0, len(module_string_hash))
-	config.ModuleTypes[0] = MODULE_TYPE_LOGGER
-	for k := range module_type_hash {
-		config.ModuleTypes = append(config.ModuleTypes, k)
-	}
-	for k := range module_string_hash {
-		config.ModuleNames = append(config.ModuleNames, k)
-	}
+		// Now enumerate the modules, we always have the LOGGER type first
+		config.ModuleTypes = make([]ModuleType, 1, len(module_type_hash)+1)
+		config.ModuleNames = make([]string, 0, len(module_string_hash))
+		config.ModuleTypes[0] = MODULE_TYPE_LOGGER
+		for k := range module_type_hash {
+			config.ModuleTypes = append(config.ModuleTypes, k)
+		}
+		for k := range module_string_hash {
+			config.ModuleNames = append(config.ModuleNames, k)
+		}
+	*/
 
 	// Set the flags
-	config.AppFlags = flags
+	config.AppArgs = getTestlessArguments(os.Args[1:])
+	config.AppFlags = NewFlags(path.Base(os.Args[0]))
 	config.Debug = false
 	config.Verbose = false
+
+	// Set 'debug' and 'verbose' flags
+	config.AppFlags.FlagBool("debug", false, "Set debugging mode")
+	config.AppFlags.FlagBool("verbose", false, "Verbose logging")
 
 	// Return the configuration
 	return config
@@ -136,18 +149,16 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 
 	// Create subsystems
 	var once sync.Once
-	for _, t := range config.ModuleTypes {
+	for _, module := range config.Modules {
 		// Report open (once after logger module is created)
 		if this.Logger != nil {
 			once.Do(func() {
 				this.Logger.Debug2("gopi.AppInstance.Open()")
 			})
 		}
-		if module, err := ModuleByType(t); err != nil {
+		if driver, err := module.New(this); err != nil {
 			return nil, err
-		} else if driver, err := module.New(&config, this.Logger); err != nil {
-			return nil, err
-		} else if err := this.setModuleInstance(t, driver); err != nil {
+		} else if err := this.setModuleInstance(module, driver); err != nil {
 			return nil, err
 		}
 	}
@@ -275,27 +286,27 @@ func (this *AppInstance) ModuleByName(name string) Driver {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *AppInstance) setModuleInstance(t ModuleType, driver Driver) error {
+func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error {
 	var ok bool
-	switch t {
+	switch module.Type {
 	case MODULE_TYPE_LOGGER:
 		if this.Logger, ok = driver.(Logger); !ok {
-			return fmt.Errorf("Module of type %v cannot be cast to gopi.Logger", t)
+			return fmt.Errorf("Module %v cannot be cast to gopi.Logger", module)
 		}
 	case MODULE_TYPE_HARDWARE:
 		if this.Hardware, ok = driver.(HardwareDriver2); !ok {
-			return fmt.Errorf("Module of type %v cannot be cast to gopi.Hardware", t)
+			return fmt.Errorf("Module %v cannot be cast to gopi.Hardware", module)
 		}
 	case MODULE_TYPE_DISPLAY:
 		if this.Display, ok = driver.(DisplayDriver2); !ok {
-			return fmt.Errorf("Module of type %v cannot be cast to gopi.Display", t)
+			return fmt.Errorf("Module %v cannot be cast to gopi.Display", module)
 		}
 	case MODULE_TYPE_LAYOUT:
 		if this.Layout, ok = driver.(Layout); !ok {
-			return fmt.Errorf("Module of type %v cannot be cast to gopi.Layout", t)
+			return fmt.Errorf("Module %v cannot be cast to gopi.Layout", module)
 		}
 	default:
-		return fmt.Errorf("Not implemented: setModuleInstance: %v", t)
+		return fmt.Errorf("Not implemented: setModuleInstance: %v", module)
 	}
 	// success
 	return nil
