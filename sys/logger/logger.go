@@ -1,4 +1,4 @@
-package mock /* import "github.com/djthorpe/gopi/sys/default/logger" */
+package logger /* import "github.com/djthorpe/gopi/sys/logger" */
 
 import (
 	"github.com/djthorpe/gopi"

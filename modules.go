@@ -69,6 +69,11 @@ var (
 // RegisterModule registers the Config and New functions
 // for creating a module, there is no return value
 func RegisterModule(module Module) {
+	// Check for module.New method
+	if module.New == nil {
+		fmt.Fprintln(os.Stderr, "Module missing New method:", &module)
+		os.Exit(-1)
+	}
 	// Register by name
 	if _, exists := modules_by_name[module.Name]; exists {
 		fmt.Fprintln(os.Stderr, "Duplicate Module registered:", &module)

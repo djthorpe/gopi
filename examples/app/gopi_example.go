@@ -6,15 +6,17 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
+// This example shows you how to create a gopi driver
+// package, which is a concrete instance of usually an
+// abstract interface
 package main
 
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/user"
-)
 
-import (
 	gopi "github.com/djthorpe/gopi"
 )
 
@@ -60,22 +62,37 @@ func (this *MyDriver) String() string {
 	return fmt.Sprintf("MyDriver{ username=%v }", this.username)
 }
 
-/////////////////////////////////////////////////////////////////////
-// main()
+////////////////////////////////////////////////////////////////////////////////
 
 func main() {
+	if app, err := gopi.NewAppInstance(gopi.NewAppConfig()); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	} else if err := app.Run(mainTask); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(-1)
+	}
+}
+
+/////////////////////////////////////////////////////////////////////
+// mainTask
+
+func mainTask(app *gopi.AppInstance, done chan struct{}) error {
 	var err gopi.Error
 
 	// Open the driver with configuration
 	user, _ := user.Current()
 	driver, ok := gopi.Open2(MyConfig{Username: user.Username}, nil, &err).(*MyDriver)
-	if !ok { // Driver could not be opened
-		fmt.Println("Could not open driver, " + err.Error())
-		return
+	if !ok {
+		return fmt.Errorf("Could not open driver: %v", err)
 	}
 	// Close on exit
 	defer driver.Close()
 
 	// Perform actions on driver here
 	fmt.Println(driver)
+
+	// return success
+	done <- gopi.DONE
+	return nil
 }

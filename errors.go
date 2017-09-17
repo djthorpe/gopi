@@ -21,8 +21,6 @@ var (
 	ErrNoTasks = errors.New("No tasks to run")
 	// ErrAppError is a general application error
 	ErrAppError = errors.New("General application error")
-	// ErrModuleNotFound is an error when module cannot be found by name or type
-	ErrModuleNotFound = errors.New("Module not found")
 	// ErrHelp is returned when -help was called for on the command line
 	ErrHelp = flag.ErrHelp
 )

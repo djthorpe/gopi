@@ -8,10 +8,6 @@
 
 package gopi // import "github.com/djthorpe/gopi"
 
-import (
-	"github.com/djthorpe/gopi/util"
-)
-
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -61,8 +57,8 @@ type Config interface {
 type Logger interface {
 	Driver
 
-	Fatal(format string, v ...interface{}) error
-	Error(format string, v ...interface{}) error
+	Fatal(format string, v ...interface{}) Error
+	Error(format string, v ...interface{}) Error
 	Warn(format string, v ...interface{})
 	Info(format string, v ...interface{})
 	Debug(format string, v ...interface{})
@@ -78,20 +74,12 @@ type Error struct {
 // PUBLIC METHODS
 
 // Open a driver - opens the concrete version given the config method
-func Open(config Config, log *util.LoggerDevice) (Driver, error) {
-	var err error
-
-	if log == nil {
-		log, err = util.Logger(util.NullLogger{})
-		if err != nil {
-			return nil, err
-		}
-	}
-	driver, err := config.Open(log)
-	if err != nil {
+func Open(config Config, log Logger) (Driver, error) {
+	if driver, err := config.Open(log); err != nil {
 		return nil, err
+	} else {
+		return driver, nil
 	}
-	return driver, nil
 }
 
 // Open a driver - opens the concrete version given the config method
@@ -100,11 +88,6 @@ func Open(config Config, log *util.LoggerDevice) (Driver, error) {
 func Open2(config Config, log Logger, error_ref *Error) Driver {
 	var err error
 	var driver Driver
-
-	// Create a null logging object if no logger specified
-	if log == nil {
-		log, err = util.Logger(util.NullLogger{})
-	}
 
 	// Create driver
 	if err == nil {

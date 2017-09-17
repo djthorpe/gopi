@@ -26,47 +26,9 @@ fi
 echo "go install app/helloworld_example"
 go install -ldflags "${LDFLAGS}" examples/app/helloworld_example.go || exit -1
 
+echo "go install app/gopi_example"
+go install -ldflags "${LDFLAGS}" examples/app/gopi_example.go || exit -1
+
 echo "go install app/log_example"
 go install -ldflags "${LDFLAGS}" examples/app/log_example.go || exit -1
 
-echo "go install app/task_example"
-go install -ldflags "${LDFLAGS}" examples/app/task_example.go || exit -1
-
-echo "go install display/display_example"
-go install -ldflags "${LDFLAGS}" examples/display/display_example.go || exit -1
-
-echo "go install input/input_example"
-go install -ldflags "${LDFLAGS}" examples/input/input_example.go || exit -1
-
-echo "go install gpio/gpioctrl"
-go install -ldflags "${LDFLAGS}" examples/gpio/gpioctrl.go || exit -1
-
-echo "go install gpio/ledflash"
-go install -ldflags "${LDFLAGS}" examples/gpio/ledflash.go || exit -1
-
-echo "go install i2c/i2cdetect"
-go install -ldflags "${LDFLAGS}" examples/i2c/i2cdetect.go || exit -1
-
-echo "go install spi/spiutil"
-go install -ldflags "${LDFLAGS}" examples/spi/spiutil.go || exit -1
-
-echo "go install egl/snapshot"
-go install -ldflags "${LDFLAGS}" examples/egl/snapshot.go || exit -1
-
-echo "go install egl/cursor_example"
-go install -ldflags "${LDFLAGS}" examples/egl/cursor_example.go || exit -1
-
-echo "go install egl/image_example"
-go install -ldflags "${LDFLAGS}" examples/egl/image_example.go || exit -1
-
-echo "go install openvg/circle_example"
-go install -ldflags "${LDFLAGS}" examples/openvg/circle_example.go || exit -1
-
-echo "go install openvg/tiger_example"
-go install -ldflags "${LDFLAGS}" examples/openvg/tiger_example.go || exit -1
-
-echo "go install vgfont/font_example"
-go install -ldflags "${LDFLAGS}" examples/vgfont/font_example.go || exit -1
-
-echo "go install vgfont/vgfont_dx_example"
-go install -ldflags "${LDFLAGS}" examples/vgfont/vgfont_dx_example.go || exit -1

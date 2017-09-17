@@ -73,39 +73,15 @@ func NewAppConfig(modules ...interface{}) AppConfig {
 
 	// retrieve modules and dependencies, using appendModule
 	if config.Modules, err = appendModule(nil, MODULE_TYPE_LOGGER); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return AppConfig{}
 	}
 	for _, module := range modules {
 		if config.Modules, err = appendModule(config.Modules, module); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v", err)
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			return AppConfig{}
 		}
 	}
-	/*
-			switch v.(type) {
-			case ModuleType:
-				t := v.(ModuleType)
-				if t != MODULE_TYPE_NONE && t != MODULE_TYPE_OTHER && t != MODULE_TYPE_LOGGER {
-					module_type_hash[t] = true
-				}
-			case string:
-				s := v.(string)
-				module_string_hash[s] = true
-			}
-		}
-
-		// Now enumerate the modules, we always have the LOGGER type first
-		config.ModuleTypes = make([]ModuleType, 1, len(module_type_hash)+1)
-		config.ModuleNames = make([]string, 0, len(module_string_hash))
-		config.ModuleTypes[0] = MODULE_TYPE_LOGGER
-		for k := range module_type_hash {
-			config.ModuleTypes = append(config.ModuleTypes, k)
-		}
-		for k := range module_string_hash {
-			config.ModuleNames = append(config.ModuleNames, k)
-		}
-	*/
 
 	// Set the flags
 	config.AppArgs = getTestlessArguments(os.Args[1:])
@@ -125,10 +101,14 @@ func NewAppConfig(modules ...interface{}) AppConfig {
 // configuration
 func NewAppInstance(config AppConfig) (*AppInstance, error) {
 
+	if config.AppFlags == nil {
+		return nil, ErrAppError
+	}
+
 	// Parse flags. We want to ignore flags which start with "-test."
 	// in the testing environment
 	if config.AppFlags != nil && config.AppFlags.Parsed() == false {
-		if err := config.AppFlags.Parse(getTestlessArguments(os.Args[1:])); err != nil {
+		if err := config.AppFlags.Parse(config.AppArgs); err != nil {
 			return nil, err
 		}
 	}
@@ -147,7 +127,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	this.verbose = config.Verbose
 	this.AppFlags = config.AppFlags
 
-	// Create subsystems
+	// Create module instances
 	var once sync.Once
 	for _, module := range config.Modules {
 		// Report open (once after logger module is created)
@@ -155,6 +135,9 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 			once.Do(func() {
 				this.Logger.Debug2("gopi.AppInstance.Open()")
 			})
+		}
+		if this.Logger != nil {
+			this.Logger.Debug2("module.New{ %v }", module)
 		}
 		if driver, err := module.New(this); err != nil {
 			return nil, err
@@ -269,30 +252,17 @@ func (this *AppInstance) Close() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// MODULES
-/*
-func (this *AppInstance) ModuleByName(name string) Driver {
-	if module, err := ModuleByName(name); err != nil {
-		this.Logger.Error("ModuleByName: %v: %v", name, err)
-		return nil
-	} else if driver, err := module.New(this.config, this.Logger); err != nil {
-		this.Logger.Error("ModuleByName: %v: %v", name, err)
-		return nil
-	} else {
-		return driver
-	}
-}
-*/
-////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
 func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error {
 	var ok bool
+	fmt.Println("SET MODULE INSTANCE ", module, driver)
 	switch module.Type {
 	case MODULE_TYPE_LOGGER:
 		if this.Logger, ok = driver.(Logger); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Logger", module)
 		}
+		fmt.Println("this.Logger=", this.Logger)
 	case MODULE_TYPE_HARDWARE:
 		if this.Hardware, ok = driver.(HardwareDriver2); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Hardware", module)
