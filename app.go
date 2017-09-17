@@ -256,13 +256,11 @@ func (this *AppInstance) Close() error {
 
 func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error {
 	var ok bool
-	fmt.Println("SET MODULE INSTANCE ", module, driver)
 	switch module.Type {
 	case MODULE_TYPE_LOGGER:
 		if this.Logger, ok = driver.(Logger); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Logger", module)
 		}
-		fmt.Println("this.Logger=", this.Logger)
 	case MODULE_TYPE_HARDWARE:
 		if this.Hardware, ok = driver.(HardwareDriver2); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Hardware", module)
