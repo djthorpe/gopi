@@ -23,11 +23,12 @@ import (
 
 // AppConfig defines how an application should be created
 type AppConfig struct {
-	LogLevel util.LogLevel
-	Modules  []ModuleType
-	AppFlags *Flags
-	Debug    bool
-	Verbose  bool
+	LogLevel    util.LogLevel
+	ModuleTypes []ModuleType
+	ModuleNames []string
+	AppFlags    *Flags
+	Debug       bool
+	Verbose     bool
 }
 
 // AppInstance defines the running application instance with modules
@@ -45,9 +46,8 @@ type AppInstance struct {
 	I2C      Driver
 	SPI      Driver
 	Input    Driver
-
-	debug   bool
-	verbose bool
+	debug    bool
+	verbose  bool
 }
 
 // Task defines a function which can run, and has a channel which
@@ -66,25 +66,37 @@ var (
 // PUBLIC METHODS
 
 // NewAppConfig method will create a new configuration file given the set of
-// modules which should be created
-func NewAppConfig(modules ...ModuleType) AppConfig {
+// modules which should be created, the arguments are either by type
+// or by name
+func NewAppConfig(modules ...interface{}) AppConfig {
 	config := AppConfig{}
 
 	// Only allow each module type once, and don't allow NONE or OTHER
 	// plus add logger as a mandatory module later
-	module_hash := make(map[ModuleType]bool, len(modules))
-	for _, t := range modules {
-		if t == MODULE_TYPE_NONE || t == MODULE_TYPE_OTHER || t == MODULE_TYPE_LOGGER {
-			continue
+	module_type_hash := make(map[ModuleType]bool, len(modules))
+	module_string_hash := make(map[string]bool, len(modules))
+	for _, v := range modules {
+		switch v.(type) {
+		case ModuleType:
+			t := v.(ModuleType)
+			if t != MODULE_TYPE_NONE && t != MODULE_TYPE_OTHER && t != MODULE_TYPE_LOGGER {
+				module_type_hash[t] = true
+			}
+		case string:
+			s := v.(string)
+			module_string_hash[s] = true
 		}
-		module_hash[t] = true
 	}
 
 	// Now enumerate the modules, we always have the LOGGER type first
-	config.Modules = make([]ModuleType, 1, len(module_hash)+1)
-	config.Modules[0] = MODULE_TYPE_LOGGER
-	for k := range module_hash {
-		config.Modules = append(config.Modules, k)
+	config.ModuleTypes = make([]ModuleType, 1, len(module_type_hash)+1)
+	config.ModuleNames = make([]string, 0, len(module_string_hash))
+	config.ModuleTypes[0] = MODULE_TYPE_LOGGER
+	for k := range module_type_hash {
+		config.ModuleTypes = append(config.ModuleTypes, k)
+	}
+	for k := range module_string_hash {
+		config.ModuleNames = append(config.ModuleNames, k)
 	}
 
 	// Set the flags
@@ -124,7 +136,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 
 	// Create subsystems
 	var once sync.Once
-	for _, t := range config.Modules {
+	for _, t := range config.ModuleTypes {
 		// Report open (once after logger module is created)
 		if this.Logger != nil {
 			once.Do(func() {
@@ -245,6 +257,21 @@ func (this *AppInstance) Close() error {
 	return nil
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// MODULES
+/*
+func (this *AppInstance) ModuleByName(name string) Driver {
+	if module, err := ModuleByName(name); err != nil {
+		this.Logger.Error("ModuleByName: %v: %v", name, err)
+		return nil
+	} else if driver, err := module.New(this.config, this.Logger); err != nil {
+		this.Logger.Error("ModuleByName: %v: %v", name, err)
+		return nil
+	} else {
+		return driver
+	}
+}
+*/
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
