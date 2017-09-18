@@ -32,3 +32,6 @@ go install -ldflags "${LDFLAGS}" examples/app/gopi_example.go || exit -1
 echo "go install app/log_example"
 go install -ldflags "${LDFLAGS}" examples/app/log_example.go || exit -1
 
+echo "go install app/task_example"
+go install -ldflags "${LDFLAGS}" examples/app/task_example.go || exit -1
+

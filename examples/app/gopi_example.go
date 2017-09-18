@@ -18,6 +18,7 @@ import (
 	"os/user"
 
 	gopi "github.com/djthorpe/gopi"
+	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -62,18 +63,6 @@ func (this *MyDriver) String() string {
 	return fmt.Sprintf("MyDriver{ username=%v }", this.username)
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-func main() {
-	if app, err := gopi.NewAppInstance(gopi.NewAppConfig()); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
-	} else if err := app.Run(mainTask); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
-	}
-}
-
 /////////////////////////////////////////////////////////////////////
 // mainTask
 
@@ -82,7 +71,7 @@ func mainTask(app *gopi.AppInstance, done chan struct{}) error {
 
 	// Open the driver with configuration
 	user, _ := user.Current()
-	driver, ok := gopi.Open2(MyConfig{Username: user.Username}, nil, &err).(*MyDriver)
+	driver, ok := gopi.Open2(MyConfig{Username: user.Username}, app.Logger, &err).(*MyDriver)
 	if !ok {
 		return fmt.Errorf("Could not open driver: %v", err)
 	}
@@ -95,4 +84,30 @@ func mainTask(app *gopi.AppInstance, done chan struct{}) error {
 	// return success
 	done <- gopi.DONE
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func main_inner() int {
+	// Create the application
+	app, err := gopi.NewAppInstance(gopi.NewAppConfig())
+	if err != nil {
+		if err != gopi.ErrHelp {
+			fmt.Fprintln(os.Stderr, err)
+			return -1
+		}
+		return 0
+	}
+	defer app.Close()
+
+	// Run the application
+	if err := app.Run(mainTask); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return -1
+	}
+	return 0
+}
+
+func main() {
+	os.Exit(main_inner())
 }

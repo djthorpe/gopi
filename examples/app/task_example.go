@@ -14,9 +14,8 @@ import (
 	"fmt"
 	"os"
 	"time"
-)
 
-import (
+	"github.com/djthorpe/gopi"
 	app "github.com/djthorpe/gopi/app"
 )
 
@@ -62,23 +61,26 @@ func RunTasks(app *app.App) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func main() {
-
-	// Create the configuration, we want to use the DEVICE
-	// subsystem
-	config := app.Config(app.APP_NONE)
-
+func main_inner() int {
 	// Create the application
-	myapp, err := app.NewApp(config)
+	app, err := gopi.NewAppInstance(gopi.NewAppConfig())
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		return
+		if err != gopi.ErrHelp {
+			fmt.Fprintln(os.Stderr, err)
+			return -1
+		}
+		return 0
 	}
-	defer myapp.Close()
+	defer app.Close()
 
 	// Run the application
-	if err := myapp.Run(RunTasks); err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
-		return
+	if err := app.Run(helloWorld); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return -1
 	}
+	return 0
+}
+
+func main() {
+	os.Exit(main_inner())
 }
