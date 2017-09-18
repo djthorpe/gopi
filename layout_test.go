@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/djthorpe/gopi"
-	_ "github.com/djthorpe/gopi/sys/default/layout"
-	_ "github.com/djthorpe/gopi/sys/default/logger"
+	_ "github.com/djthorpe/gopi/sys/layout"
+	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
