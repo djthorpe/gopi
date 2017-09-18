@@ -93,6 +93,13 @@ func NewAppConfig(modules ...interface{}) AppConfig {
 	config.AppFlags.FlagBool("debug", false, "Set debugging mode")
 	config.AppFlags.FlagBool("verbose", false, "Verbose logging")
 
+	// Call module.Config for each module
+	for _, module := range config.Modules {
+		if module.Config != nil {
+			module.Config(&config)
+		}
+	}
+
 	// Return the configuration
 	return config
 }
@@ -130,6 +137,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	// Create module instances
 	var once sync.Once
 	for _, module := range config.Modules {
+		fmt.Println(module)
 		// Report open (once after logger module is created)
 		if this.Logger != nil {
 			once.Do(func() {
@@ -146,6 +154,12 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 		}
 	}
 
+	// report Open() again if it's not been done yet
+	once.Do(func() {
+		this.Logger.Debug2("gopi.AppInstance.Open()")
+	})
+
+	// success
 	return this, nil
 }
 

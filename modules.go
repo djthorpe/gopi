@@ -139,7 +139,7 @@ func appendModule(modules []*Module, name interface{}) ([]*Module, error) {
 	if modules == nil {
 		modules = make([]*Module, 0, 1)
 	}
-	// Find module
+	// Find module, and satisfy dependencies
 	if module := ModuleByValue(name); module == nil {
 		return nil, fmt.Errorf("Module not found: %v", name)
 	} else {

@@ -32,24 +32,35 @@ func helloWorld(app *gopi.AppInstance, done chan struct{}) error {
 	return nil
 }
 
-func registerFlags(config *gopi.AppConfig) {
+func registerFlags(config gopi.AppConfig) gopi.AppConfig {
 	// Register the -name flag
 	config.AppFlags.FlagString("name", "", "Your name")
+	// Return config
+	return config
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func main() {
-	config := gopi.NewAppConfig()
-	registerFlags(&config)
-	if app, err := gopi.NewAppInstance(config); err != nil {
-		// Check to see if -help has been triggered
+func main_inner() int {
+	// Create the application
+	app, err := gopi.NewAppInstance(registerFlags(gopi.NewAppConfig()))
+	if err != nil {
 		if err != gopi.ErrHelp {
 			fmt.Fprintln(os.Stderr, err)
-			os.Exit(-1)
+			return -1
 		}
-	} else if err := app.Run(helloWorld); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(-1)
+		return 0
 	}
+	defer app.Close()
+
+	// Run the application
+	if err := app.Run(helloWorld); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return -1
+	}
+	return 0
+}
+
+func main() {
+	os.Exit(main_inner())
 }
