@@ -13,14 +13,13 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/djthorpe/gopi"
-	app "github.com/djthorpe/gopi/app"
+	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-
+/*
 func Task(app *app.App, task_name string, task_done chan bool) {
 	// Tick every second
 	ticker := time.Tick(time.Second)
@@ -47,15 +46,47 @@ outer_loop:
 	task_done <- true
 	app.Logger.Info("Task %v: Closed", task_name)
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////
 
-func RunTasks(app *app.App) error {
+func taskA(app *gopi.AppInstance, done chan struct{}) error {
+	app.Logger.Info("In taskB")
 
-	// Wait until CTRL+C is pressed and all tasks have signalled completion
-	app.WaitUntilDone(app.RunTask(Task, "app.TaskA"), app.RunTask(Task, "app.TaskB"))
+	select {
+	case <-done:
+		break
+	}
+
+	app.Logger.Info("taskB done")
 
 	// Return success
+	return nil
+}
+
+func taskB(app *gopi.AppInstance, done chan struct{}) error {
+	app.Logger.Info("In taskA")
+
+	select {
+	case <-done:
+		break
+	}
+
+	app.Logger.Info("taskA done")
+
+	// Return success
+	return nil
+}
+
+func taskMain(app *gopi.AppInstance, done chan struct{}) error {
+	app.Logger.Info("In taskMain")
+
+	// TODO: wait for interrupt signal
+	app.WaitForSignal()
+
+	app.Logger.Info("taskMain done")
+
+	// Signal other routines that we are DONE, and return
+	done <- gopi.DONE
 	return nil
 }
 
@@ -73,8 +104,8 @@ func main_inner() int {
 	}
 	defer app.Close()
 
-	// Run the application
-	if err := app.Run(helloWorld); err != nil {
+	// Run the application - one foreground and two background tasks
+	if err := app.Run(taskMain, taskA, taskB); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return -1
 	}
