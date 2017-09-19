@@ -11,10 +11,12 @@ package gopi // import "github.com/djthorpe/gopi"
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"path"
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -46,6 +48,7 @@ type AppInstance struct {
 	Input    Driver
 	debug    bool
 	verbose  bool
+	sigchan  chan os.Signal
 }
 
 // Task defines a function which can run, and has a channel which
@@ -133,6 +136,10 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	this.debug = config.Debug
 	this.verbose = config.Verbose
 	this.AppFlags = config.AppFlags
+
+	// Set up signalling
+	this.sigchan = make(chan os.Signal, 1)
+	signal.Notify(this.sigchan, syscall.SIGTERM, syscall.SIGINT)
 
 	// Create module instances
 	var once sync.Once
@@ -233,6 +240,12 @@ func (this *AppInstance) Debug() bool {
 // Verbose returns whether the application has the verbose flag set
 func (this *AppInstance) Verbose() bool {
 	return this.verbose
+}
+
+// WaitForSignal blocks until a signal is caught
+func (this *AppInstance) WaitForSignal() {
+	signal := <-this.sigchan
+	this.Logger.Debug("gopi.AppInstance.WaitForSignal: %v", signal)
 }
 
 // Close method for app

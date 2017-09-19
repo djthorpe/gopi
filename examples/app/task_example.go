@@ -80,9 +80,8 @@ func taskB(app *gopi.AppInstance, done chan struct{}) error {
 func taskMain(app *gopi.AppInstance, done chan struct{}) error {
 	app.Logger.Info("In taskMain")
 
-	// TODO: wait for interrupt signal
+	// Wait for interrupt signal (INT or TERM)
 	app.WaitForSignal()
-
 	app.Logger.Info("taskMain done")
 
 	// Signal other routines that we are DONE, and return
