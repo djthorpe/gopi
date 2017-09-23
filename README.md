@@ -34,7 +34,7 @@ go get github.com/djthorpe/gopi
 # License
 
 ```
-Copyright 2016 David Thorpe All Rights Reserved
+Copyright 2016-2017 David Thorpe All Rights Reserved
 
 Redistribution and use in source and binary forms, with or without 
 modification, are permitted with some conditions. 
