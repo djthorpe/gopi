@@ -36,6 +36,7 @@ type Module struct {
 	Config   ModuleConfigFunc
 	New      ModuleNewFunc
 	Requires []string
+	edges    []*Module
 }
 
 // ModuleNewFunc is the signature for creating a new module instance
@@ -69,8 +70,8 @@ const (
 // GLOBAL VARIABLES
 
 var (
-	modules_by_name = make(map[string]Module)
-	modules_by_type = make(map[ModuleType]Module)
+	modules_by_name = make(map[string]*Module)
+	modules_by_type = make(map[ModuleType]*Module)
 	module_name_map = map[string]ModuleType{
 		"logger":  MODULE_TYPE_LOGGER,
 		"hw":      MODULE_TYPE_HARDWARE,
@@ -112,7 +113,7 @@ func RegisterModule(module Module) {
 		if _, exists := modules_by_name[module.Name]; exists {
 			panic(fmt.Errorf("Duplicate Module registered: %v", &module))
 		} else {
-			modules_by_name[module.Name] = module
+			modules_by_name[module.Name] = &module
 		}
 	}
 	// Register by type if module type is not None or Other
@@ -120,7 +121,7 @@ func RegisterModule(module Module) {
 		if _, exists := modules_by_type[module.Type]; exists {
 			panic(fmt.Errorf("Duplicate Module registered: %v", &module))
 		} else {
-			modules_by_type[module.Type] = module
+			modules_by_type[module.Type] = &module
 		}
 	}
 }
@@ -129,7 +130,7 @@ func RegisterModule(module Module) {
 // return nil if the module is not registered
 func ModuleByType(t ModuleType) *Module {
 	if module, exists := modules_by_type[t]; exists {
-		return &module
+		return module
 	} else {
 		return nil
 	}
@@ -143,7 +144,7 @@ func ModuleByName(n string) *Module {
 		return ModuleByType(t)
 	}
 	if module, exists := modules_by_name[n]; exists {
-		return &module
+		return module
 	} else {
 		return nil
 	}
@@ -172,100 +173,103 @@ func ModuleByValue(v interface{}) *Module {
 // last, so that they can be initialized in the right order when
 // creation is to occur
 func ModuleWithDependencies(names ...string) ([]*Module, error) {
-	var err error
-
 	// Create modules array
 	modules := make([]*Module, 0, len(names))
 
-	// Iterate through the modules
+	// Iterate through the modules adding the edges to each module
 	for _, name := range names {
 		// Find module and generate array of dependencies
 		if module := ModuleByName(name); module == nil {
 			return nil, fmt.Errorf("Module not registered with name: %v", name)
-		} else if modules, err = appendModuleAndDependencies(modules, module); err != nil {
-			return nil, fmt.Errorf("%v (in module %v)", err, name)
+		} else if err := addModuleEdges(module); err != nil {
+			return nil, err
+		} else {
+			modules = append(modules, module)
+		}
+	}
+
+	// Iterate through the modules again, resolving dependencies
+	dependencies := make([]*Module, 0, len(modules))
+	for _, module := range modules {
+		fmt.Printf("resolving dependencies for %v\n", module.Identifier())
+		fmt.Printf(" ...requires=%v\n", module.Requires)
+		if resolved, _, err := resolveModuleDependencies(module, nil, nil); err != nil {
+			fmt.Printf(" ...returns error %v\n", err)
+			return nil, err
+		} else {
+			fmt.Printf(" ...satisfies dependencies with %v\n", resolved)
+			dependencies = append(dependencies, resolved...)
 		}
 	}
 
 	// Return modules in reverse order to ensure initialization
 	// it done in the correct order
-	return reverseArray(modules), nil
+	return dependencies, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-// appendModuleAndDependencies returns array of modules which are dependencies of
-// the module provided, with the module appended to the end. Will return nil and
-// set err if there is some sort of module not found issue or dependency on self
-func appendModuleAndDependencies(arr []*Module, module *Module) ([]*Module, error) {
-	var err error
-
-	// Make modules slice with stab at the capacity
-	if arr == nil {
-		arr = make([]*Module, 0, len(module.Requires)+1)
+// addModuleEdges simply resolves the 'Requires' array and initalizes the
+// edges member value
+func addModuleEdges(module *Module) error {
+	// Check for already initialized
+	if module.edges != nil {
+		return nil
 	}
-
-	// Append module
-	arr = append(arr, module)
-
-	// Obtain array of module dependencies
+	// make an empty slice with capacity for edges
+	module.edges = make([]*Module, 0, len(module.Requires))
 	for _, name := range module.Requires {
-		dependency := ModuleByName(name)
-		if dependency == nil {
-			return nil, fmt.Errorf("Module not registered with name: %v", name)
-		}
-		if existsModule([]*Module{module}, dependency) {
-			return nil, fmt.Errorf("Module cannot depend on self (when satisfying dependencies of %v)", name)
-		}
-		if existsModule(arr, dependency) {
-			return nil, fmt.Errorf("Circular module dependencies (when satisfying dependencies of %v)", name)
-		}
-		if arr, err = appendModuleAndDependencies(arr, dependency); err != nil {
-			return nil, err
+		// Find module and generate array of dependencies
+		if dependency := ModuleByName(name); dependency == nil {
+			return fmt.Errorf("Module not registered with name: %v (required by %v)", name, module.Identifier())
+		} else if dependency.In(module.edges) == false {
+			module.edges = append(module.edges, dependency)
 		}
 	}
 
-	return arr, nil
+	return nil
 }
 
-// appendModules will append other modules onto the end of the slice,
-// ensuring the module is not already in the slice
-func appendModules(modules []*Module, others ...*Module) []*Module {
-	for _, other := range others {
-		if existsModule(modules, other) == false {
-			modules = append(modules, other)
+func resolveModuleDependencies(module *Module, resolved []*Module, seen []*Module) ([]*Module, []*Module, error) {
+	var err error
+	if resolved == nil {
+		resolved = make([]*Module, 0)
+	}
+	if seen == nil {
+		seen = make([]*Module, 0)
+	}
+	fmt.Printf("   ....adding %v to seen\n", module.Identifier())
+	seen = append(seen, module)
+	for _, edge := range module.edges {
+		if edge.In(resolved) == false {
+			if edge.In(seen) {
+				return nil, nil, fmt.Errorf("Circular reference for %v required by %v", edge.Identifier(), module.Identifier())
+			}
+			fmt.Printf("   ....resolving dependencies for %v\n", edge.Identifier())
+			if resolved, seen, err = resolveModuleDependencies(edge, resolved, seen); err != nil {
+				return nil, nil, err
+			}
 		}
 	}
-	return modules
+	resolved = append(resolved, module)
+	fmt.Printf("   ....resolved for %v is %v\n", module.Identifier(), resolved)
+	return resolved, seen, nil
 }
 
-// existsModule returns true if the module already exists
-// in the array of modules by type (or if MODULE_TYPE_OTHER)
-// then by name
-func existsModule(modules []*Module, module *Module) bool {
+// Equals returns true if one module is equal to another one
+func (this *Module) Equals(other *Module) bool {
+	return (this == other)
+}
+
+// In returns true if one module is in array of other modules
+func (this *Module) In(modules []*Module) bool {
 	for _, other := range modules {
-		if module.Type == MODULE_TYPE_OTHER || module.Type == MODULE_TYPE_NONE {
-			if module.Name == other.Name {
-				return true
-			}
-		} else {
-			if module.Type == other.Type {
-				return true
-			}
+		if this.Equals(other) {
+			return true
 		}
 	}
-	// No module found
 	return false
-}
-
-// In place reversal of the array
-func reverseArray(arr []*Module) []*Module {
-	last := len(arr) - 1
-	for i := 0; i < len(arr)/2; i++ {
-		arr[i], arr[last-i] = arr[last-i], arr[i]
-	}
-	return arr
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -307,5 +311,13 @@ func (t ModuleType) String() string {
 }
 
 func (this *Module) String() string {
-	return fmt.Sprintf("gopi.Module{ name=\"%v\" type=%v requires=%v }", this.Name, this.Type, this.Requires)
+	return fmt.Sprintf("%v{ name=\"%v\" type=%v requires=%v }", this.Identifier(), this.Name, this.Type, this.Requires)
+}
+
+func (this *Module) Identifier() string {
+	if this.Type == MODULE_TYPE_NONE || this.Type == MODULE_TYPE_OTHER {
+		return fmt.Sprintf("gopi.Module<%v>", this.Name)
+	} else {
+		return fmt.Sprintf("gopi.Module.%v<%v>", this.Type, this.Name)
+	}
 }
