@@ -6,11 +6,21 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
+/*
+	This file defines a way to register modules, which is a self-contained
+	driver or other piece of code which is created in two phases: a
+	configuration phase, giving the module a way to hook in the configuration
+	into the application configuration, and a creation phase ("new") which
+	reads the configuration and returns the driver (interface gopi.Driver)
+
+	Modules are referenced by type (there are several pre-defined types)
+	or by name (where there is no pre-defined type), and can have dependencies
+	on other modules.
+*/
 package gopi // import "github.com/djthorpe/gopi"
 
 import (
 	"fmt"
-	"os"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,7 +35,7 @@ type Module struct {
 	Type     ModuleType
 	Config   ModuleConfigFunc
 	New      ModuleNewFunc
-	Requires []interface{}
+	Requires []string
 }
 
 // ModuleNewFunc is the signature for creating a new module instance
@@ -61,6 +71,20 @@ const (
 var (
 	modules_by_name = make(map[string]Module)
 	modules_by_type = make(map[ModuleType]Module)
+	module_name_map = map[string]ModuleType{
+		"logger":  MODULE_TYPE_LOGGER,
+		"hw":      MODULE_TYPE_HARDWARE,
+		"display": MODULE_TYPE_DISPLAY,
+		"bitmap":  MODULE_TYPE_BITMAP,
+		"vector":  MODULE_TYPE_VECTOR,
+		"font":    MODULE_TYPE_VGFONT,
+		"opengl":  MODULE_TYPE_OPENGL,
+		"layout":  MODULE_TYPE_LAYOUT,
+		"gpio":    MODULE_TYPE_GPIO,
+		"i2c":     MODULE_TYPE_I2C,
+		"spi":     MODULE_TYPE_SPI,
+		"input":   MODULE_TYPE_INPUT,
+	}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,21 +95,30 @@ var (
 func RegisterModule(module Module) {
 	// Check for module.New method
 	if module.New == nil {
-		fmt.Fprintln(os.Stderr, "Module missing New method:", &module)
-		os.Exit(-1)
+		panic(fmt.Errorf("Module missing New method: %v", &module))
+	}
+	// Satisfy module.Type or module.Name
+	if module.Type == MODULE_TYPE_OTHER || module.Type == MODULE_TYPE_NONE {
+		if module.Name == "" {
+			panic(fmt.Errorf("Module name cannot be empty when type is OTHER: %v", &module))
+		}
+	}
+	// Module name cannot be a reserved name
+	if _, exists := module_name_map[module.Name]; exists {
+		panic(fmt.Errorf("Module name uses reserved word: %v", &module))
 	}
 	// Register by name
-	if _, exists := modules_by_name[module.Name]; exists {
-		fmt.Fprintln(os.Stderr, "Duplicate Module registered:", &module)
-		os.Exit(-1)
-	} else {
-		modules_by_name[module.Name] = module
+	if module.Name != "" {
+		if _, exists := modules_by_name[module.Name]; exists {
+			panic(fmt.Errorf("Duplicate Module registered: %v", &module))
+		} else {
+			modules_by_name[module.Name] = module
+		}
 	}
 	// Register by type if module type is not None or Other
 	if module.Type != MODULE_TYPE_OTHER && module.Type != MODULE_TYPE_NONE {
 		if _, exists := modules_by_type[module.Type]; exists {
-			fmt.Fprintln(os.Stderr, "Duplicate Module registered:", &module)
-			os.Exit(-1)
+			panic(fmt.Errorf("Duplicate Module registered: %v", &module))
 		} else {
 			modules_by_type[module.Type] = module
 		}
@@ -102,9 +135,13 @@ func ModuleByType(t ModuleType) *Module {
 	}
 }
 
-// ModuleByName returns a module given the name. It will
-// return nil if the module is not registered
+// ModuleByName returns a module given the name, or by type
+// if it is using the reserved word. It will return nil if
+// the module is not registered
 func ModuleByName(n string) *Module {
+	if t, exists := module_name_map[n]; exists {
+		return ModuleByType(t)
+	}
 	if module, exists := modules_by_name[n]; exists {
 		return &module
 	} else {
@@ -126,38 +163,81 @@ func ModuleByValue(v interface{}) *Module {
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-
-// appendModule will append a module to the array, satisfying dependencies
-// by appending them to the array as well. It won't currently detect any
-// endless recursion, but should probably do that
-func appendModule(modules []*Module, name interface{}) ([]*Module, error) {
+// ModuleWithDependencies returns an array of pointers to modules
+// which satisfy both the module itself and the dependencies. Will
+// return an error with the array as nil if the module was not
+// found or any dependencies are not met, or there are circular
+// dependencies. The ordering of the modules returned is
+// important: dependencies are first, and the module requested is
+// last, so that they can be initialized in the right order when
+// creation is to occur
+func ModuleWithDependencies(names ...string) ([]*Module, error) {
 	var err error
 
 	// Create modules array
-	if modules == nil {
-		modules = make([]*Module, 0, 1)
-	}
-	// Find module, and satisfy dependencies
-	if module := ModuleByValue(name); module == nil {
-		return nil, fmt.Errorf("Module not found: %v", name)
-	} else {
-		// Satisfy dependencies
-		if len(module.Requires) > 0 {
-			for _, dependency := range module.Requires {
-				if modules, err = appendModule(modules, dependency); err != nil {
-					return nil, err
-				}
-			}
-		}
-		// Append module if it doesn't exist in the list of modules
-		if existsModule(modules, module) == false {
-			modules = append(modules, module)
+	modules := make([]*Module, 0, len(names))
+
+	// Iterate through the modules
+	for _, name := range names {
+		// Find module and generate array of dependencies
+		if module := ModuleByName(name); module == nil {
+			return nil, fmt.Errorf("Module not registered with name: %v", name)
+		} else if modules, err = appendModuleAndDependencies(modules, module); err != nil {
+			return nil, fmt.Errorf("%v (in module %v)", err, name)
 		}
 	}
-	// Return modules
-	return modules, nil
+
+	// Return modules in reverse order to ensure initialization
+	// it done in the correct order
+	return reverseArray(modules), nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+// appendModuleAndDependencies returns array of modules which are dependencies of
+// the module provided, with the module appended to the end. Will return nil and
+// set err if there is some sort of module not found issue or dependency on self
+func appendModuleAndDependencies(arr []*Module, module *Module) ([]*Module, error) {
+	var err error
+
+	// Make modules slice with stab at the capacity
+	if arr == nil {
+		arr = make([]*Module, 0, len(module.Requires)+1)
+	}
+
+	// Append module
+	arr = append(arr, module)
+
+	// Obtain array of module dependencies
+	for _, name := range module.Requires {
+		dependency := ModuleByName(name)
+		if dependency == nil {
+			return nil, fmt.Errorf("Module not registered with name: %v", name)
+		}
+		if existsModule([]*Module{module}, dependency) {
+			return nil, fmt.Errorf("Module cannot depend on self (when satisfying dependencies of %v)", name)
+		}
+		if existsModule(arr, dependency) {
+			return nil, fmt.Errorf("Circular module dependencies (when satisfying dependencies of %v)", name)
+		}
+		if arr, err = appendModuleAndDependencies(arr, dependency); err != nil {
+			return nil, err
+		}
+	}
+
+	return arr, nil
+}
+
+// appendModules will append other modules onto the end of the slice,
+// ensuring the module is not already in the slice
+func appendModules(modules []*Module, others ...*Module) []*Module {
+	for _, other := range others {
+		if existsModule(modules, other) == false {
+			modules = append(modules, other)
+		}
+	}
+	return modules
 }
 
 // existsModule returns true if the module already exists
@@ -177,6 +257,15 @@ func existsModule(modules []*Module, module *Module) bool {
 	}
 	// No module found
 	return false
+}
+
+// In place reversal of the array
+func reverseArray(arr []*Module) []*Module {
+	last := len(arr) - 1
+	for i := 0; i < len(arr)/2; i++ {
+		arr[i], arr[last-i] = arr[last-i], arr[i]
+	}
+	return arr
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -218,5 +307,5 @@ func (t ModuleType) String() string {
 }
 
 func (this *Module) String() string {
-	return fmt.Sprintf("gopi.Module{ name=\"%v\" type=%v }", this.Name, this.Type)
+	return fmt.Sprintf("gopi.Module{ name=\"%v\" type=%v requires=%v }", this.Name, this.Type, this.Requires)
 }

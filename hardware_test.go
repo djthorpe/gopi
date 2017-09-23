@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/djthorpe/gopi"
-	_ "github.com/djthorpe/gopi/sys/default/logger"
+	_ "github.com/djthorpe/gopi/sys/logger"
 	_ "github.com/djthorpe/gopi/sys/mock/hardware"
 )
 
