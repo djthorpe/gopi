@@ -66,20 +66,22 @@ var (
 // NewAppConfig method will create a new configuration file given the set of
 // modules which should be created, the arguments are either by type
 // or by name
-func NewAppConfig(modules ...interface{}) AppConfig {
+func NewAppConfig(modules ...string) AppConfig {
 	var err error
 
 	config := AppConfig{}
 
 	// retrieve modules and dependencies, using appendModule
-	if config.Modules, err = appendModule(nil, MODULE_TYPE_LOGGER); err != nil {
+	if config.Modules, err = ModuleWithDependencies("logger"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return AppConfig{}
 	}
 	for _, module := range modules {
-		if config.Modules, err = appendModule(config.Modules, module); err != nil {
+		if module_array, err := ModuleWithDependencies(module); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			return AppConfig{}
+		} else {
+			config.Modules = append(config.Modules, module_array...)
 		}
 	}
 
