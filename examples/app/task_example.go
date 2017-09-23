@@ -13,58 +13,16 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/djthorpe/gopi"
 	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-/*
-func Task(app *app.App, task_name string, task_done chan bool) {
-	// Tick every second
-	ticker := time.Tick(time.Second)
-
-	// Get done channel
-	finish := app.GetDoneChannel()
-
-	// Loop until app is done
-outer_loop:
-	for {
-		select {
-		case <-ticker:
-			app.Logger.Info("Task %v: Tick", task_name)
-		case <-finish:
-			app.Logger.Info("Task %v: App Done Signal", task_name)
-			break outer_loop
-		}
-	}
-
-	// Cleanup task
-	app.Logger.Info("Task %v: Cleanup", task_name)
-
-	// Close
-	task_done <- true
-	app.Logger.Info("Task %v: Closed", task_name)
-}
-*/
-////////////////////////////////////////////////////////////////////////////////
 
 func taskA(app *gopi.AppInstance, done chan struct{}) error {
-	app.Logger.Info("In taskB")
-
-	select {
-	case <-done:
-		break
-	}
-
-	app.Logger.Info("taskB done")
-
-	// Return success
-	return nil
-}
-
-func taskB(app *gopi.AppInstance, done chan struct{}) error {
-	app.Logger.Info("In taskA")
+	app.Logger.Info("In taskA (which blocks until done)")
 
 	select {
 	case <-done:
@@ -77,12 +35,32 @@ func taskB(app *gopi.AppInstance, done chan struct{}) error {
 	return nil
 }
 
+func taskB(app *gopi.AppInstance, done chan struct{}) error {
+	app.Logger.Info("In taskB (which does something every second until done)")
+
+	// Tick every second
+	ticker := time.Tick(time.Second)
+
+	outer_loop: for {
+		select {
+		case <-ticker:
+			app.Logger.Info("taskB: Tick")
+		case <-done:
+			break outer_loop
+		}
+	}
+
+	app.Logger.Info("taskB done")
+
+	// Return success
+	return nil
+}
+
 func taskMain(app *gopi.AppInstance, done chan struct{}) error {
 	app.Logger.Info("In taskMain")
 
-	// TODO: wait for interrupt signal
+	// Wait for interrupt signal (INT or TERM)
 	app.WaitForSignal()
-
 	app.Logger.Info("taskMain done")
 
 	// Signal other routines that we are DONE, and return
