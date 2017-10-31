@@ -63,6 +63,7 @@ const (
 	MODULE_TYPE_I2C
 	MODULE_TYPE_SPI
 	MODULE_TYPE_INPUT
+	MODULE_TYPE_MDNS
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,6 +85,7 @@ var (
 		"i2c":     MODULE_TYPE_I2C,
 		"spi":     MODULE_TYPE_SPI,
 		"input":   MODULE_TYPE_INPUT,
+		"mdns":    MODULE_TYPE_MDNS,
 	}
 )
 
@@ -301,6 +303,8 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_SPI"
 	case MODULE_TYPE_INPUT:
 		return "MODULE_TYPE_INPUT"
+	case MODULE_TYPE_MDNS:
+		return "MODULE_TYPE_MDNS"
 	default:
 		return "[Invalid ModuleType value]"
 	}
