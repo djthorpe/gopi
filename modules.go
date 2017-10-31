@@ -51,19 +51,19 @@ type ModuleConfigFunc func(*AppConfig)
 const (
 	MODULE_TYPE_NONE ModuleType = iota
 	MODULE_TYPE_OTHER
-	MODULE_TYPE_LOGGER
-	MODULE_TYPE_HARDWARE
-	MODULE_TYPE_DISPLAY
-	MODULE_TYPE_BITMAP
-	MODULE_TYPE_VECTOR
-	MODULE_TYPE_VGFONT
-	MODULE_TYPE_OPENGL
-	MODULE_TYPE_LAYOUT
-	MODULE_TYPE_GPIO
-	MODULE_TYPE_I2C
-	MODULE_TYPE_SPI
-	MODULE_TYPE_INPUT
-	MODULE_TYPE_MDNS
+	MODULE_TYPE_LOGGER   // Logging module
+	MODULE_TYPE_HARDWARE // Hardware capabilities and monitoring
+	MODULE_TYPE_DISPLAY  // Displays
+	MODULE_TYPE_BITMAP   // Bitmap graphics
+	MODULE_TYPE_VECTOR   // 2D Vector graphics
+	MODULE_TYPE_VGFONT   // Font rendering
+	MODULE_TYPE_OPENGL   // 3D Graphics
+	MODULE_TYPE_LAYOUT   // Flex 2D Rectangular Layout
+	MODULE_TYPE_GPIO     // GPIO Hardware interface
+	MODULE_TYPE_I2C      // I2C Hardware interface
+	MODULE_TYPE_SPI      // SPI Hardware interface
+	MODULE_TYPE_INPUT    // User Input Device interface
+	MODULE_TYPE_MDNS     // DNS Service Discovery
 )
 
 ////////////////////////////////////////////////////////////////////////////////
