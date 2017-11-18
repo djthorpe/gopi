@@ -129,12 +129,12 @@ func TestModules_007(t *testing.T) {
 	if _, err := gopi.ModuleWithDependencies("test4"); err != nil {
 		t.Log("Received error:", err)
 	} else {
-		t.Error("Expected failure with circular dependencies")
+		t.Error("Expected failure with circular dependencies (test4)")
 	}
 	if _, err := gopi.ModuleWithDependencies("test5"); err != nil {
 		t.Log("Received error:", err)
 	} else {
-		t.Error("Expected failure with circular dependencies")
+		t.Error("Expected failure with circular dependencies (test5)")
 	}
 }
 
@@ -159,17 +159,17 @@ func TestModules_008(t *testing.T) {
 	if _, err := gopi.ModuleWithDependencies("test6"); err != nil {
 		t.Log("Received error:", err)
 	} else {
-		t.Error("Expected failure with circular dependencies")
+		t.Error("Expected failure with circular dependencies (test6)")
 	}
 	if _, err := gopi.ModuleWithDependencies("test7"); err != nil {
 		t.Log("Received error:", err)
 	} else {
-		t.Error("Expected failure with circular dependencies")
+		t.Error("Expected failure with circular dependencies (test7)")
 	}
 	if _, err := gopi.ModuleWithDependencies("test8"); err != nil {
 		t.Log("Received error:", err)
 	} else {
-		t.Error("Expected failure with circular dependencies")
+		t.Error("Expected failure with circular dependencies (test8)")
 	}
 }
 
@@ -194,7 +194,7 @@ func TestModules_009(t *testing.T) {
 		t.Error("Received error:", err)
 	} else {
 		if len(modules) != 3 {
-			t.Error("Expected three modules to be returned")
+			t.Fatalf("Expected three modules to be returned, got %v", modules)
 		}
 		if modules[0].Name != "test11" {
 			t.Errorf("Expected test11 as the first module, got %v", modules)
@@ -230,7 +230,7 @@ func TestModules_010(t *testing.T) {
 		t.Error("Received error:", err)
 	} else {
 		if len(modules) != 3 {
-			t.Error("Expected three modules to be returned")
+			t.Fatalf("Expected three modules to be returned, got %v", modules)
 		}
 		if modules[0].Name != "test14" {
 			t.Errorf("Expected test14 as the first module, got %v", modules)
