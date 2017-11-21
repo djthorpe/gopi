@@ -345,7 +345,7 @@ func NewApp(config AppConfig) (*App, error) {
 
 	// Create the Input subsystem
 	if config.Features&(APP_INPUT) != 0 {
-		if this.Input, ok = gopi.Open2(linux.Input{}, this.Logger, &gopi_err).(hw.InputDriver); !ok {
+		if this.Input, ok = gopi.Open2(linux.Input{Exclusive:config.InputExclusive}, this.Logger, &gopi_err).(hw.InputDriver); !ok {
 			this.Close()
 			return nil, gopi_err
 		}
