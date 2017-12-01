@@ -66,3 +66,8 @@ your `${PATH}` variable:
   export FFMPEG_ROOT="/opt/ffmpeg"
   export PATH="${PATH}:${FFMPEG_ROOT}/bin"
 ```
+
+## Appendix: influxdb installation
+
+
+

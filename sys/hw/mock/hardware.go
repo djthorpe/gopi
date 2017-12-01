@@ -1,4 +1,6 @@
-package hardware /* import "github.com/djthorpe/gopi/sys/mock/hardware" */
+package mock
+
+/* sys/hw/mock */
 
 import (
 	"fmt"
@@ -27,7 +29,7 @@ type displayDriver struct {
 
 func init() {
 	// Register hardware and display
-	gopi.RegisterModule(gopi.Module{Name: "mock/hardware", Type: gopi.MODULE_TYPE_HARDWARE, New: newHardware})
+	gopi.RegisterModule(gopi.Module{Name: "mock/hw", Type: gopi.MODULE_TYPE_HARDWARE, New: newHardware})
 	registerDisplayFlags(gopi.RegisterModule(gopi.Module{
 		Name: "mock/display",
 		Type: gopi.MODULE_TYPE_DISPLAY,

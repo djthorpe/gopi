@@ -8,10 +8,10 @@
 
 package gopi // import "github.com/djthorpe/gopi"
 
-// HardwareDriver2 implements the hardware driver interface, which
+// Hardware implements the hardware driver interface, which
 // provides information about the hardware that the software is
 // running on
-type HardwareDriver2 interface {
+type Hardware interface {
 	Driver
 
 	// Return name of the hardware platform
@@ -24,8 +24,8 @@ type HardwareDriver2 interface {
 	NumberOfDisplays() uint
 }
 
-// DisplayDriver2 implements a pixel-based display device description
-type DisplayDriver2 interface {
+// Display implements a pixel-based display device
+type Display interface {
 	Driver
 
 	// Return display number

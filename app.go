@@ -35,8 +35,8 @@ type AppConfig struct {
 type AppInstance struct {
 	AppFlags *Flags
 	Logger   Logger
-	Hardware HardwareDriver2
-	Display  DisplayDriver2
+	Hardware Hardware
+	Display  Display
 	Bitmap   Driver
 	Vector   Driver
 	VGFont   Driver
@@ -291,11 +291,11 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 			return fmt.Errorf("Module %v cannot be cast to gopi.Logger", module)
 		}
 	case MODULE_TYPE_HARDWARE:
-		if this.Hardware, ok = driver.(HardwareDriver2); !ok {
+		if this.Hardware, ok = driver.(Hardware); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Hardware", module)
 		}
 	case MODULE_TYPE_DISPLAY:
-		if this.Display, ok = driver.(DisplayDriver2); !ok {
+		if this.Display, ok = driver.(Display); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Display", module)
 		}
 	case MODULE_TYPE_LAYOUT:
