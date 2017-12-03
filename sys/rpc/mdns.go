@@ -7,7 +7,7 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-package mdsn /* import "github.com/djthorpe/gopi/sys/mdns" */
+package rpc
 
 import (
 	"context"

@@ -8,13 +8,13 @@ import (
 
 	gopi "github.com/djthorpe/gopi"
 	logger "github.com/djthorpe/gopi/sys/logger"
-	mdns "github.com/djthorpe/gopi/sys/mdns"
+	rpc "github.com/djthorpe/gopi/sys/rpc"
 )
 
 func TestRPCDiscovery_000(t *testing.T) {
 	if logger, err := gopi.Open(logger.Config{}, nil); err != nil {
 		t.Fatal(err)
-	} else if driver, err := gopi.Open(mdns.Config{}, logger.(gopi.Logger)); err != nil {
+	} else if driver, err := gopi.Open(rpc.Config{}, logger.(gopi.Logger)); err != nil {
 		t.Fatal(err)
 	} else {
 		defer driver.Close()
