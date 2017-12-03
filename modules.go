@@ -17,7 +17,7 @@
 	or by name (where there is no pre-defined type), and can have dependencies
 	on other modules.
 */
-package gopi // import "github.com/djthorpe/gopi"
+package gopi
 
 import (
 	"fmt"

@@ -17,8 +17,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-
-	"github.com/djthorpe/gopi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,8 +41,8 @@ type AppInstance struct {
 	debug    bool
 	verbose  bool
 	sigchan  chan os.Signal
-	byname   map[string]gopi.Driver
-	bytype   map[ModuleType]gopi.Driver
+	byname   map[string]Driver
+	bytype   map[ModuleType]Driver
 }
 
 // Task defines a function which can run, and has a channel which
@@ -140,8 +138,8 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	signal.Notify(this.sigchan, syscall.SIGTERM, syscall.SIGINT)
 
 	// Set module maps
-	this.byname = make(map[string]gopi.Driver, len(config.Modules))
-	this.bytype = make(map[ModuleType]gopi.Driver, len(config.Modules))
+	this.byname = make(map[string]Driver, len(config.Modules))
+	this.bytype = make(map[ModuleType]Driver, len(config.Modules))
 
 	// Create module instances
 	var once sync.Once
@@ -284,8 +282,8 @@ func (this *AppInstance) Close() error {
 // ModuleInstance returns module instance by name, or returns nil if the module
 // cannot be found. You can use reserved words (ie, logger, layout, etc)
 // for common module types
-func (this *AppInstance) ModuleInstance(name string) gopi.Driver {
-	var instance gopi.Driver
+func (this *AppInstance) ModuleInstance(name string) Driver {
+	var instance Driver
 	// Check for reserved words
 	if module_type, exists := module_name_map[name]; exists {
 		instance, _ = this.bytype[module_type]

@@ -7,7 +7,7 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-package gopi /* import "github.com/djthorpe/gopi" */
+package gopi
 
 import (
 	"flag"

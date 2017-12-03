@@ -6,7 +6,7 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-package gopi // import "github.com/djthorpe/gopi"
+package gopi
 
 // Hardware implements the hardware driver interface, which
 // provides information about the hardware that the software is
