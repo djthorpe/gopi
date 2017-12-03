@@ -88,7 +88,7 @@ func TestModules_005(t *testing.T) {
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test2",
-		Requires: []interface{}{"test3"},
+		Requires: []string{"test3"},
 	})
 
 	if _, err := gopi.ModuleWithDependencies("test2"); err != nil {
@@ -103,7 +103,7 @@ func TestModules_006(t *testing.T) {
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test3",
-		Requires: []interface{}{"test3"},
+		Requires: []string{"test3"},
 	})
 
 	if _, err := gopi.ModuleWithDependencies("test3"); err != nil {
@@ -118,12 +118,12 @@ func TestModules_007(t *testing.T) {
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test4",
-		Requires: []interface{}{"test5"},
+		Requires: []string{"test5"},
 	})
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test5",
-		Requires: []interface{}{"test4"},
+		Requires: []string{"test4"},
 	})
 
 	if _, err := gopi.ModuleWithDependencies("test4"); err != nil {
@@ -143,17 +143,17 @@ func TestModules_008(t *testing.T) {
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test6",
-		Requires: []interface{}{"test7"},
+		Requires: []string{"test7"},
 	})
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test7",
-		Requires: []interface{}{"test8"},
+		Requires: []string{"test8"},
 	})
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test8",
-		Requires: []interface{}{"test6"},
+		Requires: []string{"test6"},
 	})
 
 	if _, err := gopi.ModuleWithDependencies("test6"); err != nil {
@@ -178,12 +178,12 @@ func TestModules_009(t *testing.T) {
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test9",
-		Requires: []interface{}{"test10"},
+		Requires: []string{"test10"},
 	})
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test10",
-		Requires: []interface{}{"test11"},
+		Requires: []string{"test11"},
 	})
 	gopi.RegisterModule(gopi.Module{
 		New:  EmptyModuleNewFunction,
@@ -214,12 +214,12 @@ func TestModules_010(t *testing.T) {
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test12",
-		Requires: []interface{}{"test13", "test14"},
+		Requires: []string{"test13", "test14"},
 	})
 	gopi.RegisterModule(gopi.Module{
 		New:      EmptyModuleNewFunction,
 		Name:     "test13",
-		Requires: []interface{}{"test14"},
+		Requires: []string{"test14"},
 	})
 	gopi.RegisterModule(gopi.Module{
 		New:  EmptyModuleNewFunction,

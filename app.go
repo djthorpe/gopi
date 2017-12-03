@@ -63,7 +63,7 @@ var (
 // NewAppConfig method will create a new configuration file given the set of
 // modules which should be created, the arguments are either by type
 // or by name
-func NewAppConfig(modules ...interface{}) AppConfig {
+func NewAppConfig(modules ...string) AppConfig {
 	var err error
 
 	config := AppConfig{}

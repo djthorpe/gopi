@@ -35,7 +35,7 @@ type Module struct {
 	Type     ModuleType
 	Config   ModuleConfigFunc
 	New      ModuleNewFunc
-	Requires []interface{}
+	Requires []string
 	edges    []*Module
 }
 
@@ -148,20 +148,6 @@ func ModuleByName(n string) *Module {
 	}
 }
 
-// ModuleByValue returns a module given either a type
-// or a name. It will return nil if the module is
-// not registered
-func ModuleByValue(v interface{}) *Module {
-	switch v.(type) {
-	case string:
-		return ModuleByName(v.(string))
-	case ModuleType:
-		return ModuleByType(v.(ModuleType))
-	default:
-		return nil
-	}
-}
-
 // ModuleWithDependencies returns an array of pointers to modules
 // which satisfy both the module itself and the dependencies. Will
 // return an error with the array as nil if the module was not
@@ -170,14 +156,14 @@ func ModuleByValue(v interface{}) *Module {
 // important: dependencies are first, and the module requested is
 // last, so that they can be initialized in the right order when
 // creation is to occur, and vice-versa on application exit
-func ModuleWithDependencies(names ...interface{}) ([]*Module, error) {
+func ModuleWithDependencies(names ...string) ([]*Module, error) {
 	// Create modules array
 	modules := make([]*Module, 0, len(names))
 
 	// Iterate through the modules adding the edges to each module
 	for _, name := range names {
 		// Find module and generate array of dependencies
-		if module := ModuleByValue(name); module == nil {
+		if module := ModuleByName(name); module == nil {
 			return nil, fmt.Errorf("Module not registered with name: %v", name)
 		} else if err := addModuleEdges(module); err != nil {
 			return nil, err
@@ -219,7 +205,7 @@ func addModuleEdges(module *Module) error {
 	module.edges = make([]*Module, 0, len(module.Requires))
 	for _, name := range module.Requires {
 		// Find module and generate array of dependencies
-		if dependency := ModuleByValue(name); dependency == nil {
+		if dependency := ModuleByName(name); dependency == nil {
 			return fmt.Errorf("Module not registered with name: %v (required by %v)", name, module.Identifier())
 		} else if dependency.In(module.edges) == false {
 			module.edges = append(module.edges, dependency)

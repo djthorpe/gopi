@@ -34,7 +34,7 @@ func TestCreateConfig_001(t *testing.T) {
 	gopi.RegisterModule(gopi.Module{
 		Name:     "test/mock2",
 		Type:     gopi.MODULE_TYPE_OTHER,
-		Requires: []interface{}{"test/mock1"},
+		Requires: []string{"test/mock1"},
 	})
 	// Create config file
 	config := gopi.NewAppConfig("test/mock1")

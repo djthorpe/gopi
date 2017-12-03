@@ -12,7 +12,7 @@ import (
 // CREATE HARDWARE MODULE
 func TestHardware_000(t *testing.T) {
 	// Create a configuration with debug
-	config := gopi.NewAppConfig(gopi.MODULE_TYPE_HARDWARE)
+	config := gopi.NewAppConfig("hw")
 	config.Debug = true
 
 	// Create an application with a hardware module
@@ -38,7 +38,7 @@ func TestHardware_000(t *testing.T) {
 
 func TestHardware_001(t *testing.T) {
 	// Create a configuration with debug
-	config := gopi.NewAppConfig(gopi.MODULE_TYPE_HARDWARE)
+	config := gopi.NewAppConfig("hw")
 	config.Debug = true
 
 	// Create an application with a hardware module
@@ -61,7 +61,7 @@ func TestHardware_001(t *testing.T) {
 
 func TestDisplay_001(t *testing.T) {
 	// Create a configuration with debug
-	config := gopi.NewAppConfig(gopi.MODULE_TYPE_DISPLAY)
+	config := gopi.NewAppConfig("hw", "display")
 	config.Debug = true
 	//	config.AppFlags.SetUint("display", 0)
 
