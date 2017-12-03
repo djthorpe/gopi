@@ -17,6 +17,8 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/djthorpe/gopi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +43,8 @@ type AppInstance struct {
 	debug    bool
 	verbose  bool
 	sigchan  chan os.Signal
+	byname   map[string]gopi.Driver
+	bytype   map[ModuleType]gopi.Driver
 }
 
 // Task defines a function which can run, and has a channel which
@@ -134,6 +138,10 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	// Set up signalling
 	this.sigchan = make(chan os.Signal, 1)
 	signal.Notify(this.sigchan, syscall.SIGTERM, syscall.SIGINT)
+
+	// Set module maps
+	this.byname = make(map[string]gopi.Driver, len(config.Modules))
+	this.bytype = make(map[ModuleType]gopi.Driver, len(config.Modules))
 
 	// Create module instances
 	var once sync.Once
@@ -273,11 +281,43 @@ func (this *AppInstance) Close() error {
 	return nil
 }
 
+// ModuleInstance returns module instance by name, or returns nil if the module
+// cannot be found. You can use reserved words (ie, logger, layout, etc)
+// for common module types
+func (this *AppInstance) ModuleInstance(name string) gopi.Driver {
+	var instance gopi.Driver
+	// Check for reserved words
+	if module_type, exists := module_name_map[name]; exists {
+		instance, _ = this.bytype[module_type]
+	} else {
+		instance, _ = this.byname[name]
+	}
+	return instance
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
 func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error {
 	var ok bool
+
+	// Set by name. Currently returns an error if there is more than one module with the same name
+	if _, exists := this.byname[module.Name]; exists {
+		return fmt.Errorf("setModuleInstance: Duplicate module with name '%v'", module.Name)
+	} else {
+		this.byname[module.Name] = driver
+	}
+
+	// Set by type. Currently returns an error if there is more than one module with the same type
+	if module.Type != MODULE_TYPE_NONE && module.Type != MODULE_TYPE_OTHER {
+		if _, exists := this.bytype[module.Type]; exists {
+			return fmt.Errorf("setModuleInstance: Duplicate module with type '%v'", module.Type)
+		} else {
+			this.bytype[module.Type] = driver
+		}
+	}
+
+	// Now some convenience methods for already-cast drivers
 	switch module.Type {
 	case MODULE_TYPE_LOGGER:
 		if this.Logger, ok = driver.(Logger); !ok {
@@ -295,8 +335,6 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 		if this.Layout, ok = driver.(Layout); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Layout", module)
 		}
-	default:
-		return fmt.Errorf("Not implemented: setModuleInstance: %v", module)
 	}
 	// success
 	return nil
