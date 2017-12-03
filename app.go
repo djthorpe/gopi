@@ -262,6 +262,7 @@ func (this *AppInstance) Close() error {
 	// driver
 	for i := len(this.byorder); i > 0; i-- {
 		driver := this.byorder[i-1]
+		this.Logger.Debug2("gopi.AppInstance.Close() %v", driver)
 		if err := driver.Close(); err != nil {
 			this.Logger.Error("gopi.AppInstance.Close() error: %v", err)
 		}
