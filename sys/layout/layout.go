@@ -51,24 +51,13 @@ var (
 
 func init() {
 	// Register layout module
-	registerFlags(gopi.RegisterModule(gopi.Module{
-		Name: "default/layout",
+	gopi.RegisterModule(gopi.Module{
+		Name: "layout/flex",
 		Type: gopi.MODULE_TYPE_LAYOUT,
-		New:  newLayout,
-	}))
-}
-
-func registerFlags(flags *gopi.Flags) {
-	/* no flags for the layout module */
-}
-
-func newLayout(config *gopi.AppConfig, logger gopi.Logger) (gopi.Driver, error) {
-	var err gopi.Error
-	if layout, ok := gopi.Open2(Config{}, logger, &err).(gopi.Layout); !ok {
-		return nil, err
-	} else {
-		return layout, nil
-	}
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			return gopi.Open(Config{}, app.Logger)
+		},
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////

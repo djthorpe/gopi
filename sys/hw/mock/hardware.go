@@ -28,41 +28,29 @@ type displayDriver struct {
 // INIT
 
 func init() {
-	// Register hardware and display
-	gopi.RegisterModule(gopi.Module{Name: "mock/hw", Type: gopi.MODULE_TYPE_HARDWARE, New: newHardware})
-	registerDisplayFlags(gopi.RegisterModule(gopi.Module{
-		Name: "mock/display",
+	// Register hardware
+	gopi.RegisterModule(gopi.Module{
+		Name: "hardware/mock",
+		Type: gopi.MODULE_TYPE_HARDWARE,
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			return gopi.Open(Hardware{}, app.Logger)
+		},
+	})
+	// Register display
+	gopi.RegisterModule(gopi.Module{
+		Name: "display/mock",
 		Type: gopi.MODULE_TYPE_DISPLAY,
-		New:  newDisplay,
-	}))
-}
-
-func registerDisplayFlags(flags *gopi.Flags) {
-	flags.FlagUint("display", 0, "Display")
-}
-
-func newHardware(config *gopi.AppConfig, logger gopi.Logger) (gopi.Driver, error) {
-	var err gopi.Error
-	if driver, ok := gopi.Open2(Hardware{}, logger, &err).(gopi.HardwareDriver2); !ok {
-		return nil, err
-	} else {
-		return driver, nil
-	}
-}
-
-func newDisplay(config *gopi.AppConfig, logger gopi.Logger) (gopi.Driver, error) {
-	var err gopi.Error
-	var display Display
-
-	// set display argument
-	if display_number, exists := config.AppFlags.GetUint("display"); exists {
-		display.Display = display_number
-	}
-	if driver, ok := gopi.Open2(display, logger, &err).(gopi.DisplayDriver2); !ok {
-		return nil, err
-	} else {
-		return driver, nil
-	}
+		Config: func(config *gopi.AppConfig) {
+			config.AppFlags.FlagUint("display", 0, "Display")
+		},
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			display := Display{}
+			if display_number, exists := app.AppFlags.GetUint("display"); exists {
+				display.Display = display_number
+			}
+			return gopi.Open(display, app.Logger)
+		},
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////

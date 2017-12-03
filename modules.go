@@ -35,7 +35,7 @@ type Module struct {
 	Type     ModuleType
 	Config   ModuleConfigFunc
 	New      ModuleNewFunc
-	Requires []string
+	Requires []interface{}
 	edges    []*Module
 }
 
@@ -96,10 +96,6 @@ var (
 // RegisterModule registers the Config and New functions
 // for creating a module, there is no return value
 func RegisterModule(module Module) {
-	// Check for module.New method
-	if module.New == nil {
-		panic(fmt.Errorf("Module missing New method: %v", &module))
-	}
 	// Satisfy module.Type or module.Name
 	if module.Type == MODULE_TYPE_OTHER || module.Type == MODULE_TYPE_NONE {
 		if module.Name == "" {
@@ -173,15 +169,15 @@ func ModuleByValue(v interface{}) *Module {
 // dependencies. The ordering of the modules returned is
 // important: dependencies are first, and the module requested is
 // last, so that they can be initialized in the right order when
-// creation is to occur
-func ModuleWithDependencies(names ...string) ([]*Module, error) {
+// creation is to occur, and vice-versa on application exit
+func ModuleWithDependencies(names ...interface{}) ([]*Module, error) {
 	// Create modules array
 	modules := make([]*Module, 0, len(names))
 
 	// Iterate through the modules adding the edges to each module
 	for _, name := range names {
 		// Find module and generate array of dependencies
-		if module := ModuleByName(name); module == nil {
+		if module := ModuleByValue(name); module == nil {
 			return nil, fmt.Errorf("Module not registered with name: %v", name)
 		} else if err := addModuleEdges(module); err != nil {
 			return nil, err
@@ -223,7 +219,7 @@ func addModuleEdges(module *Module) error {
 	module.edges = make([]*Module, 0, len(module.Requires))
 	for _, name := range module.Requires {
 		// Find module and generate array of dependencies
-		if dependency := ModuleByName(name); dependency == nil {
+		if dependency := ModuleByValue(name); dependency == nil {
 			return fmt.Errorf("Module not registered with name: %v (required by %v)", name, module.Identifier())
 		} else if dependency.In(module.edges) == false {
 			module.edges = append(module.edges, dependency)

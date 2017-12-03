@@ -37,15 +37,7 @@ type AppInstance struct {
 	Logger   Logger
 	Hardware Hardware
 	Display  Display
-	Bitmap   Driver
-	Vector   Driver
-	VGFont   Driver
-	OpenGL   Driver
 	Layout   Layout
-	GPIO     Driver
-	I2C      Driver
-	SPI      Driver
-	Input    Driver
 	debug    bool
 	verbose  bool
 	sigchan  chan os.Signal
@@ -69,7 +61,7 @@ var (
 // NewAppConfig method will create a new configuration file given the set of
 // modules which should be created, the arguments are either by type
 // or by name
-func NewAppConfig(modules ...string) AppConfig {
+func NewAppConfig(modules ...interface{}) AppConfig {
 	var err error
 
 	config := AppConfig{}
@@ -146,20 +138,21 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	// Create module instances
 	var once sync.Once
 	for _, module := range config.Modules {
-		fmt.Println(module)
 		// Report open (once after logger module is created)
 		if this.Logger != nil {
 			once.Do(func() {
 				this.Logger.Debug2("gopi.AppInstance.Open()")
 			})
 		}
-		if this.Logger != nil {
-			this.Logger.Debug2("module.New{ %v }", module)
-		}
-		if driver, err := module.New(this); err != nil {
-			return nil, err
-		} else if err := this.setModuleInstance(module, driver); err != nil {
-			return nil, err
+		if module.New != nil {
+			if this.Logger != nil {
+				this.Logger.Debug2("module.New{ %v }", module)
+			}
+			if driver, err := module.New(this); err != nil {
+				return nil, err
+			} else if err := this.setModuleInstance(module, driver); err != nil {
+				return nil, err
+			}
 		}
 	}
 
