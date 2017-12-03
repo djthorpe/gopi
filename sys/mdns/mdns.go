@@ -12,7 +12,6 @@ package mdsn /* import "github.com/djthorpe/gopi/sys/mdns" */
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/third_party/zeroconf"
@@ -98,8 +97,8 @@ func (this *driver) Close() error {
 // INTERFACE METHODS
 
 // Register a service and announce the service when queries occur
-func (this *driver) Register(serviceName, serviceType string, port uint, txtRecords []string) error {
-	if server, err := zeroconf.Register(serviceName, serviceType, this.domain, int(port), txtRecords, nil); err != nil {
+func (this *driver) Register(service *gopi.RPCService) error {
+	if server, err := zeroconf.Register(service.Name, service.Type, this.domain, int(service.Port), service.Text, nil); err != nil {
 		return err
 	} else {
 		this.servers = append(this.servers, server)
@@ -108,17 +107,24 @@ func (this *driver) Register(serviceName, serviceType string, port uint, txtReco
 }
 
 // Browse will find service entries
-func (this *driver) Browse(ctx context.Context, serviceType string, callback gopi.RPCServiceDiscoveryFunc) error {
+func (this *driver) Browse(ctx context.Context, serviceType string, callback gopi.RPCBrowseFunc) error {
 	entries := make(chan *zeroconf.ServiceEntry)
 	if err := this.resolver.Browse(ctx, serviceType, this.domain, entries); err != nil {
 		return err
 	} else {
 		go func(results <-chan *zeroconf.ServiceEntry) {
 			for entry := range results {
-				callback()
-				log.Println(entry)
+				callback(&gopi.RPCService{
+					Name: entry.Instance,
+					Type: entry.Service,
+					Port: uint(entry.Port),
+					Text: entry.Text,
+					Host: entry.HostName,
+					IP4:  entry.AddrIPv4,
+					IP6:  entry.AddrIPv6,
+				})
 			}
-			log.Println("No more entries.")
+			callback(nil)
 		}(entries)
 		return nil
 	}

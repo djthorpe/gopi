@@ -19,24 +19,27 @@ func TestRPCDiscovery_000(t *testing.T) {
 	} else {
 		defer driver.Close()
 
-		mdns := driver.(gopi.RPCDiscovery)
-		serviceType := "_workstation._tcp"
+		mdns := driver.(gopi.RPCServiceDiscovery)
+		serviceType := "_smb._tcp"
 
 		// Wait for service records
-		ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
-		if err := mdns.Browse(ctx, serviceType); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+		defer cancel()
+		if err := mdns.Browse(ctx, serviceType, func(service *gopi.RPCService) {
+			if service != nil {
+				fmt.Println(service)
+			} else {
+				fmt.Println("No more records")
+			}
+		}); err != nil {
 			t.Error(err)
-		} else {
-			logger.(gopi.Logger).Info("Browse completed")
 		}
 
 		// Register a service
-		if err := mdns.Register("My Service", serviceType, 8000, nil); err != nil {
+		if err := mdns.Register(&gopi.RPCService{Name: "My Service", Type: serviceType, Port: 8000}); err != nil {
 			t.Error(err)
 		}
 
-		fmt.Println(mdns)
-
-		time.Sleep(20 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }

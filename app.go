@@ -43,6 +43,7 @@ type AppInstance struct {
 	sigchan  chan os.Signal
 	byname   map[string]Driver
 	bytype   map[ModuleType]Driver
+	byorder  []Driver
 }
 
 // Task defines a function which can run, and has a channel which
@@ -140,6 +141,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	// Set module maps
 	this.byname = make(map[string]Driver, len(config.Modules))
 	this.bytype = make(map[ModuleType]Driver, len(config.Modules))
+	this.byorder = make([]Driver, 0, len(config.Modules))
 
 	// Create module instances
 	var once sync.Once
@@ -157,6 +159,9 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 			if driver, err := module.New(this); err != nil {
 				return nil, err
 			} else if err := this.setModuleInstance(module, driver); err != nil {
+				if err := driver.Close(); err != nil {
+					this.Logger.Error("module.Close(): %v", err)
+				}
 				return nil, err
 			}
 		}
@@ -252,30 +257,26 @@ func (this *AppInstance) WaitForSignal() {
 // Close method for app
 func (this *AppInstance) Close() error {
 	this.Logger.Debug2("gopi.AppInstance.Close()")
-	if this.Layout != nil {
-		if err := this.Layout.Close(); err != nil {
-			return err
+
+	// In reverse order, call the Close method on each
+	// driver
+	for i := len(this.byorder); i > 0; i-- {
+		driver := this.byorder[i-1]
+		if err := driver.Close(); err != nil {
+			this.Logger.Error("gopi.AppInstance.Close() error: %v", err)
 		}
-		this.Layout = nil
 	}
-	if this.Display != nil {
-		if err := this.Display.Close(); err != nil {
-			return err
-		}
-		this.Display = nil
-	}
-	if this.Hardware != nil {
-		if err := this.Hardware.Close(); err != nil {
-			return err
-		}
-		this.Hardware = nil
-	}
-	if this.Logger != nil {
-		if err := this.Logger.Close(); err != nil {
-			return err
-		}
-		this.Logger = nil
-	}
+
+	// Clear out the references
+	this.bytype = nil
+	this.byname = nil
+	this.byorder = nil
+	this.Layout = nil
+	this.Display = nil
+	this.Hardware = nil
+	this.Logger = nil
+
+	// Return success
 	return nil
 }
 
@@ -314,6 +315,10 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 			this.bytype[module.Type] = driver
 		}
 	}
+
+	// Append to list of modules in the order (so we can close in the right order
+	// later)
+	this.byorder = append(this.byorder, driver)
 
 	// Now some convenience methods for already-cast drivers
 	switch module.Type {
