@@ -53,6 +53,12 @@ func TestRPCServer_000(t *testing.T) {
 	} else {
 		defer driver.Close()
 		defer logger.Close()
-		fmt.Println("SERVER=", server)
+
+		server := driver.(gopi.RPCServer)
+		if err := server.Start(); err != nil {
+			t.Fatal(err)
+		} else if err := server.Stop(false); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

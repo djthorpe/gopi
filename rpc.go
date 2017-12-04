@@ -35,6 +35,8 @@ type RPCBrowseFunc func(service *RPCService)
 // RPCDiscoveryDriver is the driver for discovering
 // services on the network using mDNS or another mechanism
 type RPCServiceDiscovery interface {
+	Driver
+
 	// Register a service record on the network
 	Register(service *RPCService) error
 
@@ -43,6 +45,21 @@ type RPCServiceDiscovery interface {
 
 	// Return a list of current services
 	//Services() []*RPCService
+}
+
+// RPCServer is the server which serves RPCModule methods to
+// a remote RPCClient
+type RPCServer interface {
+	Driver
+
+	// Start RPC server
+	Start() error
+
+	// Stop RPC server
+	Stop(halt bool) error
+
+	// Register an RPC Module
+	//Register(module interface{}) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////
