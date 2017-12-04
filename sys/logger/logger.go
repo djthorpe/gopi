@@ -70,13 +70,13 @@ func init() {
 // CONFIG AND NEW
 
 func configLogger(config *gopi.AppConfig) {
-	config.AppFlags.FlagString("log", "", "File for logging (default: log to stderr)")
-	config.AppFlags.FlagBool("logappend", false, "When writing log to file, append output to end of file")
+	config.AppFlags.FlagString("log.file", "", "File for logging (default: log to stderr)")
+	config.AppFlags.FlagBool("log.append", false, "When writing log to file, append output to end of file")
 }
 
 func newLogger(app *gopi.AppInstance) (gopi.Driver, error) {
-	path, _ := app.AppFlags.GetString("log")
-	append, _ := app.AppFlags.GetBool("logappend")
+	path, _ := app.AppFlags.GetString("log.file")
+	append, _ := app.AppFlags.GetBool("log.append")
 	return gopi.Open(Config{
 		Path:   path,
 		Append: append,

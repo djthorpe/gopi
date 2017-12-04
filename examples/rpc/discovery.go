@@ -25,13 +25,13 @@ import (
 
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/logger"
-	_ "github.com/djthorpe/gopi/sys/mdns"
+	_ "github.com/djthorpe/gopi/sys/rpc"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func MainLoop(app *gopi.AppInstance, done chan struct{}) error {
-	mdns := app.ModuleInstance("mdns").(gopi.RPCServiceDiscovery)
+	mdns := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery)
 	timeout, _ := app.AppFlags.GetDuration("timeout")
 	service, _ := app.AppFlags.GetString("service")
 

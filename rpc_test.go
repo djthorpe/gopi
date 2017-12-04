@@ -18,6 +18,7 @@ func TestRPCDiscovery_000(t *testing.T) {
 		t.Fatal(err)
 	} else {
 		defer driver.Close()
+		defer logger.Close()
 
 		mdns := driver.(gopi.RPCServiceDiscovery)
 		serviceType := "_smb._tcp"
@@ -41,5 +42,17 @@ func TestRPCDiscovery_000(t *testing.T) {
 		}
 
 		time.Sleep(5 * time.Second)
+	}
+}
+
+func TestRPCServer_000(t *testing.T) {
+	if logger, err := gopi.Open(logger.Config{}, nil); err != nil {
+		t.Fatal(err)
+	} else if driver, err := gopi.Open(rpc.Server{}, logger.(gopi.Logger)); err != nil {
+		t.Fatal(err)
+	} else {
+		defer driver.Close()
+		defer logger.Close()
+		fmt.Println("SERVER=", server)
 	}
 }

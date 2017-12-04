@@ -4,6 +4,3 @@
 [submodule "third_party/zeroconf"]
 	path = third_party/zeroconf
 	url = https://github.com/grandcat/zeroconf.git
-[submodule "third_party/grpc-go"]
-	path = third_party/grpc-go
-	url = https://github.com/grpc/grpc-go.git

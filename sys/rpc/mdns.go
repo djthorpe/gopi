@@ -46,7 +46,7 @@ const (
 func init() {
 	// Register logger
 	gopi.RegisterModule(gopi.Module{
-		Name: "sys/mdns",
+		Name: "rpc/discovery",
 		Type: gopi.MODULE_TYPE_MDNS,
 		Config: func(config *gopi.AppConfig) {
 			config.AppFlags.FlagString("mdns.domain", MDNS_DOMAIN, "Domain")
