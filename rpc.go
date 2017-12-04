@@ -32,6 +32,15 @@ type RPCService struct {
 // are found
 type RPCBrowseFunc func(service *RPCService)
 
+// RPCModule is a set of functions which will service RPC calls remotely
+type RPCModule interface {
+	// Register the module with server before the server starts
+	Register(server RPCServer) error
+
+	// Return the service type string
+	ServiceType() string
+}
+
 // RPCDiscoveryDriver is the driver for discovering
 // services on the network using mDNS or another mechanism
 type RPCServiceDiscovery interface {
@@ -42,9 +51,6 @@ type RPCServiceDiscovery interface {
 
 	// Browse for service records on the network with context
 	Browse(ctx context.Context, serviceType string, callback RPCBrowseFunc) error
-
-	// Return a list of current services
-	//Services() []*RPCService
 }
 
 // RPCServer is the server which serves RPCModule methods to
@@ -52,14 +58,14 @@ type RPCServiceDiscovery interface {
 type RPCServer interface {
 	Driver
 
-	// Start RPC server
-	Start() error
+	// Start RPC server in currently running thread, with
+	// current set of modules as RPC calls
+	Start(module ...RPCModule) error
 
-	// Stop RPC server
+	// Stop RPC server. If halt is true then it immediately
+	// ends the server without waiting for current requests to
+	// be served
 	Stop(halt bool) error
-
-	// Register an RPC Module
-	//Register(module interface{}) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////
