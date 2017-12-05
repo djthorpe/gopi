@@ -149,7 +149,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 		// Report open (once after logger module is created)
 		if this.Logger != nil {
 			once.Do(func() {
-				this.Logger.Debug2("gopi.AppInstance.Open()")
+				this.Logger.Debug("gopi.AppInstance.Open()")
 			})
 		}
 		if module.New != nil {
@@ -169,7 +169,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 
 	// report Open() again if it's not been done yet
 	once.Do(func() {
-		this.Logger.Debug2("gopi.AppInstance.Open()")
+		this.Logger.Debug("gopi.AppInstance.Open()")
 	})
 
 	// success
@@ -251,12 +251,12 @@ func (this *AppInstance) Verbose() bool {
 // WaitForSignal blocks until a signal is caught
 func (this *AppInstance) WaitForSignal() {
 	signal := <-this.sigchan
-	this.Logger.Debug("gopi.AppInstance.WaitForSignal: %v", signal)
+	this.Logger.Debug2("gopi.AppInstance.WaitForSignal: %v", signal)
 }
 
 // Close method for app
 func (this *AppInstance) Close() error {
-	this.Logger.Debug2("gopi.AppInstance.Close()")
+	this.Logger.Debug("gopi.AppInstance.Close()")
 
 	// In reverse order, call the Close method on each
 	// driver
@@ -300,6 +300,9 @@ func (this *AppInstance) ModuleInstance(name string) Driver {
 
 func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error {
 	var ok bool
+
+	// Debug
+	this.Logger.Debug2("gopi.AppInstance.setModuleInstance(){ module=%v driver=%v }", module, driver)
 
 	// Set by name. Currently returns an error if there is more than one module with the same name
 	if _, exists := this.byname[module.Name]; exists {
@@ -359,5 +362,9 @@ func getTestlessArguments(input []string) []string {
 // STRINGIFY
 
 func (this *AppInstance) String() string {
-	return fmt.Sprintf("gopi.App{ debug=%v verbose=%v }", this.debug, this.verbose)
+	modules := make([]string, 0, len(this.byname))
+	for k := range this.byname {
+		modules = append(modules, k)
+	}
+	return fmt.Sprintf("gopi.App{ debug=%v verbose=%v modules=%v instances=%v }", this.debug, this.verbose, modules, this.byorder)
 }
