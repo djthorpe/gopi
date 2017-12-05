@@ -58,14 +58,22 @@ type RPCServiceDiscovery interface {
 type RPCServer interface {
 	Driver
 
-	// Start RPC server in currently running thread, with
+	// Starts an RPC server in currently running thread, with
 	// current set of modules as RPC calls
 	Start(module ...RPCModule) error
+
+	// StartInBackground starts an RPC server in a separate
+	// go routine, with current set of modules as RPC calls
+	StartInBackground(module ...RPCModule) error
 
 	// Stop RPC server. If halt is true then it immediately
 	// ends the server without waiting for current requests to
 	// be served
 	Stop(halt bool) error
+
+	// Return address the server is bound to, or nil if
+	// the server is not running
+	Addr() net.Addr
 }
 
 ////////////////////////////////////////////////////////////////////////////////

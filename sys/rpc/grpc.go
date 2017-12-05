@@ -10,10 +10,10 @@
 package rpc
 
 import (
-	// Frameworks
 	"fmt"
 	"net"
 
+	// Frameworks
 	gopi "github.com/djthorpe/gopi"
 
 	// Modules
@@ -30,6 +30,7 @@ type server struct {
 	log     gopi.Logger
 	port    uint
 	server  *grpc.Server
+	addr    net.Addr
 	serving bool
 }
 
@@ -44,6 +45,7 @@ func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
 	this.port = config.Port
 	this.server = grpc.NewServer()
 	this.serving = false
+	this.addr = nil
 
 	// Register reflection service on gRPC server.
 	reflection.Register(this.server)
@@ -61,19 +63,44 @@ func (this *server) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // SERVE
 
-func (this *server) Start() error {
+func (this *server) Start(module ...gopi.RPCModule) error {
+	// Check for serving
 	if this.serving {
 		return grpc.ErrServerStopped
 	} else if lis, err := net.Listen("tcp", portString(this.port)); err != nil {
 		return err
-	} else if err := this.server.Serve(lis); err != nil {
-		return err
 	} else {
-		return nil
+		this.addr = lis.Addr()
+		this.serving = true
+		err := this.server.Serve(lis)
+		this.serving = false
+		this.addr = nil
+		return err
 	}
 }
 
+func (this *server) StartInBackground(module ...gopi.RPCModule) error {
+	// Check for serving
+	if this.serving {
+		return grpc.ErrServerStopped
+	} else if lis, err := net.Listen("tcp", portString(this.port)); err != nil {
+		return err
+	} else {
+		this.addr = lis.Addr()
+		this.serving = true
+		go func() {
+			if err := this.server.Serve(lis); err != nil {
+				this.log.Error("<gopi.rpcserver.grpc> Error: %v", err)
+			}
+			this.serving = false
+			this.addr = nil
+		}()
+	}
+	return nil
+}
+
 func (this *server) Stop(halt bool) error {
+	// Stop server
 	if this.serving {
 		if halt {
 			this.server.Stop()
@@ -81,14 +108,24 @@ func (this *server) Stop(halt bool) error {
 			this.server.GracefulStop()
 		}
 	}
+
+	// Return success
 	return nil
+}
+
+func (this *server) Addr() net.Addr {
+	return this.addr
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *server) String() string {
-	return fmt.Sprintf("<gopi.rpcserver.grpc>{ port=%v }", this.port)
+	if this.serving {
+		return fmt.Sprintf("<gopi.rpcserver.grpc>{ serving,addr=%v }", this.addr)
+	} else {
+		return fmt.Sprintf("<gopi.rpcserver.grpc>{ idle,port=%v }", this.port)
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

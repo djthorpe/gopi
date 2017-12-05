@@ -55,10 +55,18 @@ func TestRPCServer_000(t *testing.T) {
 		defer logger.Close()
 
 		server := driver.(gopi.RPCServer)
-		if err := server.Start(); err != nil {
+		t.Log(server)
+		if server.Addr() != nil {
+			t.Error("Expected Addr() to be nil")
+		}
+		if err := server.StartInBackground(); err != nil {
 			t.Fatal(err)
-		} else if err := server.Stop(false); err != nil {
-			t.Fatal(err)
+		} else {
+			t.Log("Serving, address=", server.Addr())
+			time.Sleep(30 * time.Second)
+			if err := server.Stop(false); err != nil {
+				t.Fatal(err)
+			}
 		}
 	}
 }

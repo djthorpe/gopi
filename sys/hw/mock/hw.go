@@ -55,7 +55,7 @@ func (config Hardware) Open(logger gopi.Logger) (gopi.Driver, error) {
 
 // Close
 func (this *hardware) Close() error {
-	logger.Debug("sys.mock.Hardware.Close{ }")
+	this.log.Debug("sys.mock.Hardware.Close{ }")
 	return nil
 }
 

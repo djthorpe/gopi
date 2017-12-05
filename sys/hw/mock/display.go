@@ -65,7 +65,7 @@ func (config Display) Open(logger gopi.Logger) (gopi.Driver, error) {
 
 // Close
 func (this *display) Close() error {
-	logger.Debug("sys.mock.Display.Close{ id=%v }", this.id)
+	this.log.Debug("sys.mock.Display.Close{ id=%v }", this.id)
 	return nil
 }
 
