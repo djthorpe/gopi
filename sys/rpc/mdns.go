@@ -37,26 +37,8 @@ type driver struct {
 // CONSTS
 
 const (
-	MDNS_DOMAIN = "local."
+	MDNS_DEFAULT_DOMAIN = "local."
 )
-
-////////////////////////////////////////////////////////////////////////////////
-// INIT
-
-func init() {
-	// Register logger
-	gopi.RegisterModule(gopi.Module{
-		Name: "rpc/discovery",
-		Type: gopi.MODULE_TYPE_MDNS,
-		Config: func(config *gopi.AppConfig) {
-			config.AppFlags.FlagString("mdns.domain", MDNS_DOMAIN, "Domain")
-		},
-		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
-			domain, _ := app.AppFlags.GetString("mdns.domain")
-			return gopi.Open(Config{Domain: domain}, app.Logger)
-		},
-	})
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
@@ -67,7 +49,7 @@ func (config Config) Open(log gopi.Logger) (gopi.Driver, error) {
 	this := new(driver)
 	this.log = log
 	if config.Domain == "" {
-		this.domain = MDNS_DOMAIN
+		this.domain = MDNS_DEFAULT_DOMAIN
 	} else {
 		this.domain = config.Domain
 	}

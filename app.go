@@ -301,9 +301,6 @@ func (this *AppInstance) ModuleInstance(name string) Driver {
 func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error {
 	var ok bool
 
-	// Debug
-	this.Logger.Debug2("gopi.AppInstance.setModuleInstance(){ module=%v driver=%v }", module, driver)
-
 	// Set by name. Currently returns an error if there is more than one module with the same name
 	if _, exists := this.byname[module.Name]; exists {
 		return fmt.Errorf("setModuleInstance: Duplicate module with name '%v'", module.Name)
