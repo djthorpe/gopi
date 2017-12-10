@@ -29,3 +29,4 @@ _testmain.go
 .AppleDouble
 *~
 .vscode
+*.pb.go

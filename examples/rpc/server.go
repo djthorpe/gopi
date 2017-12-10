@@ -6,11 +6,17 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-// The server serves the GRPC reflection package (ideally, we should also
-// serve a helloworld module but that's for later)
+// The server serves the GRPC reflection package and the
+// helloworld package, which is described in helloworld/helloworld.proto
+// In order to install this package, you will need to run
+// go generate with both the protoc compiler and the GRPC GO
+// plugin available
 package main
 
+//go:generate protoc helloworld/helloworld.proto --go_out=plugins=grpc:.
+
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -20,7 +26,33 @@ import (
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/logger"
 	_ "github.com/djthorpe/gopi/sys/rpc"
+
+	// Helloworld Protocol Buffer
+	hw "github.com/djthorpe/gopi/examples/rpc/helloworld"
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// Helloworld module implementation
+
+type HelloworldModule struct{}
+
+func (this *HelloworldModule) Register(server gopi.RPCServer) error {
+	server.Fudge(hw.RegisterGreeterServer, this)
+	return nil
+}
+
+func (this *HelloworldModule) ServiceType() string {
+	return "helloworld"
+}
+
+func (this *HelloworldModule) SayHello(ctx context.Context, req *hw.HelloRequest) (*hw.HelloReply, error) {
+	if req.Name == "" {
+		req.Name = "World"
+	}
+	return &hw.HelloReply{
+		Message: "Hello, " + req.Name,
+	}, nil
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -49,9 +81,13 @@ func MainLoop(app *gopi.AppInstance, done chan struct{}) error {
 
 // ServerLoop starts the RPC Server
 func ServerLoop(app *gopi.AppInstance, done chan struct{}) error {
+	// Create the helloworld module
+	hw := new(HelloworldModule)
+
+	// Serve
 	if server := app.ModuleInstance("rpc/server").(gopi.RPCServer); server == nil {
 		return fmt.Errorf("Missing module: rpc/server")
-	} else if err := server.Start(); err != nil {
+	} else if err := server.Start(hw); err != nil {
 		return err
 	}
 

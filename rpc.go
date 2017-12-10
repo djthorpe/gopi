@@ -32,6 +32,8 @@ type RPCService struct {
 // are found
 type RPCBrowseFunc func(service *RPCService)
 
+type FudgeRegisterCallback func(server, module RPCModule)
+
 // RPCModule is a set of functions which will service RPC calls remotely
 type RPCModule interface {
 	// Register the module with server before the server starts
@@ -75,6 +77,10 @@ type RPCServer interface {
 	// Return service record, or nil when the service record
 	// cannot be generated
 	Service(name, service string) *RPCService
+
+	// Fudge is something I will fix later. It implements
+	// a hook for calling the grpc register functions
+	Fudge(callback FudgeRegisterCallback, module RPCModule)
 
 	// Return channel on which server events are emitted
 	Events() chan RPCEvent

@@ -79,13 +79,20 @@ func (this *server) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // SERVE
 
-func (this *server) Start(module ...gopi.RPCModule) error {
+func (this *server) Start(modules ...gopi.RPCModule) error {
 	// Check for serving
 	if this.addr != nil {
 		return errors.New("Cannot call Start() when server already started")
 	} else if lis, err := net.Listen("tcp", portString(this.port)); err != nil {
 		return err
 	} else {
+		// Register modules. TODO: unregister them once server stopped?
+		for _, module := range modules {
+			if err := module.Register(this); err != nil {
+				return fmt.Errorf("Cannot register module: %v", err)
+			}
+		}
+		// Start server
 		this.addr = lis.Addr()
 		this.emitEvent(&Event{gopi.RPC_EVENT_SERVER_STARTED})
 		this.log.Debug("<grpc.Server>{ addr=%v }", this.addr)
@@ -114,6 +121,12 @@ func (this *server) Stop(halt bool) error {
 
 func (this *server) Addr() net.Addr {
 	return this.addr
+}
+
+func (this *server) Fudge(callback gopi.FudgeRegisterCallback, module gopi.RPCModule) {
+	if this.server != nil {
+		callback(this.server, module)
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
