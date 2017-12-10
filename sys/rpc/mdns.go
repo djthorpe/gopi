@@ -12,6 +12,7 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/third_party/zeroconf"
@@ -104,6 +105,7 @@ func (this *driver) Browse(ctx context.Context, serviceType string, callback gop
 					Host: entry.HostName,
 					IP4:  entry.AddrIPv4,
 					IP6:  entry.AddrIPv6,
+					TTL:  time.Duration(entry.TTL) * time.Second,
 				})
 			}
 			callback(nil)

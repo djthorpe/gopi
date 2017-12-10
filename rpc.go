@@ -14,6 +14,7 @@ import (
 	"net"
 	"reflect"
 	"strings"
+	"time"
 )
 
 // RPCService defines a service which can be registered
@@ -24,6 +25,7 @@ type RPCService struct {
 	Port uint
 	Text []string
 	Host string
+	TTL  time.Duration
 	IP4  []net.IP
 	IP6  []net.IP
 }
@@ -139,6 +141,9 @@ func (s *RPCService) String() string {
 	}
 	if len(s.IP6) > 0 {
 		p = append(p, fmt.Sprintf("ip6=%v", s.IP6))
+	}
+	if s.TTL > 0 {
+		p = append(p, fmt.Sprintf("ttl=%v", s.TTL))
 	}
 	if len(s.Text) > 0 {
 		p = append(p, fmt.Sprintf("txt=%v", s.Text))
