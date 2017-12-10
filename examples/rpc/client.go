@@ -74,9 +74,7 @@ func DiscoveryLoop(app *gopi.AppInstance, done chan struct{}) error {
 		})
 	}
 	// Wait for done
-	app.Logger.Debug("DiscoveryLoop: WAIT FOR DONE")
 	_ = <-done
-	app.Logger.Debug("DiscoveryLoop: DONE")
 	return nil
 }
 
