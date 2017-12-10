@@ -9,6 +9,8 @@
 // The client connects to a remote server
 package main
 
+//go:generate protoc helloworld/helloworld.proto --go_out=plugins=grpc:.
+
 import (
 	"fmt"
 	"os"

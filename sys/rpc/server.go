@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"reflect"
 	"strings"
 
 	// Frameworks
@@ -119,14 +120,25 @@ func (this *server) Stop(halt bool) error {
 	return nil
 }
 
+// Addr returns the currently listening address or will return
+// nil if the server is not serving requests
 func (this *server) Addr() net.Addr {
 	return this.addr
 }
 
-func (this *server) Fudge(callback gopi.FudgeRegisterCallback, module gopi.RPCModule) {
+// Fudge is currently a function which does the registration on the
+// server
+func (this *server) Fudge(callback reflect.Value, module gopi.RPCModule) error {
 	if this.server != nil {
-		callback(this.server, module)
+		if callback.Kind() != reflect.Func {
+			return errors.New("Expected callback to be a function")
+		}
+		callback.Call([]reflect.Value{
+			reflect.ValueOf(this.server),
+			reflect.ValueOf(module),
+		})
 	}
+	return nil
 }
 
 ///////////////////////////////////////////////////////////////////////////////

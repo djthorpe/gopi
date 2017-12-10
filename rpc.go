@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"reflect"
 	"strings"
 )
 
@@ -31,8 +32,6 @@ type RPCService struct {
 // on the network. It's called with a nil parameter when no more services
 // are found
 type RPCBrowseFunc func(service *RPCService)
-
-type FudgeRegisterCallback func(server, module RPCModule)
 
 // RPCModule is a set of functions which will service RPC calls remotely
 type RPCModule interface {
@@ -80,7 +79,7 @@ type RPCServer interface {
 
 	// Fudge is something I will fix later. It implements
 	// a hook for calling the grpc register functions
-	Fudge(callback FudgeRegisterCallback, module RPCModule)
+	Fudge(callback reflect.Value, module RPCModule) error
 
 	// Return channel on which server events are emitted
 	Events() chan RPCEvent

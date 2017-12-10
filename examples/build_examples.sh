@@ -35,6 +35,9 @@ go install -ldflags "${LDFLAGS}" examples/app/log_example.go || exit -1
 echo "go install app/task_example"
 go install -ldflags "${LDFLAGS}" examples/app/task_example.go || exit -1
 
-echo "go install rpc/discovery"
+echo "go install rpc/discovery rpc/client rpc/server"
 go install -ldflags "${LDFLAGS}" examples/rpc/discovery.go || exit -1
+go install -ldflags "${LDFLAGS}" examples/rpc/client.go || exit -1
+go install -ldflags "${LDFLAGS}" examples/rpc/server.go || exit -1
+
 

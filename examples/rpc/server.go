@@ -8,9 +8,8 @@
 
 // The server serves the GRPC reflection package and the
 // helloworld package, which is described in helloworld/helloworld.proto
-// In order to install this package, you will need to run
-// go generate with both the protoc compiler and the GRPC GO
-// plugin available
+// In order to install this package, you will need to run go generate with
+// both the protoc compiler and the GRPC GO plugin available
 package main
 
 //go:generate protoc helloworld/helloworld.proto --go_out=plugins=grpc:.
@@ -19,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
@@ -37,8 +37,7 @@ import (
 type HelloworldModule struct{}
 
 func (this *HelloworldModule) Register(server gopi.RPCServer) error {
-	server.Fudge(hw.RegisterGreeterServer, this)
-	return nil
+	return server.Fudge(reflect.ValueOf(hw.RegisterGreeterServer), this)
 }
 
 func (this *HelloworldModule) ServiceType() string {
