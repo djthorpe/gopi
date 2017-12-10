@@ -59,12 +59,9 @@ type RPCServer interface {
 	Driver
 
 	// Starts an RPC server in currently running thread, with
-	// current set of modules as RPC calls
+	// current set of modules as RPC calls. The method will not
+	// return until Stop is called
 	Start(module ...RPCModule) error
-
-	// StartInBackground starts an RPC server in a separate
-	// go routine, with current set of modules as RPC calls
-	StartInBackground(module ...RPCModule) error
 
 	// Stop RPC server. If halt is true then it immediately
 	// ends the server without waiting for current requests to
@@ -74,7 +71,32 @@ type RPCServer interface {
 	// Return address the server is bound to, or nil if
 	// the server is not running
 	Addr() net.Addr
+
+	// Return service record, or nil when the service record
+	// cannot be generated
+	Service(name string) *RPCService
+
+	// Return channel on which server events are emitted
+	Events() chan RPCEvent
 }
+
+// RPCEventType is an enumeration of event types
+type RPCEventType uint
+
+// RPCEvent is an event which is emitted by either discovery or
+// server.
+type RPCEvent interface {
+	Type() RPCEventType
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	RPC_EVENT_NONE RPCEventType = iota
+	RPC_EVENT_SERVER_STARTED
+	RPC_EVENT_SERVER_STOPPED
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
@@ -103,4 +125,17 @@ func (s *RPCService) String() string {
 		p = append(p, fmt.Sprintf("txt=%v", s.Text))
 	}
 	return fmt.Sprintf("<gopi.RPCService>{ %v }", strings.Join(p, " "))
+}
+
+func (t RPCEventType) String() string {
+	switch t {
+	case RPC_EVENT_NONE:
+		return "RPC_EVENT_NONE"
+	case RPC_EVENT_SERVER_STARTED:
+		return "RPC_EVENT_SERVER_STARTED"
+	case RPC_EVENT_SERVER_STOPPED:
+		return "RPC_EVENT_SERVER_STOPPED"
+	default:
+		return "[?? Invalid RPCEventType value]"
+	}
 }
