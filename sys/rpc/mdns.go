@@ -112,6 +112,10 @@ func (this *driver) Browse(ctx context.Context, serviceType string, callback gop
 	}
 }
 
+func (this *driver) DefaultServiceType(network string) string {
+	return "_gopi._" + network
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

@@ -34,6 +34,25 @@ func init() {
 		},
 	})
 
+	// Register rpc/client
+	gopi.RegisterModule(gopi.Module{
+		Name: "rpc/client",
+		Type: gopi.MODULE_TYPE_OTHER,
+		Config: func(config *gopi.AppConfig) {
+			config.AppFlags.FlagString("rpc.host", "localhost:8001", "Host")
+			config.AppFlags.FlagBool("rpc.ssl", false, "SSL Enabled")
+			config.AppFlags.FlagBool("rpc.skipverify", true, "Skip SSL Verification")
+			config.AppFlags.FlagDuration("rpc.timeout", 0, "Connection Timeout")
+		},
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			host, _ := app.AppFlags.GetString("rpc.host")
+			ssl, _ := app.AppFlags.GetBool("rpc.ssl")
+			skipverify, _ := app.AppFlags.GetBool("rpc.skipverify")
+			timeout, _ := app.AppFlags.GetDuration("rpc.timeout")
+			return gopi.Open(Client{Host: host, SSL: ssl, SkipVerify: skipverify, Timeout: timeout}, app.Logger)
+		},
+	})
+
 	// Register rpc/discovery
 	gopi.RegisterModule(gopi.Module{
 		Name: "rpc/discovery",

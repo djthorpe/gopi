@@ -139,7 +139,7 @@ func (this *server) emitEvent(evt gopi.RPCEvent) {
 ///////////////////////////////////////////////////////////////////////////////
 // SERVICE
 
-func (this *server) Service(name string) *gopi.RPCService {
+func (this *server) Service(name, service string) *gopi.RPCService {
 	// Can't return a service unless the server is started
 	if this.addr == nil {
 		return nil
@@ -158,11 +158,10 @@ func (this *server) Service(name string) *gopi.RPCService {
 	} else {
 		return &gopi.RPCService{
 			Name: strings.TrimSpace(name),
-			Type: "_gopi._tcp",
+			Type: serviceType(service, addr.Network()),
 			Port: uint(addr.Port),
 		}
 	}
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -187,4 +186,8 @@ func portString(port uint) string {
 	} else {
 		return fmt.Sprint(":", port)
 	}
+}
+
+func serviceType(service, network string) string {
+	return "_" + service + "._" + network
 }

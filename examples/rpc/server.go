@@ -6,9 +6,8 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-// The canonical hello world example demonstrates printing
-// hello world and then exiting. Here we use the 'generic'
-// set of modules which provide generic system services
+// The server serves the GRPC reflection package (ideally, we should also
+// serve a helloworld module but that's for later)
 package main
 
 import (
@@ -91,9 +90,11 @@ func EventLoop(app *gopi.AppInstance, done chan struct{}) error {
 func EventProcess(app *gopi.AppInstance, server gopi.RPCServer, discovery gopi.RPCServiceDiscovery, evt gopi.RPCEvent) error {
 	switch evt.Type() {
 	case gopi.RPC_EVENT_SERVER_STARTED:
+		// Output debugging information
+		app.Logger.Info("Started server, address=%v", server.Addr())
 		// Register service
 		name, _ := app.AppFlags.GetString("name")
-		if service := server.Service(name); service == nil {
+		if service := server.Service(name, "gopi"); service == nil {
 			return fmt.Errorf("Unable to create service record")
 		} else if err := discovery.Register(service); err != nil {
 			return err

@@ -74,7 +74,7 @@ type RPCServer interface {
 
 	// Return service record, or nil when the service record
 	// cannot be generated
-	Service(name string) *RPCService
+	Service(name, service string) *RPCService
 
 	// Return channel on which server events are emitted
 	Events() chan RPCEvent
@@ -87,6 +87,20 @@ type RPCEventType uint
 // server.
 type RPCEvent interface {
 	Type() RPCEventType
+}
+
+// RPCClient implements a client for communicating with an RPC server
+type RPCClient interface {
+	Driver
+
+	// Connect to the remote server
+	Connect() error
+
+	// Disconnect from the remote server
+	Disconnect() error
+
+	// Return names of modules which server has registered
+	Modules() ([]string, error)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
