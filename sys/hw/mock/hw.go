@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"strings"
 
+	// Frameworks
 	"github.com/djthorpe/gopi"
 )
 
@@ -23,20 +24,6 @@ type Hardware struct{}
 
 type hardware struct {
 	log gopi.Logger
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// INIT
-
-func init() {
-	// Register hardware
-	gopi.RegisterModule(gopi.Module{
-		Name: "hardware/mock",
-		Type: gopi.MODULE_TYPE_HARDWARE,
-		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
-			return gopi.Open(Hardware{}, app.Logger)
-		},
-	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -28,27 +28,6 @@ type display struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// INIT
-
-func init() {
-	// Register display
-	gopi.RegisterModule(gopi.Module{
-		Name: "display/mock",
-		Type: gopi.MODULE_TYPE_DISPLAY,
-		Config: func(config *gopi.AppConfig) {
-			config.AppFlags.FlagUint("display", 0, "Display")
-		},
-		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
-			display := Display{}
-			if display_number, exists := app.AppFlags.GetUint("display"); exists {
-				display.Display = display_number
-			}
-			return gopi.Open(display, app.Logger)
-		},
-	})
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
 
 // Open

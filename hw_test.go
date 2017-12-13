@@ -79,3 +79,6 @@ func TestDisplay_001(t *testing.T) {
 	app.Logger.Info("app=%v", app)
 	app.Logger.Info("display=%v", app.Display)
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// CREATE GPIO MODULE
