@@ -28,11 +28,11 @@ func init() {
 
 	// Register GPIO
 	gopi.RegisterModule(gopi.Module{
-		Name: "gpio/rpi",
-		Type: gopi.MODULE_TYPE_GPIO,
-		Requires: []string{ "hw/rpi" }
+		Name:     "gpio/rpi",
+		Type:     gopi.MODULE_TYPE_GPIO,
+		Requires: []string{"hw/rpi"},
 		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
 			return gopi.Open(GPIO{}, app.Logger)
 		},
-	})	
+	})
 }

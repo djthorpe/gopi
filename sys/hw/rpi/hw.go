@@ -17,12 +17,25 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// CGO
+
+/*
+   #cgo CFLAGS: -I/opt/vc/include
+   #cgo LDFLAGS: -L/opt/vc/lib -lbcm_host
+   #include "bcm_host.h"
+*/
+import "C"
+
+////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type Hardware struct{}
 
 type hardware struct {
-	log gopi.Logger
+	log      gopi.Logger
+	service  int
+	serial   uint64
+	revision uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,8 +45,16 @@ type hardware struct {
 func (config Hardware) Open(logger gopi.Logger) (gopi.Driver, error) {
 	logger.Debug("sys.rpi.Hardware.Open{  }")
 
+	// Initialise
+	if err := bcmHostInit(); err != nil {
+		return nil, err
+	}
+
 	this := new(hardware)
 	this.log = logger
+	this.service = GENCMD_SERVICE_NONE
+	this.serial = GENCMD_SERIAL_NONE
+	this.revision = GENCMD_REVISION_NONE
 
 	// Success
 	return this, nil
@@ -41,7 +62,22 @@ func (config Hardware) Open(logger gopi.Logger) (gopi.Driver, error) {
 
 // Close
 func (this *hardware) Close() error {
-	logger.Debug("sys.rpi.Hardware.Close{ }")
+	this.log.Debug("sys.rpi.Hardware.Close{ }")
+
+	// vcgencmd interface
+	if this.service != GENCMD_SERVICE_NONE {
+		if err := vcGencmdTerminate(); err != nil {
+			bcmHostTerminate()
+			return err
+		}
+		this.service = GENCMD_SERVICE_NONE
+	}
+
+	// host terminate
+	if err := bcmHostTerminate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -50,7 +86,7 @@ func (this *hardware) Close() error {
 
 // GetName returns the name of the hardware
 func (this *hardware) Name() string {
-	return "hardware/rpi"
+	return "hw/rpi"
 }
 
 // SerialNumber returns the serial number of the hardware, if available
@@ -67,6 +103,43 @@ func (this *hardware) NumberOfDisplays() uint {
 // STRINGIFY
 
 func (this *hardware) String() string {
-	return fmt.Sprintf("sys.rpi.Hardware{ name=%v serial=%v displays=%v }", this.Name(), this.SerialNumber(), this.NumberOfDisplays())
+	// Cache serial and revision
+	this.GetSerialNumberUint64()
+	this.GetRevisionUint32()
+	product, _ := this.GetProduct()
+	params := []string{
+		fmt.Sprintf("name=%v", this.Name()),
+		fmt.Sprintf("serial=0x%X", this.serial),
+		fmt.Sprintf("revision=0x%08X", this.revision),
+		fmt.Sprintf("product=%v", product),
+		fmt.Sprintf("displays=%v", this.NumberOfDisplays()),
+		fmt.Sprintf("peripheral_addr=0x%08X", bcmHostGetPeripheralAddress()),
+		fmt.Sprintf("peripheral_size=0x%08X", bcmHostGetPeripheralSize()),
+	}
+	return fmt.Sprintf("sys.rpi.Hardware{ %v }", strings.Join(params, " "))
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// BCMHOST
+
+func bcmHostInit() error {
+	C.bcm_host_init()
+	return nil
+}
+
+func bcmHostTerminate() error {
+	C.bcm_host_deinit()
+	return nil
+}
+
+func bcmHostGetPeripheralAddress() uint32 {
+	return uint32(C.bcm_host_get_peripheral_address())
+}
+
+func bcmHostGetPeripheralSize() uint32 {
+	return uint32(C.bcm_host_get_peripheral_size())
+}
+
+func bcmHostGetSDRAMAddress() uint32 {
+	return uint32(C.bcm_host_get_sdram_address())
+}
