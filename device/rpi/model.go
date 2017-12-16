@@ -9,10 +9,6 @@
 
 package rpi /* import "github.com/djthorpe/gopi/device/rpi" */
 
-import (
-	"fmt"
-)
-
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -165,49 +161,4 @@ func (this *Device) GetProcessor() (Processor, error) {
 		// Raspberry Pi 1 style revision coding
 		return RPI_PROCESSOR_BCM2835, nil
 	}
-}
-
-func (m Model) String() string {
-	switch m {
-	case RPI_MODEL_A:
-		return "RPI_MODEL_A"
-	case RPI_MODEL_B:
-		return "RPI_MODEL_B"
-	case RPI_MODEL_A_PLUS:
-		return "RPI_MODEL_A_PLUS"
-	case RPI_MODEL_B_PLUS:
-		return "RPI_MODEL_B_PLUS"
-	case RPI_MODEL_B_PI_2:
-		return "RPI_MODEL_B_PI_2"
-	case RPI_MODEL_B_PI_3:
-		return "RPI_MODEL_B_PI_3"
-	case RPI_MODEL_ALPHA:
-		return "RPI_MODEL_ALPHA"
-	case RPI_MODEL_COMPUTE_MODULE:
-		return "RPI_MODEL_COMPUTE_MODULE"
-	case RPI_MODEL_ZERO:
-		return "RPI_MODEL_ZERO"
-	default:
-		return "[?? Unknown Model value]"
-	}
-}
-
-func (p Processor) String() string {
-	switch p {
-	case RPI_PROCESSOR_BCM2835:
-		return "RPI_PROCESSOR_BCM2835"
-	case RPI_PROCESSOR_BCM2836:
-		return "RPI_PROCESSOR_BCM2836"
-	case RPI_PROCESSOR_BCM2837:
-		return "RPI_PROCESSOR_BCM2837"
-	default:
-		return "[?? Unknown Processor value]"
-	}
-}
-
-func (p PCBRevision) String() string {
-	if p == RPI_PCB_UNKNOWN {
-		return "[?? Unknwon PCBRevision value]"
-	}
-	return fmt.Sprintf("RPI_PCB_V%v", uint(p))
 }
