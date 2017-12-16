@@ -26,20 +26,6 @@ type hardware struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// INIT
-
-func init() {
-	// Register hardware
-	gopi.RegisterModule(gopi.Module{
-		Name: "hardware/rpi",
-		Type: gopi.MODULE_TYPE_HARDWARE,
-		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
-			return gopi.Open(Hardware{}, app.Logger)
-		},
-	})
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
 
 // Open
