@@ -37,6 +37,7 @@ type AppInstance struct {
 	Logger   Logger
 	Hardware Hardware
 	Display  Display
+	GPIO     GPIO
 	Layout   Layout
 	debug    bool
 	verbose  bool
@@ -338,6 +339,10 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 	case MODULE_TYPE_LAYOUT:
 		if this.Layout, ok = driver.(Layout); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Layout", module)
+		}
+	case MODULE_TYPE_GPIO:
+		if this.GPIO, ok = driver.(GPIO); !ok {
+			return fmt.Errorf("Module %v cannot be cast to gopi.GPIO", module)
 		}
 	}
 	// success

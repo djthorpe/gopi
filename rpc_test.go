@@ -45,7 +45,7 @@ func TestRPCDiscovery_000(t *testing.T) {
 	}
 }
 
-func TestRPCServer_000(t *testing.T) {
+/*func TestRPCServer_000(t *testing.T) {
 	if logger, err := gopi.Open(logger.Config{}, nil); err != nil {
 		t.Fatal(err)
 	} else if driver, err := gopi.Open(rpc.Server{}, logger.(gopi.Logger)); err != nil {
@@ -69,4 +69,4 @@ func TestRPCServer_000(t *testing.T) {
 			}
 		}
 	}
-}
+}*/
