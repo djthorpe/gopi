@@ -26,6 +26,27 @@ func init() {
 		},
 	})
 
+	// Register Display
+	gopi.RegisterModule(gopi.Module{
+		Name:     "display/rpi",
+		Type:     gopi.MODULE_TYPE_DISPLAY,
+		Requires: []string{"hw/rpi"},
+		Config: func(config *gopi.AppConfig) {
+			config.AppFlags.FlagUint("display", 0, "Display")
+			config.AppFlags.FlagString("display.ppi", "", "Pixels per inch or diagonal size in mm, cm or in")
+		},
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			display := Display{}
+			if display_number, exists := app.AppFlags.GetUint("display"); exists {
+				display.Display = display_number
+			}
+			if pixels_per_inch, exists := app.AppFlags.GetString("display.ppi"); exists {
+				display.PixelsPerInch = pixels_per_inch
+			}
+			return gopi.Open(display, app.Logger)
+		},
+	})
+
 	// Register GPIO
 	gopi.RegisterModule(gopi.Module{
 		Name:     "gpio/rpi",

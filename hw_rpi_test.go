@@ -36,3 +36,33 @@ func TestHardware_000(t *testing.T) {
 	}
 	app.Logger.Info("hardware=%v", app.Hardware)
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// CREATE DISPLAY MODULE
+
+func TestDisplay_000(t *testing.T) {
+	// Create a configuration with debug
+	config := gopi.NewAppConfig("display")
+	config.Debug = true
+
+	// Create an application with a hardware module
+	app, err := gopi.NewAppInstance(config)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	defer app.Close()
+	if app == nil {
+		t.Fatal("Expecting app object")
+		return
+	}
+	if app.Logger == nil {
+		t.Fatal("Expecting app.Logger object")
+		return
+	}
+	if app.Display == nil {
+		t.Fatal("Expecting app.Display object")
+		return
+	}
+	app.Logger.Info("display=%v", app.Display)
+}

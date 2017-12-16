@@ -86,17 +86,27 @@ func (this *hardware) Close() error {
 
 // GetName returns the name of the hardware
 func (this *hardware) Name() string {
-	return "hw/rpi"
+	if product, err := this.GetProduct(); err != nil {
+		this.log.Error("Error fetching serial number: %v", err)
+		return ""
+	} else {
+		return fmt.Sprintf("%v (revision %v)", product.model, product.revision)
+	}
 }
 
 // SerialNumber returns the serial number of the hardware, if available
 func (this *hardware) SerialNumber() string {
-	return strings.ToUpper("<SERIAL_NUMBER>")
+	if serial, err := this.GetSerialNumberUint64(); err != nil {
+		this.log.Error("Error fetching serial number: %v", err)
+		return ""
+	} else {
+		return fmt.Sprintf("%X", serial)
+	}
 }
 
 // Return the number of displays which can be opened
 func (this *hardware) NumberOfDisplays() uint {
-	return 0
+	return uint(DX_ID_MAX) + 1
 }
 
 ////////////////////////////////////////////////////////////////////////////////
