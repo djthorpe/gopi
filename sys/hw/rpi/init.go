@@ -53,7 +53,7 @@ func init() {
 		Type:     gopi.MODULE_TYPE_GPIO,
 		Requires: []string{"hw/rpi"},
 		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
-			return gopi.Open(GPIO{}, app.Logger)
+			return gopi.Open(GPIO{Hardware: app.Hardware}, app.Logger)
 		},
 	})
 }
