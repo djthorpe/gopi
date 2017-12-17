@@ -53,7 +53,8 @@ type GPIO interface {
 	// Enforces general driver
 	Driver
 
-	// Return number of physical pins
+	// Return number of physical pins, or 0 if
+	// if cannot be returned
 	NumberOfPhysicalPins() uint
 
 	// Return array of available logical pins
