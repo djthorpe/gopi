@@ -48,12 +48,13 @@ type RPCModule interface {
 // services on the network using mDNS or another mechanism
 type RPCServiceDiscovery interface {
 	Driver
+	Publisher
 
 	// Register a service record on the network
 	Register(service *RPCService) error
 
 	// Browse for service records on the network with context
-	Browse(ctx context.Context, serviceType string, callback RPCBrowseFunc) error
+	Browse(ctx context.Context, serviceType string) error
 }
 
 // RPCServer is the server which serves RPCModule methods to

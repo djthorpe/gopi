@@ -11,29 +11,20 @@ package gopi
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Subscriber int
-
+// Event is a generic event which is emitted through a channel
 type Event interface {
 	// Source of the event
 	Source() Driver
 
-	// Generic name of the event
+	// Name of the event
 	Name() string
 }
 
 type Publisher interface {
-	// Subscribe to events emitted. Returns unique subscriber
-	// identifier and channel on which events are emitted
-	Subscribe() (Subscriber, chan Event)
+	// Subscribe to events emitted. Returns channel on which events
+	// are emitted or nil if this driver does not implement events
+	Subscribe() chan Event
 
 	// Unsubscribe from events emitted
-	Unsubscribe(Subscriber)
+	Unsubscribe(chan Event)
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// CONSTANTS
-
-const (
-	// SUBSCRIBER_NONE is returned when a subscribe call is not implemented
-	SUBSCRIBER_NONE Subscriber = 0
-)
