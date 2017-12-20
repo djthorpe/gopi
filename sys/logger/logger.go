@@ -170,6 +170,10 @@ func (this *driver) Fatal(format string, v ...interface{}) gopi.Error {
 	return gopi.NewError(errors.New(message))
 }
 
+func (this *driver) IsDebug() bool {
+	return (this.level == LOG_DEBUG || this.level == LOG_DEBUG2)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 

@@ -47,25 +47,28 @@ type Display interface {
 	PixelsPerInch() uint32
 }
 
-// GPIO implements the GPIO interface for simple input and
-// output
+// GPIO implements the GPIO interface for simple input and output
 type GPIO interface {
-	// Enforces general driver
+	// Enforces general driver and event publisher
 	Driver
+	Publisher
 
-	// Return number of physical pins, or 0 if
-	// if cannot be returned
+	// Return number of physical pins, or 0 if if cannot be returned
+	// or nothing is known about physical pins
 	NumberOfPhysicalPins() uint
 
-	// Return array of available logical pins
+	// Return array of available logical pins or nil if nothing is
+	// known about pins
 	Pins() []GPIOPin
 
 	// Return logical pin for physical pin number. Returns
 	// GPIO_PIN_NONE where there is no logical pin at that position
+	// or we don't now about the physical pins
 	PhysicalPin(uint) GPIOPin
 
 	// Return physical pin number for logical pin. Returns 0 where there
-	// is no physical pin for this logical pin
+	// is no physical pin for this logical pin, or we don't know anything
+	// about the layout
 	PhysicalPinForPin(GPIOPin) uint
 
 	// Read pin state
@@ -80,8 +83,13 @@ type GPIO interface {
 	// Set pin mode
 	SetPinMode(GPIOPin, GPIOMode)
 
-	// Set pull mode
-	SetPullMode(GPIOPin, GPIOPull)
+	// Set pull mode to pull down or pull up - will
+	// return ErrNotImplemented if not supported
+	SetPullMode(GPIOPin, GPIOPull) error
+
+	// Watch for rising and/or falling edge, or stop watching
+	// will return ErrNotImplemented if not supported
+	Watch(GPIOPin, GPIOEdge) error
 }
 
 // I2CDriver implements the I2C interface for sensors, etc.
@@ -126,6 +134,9 @@ type (
 
 	// GPIO Pin resistor configuration (pull up/down or floating)
 	GPIOPull uint8
+
+	// GPIOEdge is a rising or falling edge
+	GPIOEdge uint8
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -142,6 +153,7 @@ const (
 )
 
 const (
+	// Set pin mode and/or function
 	GPIO_INPUT GPIOMode = iota
 	GPIO_OUTPUT
 	GPIO_ALT5
@@ -150,12 +162,20 @@ const (
 	GPIO_ALT1
 	GPIO_ALT2
 	GPIO_ALT3
+	GPIO_NONE
 )
 
 const (
 	GPIO_PULL_OFF GPIOPull = iota
 	GPIO_PULL_DOWN
 	GPIO_PULL_UP
+)
+
+const (
+	GPIO_EDGE_NONE GPIOEdge = iota
+	GPIO_EDGE_RISING
+	GPIO_EDGE_FALLING
+	GPIO_EDGE_BOTH
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -194,6 +214,8 @@ func (m GPIOMode) String() string {
 		return "GPIO_ALT4"
 	case GPIO_ALT5:
 		return "GPIO_ALT5"
+	case GPIO_NONE:
+		return "GPIO_NONE"
 	default:
 		return "[??? Invalid GPIOMode value]"
 	}
@@ -209,5 +231,20 @@ func (p GPIOPull) String() string {
 		return "GPIO_PULL_UP"
 	default:
 		return "[??? Invalid GPIOPull value]"
+	}
+}
+
+func (e GPIOEdge) String() string {
+	switch e {
+	case GPIO_EDGE_NONE:
+		return "GPIO_EDGE_NONE"
+	case GPIO_EDGE_RISING:
+		return "GPIO_EDGE_RISING"
+	case GPIO_EDGE_FALLING:
+		return "GPIO_EDGE_FALLING"
+	case GPIO_EDGE_BOTH:
+		return "GPIO_EDGE_BOTH"
+	default:
+		return "[??? Invalid GPIOEdge value]"
 	}
 }

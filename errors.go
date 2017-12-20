@@ -23,4 +23,6 @@ var (
 	ErrAppError = errors.New("General application error")
 	// ErrHelp is returned when -help was called for on the command line
 	ErrHelp = flag.ErrHelp
+	// ErrNotImplemented is returned when a feature is not supported
+	ErrNotImplemented = errors.New("Feature not implemented")
 )

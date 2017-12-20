@@ -17,35 +17,6 @@ type Driver interface {
 	Close() error
 }
 
-// Abstract hardware interface - this assumes the hardware has a display
-type HardwareDriver interface {
-	// Enforces general driver
-	Driver
-
-	// Return display size for nominated display number, or (0,0) if display
-	// does not exist
-	GetDisplaySize(display uint16) (uint32, uint32)
-
-	// Return serial number of hardware as uint64 - hopefully unique for this device
-	GetSerialNumber() (uint64, error)
-}
-
-// Abstract display interface
-type DisplayDriver interface {
-	// Enforces general driver
-	Driver
-
-	// Return the PPI (pixels-per-inch) for the display, or return zero if
-	// display size is unknown
-	GetPixelsPerInch() uint32
-
-	// Returns the display size in pixels (width/height)
-	GetDisplaySize() (uint32, uint32)
-
-	// Returns the display number
-	GetDisplay() uint16
-}
-
 // Abstract configuration which is used to open and return the
 // concrete driver
 type Config interface {
@@ -57,12 +28,16 @@ type Config interface {
 type Logger interface {
 	Driver
 
+	// Output logging messages
 	Fatal(format string, v ...interface{}) Error
 	Error(format string, v ...interface{}) Error
 	Warn(format string, v ...interface{})
 	Info(format string, v ...interface{})
 	Debug(format string, v ...interface{})
 	Debug2(format string, v ...interface{})
+
+	// Return IsDebug flag
+	IsDebug() bool
 }
 
 // Error type

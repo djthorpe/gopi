@@ -10,11 +10,17 @@
 package linux
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"sync"
+	"syscall"
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
@@ -23,10 +29,24 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type GPIO struct{}
+type GPIO struct {
+	UnexportOnClose bool
+}
 
 type gpio struct {
-	log gopi.Logger
+	log         gopi.Logger
+	exported    []gopi.GPIOPin
+	watched     map[gopi.GPIOPin]*os.File
+	fd          map[int]gopi.GPIOPin
+	lock        sync.Mutex
+	poll        *PollDriver
+	cancel      context.CancelFunc
+	subscribers []chan gopi.Event
+}
+
+type event struct {
+	driver *gpio
+	pin    gopi.GPIOPin
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,10 +63,32 @@ const (
 
 // Open
 func (config GPIO) Open(logger gopi.Logger) (gopi.Driver, error) {
-	logger.Debug("sys.hw.linux.GPIO.Open{ }")
+	logger.Debug("sys.hw.linux.GPIO.Open{ UnexportOnClose=%v }", config.UnexportOnClose)
 
 	this := new(gpio)
 	this.log = logger
+	this.watched = make(map[gopi.GPIOPin]*os.File, 0)
+	this.fd = make(map[int]gopi.GPIOPin, 0)
+
+	// Make array of exported pins
+	if config.UnexportOnClose {
+		this.exported = make([]gopi.GPIOPin, 0)
+	}
+
+	// Create a poll driver
+	if poll, err := NewPollDriver(logger); err != nil {
+		return nil, err
+	} else {
+		this.poll = poll
+	}
+
+	// Subscribers
+	this.subscribers = make([]chan gopi.Event, 0)
+
+	// Start watching
+	ctx, cancel := context.WithCancel(context.Background())
+	this.cancel = cancel
+	go this.handleEvents(ctx)
 
 	// Success
 	return this, nil
@@ -55,11 +97,53 @@ func (config GPIO) Open(logger gopi.Logger) (gopi.Driver, error) {
 // Close
 func (this *gpio) Close() error {
 	this.log.Debug("sys.hw.linux.GPIO.Close{ }")
+
+	// Mutex
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	// Cancel watching in background
+	if this.cancel != nil {
+		this.cancel()
+	}
+
+	// unwatch pins
+	for pin, file := range this.watched {
+		this.poll.Remove(int(file.Fd()), POLL_MODE_READ)
+		if err := file.Close(); err != nil {
+			this.log.Warn("close: %v: %v", pin, err)
+		}
+	}
+
+	// close poll
+	if err := this.poll.Close(); err != nil {
+		return err
+	}
+
+	if len(this.exported) > 0 {
+		// unexport pins
+		for _, pin := range this.exported {
+			if isExported(pin) {
+				if err := unexportPin(pin); err != nil {
+					this.log.Warn("sys.hw.linux.GPIO.Close: Unable to export pin %v: %v", pin, err)
+				}
+			}
+		}
+	}
+
+	// Zero out member variables
+	this.exported = nil
+	this.watched = nil
+	this.poll = nil
+	this.cancel = nil
+	this.subscribers = nil
+
+	// Return success
 	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// INTERFACE
+// INTERFACE - RETURN INFORMATION
 
 // Return number of physical pins, or 0 if if cannot be returned
 func (this *gpio) NumberOfPhysicalPins() uint {
@@ -83,50 +167,314 @@ func (this *gpio) PhysicalPinForPin(gopi.GPIOPin) uint {
 	return 0
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// INTERFACE - READ/WRITE
+
 // Read pin state
-func (this *gpio) ReadPin(gopi.GPIOPin) gopi.GPIOState {
-	return gopi.GPIO_LOW
+func (this *gpio) ReadPin(pin gopi.GPIOPin) gopi.GPIOState {
+	this.log.Debug2("<sys.hw.linux.GPIO.ReadPin>{ pin=%v }", pin)
+
+	// Mutex
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	// Check for pin exported
+	if err := this.exportPin(pin); err != nil {
+		this.log.Error("Unable to export %v: %v", pin, err)
+		return gopi.GPIO_LOW
+	}
+	// Do extra checks of output state when debugging is on
+	if this.log.IsDebug() {
+		if direction, err := direction(pin); err != nil {
+			this.log.Warn("Invalid direction for pin %v: '%v'", pin, err)
+		} else if direction != "in" {
+			this.log.Warn("Invalid direction for pin %v: '%v'", pin, direction)
+		}
+	}
+	// Read the pin
+	if value, err := readPin(pin); err != nil {
+		this.log.Error("Unable to read %v: %v", pin, err)
+		return gopi.GPIO_LOW
+	} else {
+		switch value {
+		case "0":
+			return gopi.GPIO_LOW
+		case "1":
+			return gopi.GPIO_HIGH
+		default:
+			this.log.Warn("Invalid value for pin %v: '%v'", pin, value)
+			return gopi.GPIO_HIGH
+		}
+	}
 }
 
-// WritePin Writes pin state
+// WritePin writes pin state - either low or high
 func (this *gpio) WritePin(pin gopi.GPIOPin, state gopi.GPIOState) {
+	this.log.Debug2("<sys.hw.linux.GPIO.WritePin>{ pin=%v state=%v }", pin, state)
+
+	// Mutex
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
 	// Check for pin exported
-	if isExported(pin) == false {
-		if err := exportPin(pin); err != nil {
-			this.log.Error("Unable to export %v: %v", pin, err)
-			return
+	if err := this.exportPin(pin); err != nil {
+		this.log.Error("Unable to export %v: %v", pin, err)
+		return
+	}
+	// Do extra checks of output state when debugging is on
+	if this.log.IsDebug() {
+		if direction, err := direction(pin); err != nil {
+			this.log.Warn("Invalid pin direction for %v: '%v'", pin, err)
+		} else if direction != "out" {
+			this.log.Warn("Invalid pin direction for %v: '%v'", pin, direction)
 		}
 	}
 	// Write pin
 	switch state {
 	case gopi.GPIO_LOW:
 		if err := writePin(pin, "0"); err != nil {
-			this.log.Error("Unable to write to pin %v: %v", pin, err)
+			this.log.Error("Unable to write value to %v: %v", pin, err)
 		}
 	case gopi.GPIO_HIGH:
 		if err := writePin(pin, "1"); err != nil {
-			this.log.Error("Unable to write to pin %v: %v", pin, err)
+			this.log.Error("Unable to write value to %v: %v", pin, err)
 		}
 	}
 }
 
-// Get pin mode
-func (this *gpio) GetPinMode(gopi.GPIOPin) gopi.GPIOMode {
-	return gopi.GPIO_ALT0
+// GetPinMode gets pin mode, which is either in or out
+// or returns GPIO_NONE on error
+func (this *gpio) GetPinMode(pin gopi.GPIOPin) gopi.GPIOMode {
+	this.log.Debug2("<sys.hw.linux.GPIO.GetPinMode>{ pin=%v }", pin)
+
+	// Mutex
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	// Check for pin exported
+	if err := this.exportPin(pin); err != nil {
+		this.log.Error("Unable to export %v: %v", pin, err)
+		return gopi.GPIO_NONE
+	}
+	// Read the pin
+	if value, err := direction(pin); err != nil {
+		this.log.Error("Unable to read direction %v: %v", pin, err)
+		return gopi.GPIO_NONE
+	} else {
+		switch value {
+		case "in":
+			return gopi.GPIO_INPUT
+		case "out":
+			return gopi.GPIO_OUTPUT
+		default:
+			this.log.Warn("Invalid direction for %v: '%v'", pin, value)
+			return gopi.GPIO_NONE
+		}
+	}
 }
 
-// Set pin mode
-func (this *gpio) SetPinMode(gopi.GPIOPin, gopi.GPIOMode) {
-	// TODO
+// SetPinMode set pin mode to either in or out. No other
+// modes are supported through this driver
+func (this *gpio) SetPinMode(pin gopi.GPIOPin, mode gopi.GPIOMode) {
+	this.log.Debug2("<sys.hw.linux.GPIO.SetPinMode>{ pin=%v mode=%v }", pin, mode)
+
+	// Mutex
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	// Check for pin exported
+	if err := this.exportPin(pin); err != nil {
+		this.log.Error("Unable to export %v: %v", pin, err)
+		return
+	}
+	// Write pin
+	switch mode {
+	case gopi.GPIO_INPUT:
+		if err := setDirection(pin, "in"); err != nil {
+			this.log.Error("Unable to write direction to %v: %v", pin, err)
+		}
+	case gopi.GPIO_OUTPUT:
+		if err := setDirection(pin, "out"); err != nil {
+			this.log.Error("Unable to write direction to %v: %v", pin, err)
+		}
+	default:
+		this.log.Error("Invalid pin mode %v: %v", pin, mode)
+	}
 }
 
-// Set pull mode
-func (this *gpio) SetPullMode(gopi.GPIOPin, gopi.GPIOPull) {
-	// TODO
+// SetPullMode is not implemented in the sysfs driver
+func (this *gpio) SetPullMode(pin gopi.GPIOPin, pull gopi.GPIOPull) error {
+	return gopi.ErrNotImplemented
+}
+
+// Watch will watch a pin for rising, falling or both edges. When
+// set to EDGE_NONE then watching is stopped
+func (this *gpio) Watch(pin gopi.GPIOPin, edge gopi.GPIOEdge) error {
+	this.log.Debug2("<sys.hw.linux.GPIO.Watch>{ pin=%v edge=%v }", pin, edge)
+
+	// Mutex
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	// Check for pin exported
+	if err := this.exportPin(pin); err != nil {
+		this.log.Error("Watch: unable to export %v: %v", pin, err)
+		return err
+	}
+
+	// Do extra checks of output state when debugging is on
+	if this.log.IsDebug() {
+		if direction, err := direction(pin); err != nil {
+			this.log.Warn("Watch: Invalid direction for %v: '%v'", pin, err)
+		} else if direction != "in" {
+			this.log.Warn("Watch: Invalid direction for %v: '%v'", pin, direction)
+		}
+	}
+
+	// Set rising, falling, both or none
+	edge_write := ""
+	switch edge {
+	case gopi.GPIO_EDGE_NONE:
+		if err := writeEdge(pin, "none"); err != nil {
+			this.log.Error("Watch: Unable to write edge for %v: %v", pin, err)
+		} else if file, exists := this.watched[pin]; exists == false {
+			// IGNORE UNWATCHED PINS
+		} else if err := this.poll.Remove(int(file.Fd()), POLL_MODE_EDGE); err != nil {
+			this.log.Error("%v: %v", pin, err)
+			file.Close()
+		} else if err := file.Close(); err != nil {
+			return err
+		} else {
+			// Remove from list of watched pins
+			delete(this.watched, pin)
+			delete(this.fd, int(file.Fd()))
+		}
+	case gopi.GPIO_EDGE_RISING:
+		edge_write = "rising"
+	case gopi.GPIO_EDGE_FALLING:
+		edge_write = "falling"
+	case gopi.GPIO_EDGE_BOTH:
+		edge_write = "both"
+	default:
+		return errors.New("Watch: Invalid edge value")
+	}
+
+	if edge_write != "" {
+		if err := writeEdge(pin, edge_write); err != nil {
+			this.log.Error("Watch: Unable to write edge for %v: %v", pin, err)
+			return err
+		} else if _, exists := this.watched[pin]; exists {
+			// IGNORE ALREADY WATCHED PINS
+		} else if file, err := watchValue(pin); err != nil {
+			this.log.Error("Watch: Unable to watch %v: %v", pin, err)
+			return err
+		} else if err := this.poll.Add(int(file.Fd()), POLL_MODE_READ); err != nil {
+			this.log.Error("Watch: Unable to poll %v: %v", pin, err)
+			file.Close()
+			return err
+		} else {
+			this.watched[pin] = file
+			this.fd[int(file.Fd())] = pin
+		}
+	}
+
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// INTERFACE - EVENTS
+
+// Subscribe to events emitted. Returns unique subscriber
+// identifier and channel on which events are emitted
+func (this *gpio) Subscribe() (gopi.Subscriber, chan gopi.Event) {
+	this.log.Debug2("<sys.hw.linux.GPIO.Subscribe>{ }")
+
+	// Create a new channel for emitting events
+	this.subscribers = append(this.subscribers, make(chan gopi.Event))
+
+	// Subscriber number
+	subscriber := len(this.subscribers)
+
+	return gopi.Subscriber(subscriber), this.subscribers[subscriber-1]
+}
+
+// Unsubscribe from events emitted
+func (this *gpio) Unsubscribe(subscriber gopi.Subscriber) {
+	this.log.Debug2("<sys.hw.linux.GPIO.Unsubscribe>{ subscriber=%v }", subscriber)
+
+	if subscriber > gopi.SUBSCRIBER_NONE && subscriber <= gopi.Subscriber(len(this.subscribers)) {
+		this.subscribers[subscriber-1] = nil
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// INTERFACE - EVENT
+
+func (this *event) Name() string {
+	return fmt.Sprint(this.pin)
+}
+
+func (this *event) Source() gopi.Driver {
+	return this.driver
+}
+
+func (this *event) String() string {
+	return fmt.Sprintf("<sys.hw.linux.GPIO.Event>{ pin=%v source=%v }", this.pin, this.driver)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
+
+func (this *gpio) exportPin(pin gopi.GPIOPin) error {
+	if isExported(pin) == false {
+		if err := exportPin(pin); err != nil {
+			return err
+		}
+	}
+	if this.exported != nil {
+		for _, exported := range this.exported {
+			if pin == exported {
+				return nil
+			}
+		}
+		this.exported = append(this.exported, pin)
+	}
+	return nil
+}
+
+func (this *gpio) handleEvents(ctx context.Context) error {
+	// Start watching for GPIO rising and falling events and
+	// any error conditions which could occur
+	return this.poll.Watch(ctx, func(fd int, flags PollMode) {
+		buf := make([]byte, 80)
+		for {
+			if _, err := syscall.Seek(fd, 0, io.SeekStart); err != nil {
+				this.log.Error("syscall.Seek: %v", err)
+				break
+			} else if n, err := syscall.Read(fd, buf); err != nil {
+				this.log.Error("syscall.Read: %v", err)
+				break
+			} else if n == 0 {
+				break
+			} else {
+				this.log.Info("buf=%v", string(buf[:n]))
+			}
+		}
+		if pin, exists := this.fd[fd]; exists {
+			this.emit(pin)
+		}
+	})
+}
+
+// Emit an event
+func (this *gpio) emit(pin gopi.GPIOPin) {
+	event := &event{driver: this, pin: pin}
+	for _, channel := range this.subscribers {
+		if channel != nil {
+			channel <- event
+		}
+	}
+}
 
 func writeFile(filename string, value string) error {
 	return ioutil.WriteFile(filename, []byte(value), 777)
@@ -142,10 +490,13 @@ func readFile(filename string) (string, error) {
 
 func isExported(pin gopi.GPIOPin) bool {
 	if _, err := os.Stat(filenameForPin(pin, "")); os.IsNotExist(err) {
+		fmt.Println("is exported ", pin, " = false")
 		return false
 	} else if err != nil {
+		fmt.Println("is exported ", pin, " = false")
 		return false
 	} else {
+		fmt.Println("is exported ", pin, " = true")
 		return true
 	}
 }
@@ -155,25 +506,75 @@ func filenameForPin(pin gopi.GPIOPin, filename string) string {
 }
 
 func exportPin(pin gopi.GPIOPin) error {
-	return writeFile(GPIO_EXPORT, strconv.FormatUint(uint64(pin), 10))
+	if err := writeFile(GPIO_EXPORT, strconv.FormatUint(uint64(pin), 10)+"\n"); err != nil {
+		return err
+	}
+	// Set edge to 'none'
+	if err := writeEdge(pin, "none"); err != nil {
+		return err
+	}
+	// Success
+	return nil
 }
 
 func unexportPin(pin gopi.GPIOPin) error {
-	return writeFile(GPIO_UNEXPORT, strconv.FormatUint(uint64(pin), 10))
+	return writeFile(GPIO_UNEXPORT, strconv.FormatUint(uint64(pin), 10)+"\n")
 }
 
 func direction(pin gopi.GPIOPin) (string, error) {
-	return readFile(filenameForPin(pin, "direction"))
+	if value, err := readFile(filenameForPin(pin, "direction")); err != nil {
+		return "", err
+	} else {
+		return strings.TrimSpace(value), nil
+	}
 }
 
 func setDirection(pin gopi.GPIOPin, direction string) error {
-	return writeFile(filenameForPin(pin, "direction"), direction)
+	return writeFile(filenameForPin(pin, "direction"), direction+"\n")
 }
 
 func readPin(pin gopi.GPIOPin) (string, error) {
-	return readFile(filenameForPin(pin, "value"))
+	if value, err := readFile(filenameForPin(pin, "value")); err != nil {
+		return "", err
+	} else {
+		return strings.TrimSpace(value), nil
+	}
 }
 
 func writePin(pin gopi.GPIOPin, value string) error {
-	return writeFile(filenameForPin(pin, "value"), value)
+	return writeFile(filenameForPin(pin, "value"), value+"\n")
+}
+
+func writeEdge(pin gopi.GPIOPin, edge string) error {
+	return writeFile(filenameForPin(pin, "edge"), edge+"\n")
+}
+
+func readEdge(pin gopi.GPIOPin) (string, error) {
+	if value, err := readFile(filenameForPin(pin, "edge")); err != nil {
+		return "", err
+	} else {
+		return strings.TrimSpace(value), nil
+	}
+}
+
+func watchValue(pin gopi.GPIOPin) (*os.File, error) {
+	return os.OpenFile(filenameForPin(pin, "value"), os.O_RDONLY, 0)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (this *gpio) String() string {
+	str := ""
+	if this.exported != nil {
+		str = str + fmt.Sprintf(" exportedPins=%v", this.exported)
+	}
+	if len(this.watched) > 0 {
+		str = str + " watchedPins=["
+		for k := range this.watched {
+			str = str + " " + fmt.Sprint(k)
+		}
+		str = str + " ]"
+	}
+	return fmt.Sprintf("sys.hw.linux.GPIO{%v }", str)
 }

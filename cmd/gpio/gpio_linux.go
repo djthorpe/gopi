@@ -13,8 +13,8 @@ import (
 	"os"
 
 	"github.com/djthorpe/gopi"
-	_ "github.com/djthorpe/gopi/sys/logger"
 	_ "github.com/djthorpe/gopi/sys/hw/linux"
+	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,11 +25,36 @@ func runLoop(app *gopi.AppInstance, done chan struct{}) error {
 		return app.Logger.Error("Missing GPIO module instance")
 	}
 
-	// write high to pin
-	app.GPIO.SetPinMode(gopi.GPIOPin(27),gopi.GPIO_OUTPUT)
-	app.GPIO.WritePin(gopi.GPIOPin(27),gopi.GPIO_HIGH)
+	// watch pin
+	app.GPIO.SetPinMode(gopi.GPIOPin(27), gopi.GPIO_INPUT)
+	app.GPIO.Watch(gopi.GPIOPin(27), gopi.GPIO_EDGE_FALLING)
+
+	// wait until done
+	app.WaitForSignal()
 
 	done <- gopi.DONE
+	return nil
+}
+
+func eventLoop(app *gopi.AppInstance, done chan struct{}) error {
+	if app.GPIO == nil {
+		return app.Logger.Error("Missing GPIO module instance")
+	}
+
+	app.Logger.Debug("eventLoop waiting for incoming events")
+	subscriber, edge := app.GPIO.Subscribe()
+
+FOR_LOOP:
+	for {
+		select {
+		case evt := <-edge:
+			fmt.Println("EVENT: ", evt)
+		case <-done:
+			app.GPIO.Unsubscribe(subscriber)
+			break FOR_LOOP
+		}
+	}
+	app.Logger.Info("END eventLoop")
 	return nil
 }
 
@@ -50,7 +75,7 @@ func main_inner() int {
 	defer app.Close()
 
 	// Run the application
-	if err := app.Run(runLoop); err != nil {
+	if err := app.Run(runLoop, eventLoop); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return -1
 	}
