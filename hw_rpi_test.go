@@ -1,3 +1,5 @@
+// +build rpi
+
 package gopi_test
 
 import (
