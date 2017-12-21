@@ -10,7 +10,6 @@ package gopi_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -31,16 +30,10 @@ func TestRPCDiscovery_000(t *testing.T) {
 		mdns := driver.(gopi.RPCServiceDiscovery)
 		serviceType := "_smb._tcp"
 
-		// Wait for service records
+		// Browse service records
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 		defer cancel()
-		if err := mdns.Browse(ctx, serviceType, func(service *gopi.RPCService) {
-			if service != nil {
-				fmt.Println(service)
-			} else {
-				fmt.Println("No more records")
-			}
-		}); err != nil {
+		if err := mdns.Browse(ctx, serviceType); err != nil {
 			t.Error(err)
 		}
 
@@ -49,7 +42,11 @@ func TestRPCDiscovery_000(t *testing.T) {
 			t.Error(err)
 		}
 
+		// Wait for 5 seconds
 		time.Sleep(5 * time.Second)
+
+		// Cancel browsing
+		cancel()
 	}
 }
 
