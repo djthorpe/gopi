@@ -42,7 +42,7 @@ func eventLoop(app *gopi.AppInstance, done chan struct{}) error {
 	}
 
 	app.Logger.Debug("eventLoop waiting for incoming events")
-	subscriber, edge := app.GPIO.Subscribe()
+	edge := app.GPIO.Subscribe()
 
 FOR_LOOP:
 	for {
@@ -50,7 +50,7 @@ FOR_LOOP:
 		case evt := <-edge:
 			fmt.Println("EVENT: ", evt)
 		case <-done:
-			app.GPIO.Unsubscribe(subscriber)
+			app.GPIO.Unsubscribe(edge)
 			break FOR_LOOP
 		}
 	}
