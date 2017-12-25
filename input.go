@@ -10,6 +10,7 @@ package gopi
 
 import (
 	"context"
+	"time"
 )
 
 // Input driver allows you to open and close input devices
@@ -58,7 +59,7 @@ type InputDevice interface {
 	SetKeyState(flags KeyState, state bool) error
 
 	// Returns true if device matches conditions
-	Matches(alias string, InputDeviceType, InputDeviceBus) bool
+	Matches(string, InputDeviceType, InputDeviceBus) bool
 }
 
 type InputEvent interface {
@@ -74,7 +75,7 @@ type InputEvent interface {
 	EventType() InputEventType
 
 	// Key or mouse button press or release
-	Keycode() InputKeyCode
+	Keycode() KeyCode
 
 	// Key scancode
 	Scancode() uint32
@@ -164,20 +165,22 @@ const (
 // Input key state
 const (
 	KEYSTATE_NONE       KeyState = 0x0000
-	KEYSTATE_SCROLLLOCK KeyState = 0x0001 // Scroll Lock
-	KEYSTATE_NUMLOCK    KeyState = 0x0002 // Num Lock
-	KEYSTATE_CAPSLOCK   KeyState = 0x0004 // Caps Lock
-	KEYSTATE_LEFTSHIFT  KeyState = 0x0010 // Left Shift
-	KEYSTATE_RIGHTSHIFT KeyState = 0x0020 // Right Shift
-	KEYSTATE_SHIFT      KeyState = 0x0030 // Either Shift
-	KEYSTATE_LEFTALT    KeyState = 0x0040 // Left Alt
-	KEYSTATE_RIGHTALT   KeyState = 0x0080 // Right Alt
-	KEYSTATE_ALT        KeyState = 0x00C0 // Either Alt
-	KEYSTATE_LEFTMETA   KeyState = 0x0100 // Left Meta/Command
-	KEYSTATE_RIGHTMETA  KeyState = 0x0200 // Right Meta/Command
-	KEYSTATE_META       KeyState = 0x0300 // Either Meta/Command
-	KEYSTATE_LEFTCTRL   KeyState = 0x0400 // Left Control
-	KEYSTATE_RIGHTCTRL  KeyState = 0x0800 // Right Control
-	KEYSTATE_CTRL       KeyState = 0x0C00 // Either Control
-	KEYSTATE_MAX        KeyState = 0x0CFF // Bitmask
+	KEYSTATE_MIN        KeyState = KEYSTATE_SCROLLLOCK
+	KEYSTATE_SCROLLLOCK KeyState = 0x0001        // Scroll Lock
+	KEYSTATE_NUMLOCK    KeyState = 0x0002        // Num Lock
+	KEYSTATE_CAPSLOCK   KeyState = 0x0004        // Caps Lock
+	KEYSTATE_LEFTSHIFT  KeyState = 0x0010        // Left Shift
+	KEYSTATE_RIGHTSHIFT KeyState = 0x0020        // Right Shift
+	KEYSTATE_SHIFT      KeyState = 0x0030        // Either Shift
+	KEYSTATE_LEFTALT    KeyState = 0x0040        // Left Alt
+	KEYSTATE_RIGHTALT   KeyState = 0x0080        // Right Alt
+	KEYSTATE_ALT        KeyState = 0x00C0        // Either Alt
+	KEYSTATE_LEFTMETA   KeyState = 0x0100        // Left Meta/Command
+	KEYSTATE_RIGHTMETA  KeyState = 0x0200        // Right Meta/Command
+	KEYSTATE_META       KeyState = 0x0300        // Either Meta/Command
+	KEYSTATE_LEFTCTRL   KeyState = 0x0400        // Left Control
+	KEYSTATE_RIGHTCTRL  KeyState = 0x0800        // Right Control
+	KEYSTATE_CTRL       KeyState = 0x0C00        // Either Control
+	KEYSTATE_MAX        KeyState = KEYSTATE_CTRL // Maximum
+	KEYSTATE_MASK       KeyState = 0x0CFF        // Bitmask
 )
