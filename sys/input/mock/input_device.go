@@ -43,6 +43,16 @@ type device struct {
 func (config Device) Open(logger gopi.Logger) (gopi.Driver, error) {
 	logger.Debug("sys.mock.InputDevice.Open{ name=%v type=%v bus=%v position=%v }", config.Name, config.Type, config.Bus, config.Position)
 
+	if config.Name == "" {
+		return nil, gopi.ErrBadParameter
+	}
+	if config.Type == gopi.INPUT_TYPE_ANY || config.Type == gopi.INPUT_TYPE_NONE {
+		return nil, gopi.ErrBadParameter
+	}
+	if config.Bus == gopi.INPUT_BUS_ANY {
+		return nil, gopi.ErrBadParameter
+	}
+
 	this := new(device)
 	this.log = logger
 	this.name = config.Name
@@ -139,5 +149,16 @@ func (this *device) Unsubscribe(subscriber chan gopi.Event) {
 		if subscriber == s {
 			this.subscribers[i] = nil
 		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (this *device) String() string {
+	if this.typ&(gopi.INPUT_TYPE_JOYSTICK|gopi.INPUT_TYPE_MOUSE|gopi.INPUT_TYPE_TOUCHSCREEN) != 0 {
+		return fmt.Sprintf("sys.mock.InputDevice{ name=%v type=%v bus=%v keystate=%v position=%v }", this.name, this.typ, this.bus, this.keystate, this.position)
+	} else {
+		return fmt.Sprintf("sys.mock.InputDevice{ name=%v type=%v bus=%v keystate=%v }", this.name, this.typ, this.bus, this.keystate)
 	}
 }

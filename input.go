@@ -10,6 +10,7 @@ package gopi
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -184,3 +185,136 @@ const (
 	KEYSTATE_MAX        KeyState = KEYSTATE_CTRL // Maximum
 	KEYSTATE_MASK       KeyState = 0x0CFF        // Bitmask
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (t InputDeviceType) String() string {
+	switch t {
+	case INPUT_TYPE_NONE:
+		return "INPUT_TYPE_NONE"
+	case INPUT_TYPE_KEYBOARD:
+		return "INPUT_TYPE_KEYBOARD"
+	case INPUT_TYPE_MOUSE:
+		return "INPUT_TYPE_MOUSE"
+	case INPUT_TYPE_TOUCHSCREEN:
+		return "INPUT_TYPE_TOUCHSCREEN"
+	case INPUT_TYPE_JOYSTICK:
+		return "INPUT_TYPE_JOYSTICK"
+	default:
+		return "[?? Invalid InputDeviceType value]"
+	}
+}
+
+func (b InputDeviceBus) String() string {
+	switch b {
+	case INPUT_BUS_NONE:
+		return "INPUT_BUS_NONE"
+	case INPUT_BUS_PCI:
+		return "INPUT_BUS_PCI"
+	case INPUT_BUS_ISAPNP:
+		return "INPUT_BUS_ISAPNP"
+	case INPUT_BUS_USB:
+		return "INPUT_BUS_USB"
+	case INPUT_BUS_HIL:
+		return "INPUT_BUS_HIL"
+	case INPUT_BUS_BLUETOOTH:
+		return "INPUT_BUS_BLUETOOTH"
+	case INPUT_BUS_VIRTUAL:
+		return "INPUT_BUS_VIRTUAL"
+	case INPUT_BUS_ISA:
+		return "INPUT_BUS_ISA"
+	case INPUT_BUS_I8042:
+		return "INPUT_BUS_I8042"
+	case INPUT_BUS_XTKBD:
+		return "INPUT_BUS_XTKBD"
+	case INPUT_BUS_RS232:
+		return "INPUT_BUS_RS232"
+	case INPUT_BUS_GAMEPORT:
+		return "INPUT_BUS_GAMEPORT"
+	case INPUT_BUS_PARPORT:
+		return "INPUT_BUS_PARPORT"
+	case INPUT_BUS_AMIGA:
+		return "INPUT_BUS_AMIGA"
+	case INPUT_BUS_ADB:
+		return "INPUT_BUS_ADB"
+	case INPUT_BUS_I2C:
+		return "INPUT_BUS_I2C"
+	case INPUT_BUS_HOST:
+		return "INPUT_BUS_HOST"
+	case INPUT_BUS_GSC:
+		return "INPUT_BUS_GSC"
+	case INPUT_BUS_ATARI:
+		return "INPUT_BUS_ATARI"
+	case INPUT_BUS_SPI:
+		return "INPUT_BUS_SPI"
+	default:
+		return "[?? Invalid InputDeviceBus value]"
+	}
+}
+
+func (e InputEventType) String() string {
+	switch e {
+	case INPUT_EVENT_NONE:
+		return "INPUT_EVENT_NONE"
+	case INPUT_EVENT_KEYPRESS:
+		return "INPUT_EVENT_KEYPRESS"
+	case INPUT_EVENT_KEYRELEASE:
+		return "INPUT_EVENT_KEYRELEASE"
+	case INPUT_EVENT_KEYREPEAT:
+		return "INPUT_EVENT_KEYREPEAT"
+	case INPUT_EVENT_ABSPOSITION:
+		return "INPUT_EVENT_ABSPOSITION"
+	case INPUT_EVENT_RELPOSITION:
+		return "INPUT_EVENT_RELPOSITION"
+	case INPUT_EVENT_TOUCHPRESS:
+		return "INPUT_EVENT_TOUCHPRESS"
+	case INPUT_EVENT_TOUCHRELEASE:
+		return "INPUT_EVENT_TOUCHRELEASE"
+	case INPUT_EVENT_TOUCHPOSITION:
+		return "INPUT_EVENT_TOUCHPOSITION"
+	default:
+		return "[?? Invalid InputEventType value]"
+	}
+}
+
+func (s KeyState) String() string {
+	if s == KEYSTATE_NONE {
+		return "KEYSTATE_NONE"
+	}
+	flags := ""
+	if s&KEYSTATE_SCROLLLOCK != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_SCROLLLOCK"
+	}
+	if s&KEYSTATE_NUMLOCK != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_NUMLOCK"
+	}
+	if s&KEYSTATE_CAPSLOCK != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_CAPSLOCK"
+	}
+	if s&KEYSTATE_LEFTSHIFT != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_LEFTSHIFT"
+	}
+	if s&KEYSTATE_RIGHTSHIFT != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_RIGHTSHIFT"
+	}
+	if s&KEYSTATE_LEFTALT != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_LEFTALT"
+	}
+	if s&KEYSTATE_RIGHTALT != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_RIGHTALT"
+	}
+	if s&KEYSTATE_LEFTMETA != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_LEFTMETA"
+	}
+	if s&KEYSTATE_RIGHTMETA != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_RIGHTMETA"
+	}
+	if s&KEYSTATE_LEFTCTRL != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_LEFTCTRL"
+	}
+	if s&KEYSTATE_RIGHTCTRL != KEYSTATE_NONE {
+		flags = flags + "|KEYSTATE_RIGHTCTRL"
+	}
+	return strings.Trim(flags, "|")
+}

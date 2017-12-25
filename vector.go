@@ -8,6 +8,17 @@
 
 package gopi
 
+import (
+	"fmt"
+)
+
 type Point struct {
 	X, Y float32
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (p Point) String() string {
+	return fmt.Sprintf("gopi.Point{ %v,%v }", p.X, p.Y)
 }

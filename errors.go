@@ -25,4 +25,6 @@ var (
 	ErrHelp = flag.ErrHelp
 	// ErrNotImplemented is returned when a feature is not supported
 	ErrNotImplemented = errors.New("Feature not implemented")
+	// ErrBadParameter is returned when a supplied parameter is invalid
+	ErrBadParameter = errors.New("Bad Parameter")
 )
