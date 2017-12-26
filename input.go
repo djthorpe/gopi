@@ -23,6 +23,9 @@ type Input interface {
 	// Open Devices by name, type and bus
 	OpenDevicesByName(name string, flags InputDeviceType, bus InputDeviceBus) ([]InputDevice, error)
 
+	// Add a device to managed input devices
+	AddDevice(device InputDevice) error
+
 	// Close Device
 	CloseDevice(device InputDevice) error
 

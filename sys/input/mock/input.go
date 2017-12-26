@@ -74,6 +74,16 @@ func (this *input) OpenDevicesByName(name string, flags gopi.InputDeviceType, bu
 	return nil, nil
 }
 
+// Add Device
+func (this *input) AddDevice(device gopi.InputDevice) error {
+	// Check for nil argument
+	if device == nil {
+		return gopi.ErrBadParameter
+	}
+	// TODO
+	return gopi.ErrNotImplemented
+}
+
 // Close Device
 func (this *input) CloseDevice(device gopi.InputDevice) error {
 	for i := range this.devices {

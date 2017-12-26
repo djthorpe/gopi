@@ -69,6 +69,10 @@ func (config Device) Open(logger gopi.Logger) (gopi.Driver, error) {
 // Close
 func (this *device) Close() error {
 	this.log.Debug("sys.mock.InputDevice.Close{ }")
+	if this.subscribers == nil {
+		this.log.Warn("sys.mock.InputDevice.Close: Called Close() more than once")
+		return nil
+	}
 	this.subscribers = nil
 	return nil
 }
