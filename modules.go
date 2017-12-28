@@ -65,6 +65,7 @@ const (
 	MODULE_TYPE_SPI      // SPI Hardware interface
 	MODULE_TYPE_INPUT    // User Input Device interface
 	MODULE_TYPE_MDNS     // DNS Service Discovery
+	MODULE_TYPE_TIMER    // Timer module
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +88,7 @@ var (
 		"spi":     MODULE_TYPE_SPI,
 		"input":   MODULE_TYPE_INPUT,
 		"mdns":    MODULE_TYPE_MDNS,
+		"timer":   MODULE_TYPE_TIMER,
 	}
 )
 
@@ -291,6 +293,8 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_INPUT"
 	case MODULE_TYPE_MDNS:
 		return "MODULE_TYPE_MDNS"
+	case MODULE_TYPE_TIMER:
+		return "MODULE_TYPE_TIMER"
 	default:
 		return "[Invalid ModuleType value]"
 	}

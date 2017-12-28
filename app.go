@@ -39,6 +39,7 @@ type AppInstance struct {
 	Display  Display
 	GPIO     GPIO
 	Layout   Layout
+	Timer    Timer
 	debug    bool
 	verbose  bool
 	sigchan  chan os.Signal

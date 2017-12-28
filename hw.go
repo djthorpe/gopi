@@ -87,9 +87,22 @@ type GPIO interface {
 	// return ErrNotImplemented if not supported
 	SetPullMode(GPIOPin, GPIOPull) error
 
-	// Watch for rising and/or falling edge, or stop watching
-	// will return ErrNotImplemented if not supported
+	// Start watching for rising and/or falling edge,
+	// or stop watching when GPIO_EDGE_NONE is passed.
+	// Will return ErrNotImplemented if not supported
 	Watch(GPIOPin, GPIOEdge) error
+}
+
+// GPIOEvent implements an event from the GPIO driver
+type GPIOEvent interface {
+	Event
+
+	// Pin returns the pin on which the event occurred
+	Pin() GPIOPin
+
+	// Edge returns whether the pin value is rising or falling
+	// or will return NONE if not defined
+	Edge() GPIOEdge
 }
 
 // I2CDriver implements the I2C interface for sensors, etc.

@@ -8,23 +8,28 @@
 
 package gopi
 
-/*
-import "time"
+import (
+	"time"
+)
 
 ///////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
+// Timer implements a time keeping driver
 type Timer interface {
 	Driver
 	Publisher
 
 	// Schedule a timeout (one shot)
-	NewTimeout(duration time.Duration, userInfo interface{}) TimerX
+	NewTimeout(duration time.Duration, userInfo interface{})
 
-	// Schedule an interval (repeated timer)
-	NewInterval(duration time.Duration, userInfo interface{}, immediately bool) TimerX
-
-	// Cancel a timeout or interval
-	Cancel(TimerX)
+	// Schedule an interval, which can fire immediately
+	NewInterval(duration time.Duration, userInfo interface{}, immediately bool)
 }
-*/
+
+// TimerEvent is emitted by the timer driver on maturity
+type TimerEvent interface {
+	Event
+
+	UserInfo() interface{}
+}

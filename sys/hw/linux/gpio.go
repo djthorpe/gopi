@@ -12,7 +12,6 @@
 package linux
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -22,7 +21,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
@@ -33,22 +31,22 @@ import (
 
 type GPIO struct {
 	UnexportOnClose bool
+	FilePoll        FilePollInterface
 }
 
 type gpio struct {
 	log         gopi.Logger
 	exported    []gopi.GPIOPin
 	watched     map[gopi.GPIOPin]*os.File
-	fd          map[int]gopi.GPIOPin
 	lock        sync.Mutex
-	poll        *PollDriver
-	cancel      context.CancelFunc
+	filepoll    FilePollInterface
 	subscribers []chan gopi.Event
 }
 
 type event struct {
 	driver *gpio
 	pin    gopi.GPIOPin
+	edge   gopi.GPIOEdge
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -70,27 +68,21 @@ func (config GPIO) Open(logger gopi.Logger) (gopi.Driver, error) {
 	this := new(gpio)
 	this.log = logger
 	this.watched = make(map[gopi.GPIOPin]*os.File, 0)
-	this.fd = make(map[int]gopi.GPIOPin, 0)
 
 	// Make array of exported pins
 	if config.UnexportOnClose {
 		this.exported = make([]gopi.GPIOPin, 0)
 	}
 
-	// Create a poll driver
-	if poll, err := NewPollDriver(logger); err != nil {
-		return nil, err
+	// File Poll module is required or else returns ErrBadParameter
+	if config.FilePoll != nil {
+		this.filepoll = config.FilePoll
 	} else {
-		this.poll = poll
+		return nil, gopi.ErrBadParameter
 	}
 
 	// Subscribers
 	this.subscribers = make([]chan gopi.Event, 0)
-
-	// Start watching
-	ctx, cancel := context.WithCancel(context.Background())
-	this.cancel = cancel
-	go this.handleEvents(ctx)
 
 	// Success
 	return this, nil
@@ -104,22 +96,12 @@ func (this *gpio) Close() error {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	// Cancel watching in background
-	if this.cancel != nil {
-		this.cancel()
-	}
-
-	// unwatch pins
+	// Unwatch pins
 	for pin, file := range this.watched {
-		this.poll.Remove(int(file.Fd()), POLL_MODE_READ)
+		this.filepoll.Unwatch(file)
 		if err := file.Close(); err != nil {
-			this.log.Warn("close: %v: %v", pin, err)
+			this.log.Warn("sys.hw.linux.GPIO.Close: %v: %v", pin, err)
 		}
-	}
-
-	// close poll
-	if err := this.poll.Close(); err != nil {
-		return err
 	}
 
 	if len(this.exported) > 0 {
@@ -136,8 +118,7 @@ func (this *gpio) Close() error {
 	// Zero out member variables
 	this.exported = nil
 	this.watched = nil
-	this.poll = nil
-	this.cancel = nil
+	this.filepoll = nil
 	this.subscribers = nil
 
 	// Return success
@@ -341,7 +322,7 @@ func (this *gpio) Watch(pin gopi.GPIOPin, edge gopi.GPIOEdge) error {
 			this.log.Error("Watch: Unable to write edge for %v: %v", pin, err)
 		} else if file, exists := this.watched[pin]; exists == false {
 			// IGNORE UNWATCHED PINS
-		} else if err := this.poll.Remove(int(file.Fd()), POLL_MODE_EDGE); err != nil {
+		} else if err := this.filepoll.Unwatch(file); err != nil {
 			this.log.Error("%v: %v", pin, err)
 			file.Close()
 		} else if err := file.Close(); err != nil {
@@ -349,7 +330,6 @@ func (this *gpio) Watch(pin gopi.GPIOPin, edge gopi.GPIOEdge) error {
 		} else {
 			// Remove from list of watched pins
 			delete(this.watched, pin)
-			delete(this.fd, int(file.Fd()))
 		}
 	case gopi.GPIO_EDGE_RISING:
 		edge_write = "rising"
@@ -370,13 +350,16 @@ func (this *gpio) Watch(pin gopi.GPIOPin, edge gopi.GPIOEdge) error {
 		} else if file, err := watchValue(pin); err != nil {
 			this.log.Error("Watch: Unable to watch %v: %v", pin, err)
 			return err
-		} else if err := this.poll.Add(int(file.Fd()), POLL_MODE_READ); err != nil {
-			this.log.Error("Watch: Unable to poll %v: %v", pin, err)
+		} else if err := this.filepoll.Watch(file, FILEPOLL_MODE_EDGE, func(handle *os.File, mode FilePollMode) {
+			if err := this.handleEdge(handle, pin); err != nil {
+				this.log.Warn("Watch: %v: %v", pin, err)
+			}
+		}); err != nil {
+			this.log.Error("Watch: %v: %v", pin, err)
 			file.Close()
 			return err
 		} else {
 			this.watched[pin] = file
-			this.fd[int(file.Fd())] = pin
 		}
 	}
 
@@ -388,24 +371,23 @@ func (this *gpio) Watch(pin gopi.GPIOPin, edge gopi.GPIOEdge) error {
 
 // Subscribe to events emitted. Returns unique subscriber
 // identifier and channel on which events are emitted
-func (this *gpio) Subscribe() (gopi.Subscriber, chan gopi.Event) {
+func (this *gpio) Subscribe() chan gopi.Event {
 	this.log.Debug2("<sys.hw.linux.GPIO.Subscribe>{ }")
 
 	// Create a new channel for emitting events
-	this.subscribers = append(this.subscribers, make(chan gopi.Event))
-
-	// Subscriber number
-	subscriber := len(this.subscribers)
-
-	return gopi.Subscriber(subscriber), this.subscribers[subscriber-1]
+	subscriber := make(chan gopi.Event)
+	this.subscribers = append(this.subscribers, subscriber)
+	return subscriber
 }
 
 // Unsubscribe from events emitted
-func (this *gpio) Unsubscribe(subscriber gopi.Subscriber) {
-	this.log.Debug2("<sys.hw.linux.GPIO.Unsubscribe>{ subscriber=%v }", subscriber)
+func (this *gpio) Unsubscribe(subscriber chan gopi.Event) {
+	this.log.Debug2("<sys.hw.linux.GPIO.Unsubscribe>{ }")
 
-	if subscriber > gopi.SUBSCRIBER_NONE && subscriber <= gopi.Subscriber(len(this.subscribers)) {
-		this.subscribers[subscriber-1] = nil
+	for i := range this.subscribers {
+		if this.subscribers[i] == subscriber {
+			this.subscribers[i] = nil
+		}
 	}
 }
 
@@ -413,15 +395,23 @@ func (this *gpio) Unsubscribe(subscriber gopi.Subscriber) {
 // INTERFACE - EVENT
 
 func (this *event) Name() string {
-	return fmt.Sprint(this.pin)
+	return "GPIOEvent"
 }
 
 func (this *event) Source() gopi.Driver {
 	return this.driver
 }
 
+func (this *event) Pin() gopi.GPIOPin {
+	return this.pin
+}
+
+func (this *event) Edge() gopi.GPIOEdge {
+	return this.edge
+}
+
 func (this *event) String() string {
-	return fmt.Sprintf("<sys.hw.linux.GPIO.Event>{ pin=%v source=%v }", this.pin, this.driver)
+	return fmt.Sprintf("<sys.hw.linux.GPIO.Event>{ pin=%v edge=%v source=%v }", this.pin, this.edge, this.driver)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -444,33 +434,28 @@ func (this *gpio) exportPin(pin gopi.GPIOPin) error {
 	return nil
 }
 
-func (this *gpio) handleEvents(ctx context.Context) error {
-	// Start watching for GPIO rising and falling events and
-	// any error conditions which could occur
-	return this.poll.Watch(ctx, func(fd int, flags PollMode) {
-		buf := make([]byte, 80)
-		for {
-			if _, err := syscall.Seek(fd, 0, io.SeekStart); err != nil {
-				this.log.Error("syscall.Seek: %v", err)
-				break
-			} else if n, err := syscall.Read(fd, buf); err != nil {
-				this.log.Error("syscall.Read: %v", err)
-				break
-			} else if n == 0 {
-				break
-			} else {
-				this.log.Info("buf=%v", string(buf[:n]))
-			}
+func (this *gpio) handleEdge(handle *os.File, pin gopi.GPIOPin) error {
+	if _, err := handle.Seek(0, io.SeekStart); err != nil {
+		return err
+	} else if buf, err := ioutil.ReadAll(handle); err != nil {
+		return err
+	} else {
+		value := strings.TrimSpace(string(buf))
+		switch value {
+		case "0":
+			this.emit(pin, gopi.GPIO_EDGE_FALLING)
+		case "1":
+			this.emit(pin, gopi.GPIO_EDGE_RISING)
+		default:
+			this.emit(pin, gopi.GPIO_EDGE_NONE)
 		}
-		if pin, exists := this.fd[fd]; exists {
-			this.emit(pin)
-		}
-	})
+		return nil
+	}
 }
 
 // Emit an event
-func (this *gpio) emit(pin gopi.GPIOPin) {
-	event := &event{driver: this, pin: pin}
+func (this *gpio) emit(pin gopi.GPIOPin, edge gopi.GPIOEdge) {
+	event := &event{driver: this, pin: pin, edge: edge}
 	for _, channel := range this.subscribers {
 		if channel != nil {
 			channel <- event
@@ -492,13 +477,10 @@ func readFile(filename string) (string, error) {
 
 func isExported(pin gopi.GPIOPin) bool {
 	if _, err := os.Stat(filenameForPin(pin, "")); os.IsNotExist(err) {
-		fmt.Println("is exported ", pin, " = false")
 		return false
 	} else if err != nil {
-		fmt.Println("is exported ", pin, " = false")
 		return false
 	} else {
-		fmt.Println("is exported ", pin, " = true")
 		return true
 	}
 }

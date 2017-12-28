@@ -6,6 +6,7 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
+// Watches for a GPIO pin rising and/or falling
 package main
 
 import (
@@ -19,29 +20,13 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func runLoop(app *gopi.AppInstance, done chan struct{}) error {
-
-	if app.GPIO == nil {
-		return app.Logger.Error("Missing GPIO module instance")
-	}
-
-	// watch pin
-	app.GPIO.SetPinMode(gopi.GPIOPin(27), gopi.GPIO_INPUT)
-	app.GPIO.Watch(gopi.GPIOPin(27), gopi.GPIO_EDGE_FALLING)
-
-	// wait until done
-	app.WaitForSignal()
-
-	done <- gopi.DONE
-	return nil
-}
-
 func eventLoop(app *gopi.AppInstance, done chan struct{}) error {
+
 	if app.GPIO == nil {
 		return app.Logger.Error("Missing GPIO module instance")
 	}
 
-	app.Logger.Debug("eventLoop waiting for incoming events")
+	// Look for edges
 	edge := app.GPIO.Subscribe()
 
 FOR_LOOP:
@@ -50,11 +35,30 @@ FOR_LOOP:
 		case evt := <-edge:
 			fmt.Println("EVENT: ", evt)
 		case <-done:
-			app.GPIO.Unsubscribe(edge)
 			break FOR_LOOP
 		}
 	}
-	app.Logger.Info("END eventLoop")
+
+	// Unsubscribe from edges
+	app.GPIO.Unsubscribe(edge)
+	return nil
+}
+
+func runLoop(app *gopi.AppInstance, done chan struct{}) error {
+
+	if app.GPIO == nil {
+		return app.Logger.Error("Missing GPIO module instance")
+	}
+
+	// watch pin
+	pin, _ := app.AppFlags.GetUint("pin")
+	app.GPIO.SetPinMode(gopi.GPIOPin(pin), gopi.GPIO_INPUT)
+	app.GPIO.Watch(gopi.GPIOPin(pin), gopi.GPIO_EDGE_BOTH) // when button pressed or released
+
+	// wait until done
+	app.WaitForSignal()
+
+	done <- gopi.DONE
 	return nil
 }
 
@@ -63,6 +67,8 @@ FOR_LOOP:
 func main_inner() int {
 	// Create the configuration
 	config := gopi.NewAppConfig("gpio")
+	config.AppFlags.FlagUint("pin", 27, "Logical GPIO Pin to watch")
+
 	// Create the application
 	app, err := gopi.NewAppInstance(config)
 	if err != nil {
