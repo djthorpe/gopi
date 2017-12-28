@@ -345,6 +345,10 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 		if this.GPIO, ok = driver.(GPIO); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.GPIO", module)
 		}
+	case MODULE_TYPE_TIMER:
+		if this.Timer, ok = driver.(Timer); !ok {
+			return fmt.Errorf("Module %v cannot be cast to gopi.Timer", module)
+		}
 	}
 	// success
 	return nil

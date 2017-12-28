@@ -31,5 +31,6 @@ type Timer interface {
 type TimerEvent interface {
 	Event
 
+	Timestamp() time.Time
 	UserInfo() interface{}
 }
