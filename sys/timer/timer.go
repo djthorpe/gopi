@@ -95,6 +95,7 @@ func (this *timer) Close() error {
 		}
 	}
 
+	// Free up resources
 	this.units = nil
 	this.channels = nil
 	this.subscribers = nil

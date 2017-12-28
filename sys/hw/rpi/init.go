@@ -21,7 +21,7 @@ import (
 func init() {
 	// Register hardware
 	gopi.RegisterModule(gopi.Module{
-		Name: "hw/rpi",
+		Name: "rpi/hw",
 		Type: gopi.MODULE_TYPE_HARDWARE,
 		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
 			return gopi.Open(Hardware{}, app.Logger)
@@ -30,7 +30,7 @@ func init() {
 
 	// Register Display
 	gopi.RegisterModule(gopi.Module{
-		Name:     "display/rpi",
+		Name:     "rpi/display",
 		Type:     gopi.MODULE_TYPE_DISPLAY,
 		Requires: []string{"hw/rpi"},
 		Config: func(config *gopi.AppConfig) {
@@ -51,9 +51,9 @@ func init() {
 
 	// Register GPIO
 	gopi.RegisterModule(gopi.Module{
-		Name:     "gpio/rpi",
+		Name:     "rpi/gpio",
 		Type:     gopi.MODULE_TYPE_GPIO,
-		Requires: []string{"hw/rpi"},
+		Requires: []string{"rpi/hw"},
 		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
 			return gopi.Open(GPIO{Hardware: app.Hardware}, app.Logger)
 		},
