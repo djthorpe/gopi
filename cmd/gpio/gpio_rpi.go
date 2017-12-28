@@ -26,7 +26,8 @@ func runLoop(app *gopi.AppInstance, done chan struct{}) error {
 
 	table.SetHeader([]string{"Physical", "Logical", "Direction", "Value"})
 
-	for pin := uint(0); pin < app.GPIO.NumberOfPhysicalPins(); pin++ {
+	// Physical pins start at index 1
+	for pin := uint(1); pin <= app.GPIO.NumberOfPhysicalPins(); pin++ {
 		var l, d, v string
 		if logical := app.GPIO.PhysicalPin(pin); logical != gopi.GPIO_PIN_NONE {
 			l = fmt.Sprint(logical)
