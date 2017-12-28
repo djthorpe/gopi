@@ -105,8 +105,8 @@ type GPIOEvent interface {
 	Edge() GPIOEdge
 }
 
-// I2CDriver implements the I2C interface for sensors, etc.
-type I2CDriver interface {
+// I2C implements the I2C interface for sensors, etc.
+type I2C interface {
 	Driver
 
 	// Set current slave address
@@ -132,6 +132,39 @@ type I2CDriver interface {
 	WriteInt16(reg uint8, value int16) error
 }
 
+// SPI implements the SPI interface for sensors, etc.
+type SPI interface {
+	// Enforces general driver
+	Driver
+
+	// Set SPI mode
+	SetMode(SPIMode) error
+
+	// Get SPI mode
+	GetMode() SPIMode
+
+	// Set SPI speed
+	SetMaxSpeedHz(uint32) error
+
+	// Get SPI speed
+	GetMaxSpeedHz() uint32
+
+	// Set Bits Per Word
+	SetBitsPerWord(uint8) error
+
+	// Get Bits Per Word
+	GetBitsPerWord() uint8
+
+	// Read/Write
+	Transfer(send []byte) ([]byte, error)
+
+	// Read
+	Read(len uint32) ([]byte, error)
+
+	// Write
+	Write(send []byte) error
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -150,6 +183,9 @@ type (
 
 	// GPIOEdge is a rising or falling edge
 	GPIOEdge uint8
+
+	// SPIMode
+	SPIMode uint8
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -189,6 +225,16 @@ const (
 	GPIO_EDGE_RISING
 	GPIO_EDGE_FALLING
 	GPIO_EDGE_BOTH
+)
+
+const (
+	SPI_MODE_CPHA SPIMode = 0x01
+	SPI_MODE_CPOL SPIMode = 0x02
+	SPI_MODE_0    SPIMode = 0x00
+	SPI_MODE_1    SPIMode = (0x00 | SPI_MODE_CPHA)
+	SPI_MODE_2    SPIMode = (SPI_MODE_CPOL | 0x00)
+	SPI_MODE_3    SPIMode = (SPI_MODE_CPOL | SPI_MODE_CPHA)
+	SPI_MODE_NONE SPIMode = 0xFF
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -259,5 +305,20 @@ func (e GPIOEdge) String() string {
 		return "GPIO_EDGE_BOTH"
 	default:
 		return "[??? Invalid GPIOEdge value]"
+	}
+}
+
+func (m SPIMode) String() string {
+	switch m {
+	case SPI_MODE_0:
+		return "SPI_MODE_0"
+	case SPI_MODE_1:
+		return "SPI_MODE_1"
+	case SPI_MODE_2:
+		return "SPI_MODE_2"
+	case SPI_MODE_3:
+		return "SPI_MODE_3"
+	default:
+		return "[?? Invalid SPIMode]"
 	}
 }
