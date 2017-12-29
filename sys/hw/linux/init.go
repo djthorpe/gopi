@@ -60,4 +60,25 @@ func init() {
 		},
 	})
 
+	// Register SPI
+	gopi.RegisterModule(gopi.Module{
+		Name: "linux/spi",
+		Type: gopi.MODULE_TYPE_SPI,
+		Config: func(config *gopi.AppConfig) {
+			config.AppFlags.FlagUint("spi.bus", 0, "SPI Bus")
+			config.AppFlags.FlagUint("spi.slave", 0, "SPI Slave")
+			config.AppFlags.FlagUint("spi.delay", 0, "SPI Transfer delay in microseconds")
+		},
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			bus, _ := app.AppFlags.GetUint("spi.bus")
+			slave, _ := app.AppFlags.GetUint("spi.slave")
+			delay, _ := app.AppFlags.GetUint16("spi.delay")
+			return gopi.Open(SPI{
+				Bus:   bus,
+				Slave: slave,
+				Delay: delay,
+			}, app.Logger)
+		},
+	})
+
 }
