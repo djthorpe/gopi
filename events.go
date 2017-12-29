@@ -11,6 +11,17 @@ package gopi
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
+// Publisher is an interface for drivers which accept subscription
+// and unsubscription requests
+type Publisher interface {
+	// Subscribe to events emitted. Returns channel on which events
+	// are emitted or nil if this driver does not implement events
+	Subscribe() chan Event
+
+	// Unsubscribe from events emitted
+	Unsubscribe(chan Event)
+}
+
 // Event is a generic event which is emitted through a channel
 type Event interface {
 	// Source of the event
@@ -20,11 +31,14 @@ type Event interface {
 	Name() string
 }
 
-type Publisher interface {
-	// Subscribe to events emitted. Returns channel on which events
-	// are emitted or nil if this driver does not implement events
-	Subscribe() chan Event
+// GPIOEvent implements an event from the GPIO driver
+type GPIOEvent interface {
+	Event
 
-	// Unsubscribe from events emitted
-	Unsubscribe(chan Event)
+	// Pin returns the pin on which the event occurred
+	Pin() GPIOPin
+
+	// Edge returns whether the pin value is rising or falling
+	// or will return NONE if not defined
+	Edge() GPIOEdge
 }

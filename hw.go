@@ -93,18 +93,6 @@ type GPIO interface {
 	Watch(GPIOPin, GPIOEdge) error
 }
 
-// GPIOEvent implements an event from the GPIO driver
-type GPIOEvent interface {
-	Event
-
-	// Pin returns the pin on which the event occurred
-	Pin() GPIOPin
-
-	// Edge returns whether the pin value is rising or falling
-	// or will return NONE if not defined
-	Edge() GPIOEdge
-}
-
 // I2C implements the I2C interface for sensors, etc.
 type I2C interface {
 	Driver
