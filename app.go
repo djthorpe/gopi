@@ -38,6 +38,7 @@ type AppInstance struct {
 	Hardware Hardware
 	Display  Display
 	GPIO     GPIO
+	I2C      I2C
 	Layout   Layout
 	Timer    Timer
 	debug    bool
@@ -274,10 +275,14 @@ func (this *AppInstance) Close() error {
 	this.bytype = nil
 	this.byname = nil
 	this.byorder = nil
+
 	this.Layout = nil
 	this.Display = nil
 	this.Hardware = nil
 	this.Logger = nil
+	this.Timer = nil
+	this.I2C = nil
+	this.GPIO = nil
 
 	// Return success
 	return nil
@@ -344,6 +349,10 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 	case MODULE_TYPE_GPIO:
 		if this.GPIO, ok = driver.(GPIO); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.GPIO", module)
+		}
+	case MODULE_TYPE_I2C:
+		if this.I2C, ok = driver.(I2C); !ok {
+			return fmt.Errorf("Module %v cannot be cast to gopi.I2C", module)
 		}
 	case MODULE_TYPE_TIMER:
 		if this.Timer, ok = driver.(Timer); !ok {
