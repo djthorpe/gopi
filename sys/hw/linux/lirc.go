@@ -12,7 +12,9 @@
 package linux
 
 import (
+	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -45,6 +47,9 @@ type lirc struct {
 	// mutex lock
 	lock sync.Mutex
 
+	// subscribers
+	subscribers []chan gopi.Event
+
 	// features
 	features lirc_feature
 
@@ -53,6 +58,11 @@ type lirc struct {
 }
 
 type lirc_feature uint32
+
+type lirc_event struct {
+	driver gopi.Driver
+	value  uint32
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -139,6 +149,15 @@ func (config LIRC) Open(log gopi.Logger) (gopi.Driver, error) {
 		return nil, err
 	}
 
+	// Start watching
+	if err := this.filepoll.Watch(this.dev, FILEPOLL_MODE_READ, this.lircReceive); err != nil {
+		this.dev.Close()
+		return nil, err
+	}
+
+	// Subscribers
+	this.subscribers = make([]chan gopi.Event, 0)
+
 	// return driver
 	return this, nil
 }
@@ -147,14 +166,32 @@ func (config LIRC) Open(log gopi.Logger) (gopi.Driver, error) {
 func (this *lirc) Close() error {
 	this.log.Debug("<sys.hw.linux.LIRC.Close>{ }")
 
+	// Mutex
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	// Unwatch device
+	if err := this.filepoll.Unwatch(this.dev); err != nil {
+		this.log.Warn("Unwatch: %v", err)
+	}
+
+	// Close device
 	if err := this.dev.Close(); err != nil {
 		return err
 	} else {
 		this.dev = nil
 	}
 
+	// Close subscriber channels
+	for _, c := range this.subscribers {
+		if c != nil {
+			close(c)
+		}
+	}
+
 	// Blank out
 	this.filepoll = nil
+	this.subscribers = nil
 
 	return nil
 }
@@ -171,6 +208,8 @@ func (this *lirc) SendMode() gopi.LIRCMode {
 }
 
 func (this *lirc) SetRcvMode(m gopi.LIRCMode) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.SetRcvMode>{ mode=%v }", m)
+
 	// Check to make sure feature is supported
 	switch m {
 	case gopi.LIRC_MODE_RAW:
@@ -197,6 +236,186 @@ func (this *lirc) SetRcvMode(m gopi.LIRCMode) error {
 	}
 	this.rcv_mode = m
 	return nil
+}
+
+func (this *lirc) SetSendMode(m gopi.LIRCMode) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.SetSendMode>{ mode=%v }", m)
+
+	// Check to make sure feature is supported
+	switch m {
+	case gopi.LIRC_MODE_RAW:
+		if this.features&LIRC_CAN_SEND_RAW == 0 {
+			return gopi.ErrNotImplemented
+		}
+	case gopi.LIRC_MODE_PULSE:
+		if this.features&LIRC_CAN_SEND_PULSE == 0 {
+			return gopi.ErrNotImplemented
+		}
+	case gopi.LIRC_MODE_MODE2:
+		if this.features&LIRC_CAN_SEND_MODE2 == 0 {
+			return gopi.ErrNotImplemented
+		}
+	case gopi.LIRC_MODE_LIRCCODE:
+		if this.features&LIRC_CAN_SEND_LIRCCODE == 0 {
+			return gopi.ErrNotImplemented
+		}
+	default:
+		return gopi.ErrNotImplemented
+	}
+	if err := this.setSendMode(m); err != nil {
+		return err
+	}
+	this.send_mode = m
+	return nil
+}
+
+func (this *lirc) GetRcvResolution() (uint32, error) {
+	if this.features&LIRC_CAN_GET_REC_RESOLUTION == 0 {
+		return 0, gopi.ErrNotImplemented
+	}
+	return this.getRcvResolutionMicros()
+}
+
+func (this *lirc) SetRcvTimeout(micros uint32) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.SetRcvTimeout>{ micros=%v }", micros)
+
+	if this.features&LIRC_CAN_SET_REC_TIMEOUT == 0 {
+		return gopi.ErrNotImplemented
+	}
+	if min, max, err := this.getMinMaxTimeoutMicros(); err != nil {
+		return err
+	} else if micros != 0 && (micros < min || micros > max) {
+		return gopi.ErrBadParameter
+	}
+	if err := this.setRcvTimeoutMicros(micros); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *lirc) SetRcvTimeoutReports(enable bool) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.SetRcvTimeoutReports>{ enable=%v }", enable)
+
+	if this.features&LIRC_CAN_SET_REC_TIMEOUT == 0 {
+		return gopi.ErrNotImplemented
+	}
+	return this.setRcvTimeoutReports(enable)
+}
+
+func (this *lirc) SetRcvCarrierHz(value uint32) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.SetRcvCarrierHz>{ hz=%v }", value)
+
+	if this.features&LIRC_CAN_SET_REC_CARRIER == 0 {
+		return gopi.ErrNotImplemented
+	}
+	return this.setRcvCarrierHz(value)
+}
+
+func (this *lirc) SetRcvCarrierRangeHz(min uint32, max uint32) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.SetRcvCarrierRangeHz>{ min_hz=%v max_hz=%v }", min, max)
+
+	if this.features&LIRC_CAN_SET_REC_CARRIER_RANGE == 0 {
+		return gopi.ErrNotImplemented
+	}
+	if min > max {
+		return gopi.ErrBadParameter
+	} else if min < max {
+		if err := this.setRcvCarrierRangeHz(min); err != nil {
+			return err
+		}
+	}
+	return this.setRcvCarrierHz(max)
+}
+
+func (this *lirc) SetSendCarrierHz(value uint32) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.SetSendCarrierHz>{ hz=%v }", value)
+
+	if this.features&LIRC_CAN_SET_SEND_CARRIER == 0 {
+		return gopi.ErrNotImplemented
+	}
+	return this.setSendCarrierHz(value)
+}
+
+func (this *lirc) SetSendDutyCycle(value uint32) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.SetSendDutyCycle>{ value=%v }", value)
+
+	if this.features&LIRC_CAN_SET_SEND_DUTY_CYCLE == 0 {
+		return gopi.ErrNotImplemented
+	}
+	if value < 1 || value > 99 {
+		return gopi.ErrBadParameter
+	}
+	return this.setSendDutyCycle(value)
+}
+
+func (this *lirc) SetRcvDutyCycle(value uint32) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.SetRcvDutyCycle>{ value=%v }", value)
+
+	if this.features&LIRC_CAN_SET_REC_DUTY_CYCLE == 0 {
+		return gopi.ErrNotImplemented
+	}
+	if value < 1 || value > 99 {
+		return gopi.ErrBadParameter
+	}
+	return this.setRcvDutyCycle(value)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLISH AND SUBSCRIBE
+
+// Subscribe to events emitted. Returns unique subscriber
+// identifier and channel on which events are emitted
+func (this *lirc) Subscribe() chan gopi.Event {
+	this.log.Debug2("<sys.hw.linux.GPIO.Subscribe>{ }")
+
+	// Create a new channel for emitting events
+	subscriber := make(chan gopi.Event)
+	this.subscribers = append(this.subscribers, subscriber)
+	return subscriber
+}
+
+// Unsubscribe from events emitted
+func (this *lirc) Unsubscribe(subscriber chan gopi.Event) {
+	this.log.Debug2("<sys.hw.linux.GPIO.Unsubscribe>{ }")
+
+	for i := range this.subscribers {
+		if this.subscribers[i] == subscriber {
+			close(subscriber)
+			this.subscribers[i] = nil
+		}
+	}
+}
+
+func (this *lirc) emit(value uint32) {
+	event := &lirc_event{driver: this, value: value}
+	for _, channel := range this.subscribers {
+		if channel != nil {
+			channel <- event
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// EVENTS INTERFACE
+
+func (this *lirc_event) Name() string {
+	return "LIRCEvent"
+}
+
+func (this *lirc_event) Source() gopi.Driver {
+	return this.driver
+}
+
+func (this *lirc_event) Type() gopi.LIRCType {
+	return gopi.LIRCType(this.value & 0xFF000000)
+}
+
+func (this *lirc_event) Value() uint32 {
+	return this.value & 0x00FFFFFF
+}
+
+func (this *lirc_event) String() string {
+	return fmt.Sprintf("<sys.hw.linux.LIRC.Event>{ type=%v value=%v }", this.Type(), this.Value())
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -263,5 +482,19 @@ func (f lirc_feature) String() string {
 	*/
 	default:
 		return "[?? Invalid lirc_feature value]"
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CALLBACK
+
+func (this *lirc) lircReceive(dev *os.File, mode FilePollMode) {
+	buf := make([]uint32, 1)
+	if err := binary.Read(dev, binary.LittleEndian, &buf[0]); err == io.EOF {
+		return
+	} else if err != nil {
+		this.log.Error("lircReceive: %v", err)
+	} else {
+		this.emit(buf[0])
 	}
 }

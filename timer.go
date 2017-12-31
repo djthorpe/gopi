@@ -26,11 +26,3 @@ type Timer interface {
 	// Schedule an interval, which can fire immediately
 	NewInterval(duration time.Duration, userInfo interface{}, immediately bool)
 }
-
-// TimerEvent is emitted by the timer driver on maturity
-type TimerEvent interface {
-	Event
-
-	Timestamp() time.Time
-	UserInfo() interface{}
-}

@@ -8,6 +8,8 @@
 
 package gopi
 
+import "time"
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -41,4 +43,23 @@ type GPIOEvent interface {
 	// Edge returns whether the pin value is rising or falling
 	// or will return NONE if not defined
 	Edge() GPIOEdge
+}
+
+// LIRCEvent implements an event from the LIRC driver
+type LIRCEvent interface {
+	Event
+
+	// The type of message
+	Type() LIRCType
+
+	// The value
+	Value() uint32
+}
+
+// TimerEvent is emitted by the timer driver on maturity
+type TimerEvent interface {
+	Event
+
+	Timestamp() time.Time
+	UserInfo() interface{}
 }

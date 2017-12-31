@@ -115,6 +115,13 @@ func (this *gpio) Close() error {
 		}
 	}
 
+	// Close subscriber channels
+	for _, c := range this.subscribers {
+		if c != nil {
+			close(c)
+		}
+	}
+
 	// Zero out member variables
 	this.exported = nil
 	this.watched = nil
@@ -387,6 +394,7 @@ func (this *gpio) Unsubscribe(subscriber chan gopi.Event) {
 	for i := range this.subscribers {
 		if this.subscribers[i] == subscriber {
 			this.subscribers[i] = nil
+			close(subscriber)
 		}
 	}
 }

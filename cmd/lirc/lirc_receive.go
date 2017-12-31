@@ -24,11 +24,35 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
+func EventLoop(app *gopi.AppInstance, done chan struct{}) error {
+	if app.LIRC == nil {
+		return errors.New("Missing LIRC module")
+	}
+
+	edge := app.LIRC.Subscribe()
+FOR_LOOP:
+	for {
+		select {
+		case evt := <-edge:
+			fmt.Println("EVENT: ", evt)
+		case <-done:
+			break FOR_LOOP
+		}
+	}
+
+	// Unsubscribe from edges
+	app.LIRC.Unsubscribe(edge)
+	return nil
+}
+
 func MainLoop(app *gopi.AppInstance, done chan struct{}) error {
 
 	if app.LIRC == nil {
 		return errors.New("Missing LIRC module")
 	}
+
+	// Wait for interrupt
+	app.WaitForSignal()
 
 	// Finish gracefully
 	done <- gopi.DONE
@@ -52,7 +76,7 @@ func main_inner() int {
 	defer app.Close()
 
 	// Run the application
-	if err := app.Run(MainLoop); err != nil {
+	if err := app.Run(MainLoop, EventLoop); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return -1
 	}
