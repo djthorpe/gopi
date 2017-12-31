@@ -147,6 +147,28 @@ type SPI interface {
 	Write(send []byte) error
 }
 
+// LIRC implements the infrared pulse send & receive interface
+type LIRC interface {
+	Driver
+
+	// Get receive and send modes
+	RcvMode() LIRCMode
+	SendMode() LIRCMode
+	SetRcvMode(mode LIRCMode) error
+	SetSendMode(mode LIRCMode) error
+
+	// Receive parameters
+	GetRcvResolution() (uint32, error)
+	SetRcvTimeout(micros uint32) error
+	SetRcvTimeoutReports(enable bool) error
+	SetRcvCarrierHz(value uint32) error
+	SetRcvCarrierRangeHz(min uint32, max uint32) error
+
+	// Send parameters
+	SetSendCarrierHz(value uint32) error
+	SetSendDutyCycle(value uint32) error
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -168,6 +190,9 @@ type (
 
 	// SPIMode
 	SPIMode uint8
+
+	// LIRCMode
+	LIRCMode uint32
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -217,6 +242,15 @@ const (
 	SPI_MODE_2    SPIMode = (SPI_MODE_CPOL | 0x00)
 	SPI_MODE_3    SPIMode = (SPI_MODE_CPOL | SPI_MODE_CPHA)
 	SPI_MODE_NONE SPIMode = 0xFF
+)
+
+const (
+	LIRC_MODE_NONE     LIRCMode = 0x00000000
+	LIRC_MODE_RAW      LIRCMode = 0x00000001
+	LIRC_MODE_PULSE    LIRCMode = 0x00000002
+	LIRC_MODE_MODE2    LIRCMode = 0x00000004
+	LIRC_MODE_LIRCCODE LIRCMode = 0x00000010
+	LIRC_MODE_MAX      LIRCMode = LIRC_MODE_LIRCCODE
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -302,5 +336,22 @@ func (m SPIMode) String() string {
 		return "SPI_MODE_3"
 	default:
 		return "[?? Invalid SPIMode]"
+	}
+}
+
+func (m LIRCMode) String() string {
+	switch m {
+	case LIRC_MODE_NONE:
+		return "LIRC_MODE_NONE"
+	case LIRC_MODE_RAW:
+		return "LIRC_MODE_RAW"
+	case LIRC_MODE_PULSE:
+		return "LIRC_MODE_PULSE"
+	case LIRC_MODE_MODE2:
+		return "LIRC_MODE_MODE2"
+	case LIRC_MODE_LIRCCODE:
+		return "LIRC_MODE_LIRCCODE"
+	default:
+		return "[?? Invalid LIRCMode value]"
 	}
 }

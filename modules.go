@@ -66,6 +66,7 @@ const (
 	MODULE_TYPE_INPUT    // User Input Device interface
 	MODULE_TYPE_MDNS     // DNS Service Discovery
 	MODULE_TYPE_TIMER    // Timer module
+	MODULE_TYPE_LIRC     // LIRC module
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,6 +90,7 @@ var (
 		"input":   MODULE_TYPE_INPUT,
 		"mdns":    MODULE_TYPE_MDNS,
 		"timer":   MODULE_TYPE_TIMER,
+		"lirc":    MODULE_TYPE_LIRC,
 	}
 )
 
@@ -295,6 +297,8 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_MDNS"
 	case MODULE_TYPE_TIMER:
 		return "MODULE_TYPE_TIMER"
+	case MODULE_TYPE_LIRC:
+		return "MODULE_TYPE_LIRC"
 	default:
 		return "[Invalid ModuleType value]"
 	}

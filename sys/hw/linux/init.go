@@ -40,7 +40,7 @@ func init() {
 			unexport, _ := app.AppFlags.GetBool("gpio.unexport")
 			return gopi.Open(GPIO{
 				UnexportOnClose: unexport,
-				FilePoll:        app.ModuleInstance("filepoll/linux").(FilePollInterface),
+				FilePoll:        app.ModuleInstance("linux/filepoll").(FilePollInterface),
 			}, app.Logger)
 		},
 	})
@@ -77,6 +77,23 @@ func init() {
 				Bus:   bus,
 				Slave: slave,
 				Delay: delay,
+			}, app.Logger)
+		},
+	})
+
+	// Register LIRC
+	gopi.RegisterModule(gopi.Module{
+		Name:     "linux/lirc",
+		Type:     gopi.MODULE_TYPE_LIRC,
+		Requires: []string{"linux/filepoll"},
+		Config: func(config *gopi.AppConfig) {
+			config.AppFlags.FlagString("lirc.device", "", "LIRC device")
+		},
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			device, _ := app.AppFlags.GetString("lirc.device")
+			return gopi.Open(LIRC{
+				Device:   device,
+				FilePoll: app.ModuleInstance("linux/filepoll").(FilePollInterface),
 			}, app.Logger)
 		},
 	})

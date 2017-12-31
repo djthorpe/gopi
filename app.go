@@ -42,6 +42,7 @@ type AppInstance struct {
 	SPI      SPI
 	Layout   Layout
 	Timer    Timer
+	LIRC     LIRC
 	debug    bool
 	verbose  bool
 	sigchan  chan os.Signal
@@ -285,6 +286,7 @@ func (this *AppInstance) Close() error {
 	this.I2C = nil
 	this.GPIO = nil
 	this.SPI = nil
+	this.LIRC = nil
 
 	// Return success
 	return nil
@@ -363,6 +365,10 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 	case MODULE_TYPE_TIMER:
 		if this.Timer, ok = driver.(Timer); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Timer", module)
+		}
+	case MODULE_TYPE_LIRC:
+		if this.LIRC, ok = driver.(LIRC); !ok {
+			return fmt.Errorf("Module %v cannot be cast to gopi.LIRC", module)
 		}
 	}
 	// success
