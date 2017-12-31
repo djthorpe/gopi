@@ -20,6 +20,9 @@ import (
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/hw/linux"
 	_ "github.com/djthorpe/gopi/sys/logger"
+
+	// Codecs
+	lirc_codec "./lirc_codec"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,12 +32,15 @@ func EventLoop(app *gopi.AppInstance, done chan struct{}) error {
 		return errors.New("Missing LIRC module")
 	}
 
+	sony_decoder := lirc_codec.NewSonyDecoder(app.Logger)
 	edge := app.LIRC.Subscribe()
+
 FOR_LOOP:
 	for {
 		select {
 		case evt := <-edge:
 			fmt.Println("EVENT: ", evt)
+			sony_decoder.Receive(evt.(gopi.LIRCEvent))
 		case <-done:
 			break FOR_LOOP
 		}
