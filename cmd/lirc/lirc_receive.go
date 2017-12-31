@@ -33,6 +33,7 @@ func EventLoop(app *gopi.AppInstance, done chan struct{}) error {
 	}
 
 	sony_decoder := lirc_codec.NewSonyDecoder(app.Logger)
+	philips_decoder := lirc_codec.NewPhilipsRC5Decoder(app.Logger)
 	edge := app.LIRC.Subscribe()
 
 FOR_LOOP:
@@ -41,6 +42,7 @@ FOR_LOOP:
 		case evt := <-edge:
 			fmt.Println("EVENT: ", evt)
 			sony_decoder.Receive(evt.(gopi.LIRCEvent))
+			philips_decoder.Receive(evt.(gopi.LIRCEvent))
 		case <-done:
 			break FOR_LOOP
 		}
