@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	SONY_MIN_MESSAGES        = 24
 	SONY_TOLERANCE           = 35
 	SONY_HEADER_PULSE uint32 = 2499
 	SONY_HEADER_SPACE uint32 = 526
@@ -28,6 +27,7 @@ type SonyDecoder struct {
 	space_repeat_min, space_repeat_max uint32
 	log                                gopi.Logger
 	value                              uint64
+	bits                               uint
 }
 
 func NewSonyDecoder(log gopi.Logger) *SonyDecoder {
@@ -47,6 +47,7 @@ func (this *SonyDecoder) Receive(e gopi.LIRCEvent) {
 	// Reset value
 	if this.state == 0 {
 		this.value = 0
+		this.bits = 0
 	}
 
 	switch this.state {
@@ -75,10 +76,17 @@ func (this *SonyDecoder) Receive(e gopi.LIRCEvent) {
 	case 3:
 		if isSpace(e, this.space_bit_min, this.space_bit_max) {
 			this.value = this.value << 1
-			this.state = 2
+			this.bits = this.bits + 1
+			if this.bits == 11 {
+				this.log.Debug("EJECT=%X", this.value)
+				this.state = 0
+			} else {
+				this.state = 2
+			}
 		} else if isSpace(e, this.space_repeat_min, this.space_repeat_max) {
-			//this.value = this.value << 1
-			this.log.Debug("EJECT=%X", this.value)
+			if this.bits == 11 {
+				this.log.Debug("EJECT=%X", this.value)
+			}
 			this.state = 0
 		} else {
 			this.state = 0
