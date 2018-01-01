@@ -154,7 +154,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 		// Report open (once after logger module is created)
 		if this.Logger != nil {
 			once.Do(func() {
-				this.Logger.Debug("gopi.AppInstance.Open()")
+				this.Logger.Debug("gopi.AppInstance.Open(){ modules=%v }", config.Modules)
 			})
 		}
 		if module.New != nil {

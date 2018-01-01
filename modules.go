@@ -36,7 +36,7 @@ type Module struct {
 	Config   ModuleConfigFunc
 	New      ModuleNewFunc
 	Requires []string
-	edges    []*Module
+	edges    *module_array
 }
 
 // ModuleNewFunc is the signature for creating a new module instance
@@ -45,6 +45,13 @@ type ModuleNewFunc func(*AppInstance) (Driver, error)
 // ModuleConfigFunc is the signature for setting up the configuration
 // for creating the app
 type ModuleConfigFunc func(*AppConfig)
+
+// module_array is an internal structure which efficiently allows
+// adding and removing of elements
+type module_array struct {
+	modules    []*Module
+	module_map map[*Module]bool
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -161,38 +168,60 @@ func ModuleByName(n string) *Module {
 // last, so that they can be initialized in the right order when
 // creation is to occur, and vice-versa on application exit
 func ModuleWithDependencies(names ...string) ([]*Module, error) {
-	// Create modules array
-	modules := make([]*Module, 0, len(names))
+	unresolved := newModuleArray()
+	resolved := newModuleArray()
 
 	// Iterate through the modules adding the edges to each module
 	for _, name := range names {
-		// Find module and generate array of dependencies
-		if module := ModuleByName(name); module == nil {
+		if module := ModuleByName(name); module != nil {
+			if err := resolveModuleDependencies(module, unresolved, resolved); err != nil {
+				return nil, err
+			}
+		} else {
 			return nil, fmt.Errorf("Module not registered with name: %v", name)
-		} else if err := addModuleEdges(module); err != nil {
-			return nil, err
-		} else {
-			modules = append(modules, module)
 		}
 	}
+	return resolved.Array(), nil
+}
 
-	// Iterate through the modules again, resolving dependencies
-	dependencies := make([]*Module, 0, len(modules))
-	for _, module := range modules {
-		fmt.Printf("resolving dependencies for %v\n", module.Identifier())
-		fmt.Printf(" ...requires=%v\n", module.Requires)
-		if resolved, _, err := resolveModuleDependencies(module, nil, nil); err != nil {
-			fmt.Printf(" ...returns error %v\n", err)
-			return nil, err
-		} else {
-			fmt.Printf(" ...satisfies dependencies with %v\n", resolved)
-			dependencies = append(dependencies, resolved...)
+////////////////////////////////////////////////////////////////////////////////
+// module_array implementation
+
+func newModuleArray() *module_array {
+	this := new(module_array)
+	this.modules = make([]*Module, 0)
+	this.module_map = make(map[*Module]bool)
+	return this
+}
+
+func (this *module_array) Append(module *Module) {
+	if _, exists := this.module_map[module]; exists == true {
+		return
+	}
+	this.modules = append(this.modules, module)
+	this.module_map[module] = true
+}
+
+func (this *module_array) Remove(module *Module) {
+	if _, exists := this.module_map[module]; exists == false {
+		return
+	}
+	for i, m := range this.modules {
+		if m == module {
+			this.modules = append(this.modules[:i], this.modules[i+1:]...)
+			break
 		}
 	}
+	delete(this.module_map, module)
+}
 
-	// Return modules in reverse order to ensure initialization
-	// it done in the correct order
-	return dependencies, nil
+func (this *module_array) Contains(module *Module) bool {
+	_, exists := this.module_map[module]
+	return exists
+}
+
+func (this *module_array) Array() []*Module {
+	return this.modules
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -205,59 +234,45 @@ func addModuleEdges(module *Module) error {
 	if module.edges != nil {
 		return nil
 	}
-	// make an empty slice with capacity for edges
-	module.edges = make([]*Module, 0, len(module.Requires))
+	// add edges
+	module.edges = newModuleArray()
 	for _, name := range module.Requires {
 		// Find module and generate array of dependencies
 		if dependency := ModuleByName(name); dependency == nil {
 			return fmt.Errorf("Module not registered with name: %v (required by %v)", name, module.Identifier())
-		} else if dependency.In(module.edges) == false {
-			module.edges = append(module.edges, dependency)
+		} else {
+			module.edges.Append(dependency)
 		}
 	}
-
+	// success
 	return nil
 }
 
-func resolveModuleDependencies(module *Module, resolved []*Module, seen []*Module) ([]*Module, []*Module, error) {
-	var err error
-	if resolved == nil {
-		resolved = make([]*Module, 0)
+func resolveModuleDependencies(module *Module, unresolved, resolved *module_array) error {
+	// Resolve edges if this module hasn't been seen yet
+	if module.edges == nil {
+		if err := addModuleEdges(module); err != nil {
+			return err
+		}
 	}
-	if seen == nil {
-		seen = make([]*Module, 0)
-	}
-	fmt.Printf("   ....adding %v to seen\n", module.Identifier())
-	seen = append(seen, module)
-	for _, edge := range module.edges {
-		if edge.In(resolved) == false {
-			if edge.In(seen) {
-				return nil, nil, fmt.Errorf("Circular reference for %v required by %v", edge.Identifier(), module.Identifier())
+	// Mark as unresolved
+	unresolved.Append(module)
+	// Now resolve each edge as necesary
+	for _, edge := range module.edges.Array() {
+		if resolved.Contains(edge) == false {
+			if unresolved.Contains(edge) {
+				return fmt.Errorf("Circular module reference detected: %v => %v", module.Name, edge.Name)
 			}
-			fmt.Printf("   ....resolving dependencies for %v\n", edge.Identifier())
-			if resolved, seen, err = resolveModuleDependencies(edge, resolved, seen); err != nil {
-				return nil, nil, err
+			if err := resolveModuleDependencies(edge, unresolved, resolved); err != nil {
+				return err
 			}
 		}
 	}
-	resolved = append(resolved, module)
-	fmt.Printf("   ....resolved for %v is %v\n", module.Identifier(), resolved)
-	return resolved, seen, nil
-}
-
-// Equals returns true if one module is equal to another one
-func (this *Module) Equals(other *Module) bool {
-	return (this == other)
-}
-
-// In returns true if one module is in array of other modules
-func (this *Module) In(modules []*Module) bool {
-	for _, other := range modules {
-		if this.Equals(other) {
-			return true
-		}
-	}
-	return false
+	// Module has been seen and can be removed from unresolved
+	resolved.Append(module)
+	unresolved.Remove(module)
+	// Return success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
