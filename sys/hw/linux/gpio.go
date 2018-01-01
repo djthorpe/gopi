@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
@@ -283,6 +284,9 @@ func (this *gpio) SetPinMode(pin gopi.GPIOPin, mode gopi.GPIOMode) {
 		if err := setDirection(pin, "in"); err != nil {
 			this.log.Error("Unable to write direction to %v: %v", pin, err)
 		}
+		if err := writeEdge(pin, "none"); err != nil {
+			this.log.Error("Unable to write edge to %v: %v", pin, err)
+		}
 	case gopi.GPIO_OUTPUT:
 		if err := setDirection(pin, "out"); err != nil {
 			this.log.Error("Unable to write direction to %v: %v", pin, err)
@@ -500,10 +504,21 @@ func filenameForPin(pin gopi.GPIOPin, filename string) string {
 func exportPin(pin gopi.GPIOPin) error {
 	if err := writeFile(GPIO_EXPORT, strconv.FormatUint(uint64(pin), 10)+"\n"); err != nil {
 		return err
+	} else {
+		// Wait for 50ms for things to settle
+		time.Sleep(50 * time.Millisecond)
 	}
-	// Set edge to 'none'
-	if err := writeEdge(pin, "none"); err != nil {
+	// check to make sure pin is exported
+	if isExported(pin) == false {
+		return fmt.Errorf("exportPin %v failed", pin)
+	}
+	// Set edge to 'none' if direction is 'in'
+	if dir, err := direction(pin); err != nil {
 		return err
+	} else if dir == "in" {
+		if err := writeEdge(pin, "none"); err != nil {
+			return err
+		}
 	}
 	// Success
 	return nil
@@ -521,8 +536,8 @@ func direction(pin gopi.GPIOPin) (string, error) {
 	}
 }
 
-func setDirection(pin gopi.GPIOPin, direction string) error {
-	return writeFile(filenameForPin(pin, "direction"), direction+"\n")
+func setDirection(pin gopi.GPIOPin, value string) error {
+	return writeFile(filenameForPin(pin, "direction"), value+"\n")
 }
 
 func readPin(pin gopi.GPIOPin) (string, error) {
