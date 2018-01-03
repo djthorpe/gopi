@@ -10,7 +10,7 @@
 This repository contains an application framework for the Go language, which
 will allow you to develop applications which utilize a number of features
 of your computer. It's targetted at the Raspberry Pi but maybe parts of it
-would work on general Linux and Macintosh environments.
+would work in general environments like Linux and Macintosh.
 
 The following features are supported on various platforms:
 
@@ -20,6 +20,7 @@ The following features are supported on various platforms:
   * Font loading and rendering in bitmap and vector forms
   * Input devices like the mouse, keyboard and touchscreen
   * Infrared transmission and receiving, for example for remote controls
+  * Remote Procedure Calling, service announcement and discovery
 
 It would also be great to support the following features in the future:
 
