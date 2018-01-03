@@ -7,11 +7,26 @@
   </td>
 </tr></table>
 
-This repository contains a golang framework for the Raspberry Pi, which
-will allow you to develop applications which utilize the Graphics Processing
-Unit (GPU) for image and video encoding/decoding and 2D and 3D graphics,
-and various external hardware devices like mouse, keyboard, touchscreen,
-GPIO, I2C and Camera.
+This repository contains an application framework for the Go language, which
+will allow you to develop applications which utilize a number of features
+of your computer. It's targetted at the Raspberry Pi but maybe parts of it
+would work on general Linux and Macintosh environments.
+
+The following features are supported on various platforms:
+
+  * The GPIO device, I2C and SPI interfaces
+  * Display and display surfaces, bitmaps and vector graphics
+  * GPU acceleration for 2D graphics
+  * Font loading and renering
+  * Input devices like mouse, keyboard and touchscreen
+  * Infrared transmission and receiving, for example for remote controls
+
+It would also be great to support the following features in the future:
+
+  * Image and video encoding/decoding, including utilizing hardware
+    acceleration
+  * Connected cameras
+  * 3D graphics
 
 More information on usage is available at http://djthorpe.github.io/gopi/
 
