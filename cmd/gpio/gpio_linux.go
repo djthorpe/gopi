@@ -64,30 +64,12 @@ func runLoop(app *gopi.AppInstance, done chan struct{}) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func main_inner() int {
+func main() {
+	// Create the configuration
 	// Create the configuration
 	config := gopi.NewAppConfig("gpio")
 	config.AppFlags.FlagUint("pin", 27, "Logical GPIO Pin to watch")
 
-	// Create the application
-	app, err := gopi.NewAppInstance(config)
-	if err != nil {
-		if err != gopi.ErrHelp {
-			fmt.Fprintln(os.Stderr, err)
-			return -1
-		}
-		return 0
-	}
-	defer app.Close()
-
-	// Run the application
-	if err := app.Run(runLoop, eventLoop); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return -1
-	}
-	return 0
-}
-
-func main() {
-	os.Exit(main_inner())
+	// Run the command line tool
+	os.Exit(gopi.CommandLineTool(config, runLoop, eventLoop))
 }

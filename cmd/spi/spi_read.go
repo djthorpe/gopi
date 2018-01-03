@@ -10,7 +10,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/djthorpe/gopi"
@@ -20,7 +19,7 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func runLoop(app *gopi.AppInstance, done chan struct{}) error {
+func mainLoop(app *gopi.AppInstance, done chan struct{}) error {
 
 	if app.SPI == nil {
 		return app.Logger.Error("Missing SPI module instance")
@@ -33,29 +32,10 @@ func runLoop(app *gopi.AppInstance, done chan struct{}) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func main_inner() int {
-	// Create the configuration
+func main() {
+	// Create the configuration, load the spi instance
 	config := gopi.NewAppConfig("spi")
 
-	// Create the application
-	app, err := gopi.NewAppInstance(config)
-	if err != nil {
-		if err != gopi.ErrHelp {
-			fmt.Fprintln(os.Stderr, err)
-			return -1
-		}
-		return 0
-	}
-	defer app.Close()
-
-	// Run the application
-	if err := app.Run(runLoop); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return -1
-	}
-	return 0
-}
-
-func main() {
-	os.Exit(main_inner())
+	// Run the command line tool
+	os.Exit(gopi.CommandLineTool(config, mainLoop))
 }

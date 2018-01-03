@@ -15,7 +15,7 @@ import (
 	"os"
 
 	// Frameworks
-	"github.com/djthorpe/gopi"
+	gopi "github.com/djthorpe/gopi"
 
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/logger"
@@ -44,33 +44,12 @@ func helloWorld(app *gopi.AppInstance, done chan struct{}) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func main_inner() int {
+func main() {
 	// Create the configuration
 	config := gopi.NewAppConfig()
 	config.AppFlags.FlagString("name", "", "Your name")
 	config.AppFlags.FlagBool("wait", false, "Wait for CTRL+C interrupt to end")
 
-	// Create the application
-	app, err := gopi.NewAppInstance(config)
-	if err != nil {
-		if err != gopi.ErrHelp {
-			fmt.Fprintln(os.Stderr, err)
-			return -1
-		}
-		return 0
-	}
-	defer app.Close()
-
-	// Run the application - call "helloWorld" as the
-	// go routine in the main thread. Subsequent arguments are go routines
-	// which are created in other threads
-	if err := app.Run(helloWorld); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return -1
-	}
-	return 0
-}
-
-func main() {
-	os.Exit(main_inner())
+	// Run the command line tool
+	os.Exit(gopi.CommandLineTool(config, helloWorld))
 }

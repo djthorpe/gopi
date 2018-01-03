@@ -38,7 +38,9 @@ FOR_LOOP:
 	for {
 		select {
 		case evt := <-edge:
-			handleEvent(app, evt.(gopi.TimerEvent))
+			if evt != nil {
+				handleEvent(app, evt.(gopi.TimerEvent))
+			}
 		case <-done:
 			break FOR_LOOP
 		}
@@ -49,7 +51,7 @@ FOR_LOOP:
 	return nil
 }
 
-func runLoop(app *gopi.AppInstance, done chan struct{}) error {
+func mainLoop(app *gopi.AppInstance, done chan struct{}) error {
 
 	app.Timer.NewInterval(1*time.Second, "Periodic Timer", false)
 	app.Timer.NewTimeout(4*time.Second, "Timeout")
@@ -63,28 +65,10 @@ func runLoop(app *gopi.AppInstance, done chan struct{}) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func main_inner() int {
-	// Create the configuration
-	config := gopi.NewAppConfig("timer")
-	// Create the application
-	app, err := gopi.NewAppInstance(config)
-	if err != nil {
-		if err != gopi.ErrHelp {
-			fmt.Fprintln(os.Stderr, err)
-			return -1
-		}
-		return 0
-	}
-	defer app.Close()
-
-	// Run the application
-	if err := app.Run(runLoop, eventLoop); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return -1
-	}
-	return 0
-}
-
 func main() {
-	os.Exit(main_inner())
+	// Create the configuration, load the timer instance
+	config := gopi.NewAppConfig("timer")
+
+	// Run the command line tool
+	os.Exit(gopi.CommandLineTool(config, mainLoop, eventLoop))
 }
