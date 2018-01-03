@@ -30,6 +30,7 @@ It would also be great to support the following features in the future:
   * Audio devices
 
 More information on usage is available at http://djthorpe.github.io/gopi/
+In order to get started, build some of the examples in the "cmd" folder.
 
 # Requirements
 
