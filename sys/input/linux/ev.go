@@ -191,35 +191,34 @@ func (this *device) evDecodeSyn(raw_event *evEvent) gopi.InputEvent {
 		device:    this,
 		timestamp: time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
 	}
-	/*
-		// Mouse and keyboard movements
-		if device.rel_position.Equals(khronos.EGLZeroPoint) == false {
-			event.EventType = hw.INPUT_EVENT_RELPOSITION
-			event.Relative = device.rel_position
-			device.rel_position = khronos.EGLZeroPoint
-			device.last_position = device.position
-		} else if device.position.Equals(device.last_position) == false {
-			event.EventType = hw.INPUT_EVENT_ABSPOSITION
-			device.last_position = device.position
-		} else if device.key_action == EV_VALUE_KEY_UP {
-			event.EventType = hw.INPUT_EVENT_KEYRELEASE
-			event.Keycode = hw.InputKeyCode(device.key_code)
-			event.Scancode = device.scan_code
-			device.key_action = EV_VALUE_KEY_NONE
-		} else if device.key_action == EV_VALUE_KEY_DOWN {
-			event.EventType = hw.INPUT_EVENT_KEYPRESS
-			event.Keycode = hw.InputKeyCode(device.key_code)
-			event.Scancode = device.scan_code
-			device.key_action = EV_VALUE_KEY_NONE
-		} else if device.key_action == EV_VALUE_KEY_REPEAT {
-			event.EventType = hw.INPUT_EVENT_KEYREPEAT
-			event.Keycode = hw.InputKeyCode(device.key_code)
-			event.Scancode = device.scan_code
-			device.key_action = EV_VALUE_KEY_NONE
-		} else {
-			return nil
-		}
-	*/
+	// Mouse and keyboard movements
+	if this.rel_position.Equals(gopi.ZeroPoint) == false {
+		event.EventType = gopi.INPUT_EVENT_RELPOSITION
+		event.Relative = this.rel_position
+		this.rel_position = gopi.ZeroPoint
+		this.last_position = device.position
+	} else if this.position.Equals(this.last_position) == false {
+		event.event_type = gopi.INPUT_EVENT_ABSPOSITION
+		this.last_position = device.position
+	} else if this.key_action == EV_VALUE_KEY_UP {
+		event.event_type = gopi.INPUT_EVENT_KEYRELEASE
+		event.key_code = gopi.KeyCode(device.key_code)
+		event.scan_code = this.scan_code
+		this.key_action = EV_VALUE_KEY_NONE
+	} else if this.key_action == EV_VALUE_KEY_DOWN {
+		event.event_type = gopi.INPUT_EVENT_KEYPRESS
+		event.key_code = gopi.InputKeyCode(this.key_code)
+		event.scan_code = this.scan_code
+		this.key_action = EV_VALUE_KEY_NONE
+	} else if device.key_action == EV_VALUE_KEY_REPEAT {
+		event.event_type = gopi.INPUT_EVENT_KEYREPEAT
+		event.key_code = gopi.InputKeyCode(device.key_code)
+		event.scan_code = device.scan_code
+		this.key_action = EV_VALUE_KEY_NONE
+	} else {
+		return nil
+	}
+
 	// Check for multi-touch positional changes
 	/*slot := device.slots[device.slot]
 	if slot.active {
