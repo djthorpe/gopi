@@ -29,9 +29,7 @@ COMMANDS=(
     timer/timer_tester.go
     gpio/gpio_ctrl.go
     i2c/i2c_detect.go
-    spi/spi_read.go
-    lirc/lirc_receive.go
-    lirc/lirc_receive.go
+    spi/spi_ctrl.go
     rpc/rpc_discovery.go
 )
 
