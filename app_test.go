@@ -132,7 +132,7 @@ func TestRunTasks_001(t *testing.T) {
 	config.Debug = true
 	if app, err := gopi.NewAppInstance(config); err != nil {
 		t.Error(err)
-	} else if err := app.Run(Task001, Task002); err != nil {
+	} else if err := app.Run(MainTask, Task001, Task002); err != nil {
 		t.Error(err)
 	}
 }
@@ -143,19 +143,8 @@ func TestRunTasks_002(t *testing.T) {
 	config.Debug = true
 	if app, err := gopi.NewAppInstance(config); err != nil {
 		t.Error(err)
-	} else if err := app.Run(Task001, Task002, Task003); err != nil {
+	} else if err := app.Run(MainTask, Task001, Task002, Task003); err != nil {
 		t.Error(err)
-	}
-}
-
-func TestRunTasks_003(t *testing.T) {
-	// Create an application with no tasks, which should return an error
-	config := gopi.NewAppConfig()
-	config.Debug = true
-	if app, err := gopi.NewAppInstance(config); err != nil {
-		t.Error(err)
-	} else if err := app.Run(); err != gopi.ErrNoTasks {
-		t.Error("Unexpected response, expected gopi.ErrNoTasks")
 	}
 }
 
@@ -166,7 +155,7 @@ func TestRunTasks_004(t *testing.T) {
 	config.Debug = true
 	if app, err := gopi.NewAppInstance(config); err != nil {
 		t.Error(err)
-	} else if err := app.Run(Task001, Task002); err != nil {
+	} else if err := app.Run(MainTask, Task001, Task002); err != nil {
 		t.Error(err)
 	}
 	if time.Since(timer) < time.Duration(200*time.Millisecond) {
@@ -181,7 +170,7 @@ func TestRunTasks_005(t *testing.T) {
 	config.Debug = true
 	if app, err := gopi.NewAppInstance(config); err != nil {
 		t.Error(err)
-	} else if err := app.Run(Task001, Task002, Task003, Task010); err != nil {
+	} else if err := app.Run(MainTask, Task001, Task002, Task003, Task010); err != nil {
 		t.Error(err)
 	}
 	if time.Since(timer) < time.Duration(1000*time.Millisecond) {
@@ -250,47 +239,55 @@ func TestRunSignal_005(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 // TASKS
 
-func HelloWorld(app *gopi.AppInstance, done chan struct{}) error {
+func HelloWorld(app *gopi.AppInstance, done chan<- struct{}) error {
 	fmt.Println("Hello, World")
+	done <- gopi.DONE
 	return nil
 }
 
-func ReturnAnError(app *gopi.AppInstance, done chan struct{}) error {
+func ReturnAnError(app *gopi.AppInstance, done chan<- struct{}) error {
+	done <- gopi.DONE
 	return gopi.ErrAppError
 }
 
-func CheckLogger(app *gopi.AppInstance, done chan struct{}) error {
+func CheckLogger(app *gopi.AppInstance, done chan<- struct{}) error {
 	if app.Logger == nil {
 		return errors.New("Expected a logger object")
 	}
+	done <- gopi.DONE
 	return nil
 }
 
-func Task001(app *gopi.AppInstance, done chan struct{}) error {
+func MainTask(app *gopi.AppInstance, done chan<- struct{}) error {
+	done <- gopi.DONE
+	return nil
+}
+
+func Task001(app *gopi.AppInstance, done <-chan struct{}) error {
 	app.Logger.Info("Running Task 001")
 	time.Sleep(100 * time.Millisecond)
 	return nil
 }
 
-func Task002(app *gopi.AppInstance, done chan struct{}) error {
+func Task002(app *gopi.AppInstance, done <-chan struct{}) error {
 	app.Logger.Info("Running Task 002")
 	time.Sleep(200 * time.Millisecond)
 	return nil
 }
 
-func Task003(app *gopi.AppInstance, done chan struct{}) error {
+func Task003(app *gopi.AppInstance, done <-chan struct{}) error {
 	app.Logger.Info("Running Task 003")
 	time.Sleep(300 * time.Millisecond)
 	return nil
 }
 
-func Task010(app *gopi.AppInstance, done chan struct{}) error {
+func Task010(app *gopi.AppInstance, done <-chan struct{}) error {
 	app.Logger.Info("Running Task 010")
 	time.Sleep(1000 * time.Millisecond)
 	return nil
 }
 
-func MainThreadSignal(app *gopi.AppInstance, done chan struct{}) error {
+func MainThreadSignal(app *gopi.AppInstance, done chan<- struct{}) error {
 	app.Logger.Debug("Main thread: waiting for 1 second to complete")
 	time.Sleep(1 * time.Second)
 	app.Logger.Debug("Main thread: signalling we are done")
@@ -299,14 +296,14 @@ func MainThreadSignal(app *gopi.AppInstance, done chan struct{}) error {
 	return nil
 }
 
-func WaitTask001(app *gopi.AppInstance, done chan struct{}) error {
+func WaitTask001(app *gopi.AppInstance, done <-chan struct{}) error {
 	app.Logger.Debug("Wait Task 001 thread: waiting for done")
 	_ = <-done
 	app.Logger.Debug("Wait Task 001 thread: got done")
 	return nil
 }
 
-func WaitTask002(app *gopi.AppInstance, done chan struct{}) error {
+func WaitTask002(app *gopi.AppInstance, done <-chan struct{}) error {
 	app.Logger.Debug("Wait Task 002 thread: waiting for done")
 	_ = <-done
 	app.Logger.Debug("Wait Task 002 thread: got done, waiting for another 1 second")
@@ -315,7 +312,7 @@ func WaitTask002(app *gopi.AppInstance, done chan struct{}) error {
 	return nil
 }
 
-func WaitTask003(app *gopi.AppInstance, done chan struct{}) error {
+func WaitTask003(app *gopi.AppInstance, done <-chan struct{}) error {
 	app.Logger.Debug("WaitTask003 thread: doing work occasionally")
 	t := time.NewTicker(200 * time.Millisecond)
 OUTER_LOOP:
@@ -333,7 +330,7 @@ OUTER_LOOP:
 	return nil
 }
 
-func WaitTask004(app *gopi.AppInstance, done chan struct{}) error {
+func WaitTask004(app *gopi.AppInstance, done <-chan struct{}) error {
 	app.Logger.Debug("WaitTask004 thread: doing work occasionally")
 	t := time.NewTicker(200 * time.Millisecond)
 OUTER_LOOP:

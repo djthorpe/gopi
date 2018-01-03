@@ -51,9 +51,15 @@ type AppInstance struct {
 	byorder  []Driver
 }
 
-// Task defines a function which can run, and has a channel which
-// indicates when the main thread has finished
-type Task func(app *AppInstance, done chan struct{}) error
+// MainTask defines a function which can run as a main task
+// and has a channel which can be written to when the task
+// has completed
+type MainTask func(app *AppInstance, done chan<- struct{}) error
+
+// BackgroundTask defines a function which can run as a
+// background task and has a channel which receives a value of gopi.DONE
+// then the background task should complete
+type BackgroundTask func(app *AppInstance, done <-chan struct{}) error
 
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -182,32 +188,28 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 }
 
 // Run all tasks simultaneously, the first task in the list on the main thread and the
-// remaining tasks elsewhere.
-func (this *AppInstance) Run(tasks ...Task) error {
+// remaining tasks background tasks.
+func (this *AppInstance) Run(main_task MainTask, background_tasks ...BackgroundTask) error {
 	// Lock this to run in the current operating system thread (ie, the main thread)
 	runtime.LockOSThread()
 
-	// if no tasks then return
-	if len(tasks) == 0 {
-		return ErrNoTasks
-	}
-
 	// create the channels we'll use to signal the goroutines
-	channels := make([]chan struct{}, len(tasks))
-	for i := range tasks {
-		channels[i] = make(chan struct{})
+	channels := make([]chan struct{}, len(background_tasks)+1)
+	channels[0] = make(chan struct{})
+	for i := range background_tasks {
+		channels[i+1] = make(chan struct{})
 	}
 
 	// if more than one task, then give them a channel which is signalled
 	// by the main thread for ending
 	var wg sync.WaitGroup
-	if len(tasks) > 1 {
-		for i, task := range tasks[1:] {
+	if len(background_tasks) > 0 {
+		for i, task := range background_tasks {
 			wg.Add(1)
-			go func(i int, t Task) {
+			go func(i int, t BackgroundTask) {
 				defer wg.Done()
 				if err := t(this, channels[i+1]); err != nil {
-					this.Logger.Error("Error: %v [task %v]", err, i+1)
+					this.Logger.Error("Error: %v [background_task %v]", err, i)
 				}
 			}(i, task)
 		}
@@ -220,16 +222,16 @@ func (this *AppInstance) Run(tasks ...Task) error {
 			this.Logger.Debug2("Main thread done")
 		}
 		// Signal other tasks to complete
-		for i := 1; i < len(tasks); i++ {
-			channels[i] <- DONE
+		for i := 0; i < len(background_tasks); i++ {
+			channels[i+1] <- DONE
 		}
 	}()
 
 	// Now run main task
-	err := tasks[0](this, channels[0])
+	err := main_task(this, channels[0])
 
 	// Wait for other tasks to finish
-	if len(tasks) > 1 {
+	if len(background_tasks) > 0 {
 		if this.Logger != nil {
 			this.Logger.Debug2("Waiting for tasks to finish")
 		}

@@ -19,7 +19,7 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func mainLoop(app *gopi.AppInstance, done chan struct{}) error {
+func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 
 	if app.SPI == nil {
 		return app.Logger.Error("Missing SPI module instance")

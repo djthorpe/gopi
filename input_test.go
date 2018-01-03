@@ -11,7 +11,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // CREATE INPUT
 
-func TestCreateConfig_000(t *testing.T) {
+func TestCreateInputConfig_001(t *testing.T) {
 	if logger, err := gopi.Open(logger.Config{}, nil); err != nil {
 		t.Fatal("Unable to create logger driver")
 	} else {

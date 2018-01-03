@@ -15,7 +15,7 @@ import (
 
 // CommandLineTool is the basic form of running a command-line
 // application, you generally call this from the main() function
-func CommandLineTool(config AppConfig, tasks ...Task) int {
+func CommandLineTool(config AppConfig, main_task MainTask, background_tasks ...BackgroundTask) int {
 
 	// Create the application
 	app, err := NewAppInstance(config)
@@ -29,7 +29,7 @@ func CommandLineTool(config AppConfig, tasks ...Task) int {
 	defer app.Close()
 
 	// Run the application
-	if err := app.Run(tasks...); err != nil {
+	if err := app.Run(main_task, background_tasks...); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return -1
 	}

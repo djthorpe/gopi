@@ -23,7 +23,7 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func helloWorld(app *gopi.AppInstance, done chan struct{}) error {
+func helloWorld(app *gopi.AppInstance, done chan<- struct{}) error {
 	// If -name argument is used then use that, else output generic message
 	if name, exists := app.AppFlags.GetString("name"); exists {
 		fmt.Println("Hello,", name)

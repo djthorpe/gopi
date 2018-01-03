@@ -29,7 +29,7 @@ func handleEvent(app *gopi.AppInstance, evt gopi.TimerEvent) {
 	}
 }
 
-func eventLoop(app *gopi.AppInstance, done chan struct{}) error {
+func eventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 
 	// Subscribe to timers
 	edge := app.Timer.Subscribe()
@@ -51,7 +51,7 @@ FOR_LOOP:
 	return nil
 }
 
-func mainLoop(app *gopi.AppInstance, done chan struct{}) error {
+func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 
 	app.Timer.NewInterval(1*time.Second, "Periodic Timer", false)
 	app.Timer.NewTimeout(4*time.Second, "Timeout")

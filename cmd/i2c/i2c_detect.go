@@ -20,7 +20,7 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func runLoop(app *gopi.AppInstance, done chan struct{}) error {
+func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 
 	if app.I2C == nil {
 		return app.Logger.Error("Missing I2C module instance")
@@ -46,5 +46,5 @@ func main() {
 	config := gopi.NewAppConfig("i2c")
 
 	// Run the command line tool
-	os.Exit(gopi.CommandLineTool(config, runLoop))
+	os.Exit(gopi.CommandLineTool(config, mainLoop))
 }

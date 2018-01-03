@@ -76,7 +76,7 @@ func edgePins(app *gopi.AppInstance) ([]gopi.GPIOPin, error) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func eventLoop(app *gopi.AppInstance, done chan struct{}) error {
+func eventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 	app.Logger.Debug("Started eventLoop")
 FOR_LOOP:
 	for {
@@ -93,7 +93,7 @@ FOR_LOOP:
 	return nil
 }
 
-func mainLoop(app *gopi.AppInstance, done chan struct{}) error {
+func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 	watching := false
 
 	// Get logical pins
@@ -152,7 +152,6 @@ func mainLoop(app *gopi.AppInstance, done chan struct{}) error {
 		if edge != nil {
 			fmt.Printf("Watching for input pin changes, press CTRL+C to abort\n")
 			app.WaitForSignal()
-			app.Logger.Debug("app.WaitForSignal() ended")
 			app.GPIO.Unsubscribe(edge)
 		} else {
 			fmt.Printf("Edge detection not supported\n")
