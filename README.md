@@ -20,7 +20,7 @@ The following features are supported on various platforms:
   * Font loading and rendering in bitmap and vector forms
   * Input devices like the mouse, keyboard and touchscreen
   * Infrared transmission and receiving, for example for remote controls
-  * Remote Procedure Calling, service announcement and discovery
+  * Microservices, announcement and discovery
 
 It would also be great to support the following features in the future:
 
