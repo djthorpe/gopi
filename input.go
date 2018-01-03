@@ -9,31 +9,33 @@
 package gopi
 
 import (
-	"context"
 	"strings"
 	"time"
 )
 
-// Input driver allows you to open and close input devices
+// InputManager allows you to open and close input devices
 // and subscribe to events emitted by devices
-type Input interface {
+type InputManager interface {
 	Driver
 	Publisher
 
 	// Open Devices by name, type and bus
 	OpenDevicesByName(name string, flags InputDeviceType, bus InputDeviceBus) ([]InputDevice, error)
 
-	// Add a device to managed input devices
-	AddDevice(device InputDevice) error
-
 	// Close Device
 	CloseDevice(device InputDevice) error
 
-	// Return a list of open devices
-	GetOpenDevices() []InputDevice
+	/*
+		// Add a device to managed input devices
+		AddDevice(device InputDevice) error
 
-	// Watch for events with context
-	Watch(ctx context.Context) error
+
+		// Return a list of open devices
+		GetOpenDevices() []InputDevice
+
+		// Watch for events with context
+		Watch(ctx context.Context) error
+	*/
 }
 
 type InputDevice interface {

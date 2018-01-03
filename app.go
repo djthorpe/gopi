@@ -37,11 +37,12 @@ type AppInstance struct {
 	Logger   Logger
 	Hardware Hardware
 	Display  Display
+	Input    InputManager
+	Layout   Layout
+	Timer    Timer
 	GPIO     GPIO
 	I2C      I2C
 	SPI      SPI
-	Layout   Layout
-	Timer    Timer
 	LIRC     LIRC
 	debug    bool
 	verbose  bool
@@ -285,6 +286,7 @@ func (this *AppInstance) Close() error {
 	this.Hardware = nil
 	this.Logger = nil
 	this.Timer = nil
+	this.Input = nil
 	this.I2C = nil
 	this.GPIO = nil
 	this.SPI = nil
@@ -371,6 +373,10 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 	case MODULE_TYPE_LIRC:
 		if this.LIRC, ok = driver.(LIRC); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.LIRC", module)
+		}
+	case MODULE_TYPE_INPUT:
+		if this.Input, ok = driver.(InputManager); !ok {
+			return fmt.Errorf("Module %v cannot be cast to gopi.InputManager", module)
 		}
 	}
 	// success

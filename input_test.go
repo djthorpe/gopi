@@ -21,8 +21,8 @@ func TestCreateInputConfig_001(t *testing.T) {
 		} else {
 			defer input.Close()
 
-			if input2, ok := input.(gopi.Input); ok == false {
-				t.Fatal("Unable to cast input driver to gopi.Input")
+			if input2, ok := input.(gopi.InputManager); ok == false {
+				t.Fatal("Unable to cast input driver to gopi.InputManager")
 			} else {
 				t.Log("Input Driver=", input2)
 			}
@@ -148,12 +148,12 @@ func TestCreateInput_003(t *testing.T) {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func CreateDriver(t *testing.T, logger gopi.Logger) gopi.Input {
+func CreateDriver(t *testing.T, logger gopi.Logger) gopi.InputManager {
 	if driver, err := gopi.Open(input.Input{}, logger); err != nil {
-		t.Fatal("Unable to create input driver:", err)
+		t.Fatal("Unable to create input manager:", err)
 		return nil
 	} else {
-		return driver.(gopi.Input)
+		return driver.(gopi.InputManager)
 	}
 }
 
