@@ -22,9 +22,6 @@ type Publisher interface {
 
 	// Unsubscribe from events emitted
 	Unsubscribe(<-chan Event)
-
-	// Emit an event to subscribers
-	Emit(Event)
 }
 
 // Event is a generic event which is emitted through a channel

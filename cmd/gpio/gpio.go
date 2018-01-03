@@ -18,7 +18,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 
 	// Modules
-	_ "github.com/djthorpe/gopi/sys/hw/rpi"
+	"./gpio_sys"
 	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
@@ -52,7 +52,7 @@ func runLoop(app *gopi.AppInstance, done chan struct{}) error {
 
 func main() {
 	// Create the configuration, load the gpio instance
-	config := gopi.NewAppConfig("gpio")
+	config := gopi.NewAppConfig(gpio_sys.MODULE_NAMES)
 
 	// Run the command line tool
 	os.Exit(gopi.CommandLineTool(config, runLoop))

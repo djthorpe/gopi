@@ -37,12 +37,12 @@ type GPIO struct {
 }
 
 type gpio struct {
-	log         gopi.Logger
-	exported    []gopi.GPIOPin
-	watched     map[gopi.GPIOPin]*os.File
-	lock        sync.Mutex
-	filepoll    FilePollInterface
-	subscribers *util.PubSub
+	log      gopi.Logger
+	exported []gopi.GPIOPin
+	watched  map[gopi.GPIOPin]*os.File
+	lock     sync.Mutex
+	filepoll FilePollInterface
+	pubsub   *util.PubSub
 }
 
 type event struct {
@@ -83,8 +83,8 @@ func (config GPIO) Open(logger gopi.Logger) (gopi.Driver, error) {
 		return nil, gopi.ErrBadParameter
 	}
 
-	// Subscribers
-	this.subscribers = util.NewPubSub(0)
+	// Event interface
+	this.pubsub = util.NewPubSub(0)
 
 	// Success
 	return this, nil
@@ -118,13 +118,13 @@ func (this *gpio) Close() error {
 	}
 
 	// Close subscriber channels
-	this.subscribers.Close()
+	this.pubsub.Close()
 
 	// Zero out member variables
 	this.exported = nil
 	this.watched = nil
 	this.filepoll = nil
-	this.subscribers = nil
+	this.pubsub = nil
 
 	// Return success
 	return nil
@@ -380,17 +380,17 @@ func (this *gpio) Watch(pin gopi.GPIOPin, edge gopi.GPIOEdge) error {
 // Subscribe to events emitted. Returns unique subscriber
 // identifier and channel on which events are emitted
 func (this *gpio) Subscribe() <-chan gopi.Event {
-	return this.subscribers.Subscribe()
+	return this.pubsub.Subscribe()
 }
 
 // Unsubscribe from events emitted
 func (this *gpio) Unsubscribe(subscriber <-chan gopi.Event) {
-	this.subscribers.Unsubscribe(subscriber)
+	this.pubsub.Unsubscribe(subscriber)
 }
 
 // Emit an event
 func (this *gpio) Emit(pin gopi.GPIOPin, edge gopi.GPIOEdge) {
-	this.subscribers.Emit(&event{driver: this, pin: pin, edge: edge})
+	this.pubsub.Emit(&event{driver: this, pin: pin, edge: edge})
 }
 
 ////////////////////////////////////////////////////////////////////////////////

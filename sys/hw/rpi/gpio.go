@@ -318,11 +318,11 @@ func (this *gpio) Watch(gopi.GPIOPin, gopi.GPIOEdge) error {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLISHER INTERFACE IS NOT IMPLEMENTED
 
-func (this *gpio) Subscribe() chan gopi.Event {
+func (this *gpio) Subscribe() <-chan gopi.Event {
 	return nil
 }
 
-func (this *gpio) Unsubscribe(chan gopi.Event) {
+func (this *gpio) Unsubscribe(<-chan gopi.Event) {
 	// Empty
 }
 

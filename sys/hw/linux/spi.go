@@ -12,10 +12,10 @@
 package linux
 
 import (
-	"strings"
 	"encoding/hex"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -220,7 +220,7 @@ func (this *spi) SetBitsPerWord(bits uint8) error {
 // TRANSFER
 
 func (this *spi) Transfer(send []byte) ([]byte, error) {
-	this.log.Debug2("<sys.hw.linux.SPI.Transfer>{ send=%v }", strings.ToUpper(hex.EncodeToString(send))
+	this.log.Debug2("<sys.hw.linux.SPI.Transfer>{ send=%v }", strings.ToUpper(hex.EncodeToString(send)))
 	buffer_size := len(send)
 	if buffer_size == 0 {
 		return []byte{}, nil
@@ -264,7 +264,7 @@ func (this *spi) Read(buffer_size uint32) ([]byte, error) {
 }
 
 func (this *spi) Write(send []byte) error {
-	this.log.Debug2("<sys.hw.linux.SPI.Write>{ send=%v }", strings.ToUpper(hex.EncodeToString(send))
+	this.log.Debug2("<sys.hw.linux.SPI.Write>{ send=%v }", strings.ToUpper(hex.EncodeToString(send)))
 	buffer_size := len(send)
 	if buffer_size == 0 {
 		return nil
