@@ -1,9 +1,10 @@
 /*
-	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016
-	All Rights Reserved
+  Go Language Raspberry Pi Interface
+  (c) Copyright David Thorpe 2016-2018
+  All Rights Reserved
 
-	For Licensing and Usage information, please see LICENSE.md
+  Documentation http://djthorpe.github.io/gopi/
+  For Licensing and Usage information, please see LICENSE.md
 */
 
 // Publish, Subscribe and Emit package for gopi.Publisher interface

@@ -2,7 +2,7 @@
 
 /*
   Go Language Raspberry Pi Interface
-  (c) Copyright David Thorpe 2016-2017
+  (c) Copyright David Thorpe 2016-2018
   All Rights Reserved
 
   Documentation http://djthorpe.github.io/gopi/
@@ -349,7 +349,7 @@ func (this *lirc) SetRcvDutyCycle(value uint32) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PUBLISH AND SUBSCRIBE
+// PUBSUB
 
 // Subscribe to events emitted. Returns unique subscriber
 // identifier and channel on which events are emitted
