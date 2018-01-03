@@ -27,6 +27,7 @@ It would also be great to support the following features in the future:
     acceleration
   * Connected cameras
   * 3D graphics
+  * Audio devices
 
 More information on usage is available at http://djthorpe.github.io/gopi/
 
