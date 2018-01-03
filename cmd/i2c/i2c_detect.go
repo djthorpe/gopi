@@ -16,6 +16,7 @@ import (
 	"github.com/djthorpe/gopi"
 	_ "github.com/djthorpe/gopi/sys/hw/linux"
 	_ "github.com/djthorpe/gopi/sys/logger"
+	"github.com/olekukonko/tablewriter"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,13 +27,29 @@ func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 		return app.Logger.Error("Missing I2C module instance")
 	}
 
+	// Output detected I2C addresses
+	table := tablewriter.NewWriter(os.Stdout)
+
+	table.Append([]string{"", "-0", "-1", "-2", "-3", "-4", "-5", "-6", "-7", "-8", "-9", "-A", "-B", "-C", "-D", "-E", "-F"})
+	row := make([]string, 0)
+
 	for slave := uint8(0); slave < 0x80; slave++ {
+		if len(row) == 0 {
+			row = append(row, fmt.Sprintf("0x%02X", slave&0xF0))
+		}
 		if detected, err := app.I2C.DetectSlave(slave); err != nil {
 			return err
+		} else if detected {
+			row = append(row, fmt.Sprintf("%02X", slave))
 		} else {
-			fmt.Printf("0x%02X -> %v\n", slave, detected)
+			row = append(row, "--")
+		}
+		if len(row) >= 17 {
+			table.Append(row)
+			row = make([]string, 0)
 		}
 	}
+	table.Render()
 
 	// Finished
 	done <- gopi.DONE
