@@ -98,17 +98,19 @@ type device struct {
 func (config InputDevice) Open(log gopi.Logger) (gopi.Driver, error) {
 	log.Debug("<sys.input.linux.InputDevice.Open>{ path=%v exclusive=%v }", config.Path, config.Exclusive)
 
-	this := new(device)
-	this.log = log
-	this.path = config.Path
-	this.exclusive = config.Exclusive
-
+	// Check incoming configuration parameters
 	if config.FilePoll == nil {
 		return nil, gopi.ErrBadParameter
 	}
 	if config.Path == "" {
 		return nil, gopi.ErrBadParameter
 	}
+
+	this := new(device)
+	this.log = log
+	this.path = config.Path
+	this.exclusive = config.Exclusive
+	this.filepoll = config.FilePoll
 
 	// Open the event stream for reading and writing
 	if handle, err := os.OpenFile(config.Path, os.O_RDWR, 0); err != nil {

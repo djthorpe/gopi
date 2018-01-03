@@ -17,7 +17,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
+	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/sys/hw/linux"
 )
 
@@ -151,89 +153,86 @@ func (t evType) String() string {
 
 func (this *device) evReceive(dev *os.File, mode linux.FilePollMode) {
 	// Read raw event data
-	var event evEvent
-	if err := binary.Read(dev, binary.LittleEndian, &event); err == io.EOF {
+	var raw_event evEvent
+	if err := binary.Read(dev, binary.LittleEndian, &raw_event); err == io.EOF {
 		return
 	} else if err != nil {
-		this.log.Error("linux.InputDevice.Receive: %v", err)
+		this.log.Error("sys.input.linux.InputDevice.Receive: %v", err)
 		return
 	}
-	// TODO: DECODE THE EVENT
-}
 
-/*
+	// Decode the event
+	switch raw_event.Type {
+	case EV_SYN:
+		if evt := this.evDecodeSyn(&raw_event); evt != nil {
+			this.pubsub.Emit(evt)
+		}
+	case EV_KEY:
+		this.evDecodeKey(&raw_event)
+	case EV_ABS:
+		if evt := this.evDecodeAbs(&raw_event); evt != nil {
+			this.pubsub.Emit(evt)
+		}
+	case EV_REL:
+		this.evDecodeRel(&raw_event)
+	case EV_MSC:
+		this.evDecodeMsc(&raw_event)
+	default:
+		this.log.Debug2("sys.input.linux.InputDevice.Receive: Ignoring event with type %v", raw_event.Type)
+	}
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // DECODE
 
-// This function takes a raw event in and sets the device internal state, and
-// may return an abstract input event, or nil if there is no event to emit.
-func (this *InputDriver) evDecode(raw_event *evEvent, device *evDevice) *hw.InputEvent {
-	this.log.Debug2("<linux.InputDriver>evDecode{ type=%v code=%v value=0x%08X ts=%v,%v }", raw_event.Type, raw_event.Code, raw_event.Value, raw_event.Second, raw_event.Microsecond)
-	switch raw_event.Type {
-	case EV_SYN:
-		return this.evDecodeSyn(raw_event, device)
-	case EV_KEY:
-		this.evDecodeKey(raw_event, device)
-	case EV_ABS:
-		return this.evDecodeAbs(raw_event, device)
-	case EV_REL:
-		this.evDecodeRel(raw_event, device)
-	case EV_MSC:
-		this.evDecodeMsc(raw_event, device)
-	default:
-		this.log.Warn("<linux.Input>Watch device=%v event=%v Ignoring event type", device, raw_event.Type)
-	}
-
-	// Don't return an event
-	return nil
-}
-
 // Decode the EV_SYN syncronization raw event.
-func (this *InputDriver) evDecodeSyn(raw_event *evEvent, device *evDevice) *hw.InputEvent {
-	event := hw.InputEvent{}
-	event.Timestamp = time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond)
-	event.DeviceType = device.device_type
-	event.Position = device.position
-
-	// Mouse and keyboard movements
-	if device.rel_position.Equals(khronos.EGLZeroPoint) == false {
-		event.EventType = hw.INPUT_EVENT_RELPOSITION
-		event.Relative = device.rel_position
-		device.rel_position = khronos.EGLZeroPoint
-		device.last_position = device.position
-	} else if device.position.Equals(device.last_position) == false {
-		event.EventType = hw.INPUT_EVENT_ABSPOSITION
-		device.last_position = device.position
-	} else if device.key_action == EV_VALUE_KEY_UP {
-		event.EventType = hw.INPUT_EVENT_KEYRELEASE
-		event.Keycode = hw.InputKeyCode(device.key_code)
-		event.Scancode = device.scan_code
-		device.key_action = EV_VALUE_KEY_NONE
-	} else if device.key_action == EV_VALUE_KEY_DOWN {
-		event.EventType = hw.INPUT_EVENT_KEYPRESS
-		event.Keycode = hw.InputKeyCode(device.key_code)
-		event.Scancode = device.scan_code
-		device.key_action = EV_VALUE_KEY_NONE
-	} else if device.key_action == EV_VALUE_KEY_REPEAT {
-		event.EventType = hw.INPUT_EVENT_KEYREPEAT
-		event.Keycode = hw.InputKeyCode(device.key_code)
-		event.Scancode = device.scan_code
-		device.key_action = EV_VALUE_KEY_NONE
-	} else {
-		return nil
+func (this *device) evDecodeSyn(raw_event *evEvent) gopi.InputEvent {
+	evt := &event{
+		device:    this,
+		timestamp: time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
 	}
-
+	/*
+		// Mouse and keyboard movements
+		if device.rel_position.Equals(khronos.EGLZeroPoint) == false {
+			event.EventType = hw.INPUT_EVENT_RELPOSITION
+			event.Relative = device.rel_position
+			device.rel_position = khronos.EGLZeroPoint
+			device.last_position = device.position
+		} else if device.position.Equals(device.last_position) == false {
+			event.EventType = hw.INPUT_EVENT_ABSPOSITION
+			device.last_position = device.position
+		} else if device.key_action == EV_VALUE_KEY_UP {
+			event.EventType = hw.INPUT_EVENT_KEYRELEASE
+			event.Keycode = hw.InputKeyCode(device.key_code)
+			event.Scancode = device.scan_code
+			device.key_action = EV_VALUE_KEY_NONE
+		} else if device.key_action == EV_VALUE_KEY_DOWN {
+			event.EventType = hw.INPUT_EVENT_KEYPRESS
+			event.Keycode = hw.InputKeyCode(device.key_code)
+			event.Scancode = device.scan_code
+			device.key_action = EV_VALUE_KEY_NONE
+		} else if device.key_action == EV_VALUE_KEY_REPEAT {
+			event.EventType = hw.INPUT_EVENT_KEYREPEAT
+			event.Keycode = hw.InputKeyCode(device.key_code)
+			event.Scancode = device.scan_code
+			device.key_action = EV_VALUE_KEY_NONE
+		} else {
+			return nil
+		}
+	*/
 	// Check for multi-touch positional changes
-	slot := device.slots[device.slot]
+	/*slot := device.slots[device.slot]
 	if slot.active {
 		this.log.Debug("SLOT=%v POSITION=%v", device.slot, slot.position)
-	}
+	}*/
 
-	return &event
+	return evt
 }
 
-func (this *InputDriver) evDecodeKey(raw_event *evEvent, device *evDevice) {
+func (this *device) evDecodeKey(raw_event *evEvent) {
+}
+
+/*
 	device.key_code = evKeyCode(raw_event.Code)
 	device.key_action = evKeyAction(raw_event.Value)
 
@@ -288,8 +287,13 @@ func (this *InputDriver) evDecodeKey(raw_event *evEvent, device *evDevice) {
 		}
 	}
 }
+*/
 
-func (this *InputDriver) evDecodeAbs(raw_event *evEvent, device *evDevice) *hw.InputEvent {
+func (this *device) evDecodeAbs(raw_event *evEvent) gopi.InputEvent {
+	return nil
+}
+
+/*
 	if raw_event.Code == EV_CODE_X {
 		device.position.X = int(raw_event.Value)
 	} else if raw_event.Code == EV_CODE_Y {
@@ -314,8 +318,13 @@ func (this *InputDriver) evDecodeAbs(raw_event *evEvent, device *evDevice) *hw.I
 	}
 	return nil
 }
+*/
 
-func (this *InputDriver) evDecodeAbsTouch(raw_event *evEvent, device *evDevice) *hw.InputEvent {
+func (this *device) evDecodeAbsTouch(raw_event *evEvent) gopi.InputEvent {
+	return nil
+}
+
+/*
 	event := hw.InputEvent{}
 	event.Timestamp = time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond)
 	event.DeviceType = device.device_type
@@ -338,8 +347,12 @@ func (this *InputDriver) evDecodeAbsTouch(raw_event *evEvent, device *evDevice) 
 	// Return the event to emit
 	return &event
 }
+*/
 
-func (this *InputDriver) evDecodeRel(raw_event *evEvent, device *evDevice) {
+func (this *device) evDecodeRel(raw_event *evEvent) {
+}
+
+/*
 	switch raw_event.Code {
 	case EV_CODE_X:
 		device.position.X = device.position.X + int(raw_event.Value)
@@ -352,8 +365,12 @@ func (this *InputDriver) evDecodeRel(raw_event *evEvent, device *evDevice) {
 	}
 	this.log.Debug2("%v Ignoring code %v", raw_event.Type, raw_event.Code)
 }
+*/
 
-func (this *InputDriver) evDecodeMsc(raw_event *evEvent, device *evDevice) {
+func (this *device) evDecodeMsc(raw_event *evEvent) {
+}
+
+/*
 	if raw_event.Code == EV_CODE_SCANCODE {
 		device.scan_code = raw_event.Value
 	} else {

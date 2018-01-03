@@ -105,7 +105,7 @@ func (this *manager) OpenDevicesByName(alias string, flags gopi.InputDeviceType,
 	evFind(func(path string) {
 		// Don't consider devices which are already opened
 		if this.deviceByPath(path) == nil {
-			if input_device, err := gopi.Open(InputDevice{Path: path, Exclusive: this.exclusive}, this.log); err != nil {
+			if input_device, err := gopi.Open(InputDevice{Path: path, Exclusive: this.exclusive, FilePoll: this.filepoll}, this.log); err != nil {
 				this.log.Warn("OpenDevicesByName: %v: %v", path, err)
 			} else {
 				this.log.Debug2("OpenDevicesByName: Adding device %v", input_device)
@@ -123,60 +123,21 @@ func (this *manager) OpenDevicesByName(alias string, flags gopi.InputDeviceType,
 		}
 	}
 
+	// For opened devices, subscribe to receive events
+	// TODO
+
 	// Return newly opened devices
 	return opened_devices, nil
 }
 
-/*
-	     new_devices := make([]*evDevice, 0)
-
-	   	// Discover devices using evFind and add any new ones to the new_devices
-	   	// array, they are left in an opened state
-	   	evFind(func(path string) {
-	   		device := this.evDeviceByPath(path)
-	   		if device == nil {
-	   			// we open the device here
-	   			var err gopi.Error
-	   			if gopi_device, ok := gopi.Open2(InputDevice{Path: path, Exclusive: this.exclusive}, this.log, &err).(*evDevice); !ok {
-	   				this.log.Warn("<linux.Input>OpenDevicesByName path=%v Error: %v", path, err)
-	   				return
-	   			} else {
-	   				new_devices = append(new_devices, gopi_device)
-	   			}
-	   		}
-	   	})
-
-	   	// Now we check the new devices to see if they match the stated criteria
-	   	// and close the device if not
-	   	for _, device := range new_devices {
-
-	   		// Check if device matches criteria. If not, then close it
-	   		if device.Matches(alias, flags, bus) == false {
-	   			if err := device.Close(); err != nil {
-	   				this.log.Warn("<linux.Input>OpenDevicesByName Error: %v", err)
-	   			}
-	   			continue
-	   		}
-
-	   		// We have matched devices here, poll them
-	   		if err := this.poll.Add(device.GetFd(), POLL_MODE_READ); err != nil {
-	   			this.log.Warn("<linux.Input>OpenDevicesByName Error: %v", err)
-	   			device.Close()
-	   			continue
-	   		}
-
-	   		// cleanup obtain the file descriptor
-	   		this.devices[device.GetFd()] = device
-	   		opened_devices = append(opened_devices, device)
-	   	}
-
-	     return opened_devices, nil
-	return nil, gopi.ErrNotImplemented
-}
-*/
-
 func (this *manager) CloseDevice(device gopi.InputDevice) error {
 	this.log.Debug2("<sys.input.linux.InputManager.CloseDevice>{ device=%v }", device)
+
+	// TODO
+	// Unsubscribe from events
+	// Remove from devices array
+	// Close the device
+
 	return gopi.ErrNotImplemented
 }
 
