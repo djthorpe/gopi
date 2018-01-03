@@ -14,13 +14,14 @@ would work in general environments like Linux and Macintosh.
 
 The following features are supported on various platforms:
 
-  * The GPIO device, I2C and SPI interfaces
+  * The GPIO, I2C and SPI interfaces
   * Display and display surfaces, bitmaps and vector graphics
   * GPU acceleration for 2D graphics
   * Font loading and rendering in bitmap and vector forms
   * Input devices like the mouse, keyboard and touchscreen
+  * Graphic element layout using the flexbox standard
   * Infrared transmission and receiving, for example for remote controls
-  * Microservices, announcement and discovery
+  * Network microservices, announcement and discovery
 
 It would also be great to support the following features in the future:
 
