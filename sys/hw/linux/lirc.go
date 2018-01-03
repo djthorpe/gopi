@@ -21,6 +21,7 @@ import (
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
+	"github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,20 +36,11 @@ type LIRC struct {
 }
 
 type lirc struct {
-	// device
-	dev *os.File
-
-	// logger
-	log gopi.Logger
-
-	// poll
-	filepoll FilePollInterface
-
-	// mutex lock
-	lock sync.Mutex
-
-	// subscribers
-	subscribers []chan gopi.Event
+	dev         *os.File
+	log         gopi.Logger
+	filepoll    FilePollInterface
+	lock        sync.Mutex
+	subscribers *util.PubSub
 
 	// features
 	features lirc_feature
@@ -156,7 +148,7 @@ func (config LIRC) Open(log gopi.Logger) (gopi.Driver, error) {
 	}
 
 	// Subscribers
-	this.subscribers = make([]chan gopi.Event, 0)
+	this.subscribers = util.NewPubSub(0)
 
 	// return driver
 	return this, nil
@@ -183,11 +175,7 @@ func (this *lirc) Close() error {
 	}
 
 	// Close subscriber channels
-	for _, c := range this.subscribers {
-		if c != nil {
-			close(c)
-		}
-	}
+	this.subscribers.Close()
 
 	// Blank out
 	this.filepoll = nil
@@ -365,34 +353,18 @@ func (this *lirc) SetRcvDutyCycle(value uint32) error {
 
 // Subscribe to events emitted. Returns unique subscriber
 // identifier and channel on which events are emitted
-func (this *lirc) Subscribe() chan gopi.Event {
-	this.log.Debug2("<sys.hw.linux.GPIO.Subscribe>{ }")
-
-	// Create a new channel for emitting events
-	subscriber := make(chan gopi.Event)
-	this.subscribers = append(this.subscribers, subscriber)
-	return subscriber
+func (this *lirc) Subscribe() <-chan gopi.Event {
+	return this.subscribers.Subscribe()
 }
 
 // Unsubscribe from events emitted
-func (this *lirc) Unsubscribe(subscriber chan gopi.Event) {
-	this.log.Debug2("<sys.hw.linux.GPIO.Unsubscribe>{ }")
-
-	for i := range this.subscribers {
-		if this.subscribers[i] == subscriber {
-			close(subscriber)
-			this.subscribers[i] = nil
-		}
-	}
+func (this *lirc) Unsubscribe(subscriber <-chan gopi.Event) {
+	this.subscribers.Unsubscribe(subscriber)
 }
 
-func (this *lirc) emit(value uint32) {
-	event := &lirc_event{driver: this, value: value}
-	for _, channel := range this.subscribers {
-		if channel != nil {
-			channel <- event
-		}
-	}
+// Emit an event to subscribers
+func (this *lirc) Emit(value uint32) {
+	this.subscribers.Emit(&lirc_event{driver: this, value: value})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -414,10 +386,6 @@ func (this *lirc_event) Value() uint32 {
 	return this.value & 0x00FFFFFF
 }
 
-func (this *lirc_event) String() string {
-	return fmt.Sprintf("<sys.hw.linux.LIRC.Event>{ type=%v value=%v }", this.Type(), this.Value())
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -430,6 +398,10 @@ func (this *lirc) String() string {
 		}
 	}
 	return fmt.Sprintf("<sys.hw.linux.LIRC>{ features=%v rcv_mode=%v send_mode=%v }", strings.Join(features, ","), this.rcv_mode, this.send_mode)
+}
+
+func (this *lirc_event) String() string {
+	return fmt.Sprintf("<sys.hw.linux.LIRC.Event>{ type=%v value=%v }", this.Type(), this.Value())
 }
 
 func (f lirc_feature) String() string {
@@ -495,6 +467,6 @@ func (this *lirc) lircReceive(dev *os.File, mode FilePollMode) {
 	} else if err != nil {
 		this.log.Error("lircReceive: %v", err)
 	} else {
-		this.emit(buf[0])
+		this.Emit(buf[0])
 	}
 }

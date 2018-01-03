@@ -18,10 +18,13 @@ import "time"
 type Publisher interface {
 	// Subscribe to events emitted. Returns channel on which events
 	// are emitted or nil if this driver does not implement events
-	Subscribe() chan Event
+	Subscribe() <-chan Event
 
 	// Unsubscribe from events emitted
-	Unsubscribe(chan Event)
+	Unsubscribe(<-chan Event)
+
+	// Emit an event to subscribers
+	Emit(Event)
 }
 
 // Event is a generic event which is emitted through a channel

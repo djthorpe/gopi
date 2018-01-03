@@ -25,6 +25,7 @@ import (
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
+	"github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,7 +42,7 @@ type gpio struct {
 	watched     map[gopi.GPIOPin]*os.File
 	lock        sync.Mutex
 	filepoll    FilePollInterface
-	subscribers []chan gopi.Event
+	subscribers *util.PubSub
 }
 
 type event struct {
@@ -83,7 +84,7 @@ func (config GPIO) Open(logger gopi.Logger) (gopi.Driver, error) {
 	}
 
 	// Subscribers
-	this.subscribers = make([]chan gopi.Event, 0)
+	this.subscribers = util.NewPubSub(0)
 
 	// Success
 	return this, nil
@@ -117,11 +118,7 @@ func (this *gpio) Close() error {
 	}
 
 	// Close subscriber channels
-	for _, c := range this.subscribers {
-		if c != nil {
-			close(c)
-		}
-	}
+	this.subscribers.Close()
 
 	// Zero out member variables
 	this.exported = nil
@@ -378,29 +375,22 @@ func (this *gpio) Watch(pin gopi.GPIOPin, edge gopi.GPIOEdge) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// INTERFACE - EVENTS
+// PUBSUB
 
 // Subscribe to events emitted. Returns unique subscriber
 // identifier and channel on which events are emitted
-func (this *gpio) Subscribe() chan gopi.Event {
-	this.log.Debug2("<sys.hw.linux.GPIO.Subscribe>{ }")
-
-	// Create a new channel for emitting events
-	subscriber := make(chan gopi.Event)
-	this.subscribers = append(this.subscribers, subscriber)
-	return subscriber
+func (this *gpio) Subscribe() <-chan gopi.Event {
+	return this.subscribers.Subscribe()
 }
 
 // Unsubscribe from events emitted
-func (this *gpio) Unsubscribe(subscriber chan gopi.Event) {
-	this.log.Debug2("<sys.hw.linux.GPIO.Unsubscribe>{ }")
+func (this *gpio) Unsubscribe(subscriber <-chan gopi.Event) {
+	this.subscribers.Unsubscribe(subscriber)
+}
 
-	for i := range this.subscribers {
-		if this.subscribers[i] == subscriber {
-			this.subscribers[i] = nil
-			close(subscriber)
-		}
-	}
+// Emit an event
+func (this *gpio) Emit(pin gopi.GPIOPin, edge gopi.GPIOEdge) {
+	this.subscribers.Emit(&event{driver: this, pin: pin, edge: edge})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -455,23 +445,13 @@ func (this *gpio) handleEdge(handle *os.File, pin gopi.GPIOPin) error {
 		value := strings.TrimSpace(string(buf))
 		switch value {
 		case "0":
-			this.emit(pin, gopi.GPIO_EDGE_FALLING)
+			this.Emit(pin, gopi.GPIO_EDGE_FALLING)
 		case "1":
-			this.emit(pin, gopi.GPIO_EDGE_RISING)
+			this.Emit(pin, gopi.GPIO_EDGE_RISING)
 		default:
-			this.emit(pin, gopi.GPIO_EDGE_NONE)
+			this.Emit(pin, gopi.GPIO_EDGE_NONE)
 		}
 		return nil
-	}
-}
-
-// Emit an event
-func (this *gpio) emit(pin gopi.GPIOPin, edge gopi.GPIOEdge) {
-	event := &event{driver: this, pin: pin, edge: edge}
-	for _, channel := range this.subscribers {
-		if channel != nil {
-			channel <- event
-		}
 	}
 }
 
