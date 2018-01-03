@@ -12,8 +12,13 @@
 package linux
 
 import (
+	"encoding/binary"
+	"io"
+	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/djthorpe/gopi/sys/hw/linux"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,38 +146,22 @@ func (t evType) String() string {
 	}
 }
 
-/*
 ////////////////////////////////////////////////////////////////////////////////
-// WATCH
+// CALLBACK
 
-func (this *manager) Watch(delta time.Duration, callback hw.InputEventCallback) error {
-	if err := this.poll.Watch(delta, func(fd int, flags PollMode) {
-		// Obtain device
-		device, exists := this.devices[fd]
-		if exists == false {
-			return
-		}
-		// Read raw event data
-		var event evEvent
-		err := binary.Read(device.handle, binary.LittleEndian, &event)
-		if err == io.EOF {
-			return
-		}
-		if err != nil {
-			this.log.Error("<linux.Input>Wtch Error: %v", err)
-			return
-		}
-		// Process the event data, callback
-		if emit_event := this.evDecode(&event, device); emit_event != nil {
-			callback(emit_event, device)
-		}
-	}); err != nil {
-		return this.log.Error("<linux.Input>Watch Error: %v", err)
+func (this *device) evReceive(dev *os.File, mode linux.FilePollMode) {
+	// Read raw event data
+	var event evEvent
+	if err := binary.Read(dev, binary.LittleEndian, &event); err == io.EOF {
+		return
+	} else if err != nil {
+		this.log.Error("linux.InputDevice.Receive: %v", err)
+		return
 	}
-
-	// success
-	return nil
+	// TODO: DECODE THE EVENT
 }
+
+/*
 
 ////////////////////////////////////////////////////////////////////////////////
 // DECODE

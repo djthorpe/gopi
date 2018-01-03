@@ -15,7 +15,10 @@ import (
 	"fmt"
 	"os"
 
+	// Frameworks
 	"github.com/djthorpe/gopi"
+	"github.com/djthorpe/gopi/sys/hw/linux"
+	"github.com/djthorpe/gopi/util"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,6 +26,9 @@ import (
 
 // Input device
 type InputDevice struct {
+	// Filepoller
+	FilePoll linux.FilePollInterface
+
 	// Path to device
 	Path string
 
@@ -37,6 +43,8 @@ type InputDevice struct {
 type device struct {
 	log       gopi.Logger
 	path      string
+	filepoll  linux.FilePollInterface
+	pubsub    *util.PubSub
 	exclusive bool
 
 	// Handle to the device
@@ -66,19 +74,21 @@ type device struct {
 	capabilities []evType
 
 	// Positions, keys and states
-	position      gopi.Point
-	last_position gopi.Point
-	rel_position  gopi.Point
-	key_code      evKeyCode
-	scan_code     uint32
-	key_action    evKeyAction
+	position gopi.Point
 
-	// the current key state, which is a set of OR'd flags
-	state gopi.KeyState
+	/*
+		last_position gopi.Point
+		rel_position  gopi.Point
+		key_code      evKeyCode
+		scan_code     uint32
+		key_action    evKeyAction
+		// the current key state, which is a set of OR'd flags
+		state gopi.KeyState
 
-	// Multi-touch support
-	//slot  uint32
-	//slots []evDeviceSlot
+		// Multi-touch support
+		slot  uint32
+		slots []evDeviceSlot
+	*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,6 +102,13 @@ func (config InputDevice) Open(log gopi.Logger) (gopi.Driver, error) {
 	this.log = log
 	this.path = config.Path
 	this.exclusive = config.Exclusive
+
+	if config.FilePoll == nil {
+		return nil, gopi.ErrBadParameter
+	}
+	if config.Path == "" {
+		return nil, gopi.ErrBadParameter
+	}
 
 	// Open the event stream for reading and writing
 	if handle, err := os.OpenFile(config.Path, os.O_RDWR, 0); err != nil {
@@ -146,11 +163,11 @@ func (config InputDevice) Open(log gopi.Logger) (gopi.Driver, error) {
 		this.device_type = gopi.INPUT_TYPE_TOUCHSCREEN
 	}
 
-	/*
-		// Set multi-touch slot array to track slots
-		this.slot = 0
-		this.slots = make([]evDeviceSlot, INPUT_MAX_MULTITOUCH_SLOTS)
-	*/
+	// Start watching
+	if err := this.filepoll.Watch(this.handle, linux.FILEPOLL_MODE_READ, this.evReceive); err != nil {
+		this.handle.Close()
+		return nil, err
+	}
 
 	// Obtain exclusive use of device
 	if this.exclusive {
@@ -159,6 +176,15 @@ func (config InputDevice) Open(log gopi.Logger) (gopi.Driver, error) {
 			return nil, err
 		}
 	}
+
+	// PubSub
+	this.pubsub = util.NewPubSub(0)
+
+	/*
+		// Set multi-touch slot array to track slots
+		this.slot = 0
+		this.slots = make([]evDeviceSlot, INPUT_MAX_MULTITOUCH_SLOTS)
+	*/
 
 	// Success
 	return this, nil
@@ -176,12 +202,24 @@ func (this *device) Close() error {
 		this.exclusive = false
 	}
 
+	// Unwatch device
+	if err := this.filepoll.Unwatch(this.handle); err != nil {
+		this.log.Warn("Unwatch: %v", err)
+	}
+
 	// close file handle
 	if err := this.handle.Close(); err != nil {
 		return err
+	} else {
+		this.handle = nil
 	}
 
-	// blank out handle
+	// Close subscriber channels
+	this.pubsub.Close()
+
+	// Blank out
+	this.filepoll = nil
+	this.pubsub = nil
 	this.handle = nil
 
 	// return success
