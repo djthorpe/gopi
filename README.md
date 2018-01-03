@@ -17,8 +17,8 @@ The following features are supported on various platforms:
   * The GPIO device, I2C and SPI interfaces
   * Display and display surfaces, bitmaps and vector graphics
   * GPU acceleration for 2D graphics
-  * Font loading and renering
-  * Input devices like mouse, keyboard and touchscreen
+  * Font loading and rendering in bitmap and vector forms
+  * Input devices like the mouse, keyboard and touchscreen
   * Infrared transmission and receiving, for example for remote controls
 
 It would also be great to support the following features in the future:
