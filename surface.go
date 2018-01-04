@@ -50,7 +50,7 @@ type SurfaceManager interface {
 	SetOrigin(Surface, SurfaceFlags, Point)
 	SetSize(Surface, SurfaceFlags, Size)
 	SetOpacity(Surface, SurfaceFlags, float32)
-	SetLayer(Surface)
+	SetLayer(Surface, uint)
 
 	// Surface operations to start and end drawing or other
 	// surface operations
