@@ -47,7 +47,7 @@ type SurfaceManager interface {
 
 	// Change surface properties (size, position, etc)
 	MoveOriginBy(Surface, SurfaceFlags, Point)
-	SetOrigin(SurfaceFlags, Point)
+	SetOrigin(Surface, SurfaceFlags, Point)
 	SetSize(Surface, SurfaceFlags, Size)
 	SetOpacity(Surface, SurfaceFlags, float32)
 	SetLayer(Surface)
