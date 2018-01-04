@@ -1,6 +1,6 @@
 /*
 	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016-2017
+	(c) Copyright David Thorpe 2016-2018
 	All Rights Reserved
 	Documentation http://djthorpe.github.io/gopi/
 	For Licensing and Usage information, please see LICENSE.md
@@ -12,8 +12,15 @@ import (
 	"fmt"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
 type Point struct {
 	X, Y float32
+}
+
+type Size struct {
+	W, H float32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,6 +28,7 @@ type Point struct {
 
 var (
 	ZeroPoint = Point{0, 0}
+	ZeroSize  = Size{0, 0}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,4 +43,9 @@ func (p1 Point) Equals(p2 Point) bool {
 
 func (p Point) String() string {
 	return fmt.Sprintf("gopi.Point{ %.1f,%.1f }", p.X, p.Y)
+}
+
+
+func (s Size) String() string {
+	return fmt.Sprintf("gopi.Size{ %.1f,%.1f }", p.W, p.H)
 }
