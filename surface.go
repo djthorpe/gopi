@@ -46,11 +46,11 @@ type SurfaceManager interface {
 	DestroySurface(Surface) error
 
 	// Change surface properties (size, position, etc)
-	MoveSurfaceOriginBy(Surface, SurfaceFlags, Point)
-	MoveSurfaceOrigin(SurfaceFlags, Point)
-	SetSurfaceSize(Surface, SurfaceFlags, Size)
-	SetSurfaceOpacity(Surface, SurfaceFlags, float32)
-	SetSurfaceLayer(Surface)
+	MoveOriginBy(Surface, SurfaceFlags, Point)
+	SetOrigin(SurfaceFlags, Point)
+	SetSize(Surface, SurfaceFlags, Size)
+	SetOpacity(Surface, SurfaceFlags, float32)
+	SetLayer(Surface)
 
 	// Surface operations to start and end drawing or other
 	// surface operations
