@@ -24,6 +24,21 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
+type evType uint16
+type evKeyCode uint16
+type evKeyAction uint32
+
+type evEvent struct {
+	Second      uint32
+	Microsecond uint32
+	Type        evType
+	Code        evKeyCode
+	Value       uint32
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
@@ -59,21 +74,6 @@ func evSupportsEventType(capabilities []evType, types ...evType) bool {
 		}
 	}
 	return (count == len(types))
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE TYPES
-
-type evType uint16
-type evKeyCode uint16
-type evKeyAction uint32
-
-type evEvent struct {
-	Second      uint32
-	Microsecond uint32
-	Type        evType
-	Code        evKeyCode
-	Value       uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,20 +165,20 @@ func (this *device) evReceive(dev *os.File, mode linux.FilePollMode) {
 	switch raw_event.Type {
 	case EV_SYN:
 		if evt := this.evDecodeSyn(&raw_event); evt != nil {
-			this.pubsub.Emit(evt)
+			this.Emit(evt)
 		}
 	case EV_KEY:
 		this.evDecodeKey(&raw_event)
 	case EV_ABS:
 		if evt := this.evDecodeAbs(&raw_event); evt != nil {
-			this.pubsub.Emit(evt)
+			this.Emit(evt)
 		}
 	case EV_REL:
 		this.evDecodeRel(&raw_event)
 	case EV_MSC:
 		this.evDecodeMsc(&raw_event)
 	default:
-		this.log.Debug2("sys.input.linux.InputDevice.Receive: Ignoring event with type %v", raw_event.Type)
+		this.log.Warn("sys.input.linux.InputDevice.Receive: Ignoring event with type %v", raw_event.Type)
 	}
 }
 
@@ -188,32 +188,34 @@ func (this *device) evReceive(dev *os.File, mode linux.FilePollMode) {
 // Decode the EV_SYN syncronization raw event.
 func (this *device) evDecodeSyn(raw_event *evEvent) gopi.InputEvent {
 	evt := &event{
-		device:    this,
-		timestamp: time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
+		device:      this,
+		timestamp:   time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
+		device_type: this.device_type,
 	}
+
 	// Mouse and keyboard movements
 	if this.rel_position.Equals(gopi.ZeroPoint) == false {
-		event.EventType = gopi.INPUT_EVENT_RELPOSITION
-		event.Relative = this.rel_position
+		evt.event_type = gopi.INPUT_EVENT_RELPOSITION
+		evt.rel_position = this.rel_position
 		this.rel_position = gopi.ZeroPoint
-		this.last_position = device.position
+		this.last_position = this.position
 	} else if this.position.Equals(this.last_position) == false {
-		event.event_type = gopi.INPUT_EVENT_ABSPOSITION
-		this.last_position = device.position
+		evt.event_type = gopi.INPUT_EVENT_ABSPOSITION
+		this.last_position = this.position
 	} else if this.key_action == EV_VALUE_KEY_UP {
-		event.event_type = gopi.INPUT_EVENT_KEYRELEASE
-		event.key_code = gopi.KeyCode(device.key_code)
-		event.scan_code = this.scan_code
+		evt.event_type = gopi.INPUT_EVENT_KEYRELEASE
+		evt.key_code = gopi.KeyCode(this.key_code)
+		evt.scan_code = this.scan_code
 		this.key_action = EV_VALUE_KEY_NONE
 	} else if this.key_action == EV_VALUE_KEY_DOWN {
-		event.event_type = gopi.INPUT_EVENT_KEYPRESS
-		event.key_code = gopi.InputKeyCode(this.key_code)
-		event.scan_code = this.scan_code
+		evt.event_type = gopi.INPUT_EVENT_KEYPRESS
+		evt.key_code = gopi.KeyCode(this.key_code)
+		evt.scan_code = this.scan_code
 		this.key_action = EV_VALUE_KEY_NONE
-	} else if device.key_action == EV_VALUE_KEY_REPEAT {
-		event.event_type = gopi.INPUT_EVENT_KEYREPEAT
-		event.key_code = gopi.InputKeyCode(device.key_code)
-		event.scan_code = device.scan_code
+	} else if this.key_action == EV_VALUE_KEY_REPEAT {
+		evt.event_type = gopi.INPUT_EVENT_KEYREPEAT
+		evt.key_code = gopi.KeyCode(this.key_code)
+		evt.scan_code = this.scan_code
 		this.key_action = EV_VALUE_KEY_NONE
 	} else {
 		return nil
@@ -229,64 +231,60 @@ func (this *device) evDecodeSyn(raw_event *evEvent) gopi.InputEvent {
 }
 
 func (this *device) evDecodeKey(raw_event *evEvent) {
+	this.key_code = evKeyCode(raw_event.Code)
+	this.key_action = evKeyAction(raw_event.Value)
+	/*
+			// Set the device state from the key action. For the locks (Caps, Scroll
+			// and Num) we also reflect the change with the LED and "flip" the state
+			// from the current state.
+			key_state := hw.INPUT_KEYSTATE_NONE
+			switch gopi.InputKeyCode(device.key_code) {
+			case gopi.INPUT_KEY_CAPSLOCK:
+				// Flip CAPS LOCK state and set LED
+				if this.key_action == EV_VALUE_KEY_DOWN {
+					device.state ^= hw.INPUT_KEYSTATE_CAPSLOCK
+					evSetLEDState(device.handle, EV_LED_CAPSL, device.state&hw.INPUT_KEYSTATE_CAPSLOCK != hw.INPUT_KEYSTATE_NONE)
+				}
+			case hw.INPUT_KEY_NUMLOCK:
+				// Flip NUM LOCK state and set LED
+				if device.key_action == EV_VALUE_KEY_DOWN {
+					device.state ^= hw.INPUT_KEYSTATE_NUMLOCK
+					evSetLEDState(device.handle, EV_LED_NUML, device.state&hw.INPUT_KEYSTATE_NUMLOCK != hw.INPUT_KEYSTATE_NONE)
+				}
+			case hw.INPUT_KEY_SCROLLLOCK:
+				// Flip SCROLL LOCK state and set LED
+				if device.key_action == EV_VALUE_KEY_DOWN {
+					device.state ^= hw.INPUT_KEYSTATE_SCROLLLOCK
+					evSetLEDState(device.handle, EV_LED_SCROLLL, device.state&hw.INPUT_KEYSTATE_SCROLLLOCK != hw.INPUT_KEYSTATE_NONE)
+				}
+			case hw.INPUT_KEY_LEFTSHIFT:
+				key_state = hw.INPUT_KEYSTATE_LEFTSHIFT
+			case hw.INPUT_KEY_RIGHTSHIFT:
+				key_state = hw.INPUT_KEYSTATE_RIGHTSHIFT
+			case hw.INPUT_KEY_LEFTCTRL:
+				key_state = hw.INPUT_KEYSTATE_LEFTCTRL
+			case hw.INPUT_KEY_RIGHTCTRL:
+				key_state = hw.INPUT_KEYSTATE_RIGHTCTRL
+			case hw.INPUT_KEY_LEFTALT:
+				key_state = hw.INPUT_KEYSTATE_LEFTALT
+			case hw.INPUT_KEY_RIGHTALT:
+				key_state = hw.INPUT_KEYSTATE_RIGHTALT
+			case hw.INPUT_KEY_LEFTMETA:
+				key_state = hw.INPUT_KEYSTATE_LEFTMETA
+			case hw.INPUT_KEY_RIGHTMETA:
+				key_state = hw.INPUT_KEYSTATE_RIGHTMETA
+			}
+		// Set state from key action
+		if key_state != hw.INPUT_KEYSTATE_NONE {
+			if device.key_action == EV_VALUE_KEY_DOWN || device.key_action == EV_VALUE_KEY_REPEAT {
+				device.state |= key_state
+			} else if device.key_action == EV_VALUE_KEY_UP {
+				device.state &= (hw.INPUT_KEYSTATE_MAX ^ key_state)
+			}
+		}
+	*/
+
 }
-
-/*
-	device.key_code = evKeyCode(raw_event.Code)
-	device.key_action = evKeyAction(raw_event.Value)
-
-	// Set the device state from the key action. For the locks (Caps, Scroll
-	// and Num) we also reflect the change with the LED and "flip" the state
-	// from the current state.
-	key_state := hw.INPUT_KEYSTATE_NONE
-
-	switch hw.InputKeyCode(device.key_code) {
-	case hw.INPUT_KEY_CAPSLOCK:
-		// Flip CAPS LOCK state and set LED
-		if device.key_action == EV_VALUE_KEY_DOWN {
-			device.state ^= hw.INPUT_KEYSTATE_CAPSLOCK
-			evSetLEDState(device.handle, EV_LED_CAPSL, device.state&hw.INPUT_KEYSTATE_CAPSLOCK != hw.INPUT_KEYSTATE_NONE)
-		}
-	case hw.INPUT_KEY_NUMLOCK:
-		// Flip NUM LOCK state and set LED
-		if device.key_action == EV_VALUE_KEY_DOWN {
-			device.state ^= hw.INPUT_KEYSTATE_NUMLOCK
-			evSetLEDState(device.handle, EV_LED_NUML, device.state&hw.INPUT_KEYSTATE_NUMLOCK != hw.INPUT_KEYSTATE_NONE)
-		}
-	case hw.INPUT_KEY_SCROLLLOCK:
-		// Flip SCROLL LOCK state and set LED
-		if device.key_action == EV_VALUE_KEY_DOWN {
-			device.state ^= hw.INPUT_KEYSTATE_SCROLLLOCK
-			evSetLEDState(device.handle, EV_LED_SCROLLL, device.state&hw.INPUT_KEYSTATE_SCROLLLOCK != hw.INPUT_KEYSTATE_NONE)
-		}
-	case hw.INPUT_KEY_LEFTSHIFT:
-		key_state = hw.INPUT_KEYSTATE_LEFTSHIFT
-	case hw.INPUT_KEY_RIGHTSHIFT:
-		key_state = hw.INPUT_KEYSTATE_RIGHTSHIFT
-	case hw.INPUT_KEY_LEFTCTRL:
-		key_state = hw.INPUT_KEYSTATE_LEFTCTRL
-	case hw.INPUT_KEY_RIGHTCTRL:
-		key_state = hw.INPUT_KEYSTATE_RIGHTCTRL
-	case hw.INPUT_KEY_LEFTALT:
-		key_state = hw.INPUT_KEYSTATE_LEFTALT
-	case hw.INPUT_KEY_RIGHTALT:
-		key_state = hw.INPUT_KEYSTATE_RIGHTALT
-	case hw.INPUT_KEY_LEFTMETA:
-		key_state = hw.INPUT_KEYSTATE_LEFTMETA
-	case hw.INPUT_KEY_RIGHTMETA:
-		key_state = hw.INPUT_KEYSTATE_RIGHTMETA
-	}
-
-	// Set state from key action
-	if key_state != hw.INPUT_KEYSTATE_NONE {
-		if device.key_action == EV_VALUE_KEY_DOWN || device.key_action == EV_VALUE_KEY_REPEAT {
-			device.state |= key_state
-		} else if device.key_action == EV_VALUE_KEY_UP {
-			device.state &= (hw.INPUT_KEYSTATE_MAX ^ key_state)
-		}
-	}
-}
-*/
 
 func (this *device) evDecodeAbs(raw_event *evEvent) gopi.InputEvent {
 	return nil
@@ -349,31 +347,23 @@ func (this *device) evDecodeAbsTouch(raw_event *evEvent) gopi.InputEvent {
 */
 
 func (this *device) evDecodeRel(raw_event *evEvent) {
-}
-
-/*
 	switch raw_event.Code {
 	case EV_CODE_X:
-		device.position.X = device.position.X + int(raw_event.Value)
-		device.rel_position.X = int(raw_event.Value)
-		return
+		this.position.X = this.position.X + float32(int(raw_event.Value))
+		this.rel_position.X = float32(raw_event.Value)
 	case EV_CODE_Y:
-		device.position.Y = device.position.Y + int(raw_event.Value)
-		device.rel_position.Y = int(raw_event.Value)
-		return
+		this.position.Y = this.position.Y + float32(int(raw_event.Value))
+		this.rel_position.Y = float32(raw_event.Value)
+	default:
+		this.log.Warn("evDecodeRel: %v Ignoring code %v", raw_event.Type, raw_event.Code)
 	}
-	this.log.Debug2("%v Ignoring code %v", raw_event.Type, raw_event.Code)
 }
-*/
 
 func (this *device) evDecodeMsc(raw_event *evEvent) {
-}
-
-/*
-	if raw_event.Code == EV_CODE_SCANCODE {
-		device.scan_code = raw_event.Value
-	} else {
-		this.log.Debug2("%v Ignoring code=%v value=%v", raw_event.Type, raw_event.Code, raw_event.Value)
+	switch raw_event.Code {
+	case EV_CODE_SCANCODE:
+		this.scan_code = raw_event.Value
+	default:
+		this.log.Warn("evDecodeMsc: %v Ignoring code=%v, value=%v", raw_event.Type, raw_event.Code, raw_event.Value)
 	}
 }
-*/

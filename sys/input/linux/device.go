@@ -73,15 +73,17 @@ type device struct {
 	// Capabilities
 	capabilities []evType
 
-	// Positions, keys and states
-	position gopi.Point
+	// Positions for mice, joystick and touchscreens
+	position      gopi.Point
+	rel_position  gopi.Point
+	last_position gopi.Point
+
+	// Key presses
+	key_code   evKeyCode
+	key_action evKeyAction
+	scan_code  uint32
 
 	/*
-		last_position gopi.Point
-		rel_position  gopi.Point
-		key_code      evKeyCode
-		scan_code     uint32
-		key_action    evKeyAction
 		// the current key state, which is a set of OR'd flags
 		state gopi.KeyState
 
@@ -294,6 +296,25 @@ func (this *device) Bus() gopi.InputDeviceBus {
 // Return absolute cursor position
 func (this *device) Position() gopi.Point {
 	return this.position
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLISH AND SUBSCRIBE INTERFACE IMPLEMTATION
+
+// Subscribe to events emitted. Returns unique subscriber
+// identifier and channel on which events are emitted
+func (this *device) Subscribe() <-chan gopi.Event {
+	return this.pubsub.Subscribe()
+}
+
+// Unsubscribe from events emitted
+func (this *device) Unsubscribe(subscriber <-chan gopi.Event) {
+	this.pubsub.Unsubscribe(subscriber)
+}
+
+// Emit events
+func (this *device) Emit(evt gopi.Event) {
+	this.log.Info("Emit: %v", evt)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

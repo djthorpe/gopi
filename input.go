@@ -32,14 +32,12 @@ type InputManager interface {
 
 		// Return a list of open devices
 		GetOpenDevices() []InputDevice
-
-		// Watch for events with context
-		Watch(ctx context.Context) error
 	*/
 }
 
 type InputDevice interface {
 	Driver
+	Publisher
 
 	// Name of the input device
 	Name() string
