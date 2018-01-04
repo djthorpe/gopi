@@ -10,7 +10,6 @@ package gopi
 
 import (
 	"strings"
-	"time"
 )
 
 // InputManager allows you to open and close input devices
@@ -64,34 +63,6 @@ type InputDevice interface {
 
 	// Returns true if device matches conditions
 	Matches(string, InputDeviceType, InputDeviceBus) bool
-}
-
-type InputEvent interface {
-	Event
-
-	// Timestamp of event
-	Timestamp() time.Duration
-
-	// Type of device which has created the event
-	DeviceType() InputDeviceType
-
-	// Event type
-	EventType() InputEventType
-
-	// Key or mouse button press or release
-	Keycode() KeyCode
-
-	// Key scancode
-	Scancode() uint32
-
-	// Absolute cursor position
-	Position() Point
-
-	// Relative change in position
-	Relative() Point
-
-	// Multi-touch slot identifier
-	Slot() uint
 }
 
 // Device type (keyboard, mouse, touchscreen, etc)

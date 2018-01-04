@@ -83,14 +83,22 @@ type device struct {
 	key_action evKeyAction
 	scan_code  uint32
 
+	// Multi-touch support
+	slot  uint32
+	slots []slot
+
 	/*
 		// the current key state, which is a set of OR'd flags
 		state gopi.KeyState
 
-		// Multi-touch support
-		slot  uint32
-		slots []evDeviceSlot
 	*/
+}
+
+// Represents multi-touch slot information
+type slot struct {
+	id       int16
+	position gopi.Point
+	active   bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,14 +189,12 @@ func (config InputDevice) Open(log gopi.Logger) (gopi.Driver, error) {
 		}
 	}
 
+	// Set multi-touch slot array to track slots
+	this.slot = 0
+	this.slots = make([]slot, INPUT_MAX_MULTITOUCH_SLOTS)
+
 	// PubSub
 	this.pubsub = util.NewPubSub(0)
-
-	/*
-		// Set multi-touch slot array to track slots
-		this.slot = 0
-		this.slots = make([]evDeviceSlot, INPUT_MAX_MULTITOUCH_SLOTS)
-	*/
 
 	// Success
 	return this, nil

@@ -45,7 +45,6 @@ func (p Point) String() string {
 	return fmt.Sprintf("gopi.Point{ %.1f,%.1f }", p.X, p.Y)
 }
 
-
 func (s Size) String() string {
-	return fmt.Sprintf("gopi.Size{ %.1f,%.1f }", p.W, p.H)
+	return fmt.Sprintf("gopi.Size{ %.1f,%.1f }", s.W, s.H)
 }

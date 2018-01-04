@@ -32,6 +32,7 @@ type event struct {
 	rel_position gopi.Point
 	key_code     gopi.KeyCode
 	scan_code    uint32
+	slot         uint
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -74,17 +75,11 @@ func (this *event) Relative() gopi.Point {
 }
 
 func (this *event) Slot() uint {
-	return 0
+	return this.slot
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
-
-/*
-	INPUT_EVENT_TOUCHPRESS    InputEventType = 0x0006
-	INPUT_EVENT_TOUCHRELEASE  InputEventType = 0x0007
-	INPUT_EVENT_TOUCHPOSITION InputEventType = 0x0008
-*/
 
 func (this *event) String() string {
 	switch this.event_type {
@@ -94,6 +89,10 @@ func (this *event) String() string {
 		return fmt.Sprintf("<sys.input.linux.InputEvent>{ type=%v device=%v position=%v ts=%v }", this.event_type, this.device_type, this.position, this.timestamp)
 	case gopi.INPUT_EVENT_KEYPRESS, gopi.INPUT_EVENT_KEYRELEASE, gopi.INPUT_EVENT_KEYREPEAT:
 		return fmt.Sprintf("<sys.input.linux.InputEvent>{ type=%v device=%v key_code=%v scan_code=%v ts=%v }", this.event_type, this.device_type, this.key_code, this.scan_code, this.timestamp)
+	case gopi.INPUT_EVENT_TOUCHPRESS, gopi.INPUT_EVENT_TOUCHRELEASE:
+		return fmt.Sprintf("<sys.input.linux.InputEvent>{ type=%v device=%v key_code=%v slot=%v position=%v ts=%v }", this.event_type, this.device_type, this.key_code, this.position, this.slot, this.timestamp)
+	case gopi.INPUT_EVENT_TOUCHPOSITION:
+		return fmt.Sprintf("<sys.input.linux.InputEvent>{ type=%v device=%v slot=%v position=%v ts=%v }", this.event_type, this.device_type, this.position, this.slot, this.timestamp)
 	default:
 		return fmt.Sprintf("<sys.input.linux.InputEvent>{ type=%v device=%v ts=%v }", this.event_type, this.device_type, this.timestamp)
 	}

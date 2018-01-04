@@ -63,3 +63,32 @@ type TimerEvent interface {
 	Timestamp() time.Time
 	UserInfo() interface{}
 }
+
+// InputEvent is emitted when an input device changes
+type InputEvent interface {
+	Event
+
+	// Timestamp of event
+	Timestamp() time.Duration
+
+	// Type of device which has created the event
+	DeviceType() InputDeviceType
+
+	// Event type
+	EventType() InputEventType
+
+	// Key or mouse button press or release
+	Keycode() KeyCode
+
+	// Key scancode
+	Scancode() uint32
+
+	// Absolute cursor position
+	Position() Point
+
+	// Relative change in position
+	Relative() Point
+
+	// Multi-touch slot identifier
+	Slot() uint
+}

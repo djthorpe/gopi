@@ -44,6 +44,9 @@ type evEvent struct {
 const (
 	// Pattern for finding event-driven input devices
 	INPUT_PATH_DEVICES = "/sys/class/input/event*"
+
+	// Maximum multi-touch slots
+	INPUT_MAX_MULTITOUCH_SLOTS = 32
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -287,73 +290,66 @@ func (this *device) evDecodeKey(raw_event *evEvent) {
 }
 
 func (this *device) evDecodeAbs(raw_event *evEvent) gopi.InputEvent {
-	return nil
-}
-
-/*
 	if raw_event.Code == EV_CODE_X {
-		device.position.X = int(raw_event.Value)
+		this.position.X = float32(int32(raw_event.Value))
 	} else if raw_event.Code == EV_CODE_Y {
-		device.position.Y = int(raw_event.Value)
+		this.position.Y = float32(int32(raw_event.Value))
 	} else if raw_event.Code == EV_CODE_SLOT {
-		device.slot = raw_event.Value
+		this.slot = raw_event.Value
 	} else if raw_event.Code == EV_CODE_SLOT_ID || raw_event.Code == EV_CODE_SLOT_X || raw_event.Code == EV_CODE_SLOT_Y {
 		switch {
-		case device.slot < uint32(0) || device.slot >= INPUT_MAX_MULTITOUCH_SLOTS:
-			this.log.Warn("<linux.InputDevice> Ignoring out-of-range slot %v", device.slot)
+		case this.slot < uint32(0) || this.slot >= INPUT_MAX_MULTITOUCH_SLOTS:
+			this.log.Warn("evDecodeAbs: Ignoring out-of-range slot %v", this.slot)
 		case raw_event.Code == EV_CODE_SLOT_ID:
-			return this.evDecodeAbsTouch(raw_event, device)
+			return this.evDecodeAbsTouch(raw_event)
 		case raw_event.Code == EV_CODE_SLOT_X:
-			device.slots[device.slot].position.X = int(raw_event.Value)
-			device.slots[device.slot].active = true
+			this.slots[this.slot].position.X = float32(int32(raw_event.Value))
+			this.slots[this.slot].active = true
 		case raw_event.Code == EV_CODE_SLOT_Y:
-			device.slots[device.slot].position.Y = int(raw_event.Value)
-			device.slots[device.slot].active = true
+			this.slots[this.slot].position.Y = float32(int32(raw_event.Value))
+			this.slots[this.slot].active = true
 		}
 	} else {
-		this.log.Debug2("%v Ignoring code %v", raw_event.Type, raw_event.Code)
+		this.log.Warn("evDecodeAbs: %v Ignoring code %v", raw_event.Type, raw_event.Code)
 	}
 	return nil
 }
-*/
 
 func (this *device) evDecodeAbsTouch(raw_event *evEvent) gopi.InputEvent {
-	return nil
-}
-
-/*
-	event := hw.InputEvent{}
-	event.Timestamp = time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond)
-	event.DeviceType = device.device_type
+	evt := &event{
+		device:      this,
+		timestamp:   time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
+		device_type: this.device_type,
+	}
 
 	// Decode the slot_id, if -1 then this is the release for a slot
-	slot_id := int16(raw_event.Value)
-	if slot_id >= 0 {
-		device.slots[device.slot].active = true
-		device.slots[device.slot].id = slot_id
-		event.EventType = hw.INPUT_EVENT_TOUCHPRESS
+	if slot_id := int16(raw_event.Value); slot_id == -1 {
+		this.slots[this.slot].active = false
+		evt.event_type = gopi.INPUT_EVENT_TOUCHRELEASE
+	} else if slot_id < INPUT_MAX_MULTITOUCH_SLOTS {
+		this.slots[this.slot].active = true
+		this.slots[this.slot].id = slot_id
+		evt.event_type = gopi.INPUT_EVENT_TOUCHPRESS
 	} else {
-		device.slots[device.slot].active = false
-		event.EventType = hw.INPUT_EVENT_TOUCHRELEASE
+		this.log.Warn("evDecodeAbsTouch: %v Ignoring slot %v", raw_event.Type, slot_id)
 	}
 
 	// Populate the slot and keycode
-	event.Slot = uint(device.slot)
-	event.Keycode = hw.INPUT_BTN_TOUCH
+	evt.slot = uint(this.slot)
+	evt.key_code = gopi.KEYCODE_BTNTOUCH
 
 	// Return the event to emit
-	return &event
+	return evt
 }
-*/
 
 func (this *device) evDecodeRel(raw_event *evEvent) {
 	switch raw_event.Code {
 	case EV_CODE_X:
-		this.position.X = this.position.X + float32(int(raw_event.Value))
-		this.rel_position.X = float32(raw_event.Value)
+		this.position.X = this.position.X + float32(int32(raw_event.Value))
+		this.rel_position.X = float32(int32(raw_event.Value))
 	case EV_CODE_Y:
-		this.position.Y = this.position.Y + float32(int(raw_event.Value))
-		this.rel_position.Y = float32(raw_event.Value)
+		this.position.Y = this.position.Y + float32(int32(raw_event.Value))
+		this.rel_position.Y = float32(int32(raw_event.Value))
 	default:
 		this.log.Warn("evDecodeRel: %v Ignoring code %v", raw_event.Type, raw_event.Code)
 	}
