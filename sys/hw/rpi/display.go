@@ -92,6 +92,11 @@ func (this *display) PixelsPerInch() uint32 {
 	return 0
 }
 
+// Return name of display
+func (this *display) Name() string {
+	return fmt.Sprint(dxDisplayId(this.id))
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

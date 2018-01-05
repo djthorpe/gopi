@@ -32,6 +32,7 @@ COMMANDS=(
     spi/spi_ctrl.go
     input/input_tester.go    
     rpc/rpc_discovery.go
+    display/display_list.go
 )
 
 for COMMAND in ${COMMANDS[@]}; do

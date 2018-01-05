@@ -8,6 +8,8 @@
 
 package gopi
 
+import "strings"
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -112,4 +114,13 @@ func (t SurfaceType) String() string {
 	default:
 		return "[Invalid SurfaceType value]"
 	}
+}
+
+func (f SurfaceFlags) String() string {
+	if f == SURFACE_FLAG_NONE {
+		return "SURFACE_FLAG_NONE"
+	}
+	flags := ""
+	// Add flags here
+	return strings.Trim(flags, "|")
 }

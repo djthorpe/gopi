@@ -39,6 +39,9 @@ type Display interface {
 	// Return display number
 	Display() uint
 
+	// Return name of the display
+	Name() string
+
 	// Return display size for nominated display number, or (0,0) if display
 	// does not exist
 	Size() (uint32, uint32)
