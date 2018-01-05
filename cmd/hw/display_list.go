@@ -6,7 +6,7 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-// Outputs a table of displays
+// Outputs a table of displays - works on RPi at the moment
 package main
 
 import (
