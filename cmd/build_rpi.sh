@@ -31,8 +31,8 @@ COMMANDS=(
     i2c/i2c_detect.go
     spi/spi_ctrl.go
     input/input_tester.go    
-    rpc/rpc_discovery.go
     display/display_list.go
+    rpc/rpc_discovery.go
 )
 
 for COMMAND in ${COMMANDS[@]}; do
