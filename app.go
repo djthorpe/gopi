@@ -171,6 +171,8 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 			}
 			if driver, err := module.New(this); err != nil {
 				return nil, err
+			} else if driver == nil {
+				return nil, fmt.Errorf("%v: New: return nil", module.Name)
 			} else if err := this.setModuleInstance(module, driver); err != nil {
 				if err := driver.Close(); err != nil {
 					this.Logger.Error("module.Close(): %v", err)

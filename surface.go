@@ -34,30 +34,31 @@ type SurfaceManager interface {
 	// Return the name of the surface manager. It's basically the
 	// GPU driver
 	Name() string
+	/*
+		// Return capabilities for the GPU
+		Types() []SurfaceType
 
-	// Return capabilities for the GPU
-	Types() []SurfaceType
+		// Return a list of extensions the GPU provides
+		Extensions() []string
 
-	// Return a list of extensions the GPU provides
-	Extensions() []string
+		// Create background, surface and cursors
+		CreateBackground(api SurfaceType, flags SurfaceFlags, opacity float32) (Surface, error)
+		CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint, origin Point, size Size) (Surface, error)
+		//CreateCursor(api SurfaceType, flags SurfaceFlags, opacity float32, origin Point, cursor SurfaceCursor) (Surface, error)
+		DestroySurface(Surface) error
 
-	// Create background, surface and cursors
-	CreateBackground(api SurfaceType, flags SurfaceFlags, opacity float32) (Surface, error)
-	CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint, origin Point, size Size) (Surface, error)
-	//CreateCursor(api SurfaceType, flags SurfaceFlags, opacity float32, origin Point, cursor SurfaceCursor) (Surface, error)
-	DestroySurface(Surface) error
+		// Change surface properties (size, position, etc)
+		MoveOriginBy(Surface, SurfaceFlags, Point)
+		SetOrigin(Surface, SurfaceFlags, Point)
+		SetSize(Surface, SurfaceFlags, Size)
+		SetOpacity(Surface, SurfaceFlags, float32)
+		SetLayer(Surface, uint)
 
-	// Change surface properties (size, position, etc)
-	MoveOriginBy(Surface, SurfaceFlags, Point)
-	SetOrigin(Surface, SurfaceFlags, Point)
-	SetSize(Surface, SurfaceFlags, Size)
-	SetOpacity(Surface, SurfaceFlags, float32)
-	SetLayer(Surface, uint)
-
-	// Surface operations to start and end drawing or other
-	// surface operations
-	SetCurrentContext(Surface)
-	FlushSurface(Surface)
+		// Surface operations to start and end drawing or other
+		// surface operations
+		SetCurrentContext(Surface)
+		FlushSurface(Surface)
+	*/
 }
 
 // Surface is manipulated by surface manager, and used by
