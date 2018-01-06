@@ -38,10 +38,13 @@ type SurfaceManager interface {
 	// Return capabilities for the GPU
 	Types() []SurfaceType
 
+	// Create & destroy surfaces
+	CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint, origin Point, size Size) (Surface, error)
+	DestroySurface(Surface) error
+
 	/*
 		// Create background, surface and cursors
 		CreateBackground(api SurfaceType, flags SurfaceFlags, opacity float32) (Surface, error)
-		CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint, origin Point, size Size) (Surface, error)
 		CreateCursor(api SurfaceType, flags SurfaceFlags, opacity float32, origin Point, cursor SurfaceCursor) (Surface, error)
 
 		// Change surface properties (size, position, etc)
@@ -55,7 +58,6 @@ type SurfaceManager interface {
 		// surface operations
 		SetCurrentContext(Surface)
 		FlushSurface(Surface)
-		DestroySurface(Surface) error
 	*/
 }
 

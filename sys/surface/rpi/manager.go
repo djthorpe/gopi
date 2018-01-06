@@ -12,8 +12,10 @@
 package rpi
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/djthorpe/gopi"
 )
@@ -32,6 +34,10 @@ type egl struct {
 	major, minor int
 }
 
+type surface struct {
+	handle eglSurface
+}
+
 // Raspberry-pi specific interface for SurfaceManager
 type SurfaceManager interface {
 	gopi.SurfaceManager
@@ -39,6 +45,23 @@ type SurfaceManager interface {
 	// Return a list of extensions the GPU provides
 	Extensions() []string
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// GLOBAL VARIABLES
+
+var (
+	// Map API names to eglAPI
+	eglStringTypeMap = map[string]gopi.SurfaceType{
+		"OpenGL_ES": gopi.SURFACE_TYPE_OPENGL_ES,
+		"OpenVG":    gopi.SURFACE_TYPE_OPENVG,
+	}
+	// Map eglAPI to EGL_RENDERABLE_TYPE
+	eglRenderableTypeMap = map[eglAPI]eglRenderableType{
+		EGL_OPENGL_API:    EGL_OPENGL_BIT,
+		EGL_OPENVG_API:    EGL_OPENVG_BIT,
+		EGL_OPENGL_ES_API: EGL_OPENGL_ES_BIT,
+	}
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
@@ -68,18 +91,22 @@ func (config EGL) Open(log gopi.Logger) (gopi.Driver, error) {
 		this.minor = int(minor)
 	}
 
-	// Get configurations
-	if configs, err := eglGetConfigs(this.handle); err != EGL_SUCCESS {
-		return nil, os.NewSyscallError("eglGetConfigs", err)
-	} else {
-		for i, config := range configs {
-			if a, err := eglGetConfigAttribs(this.handle, config); err != EGL_SUCCESS {
-				return nil, os.NewSyscallError("eglGetConfigAttribs", err)
-			} else {
-				fmt.Println(i, a)
+	/*
+		// Get configurations
+		if configs, err := eglGetConfigs(this.handle); err != EGL_SUCCESS {
+			return nil, os.NewSyscallError("eglGetConfigs", err)
+		} else {
+			for i, config := range configs {
+				if a, err := eglGetConfigAttribs(this.handle, config); err != EGL_SUCCESS {
+					return nil, os.NewSyscallError("eglGetConfigAttribs", err)
+				} else {
+					fmt.Println(i, a)
+				}
 			}
 		}
-	}
+	*/
+
+	this.getFrameBufferConfiguration()
 
 	return this, nil
 }
@@ -99,13 +126,24 @@ func (this *egl) Close() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// SURFACE
+
+func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, opacity float32, layer uint, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
+	return nil, gopi.ErrNotImplemented
+}
+
+func (this *egl) DestroySurface(gopi.Surface) error {
+	return gopi.ErrNotImplemented
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *egl) String() string {
 	if this.display == nil {
 		return fmt.Sprintf("<sys.surface.rpi.SurfaceManager>{ nil }")
 	} else {
-		return fmt.Sprintf("<sys.surface.rpi.SurfaceManager>{ handle=%v name=%v version={ %v,%v } extensions=%v client_apis=%v display=%v }", this.handle, this.Name(), this.major, this.minor, this.Extensions(), this.ClientAPIs(), this.display)
+		return fmt.Sprintf("<sys.surface.rpi.SurfaceManager>{ handle=%v name=%v version={ %v,%v } types=%v extensions=%v display=%v }", this.handle, this.Name(), this.major, this.minor, this.Types(), this.Extensions(), this.display)
 	}
 }
 
@@ -120,10 +158,47 @@ func (this *egl) Name() string {
 	return fmt.Sprintf("%v %v", eglQueryString(this.handle, EGL_VENDOR), eglQueryString(this.handle, EGL_VERSION))
 }
 
-func (this *egl) Extensions() string {
-	return eglQueryString(this.handle, EGL_EXTENSIONS)
+func (this *egl) Extensions() []string {
+	return strings.Split(eglQueryString(this.handle, EGL_EXTENSIONS), " ")
 }
 
-func (this *egl) ClientAPIs() string {
-	return eglQueryString(this.handle, EGL_CLIENT_APIS)
+// Return capabilities for the GPU
+func (this *egl) Types() []gopi.SurfaceType {
+	types := strings.Split(eglQueryString(this.handle, EGL_CLIENT_APIS), " ")
+	surface_types := make([]gopi.SurfaceType, 0, 3)
+	for _, t := range types {
+		if t2, ok := eglStringTypeMap[t]; ok {
+			surface_types = append(surface_types, t2)
+		}
+	}
+	// always include RGBA32
+	return append(surface_types, gopi.SURFACE_TYPE_RGBA32)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func (this *egl) getFrameBufferConfiguration() (eglConfig, error) {
+	attribute_list := map[eglConfigAttrib]eglInt{
+		EGL_RED_SIZE:     eglInt(8),
+		EGL_BLUE_SIZE:    eglInt(8),
+		EGL_GREEN_SIZE:   eglInt(8),
+		EGL_ALPHA_SIZE:   eglInt(8),
+		EGL_SURFACE_TYPE: eglInt(EGL_WINDOW_BIT),
+	}
+
+	// RENDERABLE_TYPE
+	api := eglQueryAPI()
+	if rednerable_type, ok := eglRenderableTypeMap[api]; ok {
+		attribute_list[EGL_RENDERABLE_TYPE] = eglInt(rednerable_type)
+	}
+
+	// Configs
+	if configs, err := eglChooseConfig(this.handle, attribute_list); err != EGL_SUCCESS {
+		return EGL_NO_CONFIG, os.NewSyscallError("eglChooseConfig", err)
+	} else if len(configs) == 0 {
+		return EGL_NO_CONFIG, errors.New("Matches several configurations")
+	} else {
+		this.log.Info("Configs = %v", configs)
+		return configs[0], nil
+	}
 }

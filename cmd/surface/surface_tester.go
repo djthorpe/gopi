@@ -10,6 +10,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	// Frameworks
@@ -24,6 +25,12 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
+
+	if surface_manager := app.Surface; surface_manager == nil {
+		return fmt.Errorf("Missing Surface Manager")
+	} else {
+		fmt.Println(surface_manager.Types())
+	}
 
 	return nil
 }
