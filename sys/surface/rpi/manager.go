@@ -32,6 +32,14 @@ type egl struct {
 	major, minor int
 }
 
+// Raspberry-pi specific interface for SurfaceManager
+type SurfaceManager interface {
+	gopi.SurfaceManager
+
+	// Return a list of extensions the GPU provides
+	Extensions() []string
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
 
