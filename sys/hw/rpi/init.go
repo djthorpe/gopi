@@ -32,7 +32,7 @@ func init() {
 	gopi.RegisterModule(gopi.Module{
 		Name:     "rpi/display",
 		Type:     gopi.MODULE_TYPE_DISPLAY,
-		Requires: []string{"hw/rpi"},
+		Requires: []string{"rpi/hw"},
 		Config: func(config *gopi.AppConfig) {
 			config.AppFlags.FlagUint("display", 0, "Display")
 			config.AppFlags.FlagString("display.ppi", "", "Pixels per inch or diagonal size in mm, cm or in")

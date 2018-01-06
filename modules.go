@@ -62,15 +62,16 @@ const (
 	MODULE_TYPE_LOGGER   // Logging module
 	MODULE_TYPE_HARDWARE // Hardware capabilities and monitoring
 	MODULE_TYPE_DISPLAY  // Displays
+	MODULE_TYPE_SURFACE  // Graphics Surface Manager
 	MODULE_TYPE_BITMAP   // Bitmap graphics
 	MODULE_TYPE_VECTOR   // 2D Vector graphics
-	MODULE_TYPE_VGFONT   // Font rendering
 	MODULE_TYPE_OPENGL   // 3D Graphics
+	MODULE_TYPE_VGFONT   // Font rendering
 	MODULE_TYPE_LAYOUT   // Flex 2D Rectangular Layout
 	MODULE_TYPE_GPIO     // GPIO Hardware interface
 	MODULE_TYPE_I2C      // I2C Hardware interface
 	MODULE_TYPE_SPI      // SPI Hardware interface
-	MODULE_TYPE_INPUT    // User Input Device interface
+	MODULE_TYPE_INPUT    // Input device manager interface
 	MODULE_TYPE_MDNS     // DNS Service Discovery
 	MODULE_TYPE_TIMER    // Timer module
 	MODULE_TYPE_LIRC     // LIRC module
@@ -86,6 +87,7 @@ var (
 		"logger":  MODULE_TYPE_LOGGER,
 		"hw":      MODULE_TYPE_HARDWARE,
 		"display": MODULE_TYPE_DISPLAY,
+		"surface": MODULE_TYPE_SURFACE,
 		"bitmap":  MODULE_TYPE_BITMAP,
 		"vector":  MODULE_TYPE_VECTOR,
 		"font":    MODULE_TYPE_VGFONT,
@@ -290,6 +292,8 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_HARDWARE"
 	case MODULE_TYPE_DISPLAY:
 		return "MODULE_TYPE_DISPLAY"
+	case MODULE_TYPE_SURFACE:
+		return "MODULE_TYPE_SURFACE"
 	case MODULE_TYPE_BITMAP:
 		return "MODULE_TYPE_BITMAP"
 	case MODULE_TYPE_VECTOR:

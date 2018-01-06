@@ -22,11 +22,11 @@ func init() {
 	// Register hardware
 	gopi.RegisterModule(gopi.Module{
 		Name:     "rpi/surface_manager",
-		Type:     gopi.MODULE_TYPE_OTHER,
+		Type:     gopi.MODULE_TYPE_SURFACE,
 		Requires: []string{"display"},
 		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
 			return gopi.Open(EGL{
-				Display: app.ModuleInstance("display"),
+				Display: app.ModuleInstance("display").(gopi.Display),
 			}, app.Logger)
 		},
 	})

@@ -44,6 +44,7 @@ func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 	table.Append([]string{"name", fmt.Sprint(app.Hardware.Name())})
 	table.Append([]string{"serial_number", fmt.Sprint(app.Hardware.SerialNumber())})
 	table.Append([]string{"number_of_displays", fmt.Sprint(app.Hardware.NumberOfDisplays())})
+	table.Append([]string{"hw", moduleName("hw")})
 	table.Append([]string{"gpio", moduleName("gpio")})
 	table.Append([]string{"i2c", moduleName("i2c")})
 	table.Append([]string{"spi", moduleName("spi")})
