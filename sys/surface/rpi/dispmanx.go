@@ -72,12 +72,14 @@ const (
 )
 
 const (
+	// From /opt/vc/include/interface/vmcs_host/vc_dispmanx_types.h
 	DX_PROTECTION_NONE dxProtection = 0x000000000
 	DX_PROTECTION_HDCP dxProtection = 0x00000000B
 	DX_PROTECTION_MAX  dxProtection = 0x00000000F
 )
 
 const (
+	// From /opt/vc/include/interface/vmcs_host/vc_dispmanx_types.h
 	/* Bottom 2 bits sets the alpha mode */
 	DX_ALPHA_FROM_SOURCE       dxAlphaFlags = 0
 	DX_ALPHA_FIXED_ALL_PIXELS  dxAlphaFlags = 1
@@ -88,6 +90,7 @@ const (
 )
 
 const (
+	// From /opt/vc/include/interface/vmcs_host/vc_dispmanx_types.h
 	/* Bottom 2 bits sets the orientation */
 	DX_TRANSFORM_NO_ROTATE  dxTransformFlags = 0
 	DX_TRANSFORM_ROTATE_90  dxTransformFlags = 1
