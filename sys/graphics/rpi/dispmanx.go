@@ -15,9 +15,9 @@ package rpi
 // CGO
 
 /*
-    #cgo CFLAGS: -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host
-    #cgo LDFLAGS:  -L/opt/vc/lib -lbcm_host
-	#include "vc_dispmanx.h"
+#cgo CFLAGS: -I/opt/vc/include -I/opt/vc/include/interface/vmcs_host
+#cgo LDFLAGS:  -L/opt/vc/lib -lbcm_host
+#include "vc_dispmanx.h"
 */
 import "C"
 import "unsafe"
@@ -35,6 +35,12 @@ type dxError int
 type dxProtection uint32
 type dxAlphaFlags int
 type dxTransformFlags int
+
+type dxAlpha struct {
+	Flags   dxAlphaFlags
+	Opacity uint32
+	Mask    dxResourceHandle
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -200,18 +206,24 @@ func dxUpdateSubmitSync(handle dxUpdateHandle) dxError {
 // ELEMENTS
 
 // Add an elment to a display as part of an update
-func dxElementAdd(update dxUpdateHandle, display dxDisplayHandle, layer int32, dest_rect *dxRect, resource dxResourceHandle, src_rect *dxRect, protection dxProtection, alpha dxAlpha, clamp dxClamp, transform dxTransformFlags) (dxElementHandle, dxError) {
-	// TODO
-	return dxElementHandle(DX_NO_ELEMENT), DX_ELEMENT_ERROR
+func dxElementAdd(update dxUpdateHandle, display dxDisplayHandle, layer int32, dest_rect *dxRect, resource dxResourceHandle, src_rect *dxRect, protection dxProtection, alpha dxAlpha, transform dxTransformFlags) (dxElementHandle, dxError) {
+	if element := C.vc_dispmanx_element_add(
+		C.DISPMANX_UPDATE_HANDLE_T(update),
+		C.DISPMANX_DISPLAY_HANDLE_T(display),
+		C.int32_t(layer),
+		(*C.VC_RECT_T)(dest_rect),
+		C.DISPMANX_RESOURCE_HANDLE_T(resource),
+		(*C.VC_RECT_T)(src_rect),
+		C.DISPMANX_PROTECTION_T(protection),
+		(*C.VC_DISPMANX_ALPHA_T)(unsafe.Pointer(&alpha)),
+		(*C.DISPMANX_CLAMP_T)(DX_NULL), // TODO: We ignore clamp for the moment
+		C.DISPMANX_TRANSFORM_T(transform),
+	); element == DX_NO_ELEMENT {
+		return dxElementHandle(DX_NO_ELEMENT), DX_ELEMENT_ERROR
+	} else {
+		return dxElementHandle(element), DX_SUCCESS
+	}
 }
-
-/*
-VCHPRE_ DISPMANX_ELEMENT_HANDLE_T VCHPOST_ vc_dispmanx_element_add ( DISPMANX_UPDATE_HANDLE_T update, DISPMANX_DISPLAY_HANDLE_T display,
-                                                                     int32_t layer, const VC_RECT_T *dest_rect, DISPMANX_RESOURCE_HANDLE_T src,
-                                                                     const VC_RECT_T *src_rect, DISPMANX_PROTECTION_T protection,
-                                                                     VC_DISPMANX_ALPHA_T *alpha,
-                                                                     DISPMANX_CLAMP_T *clamp, DISPMANX_TRANSFORM_T transform );
-*/
 
 // Remove a display element from its display
 func dxElementRemove(update dxUpdateHandle, element dxElementHandle) dxError {
@@ -260,6 +272,21 @@ func dxElementChangeAttributes(update dxUpdateHandle, element dxElementHandle, c
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
+
+func (e dxError) Error() string {
+	switch e {
+	case DX_SUCCESS:
+		return "DX_SUCCESS"
+	case DX_RESOURCE_ERROR:
+		return "DX_RESOURCE_ERROR"
+	case DX_UPDATE_ERROR:
+		return "DX_UPDATE_ERROR"
+	case DX_ELEMENT_ERROR:
+		return "DX_ELEMENT_ERROR"
+	default:
+		return "[?? Invalid dxError value]"
+	}
+}
 
 func (i dxImageType) String() string {
 	switch i {

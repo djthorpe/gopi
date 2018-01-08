@@ -17,9 +17,9 @@ import (
 	"github.com/djthorpe/gopi"
 
 	// Modules
+	_ "github.com/djthorpe/gopi/sys/graphics/rpi"
 	_ "github.com/djthorpe/gopi/sys/hw/rpi"
 	_ "github.com/djthorpe/gopi/sys/logger"
-	_ "github.com/djthorpe/gopi/sys/surface/rpi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
