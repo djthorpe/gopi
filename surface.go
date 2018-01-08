@@ -42,6 +42,10 @@ type SurfaceManager interface {
 	CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint, origin Point, size Size) (Surface, error)
 	DestroySurface(Surface) error
 
+	// Create and destroy bitmaps
+	CreateBitmap(Size) (Bitmap, error)
+	DestroyBitmap(Bitmap) error
+
 	/*
 		// Create background, surface and cursors
 		CreateBackground(api SurfaceType, flags SurfaceFlags, opacity float32) (Surface, error)
@@ -68,6 +72,12 @@ type Surface interface {
 	Opacity() float32
 	Layer() uint
 	Origin() Point
+	Size() Size
+}
+
+// Bitmap defines a rectangular bitmap which can be used
+// by the GPU
+type Bitmap interface {
 	Size() Size
 }
 
