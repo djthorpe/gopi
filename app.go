@@ -356,7 +356,7 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 		}
 	case MODULE_TYPE_SURFACE:
 		if this.Surface, ok = driver.(SurfaceManager); !ok {
-			return fmt.Errorf("Module %v cannot be cast to gopi.Surface", module)
+			return fmt.Errorf("Module %v cannot be cast to gopi.SurfaceManager", module)
 		}
 	case MODULE_TYPE_LAYOUT:
 		if this.Layout, ok = driver.(Layout); !ok {

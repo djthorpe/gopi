@@ -129,11 +129,20 @@ func (this *egl) Close() error {
 // SURFACE
 
 func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, opacity float32, layer uint, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
-	return nil, gopi.ErrNotImplemented
+	// Currently we only support RGBA32 surfaces
+	if api != gopi.SURFACE_TYPE_RGBA32 {
+		return nil, gopi.ErrNotImplemented
+	}
+
+	if element, err := gopi.Open(Element{}, this.log); err != nil {
+		return nil, err
+	} else {
+		return element.(gopi.Surface), nil
+	}
 }
 
-func (this *egl) DestroySurface(gopi.Surface) error {
-	return gopi.ErrNotImplemented
+func (this *egl) DestroySurface(surface gopi.Surface) error {
+	return surface.Close()
 }
 
 ////////////////////////////////////////////////////////////////////////////////

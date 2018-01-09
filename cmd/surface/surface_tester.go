@@ -26,13 +26,15 @@ import (
 
 func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 
+	size := gopi.Size{100, 100}
+
 	if surface_manager := app.Surface; surface_manager == nil {
 		return fmt.Errorf("Missing Surface Manager")
-	} else if bitmap, err := surface_manager.CreateBitmap(gopi.Size{100, 100}); err != nil {
+	} else if surface, err := surface_manager.CreateSurface(gopi.SURFACE_TYPE_RGBA32, gopi.SURFACE_FLAG_NONE, 1.0, gopi.SURFACE_LAYER_DEFAULT, gopi.ZeroPoint, size); err != nil {
 		return err
 	} else {
-		defer bitmap.Close()
-		fmt.Println(bitmap)
+		defer surface.Close()
+		fmt.Println(surface)
 	}
 
 	return nil

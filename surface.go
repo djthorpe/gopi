@@ -42,7 +42,7 @@ type SurfaceManager interface {
 	Types() []SurfaceType
 
 	// Create & destroy surfaces
-	CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint, origin Point, size Size) (Surface, error)
+	CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
 	DestroySurface(Surface) error
 
 	// Create and destroy bitmaps
@@ -77,7 +77,7 @@ type Surface interface {
 	Size() Size
 	Origin() Point
 	Opacity() float32
-	Layer() uint
+	Layer() uint16
 }
 
 // Bitmap defines a rectangular bitmap which can be used
@@ -115,7 +115,15 @@ const (
 
 const (
 	// SurfaceType
-	SURFACE_FLAG_NONE SurfaceFlags = 0
+	SURFACE_FLAG_NONE              SurfaceFlags = (1 << iota)
+	SURFACE_FLAG_ALPHA_FROM_SOURCE              = (1 << iota)
+)
+
+const (
+	// SurfaceLayer
+	SURFACE_LAYER_BACKGROUND uint16 = 0x0000
+	SURFACE_LAYER_DEFAULT    uint16 = 0x0001
+	SURFACE_LAYER_CURSOR     uint16 = 0xFFFF
 )
 
 ////////////////////////////////////////////////////////////////////////////////

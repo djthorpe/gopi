@@ -126,7 +126,8 @@ const (
 )
 
 var (
-	DX_NULL = unsafe.Pointer(uintptr(0))
+	DX_NULL                    = unsafe.Pointer(uintptr(0))
+	DX_UPDATE_PRIORITY_DEFAULT = int32(0)
 )
 
 ////////////////////////////////////////////////////////////////////////////////

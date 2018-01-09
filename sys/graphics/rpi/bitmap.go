@@ -17,6 +17,7 @@ import (
 	"image/color"
 	"os"
 	"sync"
+	"unsafe"
 
 	"github.com/djthorpe/gopi"
 )
@@ -46,6 +47,7 @@ type resource struct {
 var (
 	ErrUnsupportedImageType = errors.New("Unsupported Image Type")
 	ErrInvalidResource      = errors.New("Invalid resource")
+	ErrMisalignedData       = errors.New("Misaligned bitmap data")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -138,8 +140,9 @@ func (this *resource) ClearToColorRGBA(color color.RGBA) error {
 	}
 
 	// Write data
-	if err := dxResourceWriteDataUint32(this.handle, data); err != DX_SUCCESS {
-		return os.NewSyscallError("dxResourceWriteDataUint32", err)
+	rect := dxRectSet(0, 0, this.width, this.height)
+	if err := dxResourceWriteDataHandle(this.handle, this.image_type, int(this.stride_bytes), unsafe.Pointer(&data[0]), &rect); err != DX_SUCCESS {
+		return os.NewSyscallError("dxResourceWriteDataHandle", err)
 	}
 
 	// Success
@@ -181,9 +184,4 @@ func dxAlignUp(value, alignment uint32) uint32 {
 // Convert naitive image/color type into uint32
 func dxToRGBA32(color color.RGBA) uint32 {
 	return uint32(color.A)<<24 | uint32(color.B)<<16 | uint32(color.G)<<8 | uint32(color.R)
-}
-
-// dxResourceWriteDataUint32 writes into resource data
-func dxResourceWriteDataUint32(resource dxResourceHandle, data []uint32) error {
-	return gopi.ErrNotImplemented
 }

@@ -11,8 +11,29 @@
 
 package rpi
 
-/*
+import (
+	"os"
+	"sync"
+
+	"github.com/djthorpe/gopi"
+)
+
 type Element struct {
+	Display gopi.Display
+	Type    gopi.SurfaceType
+	Origin  gopi.Point
+	Size    gopi.Size
+	Layer   uint16
+	Opacity float32
+}
+
+type element struct {
+	log    gopi.Logger
+	lock   sync.Mutex
+	handle dxElementHandle
+}
+
+/*
 	display dxDisplayHandle
 	update dxUpdateHandle
 	layer uint16
@@ -21,15 +42,44 @@ type Element struct {
 	src_bitmap
 }
 
-type element struct {
-	handle dxElementHandle
+*/
+
+func (config Element) Open(log gopi.Logger) (gopi.Driver, error) {
+	log.Debug("<sys.graphics.rpi.surface.Open>{ Type=%v Origin=%v Size=%v Layer=%v Opacity=%v }", config.Type, config.Origin, config.Size, config.Layer, config.Opacity)
+
+	this := new(element)
+	this.log = log
+
+	if update, err := dxUpdateStart(DX_UPDATE_PRIORITY_DEFAULT); err != DX_SUCCESS {
+		return nil, os.NewSyscallError("dxUpdateStart", err)
+	} else {
+		defer dxUpdateSubmitSync(update)
+	}
+
+	// TODO
+
+	return this, nil
 }
 
-func (config Element) Open(log gopi.Logger) (*element, error) {
-
+func (this *element) Close() error {
+	this.log.Debug("<sys.graphics.rpi.surface.Close>{ %v }", this.handle)
+	if this.handle == dxElementHandle(DX_NO_ELEMENT) {
+		return nil
+	} else if update, err := dxUpdateStart(DX_UPDATE_PRIORITY_DEFAULT); err != DX_SUCCESS {
+		return os.NewSyscallError("dxUpdateStart", err)
+	} else {
+		defer dxUpdateSubmitSync(update)
+		if err := dxElementRemove(update, this.handle); err != DX_SUCCESS {
+			this.handle = dxElementHandle(DX_NO_ELEMENT)
+			return os.NewSyscallError("dxElementRemove", err)
+		} else {
+			this.handle = dxElementHandle(DX_NO_ELEMENT)
+			return nil
+		}
+	}
 }
 
-
+/*
 func (this *DXDisplay) AddElement(update dxUpdateHandle, layer uint16, opacity uint32, dst_rect *DXFrame, src_resource *DXResource) (*DXElement, error) {
 
         // destination frame - if nil, then cover whole frame
@@ -75,8 +125,4 @@ func (this *DXDisplay) AddElement(update dxUpdateHandle, layer uint16, opacity u
         return element, nil
 }
 
-
-func (this *element) Close() error {
-
-}
 */
