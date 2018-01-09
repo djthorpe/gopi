@@ -23,6 +23,12 @@ type SurfaceType uint
 // usually during operations
 type SurfaceFlags uint32
 
+// SurfaceManagerCallback is a function callback for
+// performing surface operations - it's not possible
+// to use the Create, Destroy, Move or Set methods
+// outside the callback
+type SurfaceManagerCallback func(SurfaceManager) error
+
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
@@ -40,6 +46,10 @@ type SurfaceManager interface {
 
 	// Return capabilities for the GPU
 	Types() []SurfaceType
+
+	// Perform surface operations (create, destroy, move, set) within
+	// a 'Do' method to ensure atomic updates to the display
+	Do(SurfaceManagerCallback) error
 
 	// Create & destroy surfaces
 	CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
