@@ -68,6 +68,8 @@ type SurfaceManager interface {
 // Surface is manipulated by surface manager, and used by
 // a GPU API (bitmap or vector drawing mostly)
 type Surface interface {
+	Driver
+
 	Type() SurfaceType
 	Opacity() float32
 	Layer() uint
@@ -78,6 +80,8 @@ type Surface interface {
 // Bitmap defines a rectangular bitmap which can be used
 // by the GPU
 type Bitmap interface {
+	Driver
+
 	Size() Size
 }
 

@@ -137,6 +137,25 @@ func (this *egl) DestroySurface(gopi.Surface) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// BITMAP
+
+func (this *egl) CreateBitmap(size gopi.Size) (gopi.Bitmap, error) {
+	if bitmap, err := gopi.Open(Resource{
+		ImageType: DX_IMAGETYPE_RGBA32,
+		Width:     uint32(size.W),
+		Height:    uint32(size.H),
+	}, this.log); err != nil {
+		return nil, err
+	} else {
+		return bitmap.(gopi.Bitmap), nil
+	}
+}
+
+func (this *egl) DestroyBitmap(bitmap gopi.Bitmap) error {
+	return bitmap.Close()
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *egl) String() string {

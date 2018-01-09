@@ -51,7 +51,7 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
 
-func (config Resource) Open(log gopi.Logger) (*resource, error) {
+func (config Resource) Open(log gopi.Logger) (gopi.Driver, error) {
 	log.Debug("<sys.surface.rpi.Bitmap.Open>{ image_type=%v size={ %v,%v } }", config.ImageType, config.Width, config.Height)
 
 	// Check configuration parameters
@@ -158,6 +158,6 @@ func dxToRGBA32(color color.RGBA) uint32 {
 }
 
 // dxResourceWriteDataUint32 writes into resource data
-func dxResourceWriteDataUint32(resource dxResourceHandle,data []uint32]) error {
-
+func dxResourceWriteDataUint32(resource dxResourceHandle, data []uint32) error {
+	return gopi.ErrNotImplemented
 }

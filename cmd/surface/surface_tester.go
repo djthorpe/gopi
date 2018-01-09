@@ -28,8 +28,11 @@ func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 
 	if surface_manager := app.Surface; surface_manager == nil {
 		return fmt.Errorf("Missing Surface Manager")
+	} else if bitmap, err := surface_manager.CreateBitmap(gopi.Size{100, 100}); err != nil {
+		return err
 	} else {
-		fmt.Println(surface_manager.Types())
+		defer bitmap.Close()
+		fmt.Println(bitmap)
 	}
 
 	return nil
