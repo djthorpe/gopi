@@ -14,7 +14,9 @@ package rpi
 import (
 	"errors"
 	"fmt"
+	"image/color"
 	"os"
+	"sync"
 
 	"github.com/djthorpe/gopi"
 )
@@ -29,12 +31,13 @@ type Resource struct {
 }
 
 type resource struct {
-	log        gopi.Logger
-	handle     dxResourceHandle
-	image_type dxImageType
-	width      uint32
-	height     uint32
-	stride     uint32 // number of bytes per row rounded up to 16-byte boundaries
+	log          gopi.Logger
+	lock         sync.Mutex
+	handle       dxResourceHandle
+	image_type   dxImageType
+	width        uint32
+	height       uint32
+	stride_bytes uint32 // number of bytes per row rounded up to 16-byte boundaries
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,6 +45,7 @@ type resource struct {
 
 var (
 	ErrUnsupportedImageType = errors.New("Unsupported Image Type")
+	ErrInvalidResource      = errors.New("Invalid resource")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +68,7 @@ func (config Resource) Open(log gopi.Logger) (*resource, error) {
 	this.image_type = config.ImageType
 	this.width = config.Width
 	this.height = config.Height
-	this.stride = dxAlignUp(uint32(config.Width), uint32(16)) * 4 // uint32 to bytes
+	this.stride_bytes = dxAlignUp(uint32(config.Width), uint32(16)) * 4 // uint32 to bytes
 
 	if handle, err := dxResourceCreate(this.image_type, this.width, this.height); err != DX_SUCCESS {
 		return nil, os.NewSyscallError("dxResourceCreate", err)
@@ -80,6 +84,12 @@ func (this *resource) Close() error {
 	if this.handle == dxResourceHandle(DX_NO_RESOURCE) {
 		return nil
 	}
+
+	// Lock
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	// Delete resource
 	if err := dxResourceDelete(this.handle); err != DX_SUCCESS {
 		return os.NewSyscallError("dxResourceDelete", err)
 	} else {
@@ -95,16 +105,59 @@ func (this *resource) String() string {
 	if this.handle == dxResourceHandle(DX_NO_RESOURCE) {
 		return "<sys.surface.rpi.Bitmap.Open>{ nil }"
 	} else {
-		return fmt.Sprintf("<sys.surface.rpi.Bitmap.Open>{ size={ %v,%v } image_type=%v stride=%v handle=%v }", this.width, this.height, this.image_type, this.stride, this.handle)
+		return fmt.Sprintf("<sys.surface.rpi.Bitmap.Open>{ size={ %v,%v } image_type=%v stride_bytes=%v handle=%v }", this.width, this.height, this.image_type, this.stride_bytes, this.handle)
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACE
 
+func (this *resource) ClearToColorRGBA(color color.RGBA) error {
+
+	// Checks
+	if this.handle == dxResourceHandle(DX_NO_RESOURCE) {
+		return ErrInvalidResource
+	}
+
+	// Check for correct image type
+	if this.image_type != DX_IMAGETYPE_RGBA32 {
+		return ErrUnsupportedImageType
+	}
+
+	// Lock
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	// Clear buffer to color
+	data := make([]uint32, this.height*(this.stride_bytes>>4))
+	value := dxToRGBA32(color)
+	for i := 0; i < len(data); i++ {
+		data[i] = value
+	}
+
+	// Write data
+	if err := dxResourceWriteDataUint32(this.handle, data); err != DX_SUCCESS {
+		return os.NewSyscallError("dxResourceWriteDataUint32", err)
+	}
+
+	// Success
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
+// Align a width (in 1 pixel per uint32) up to a byte boundary
 func dxAlignUp(value, alignment uint32) uint32 {
 	return ((value - 1) & ^(alignment - 1)) + alignment
+}
+
+// Convert naitive image/color type into uint32
+func dxToRGBA32(color color.RGBA) uint32 {
+	return uint32(color.A)<<24 | uint32(color.B)<<16 | uint32(color.G)<<8 | uint32(color.R)
+}
+
+// dxResourceWriteDataUint32 writes into resource data
+func dxResourceWriteDataUint32(resource dxResourceHandle,data []uint32]) error {
+
 }

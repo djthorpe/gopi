@@ -49,14 +49,14 @@ const (
 	// dxImageType values
 	// We only list defaults for supported color models on the Raspberry Pi
 	// From /opt/vc/include/interface/vctypes/vc_image_types.h
-	DX_IMAGETYPE_RGB565    dxImageType = 1
-	DX_IMAGETYPE_YUV420    dxImageType = 3
-	DX_IMAGETYPE_RGB888    dxImageType = 5
+	DX_IMAGETYPE_RGB565    dxImageType = 1  // 16 bits per pixel
+	DX_IMAGETYPE_YUV420    dxImageType = 3  // 16 bits per pixel
+	DX_IMAGETYPE_RGB888    dxImageType = 5  // 24 bits per pixel
 	DX_IMAGETYPE_4BPP      dxImageType = 7  // 4bpp palettised image
-	DX_IMAGETYPE_RGBA32    dxImageType = 15 /* RGB888 0xAABBGGRR */
+	DX_IMAGETYPE_RGBA32    dxImageType = 15 /* 32 bits per pixel - RGB888 0xAABBGGRR */
 	DX_IMAGETYPE_YUV422    dxImageType = 16 /* a line of Y (32-byte padded), a line of U (16-byte padded), and a line of V (16-byte padded) */
 	DX_IMAGETYPE_RGBA565   dxImageType = 17 /* RGB565 with a transparent patch */
-	DX_IMAGETYPE_RGBA16    dxImageType = 18 /* Compressed (4444) version of RGBA32 */
+	DX_IMAGETYPE_RGBA16    dxImageType = 18 /* 16 bits per pixel - Compressed (4444) version of RGBA32 */
 	DX_IMAGETYPE_YUV_UV    dxImageType = 19 /* VCIII codec format */
 	DX_IMAGETYPE_TF_RGBA32 dxImageType = 20 /* VCIII T-format RGBA8888 */
 	DX_IMAGETYPE_TF_RGBX32 dxImageType = 21 /* VCIII T-format RGBx8888 */
