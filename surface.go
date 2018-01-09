@@ -8,7 +8,10 @@
 
 package gopi
 
-import "strings"
+import (
+	"image/color"
+	"strings"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
@@ -71,10 +74,10 @@ type Surface interface {
 	Driver
 
 	Type() SurfaceType
+	Size() Size
+	Origin() Point
 	Opacity() float32
 	Layer() uint
-	Origin() Point
-	Size() Size
 }
 
 // Bitmap defines a rectangular bitmap which can be used
@@ -82,7 +85,11 @@ type Surface interface {
 type Bitmap interface {
 	Driver
 
+	Type() SurfaceType
 	Size() Size
+
+	// Bitmap operations
+	ClearToColorRGBA(color color.RGBA) error
 }
 
 /*

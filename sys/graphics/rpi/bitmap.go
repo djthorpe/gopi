@@ -52,7 +52,7 @@ var (
 // OPEN AND CLOSE
 
 func (config Resource) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<sys.surface.rpi.Bitmap.Open>{ image_type=%v size={ %v,%v } }", config.ImageType, config.Width, config.Height)
+	log.Debug("<sys.graphics.rpi.Bitmap.Open>{ image_type=%v size={ %v,%v } }", config.ImageType, config.Width, config.Height)
 
 	// Check configuration parameters
 	if config.Width == 0 || config.Height == 0 {
@@ -80,6 +80,8 @@ func (config Resource) Open(log gopi.Logger) (gopi.Driver, error) {
 }
 
 func (this *resource) Close() error {
+	this.log.Debug("<sys.graphics.rpi.Bitmap.Close>{ handle=%v }", this.handle)
+
 	// If already closed
 	if this.handle == dxResourceHandle(DX_NO_RESOURCE) {
 		return nil
@@ -103,9 +105,9 @@ func (this *resource) Close() error {
 
 func (this *resource) String() string {
 	if this.handle == dxResourceHandle(DX_NO_RESOURCE) {
-		return "<sys.surface.rpi.Bitmap.Open>{ nil }"
+		return "<sys.graphics.rpi.Bitmap>{ nil }"
 	} else {
-		return fmt.Sprintf("<sys.surface.rpi.Bitmap.Open>{ size={ %v,%v } image_type=%v stride_bytes=%v handle=%v }", this.width, this.height, this.image_type, this.stride_bytes, this.handle)
+		return fmt.Sprintf("<sys.graphics.rpi.Bitmap>{ size={ %v,%v } image_type=%v stride_bytes=%v handle=%v }", this.width, this.height, this.image_type, this.stride_bytes, this.handle)
 	}
 }
 
@@ -142,6 +144,30 @@ func (this *resource) ClearToColorRGBA(color color.RGBA) error {
 
 	// Success
 	return nil
+}
+
+func (this *resource) Type() gopi.SurfaceType {
+	// Checks
+	if this.handle == dxResourceHandle(DX_NO_RESOURCE) {
+		return gopi.SURFACE_TYPE_NONE
+	}
+
+	// Return image type
+	switch this.image_type {
+	case DX_IMAGETYPE_RGBA32:
+		return gopi.SURFACE_TYPE_RGBA32
+	default:
+		return gopi.SURFACE_TYPE_NONE
+	}
+}
+
+func (this *resource) Size() gopi.Size {
+	// Checks
+	if this.handle == dxResourceHandle(DX_NO_RESOURCE) {
+		return gopi.ZeroSize
+	} else {
+		return gopi.Size{float32(this.width), float32(this.height)}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

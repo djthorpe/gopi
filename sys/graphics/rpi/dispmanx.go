@@ -21,6 +21,7 @@ package rpi
 */
 import "C"
 import "unsafe"
+import "fmt"
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
@@ -142,7 +143,8 @@ func dxRectSet(x, y, width, height uint32) dxRect {
 
 // Create a new resource
 func dxResourceCreate(image_type dxImageType, width, height uint32) (dxResourceHandle, dxError) {
-	if handle := C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(image_type), C.uint32_t(width), C.uint32_t(height), (*C.uint32_t)(DX_NULL)); handle == DX_NO_RESOURCE {
+	var native_image_handle C.uint32_t
+	if handle := C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(image_type), C.uint32_t(width), C.uint32_t(height), &native_image_handle); handle == DX_NO_RESOURCE {
 		return dxResourceHandle(DX_NO_RESOURCE), DX_RESOURCE_ERROR
 	} else {
 		return dxResourceHandle(handle), DX_SUCCESS
@@ -330,5 +332,29 @@ func (p dxProtection) String() string {
 	default:
 		return "[?? Invalid dxProtection value]"
 
+	}
+}
+
+func (h dxResourceHandle) String() string {
+	if h == dxResourceHandle(DX_NO_RESOURCE) {
+		return "dxResource{nil}"
+	} else {
+		return fmt.Sprintf("dxResource{0x%08X}", uint32(h))
+	}
+}
+
+func (h dxElementHandle) String() string {
+	if h == dxElementHandle(DX_NO_ELEMENT) {
+		return "dxElement{nil}"
+	} else {
+		return fmt.Sprintf("dxElement{0x%08X}", uint32(h))
+	}
+}
+
+func (h dxUpdateHandle) String() string {
+	if h == dxUpdateHandle(DX_NO_UPDATE) {
+		return "dxUpdate{nil}"
+	} else {
+		return fmt.Sprintf("dxUpdate{0x%08X}", uint32(h))
 	}
 }
