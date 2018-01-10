@@ -40,8 +40,8 @@ type SurfaceCallback func(Surface, Bitmap) error
 // surfaces around an open display
 type SurfaceManager interface {
 	Driver
-	SurfaceMethods
-	BitmapMethods
+	SurfaceManagerSurfaceMethods
+	SurfaceManagerBitmapMethods
 
 	// Return the display associated with the surface manager
 	Display() Display
@@ -54,7 +54,7 @@ type SurfaceManager interface {
 	Types() []SurfaceType
 }
 
-type SurfaceMethods interface {
+type SurfaceManagerSurfaceMethods interface {
 	// Perform surface operations (create, destroy, move, set) within
 	// a 'Do' method to ensure atomic updates to the display
 	Do(SurfaceManagerCallback) error
@@ -81,7 +81,7 @@ type SurfaceMethods interface {
 	*/
 }
 
-type BitmapMethods interface {
+type SurfaceManagerBitmapMethods interface {
 	// Create and destroy bitmaps
 	CreateBitmap(SurfaceType, Size) (Bitmap, error)
 	DestroyBitmap(Bitmap) error

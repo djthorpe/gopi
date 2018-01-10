@@ -224,10 +224,12 @@ func (this *egl) SetLayer(surface gopi.Surface,flags gopi.SurfaceFlags, layer ui
 
 // SetOrigin moves the surface. Currently the flags argument is ignored
 func (this *egl) SetOrigin(surface gopi.Surface,flags gopi.SurfaceFlags,origin gopi.Point) error {
-	
+	return gopi.ErrNotImplemented
 }
 
-//SetOpacity(Surface, SurfaceFlags, float32)
+func (this *egl) SetOpacity(Surface, SurfaceFlags, float32) error {
+	
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
