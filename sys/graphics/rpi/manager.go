@@ -181,7 +181,7 @@ func (this *egl) doUpdateEnd() error {
 ////////////////////////////////////////////////////////////////////////////////
 // SURFACE
 
-func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, opacity float32, layer uint32, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
+func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, opacity float32, layer uint16, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
 	// Currently we only support RGBA32 surfaces
 	if api != gopi.SURFACE_TYPE_RGBA32 {
 		return nil, gopi.ErrNotImplemented
@@ -201,9 +201,34 @@ func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, op
 	}
 }
 
+func (this *egl) CreateSurfaceWithBitmap(gopi.Bitmap, flags gopi.SurfaceFlags, opacity float32, layer uint16, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
+
+}
+
 func (this *egl) DestroySurface(surface gopi.Surface) error {
 	return surface.Close()
 }
+
+// SetLayer changes a surface layer (except if it's a background or cursor). Currently
+// the flags argument is ignored
+func (this *egl) SetLayer(surface gopi.Surface,flags gopi.SurfaceFlags, layer uint16) error {	
+	if layer == gopi.SURFACE_LAYER_BACKGROUND || layer > gopi.SURFACE_LAYER_MAX {
+		return gopi.ErrBadParameter
+	}
+	if err := dxElementChangeLayer(this.update,surface.(rpi.Surface).Handle(),int32(layer); err != DX_SUCCESS {
+		return os.NewSyscallError("dxElementChangeLayer",err)
+	} else {
+		return nil
+	}
+}
+
+// SetOrigin moves the surface. Currently the flags argument is ignored
+func (this *egl) SetOrigin(surface gopi.Surface,flags gopi.SurfaceFlags,origin gopi.Point) error {
+	
+}
+
+//SetOpacity(Surface, SurfaceFlags, float32)
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // BITMAP

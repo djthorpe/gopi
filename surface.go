@@ -28,8 +28,10 @@ type SurfaceFlags uint32
 type SurfaceManagerCallback func(SurfaceManager) error
 
 // SurfaceCallback is a function callback for
-// performing drawing operations
-type SurfaceCallback func(Surface) error
+// performing drawing operations. If it's a bitmap
+// the second argument will contain the bitmap
+// resource
+type SurfaceCallback func(Surface, Bitmap) error
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -38,6 +40,8 @@ type SurfaceCallback func(Surface) error
 // surfaces around an open display
 type SurfaceManager interface {
 	Driver
+	SurfaceMethods
+	BitmapMethods
 
 	// Return the display associated with the surface manager
 	Display() Display
@@ -48,32 +52,39 @@ type SurfaceManager interface {
 
 	// Return capabilities for the GPU
 	Types() []SurfaceType
+}
 
+type SurfaceMethods interface {
 	// Perform surface operations (create, destroy, move, set) within
 	// a 'Do' method to ensure atomic updates to the display
 	Do(SurfaceManagerCallback) error
 
 	// Create & destroy surfaces
 	CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
+	CreateSurfaceWithBitmap(bitmap Bitmap, flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
 	DestroySurface(Surface) error
-
-	// Create and destroy bitmaps
-	CreateBitmap(SurfaceType, Size) (Bitmap, error)
-	DestroyBitmap(Bitmap) error
 
 	/*
 		// Create background, surface and cursors
 		CreateBackground(api SurfaceType, flags SurfaceFlags, opacity float32) (Surface, error)
 		CreateCursor(api SurfaceType, flags SurfaceFlags, opacity float32, origin Point, cursor SurfaceCursor) (Surface, error)
-
-		// Change surface properties (size, position, etc)
-		MoveOriginBy(Surface, SurfaceFlags, Point)
-		SetOrigin(Surface, SurfaceFlags, Point)
-		SetSize(Surface, SurfaceFlags, Size)
-		SetOpacity(Surface, SurfaceFlags, float32)
-		SetBitmap(Bitmap) error
-		SetLayer(Surface, uint)
 	*/
+
+	// Change surface properties (size, position, etc)
+	SetLayer(Surface, SurfaceFlags, uint16) error
+	SetOrigin(Surface, SurfaceFlags, Point) error
+	SetOpacity(Surface, SurfaceFlags, float32) error
+	/*
+		MoveOriginBy(Surface, SurfaceFlags, Point)
+		SetSize(Surface, SurfaceFlags, Size)
+		SetBitmap(Bitmap) error
+	*/
+}
+
+type BitmapMethods interface {
+	// Create and destroy bitmaps
+	CreateBitmap(SurfaceType, Size) (Bitmap, error)
+	DestroyBitmap(Bitmap) error
 }
 
 // Surface is manipulated by surface manager, and used by
@@ -85,7 +96,8 @@ type Surface interface {
 	Opacity() float32
 	Layer() uint16
 
-	//Perform drawing operations on a surface
+	//Perform drawing operations on a surface - if it's a bitmap
+	//then this reads the bitmap data from the GPU ready to draw on
 	//Do(SurfaceCallback) error
 }
 
@@ -95,7 +107,8 @@ type Bitmap interface {
 	Type() SurfaceType
 	Size() Size
 
-	// Bitmap operations
+	// Bitmap operations - requires you to use Do() on
+	// the surface in order to operate on the bitmap
 	ClearToColorRGBA(color color.RGBA) error
 }
 
@@ -130,6 +143,7 @@ const (
 	// SurfaceLayer
 	SURFACE_LAYER_BACKGROUND uint16 = 0x0000
 	SURFACE_LAYER_DEFAULT    uint16 = 0x0001
+	SURFACE_LAYER_MAX        uint16 = 0xFFFE
 	SURFACE_LAYER_CURSOR     uint16 = 0xFFFF
 )
 

@@ -33,6 +33,12 @@ type element struct {
 	handle dxElementHandle
 }
 
+type Surface interface {
+	gopi.Surface
+
+	Handle() dxElementHandle
+}
+
 /*
 	display dxDisplayHandle
 	update dxUpdateHandle
