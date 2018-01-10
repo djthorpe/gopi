@@ -24,10 +24,12 @@ type SurfaceType uint
 type SurfaceFlags uint32
 
 // SurfaceManagerCallback is a function callback for
-// performing surface operations - it's not possible
-// to use the Create, Destroy, Move or Set methods
-// outside the callback
+// performing surface operations
 type SurfaceManagerCallback func(SurfaceManager) error
+
+// SurfaceCallback is a function callback for
+// performing drawing operations
+type SurfaceCallback func(Surface) error
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -56,7 +58,7 @@ type SurfaceManager interface {
 	DestroySurface(Surface) error
 
 	// Create and destroy bitmaps
-	CreateBitmap(Size) (Bitmap, error)
+	CreateBitmap(SurfaceType, Size) (Bitmap, error)
 	DestroyBitmap(Bitmap) error
 
 	/*
@@ -69,32 +71,27 @@ type SurfaceManager interface {
 		SetOrigin(Surface, SurfaceFlags, Point)
 		SetSize(Surface, SurfaceFlags, Size)
 		SetOpacity(Surface, SurfaceFlags, float32)
+		SetBitmap(Bitmap) error
 		SetLayer(Surface, uint)
-
-		// Surface operations to start and end drawing or other
-		// surface operations
-		SetCurrentContext(Surface)
-		FlushSurface(Surface)
 	*/
 }
 
 // Surface is manipulated by surface manager, and used by
 // a GPU API (bitmap or vector drawing mostly)
 type Surface interface {
-	Driver
-
 	Type() SurfaceType
 	Size() Size
 	Origin() Point
 	Opacity() float32
 	Layer() uint16
+
+	//Perform drawing operations on a surface
+	//Do(SurfaceCallback) error
 }
 
 // Bitmap defines a rectangular bitmap which can be used
 // by the GPU
 type Bitmap interface {
-	Driver
-
 	Type() SurfaceType
 	Size() Size
 

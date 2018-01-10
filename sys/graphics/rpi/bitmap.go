@@ -47,7 +47,9 @@ type resource struct {
 var (
 	ErrUnsupportedImageType = errors.New("Unsupported Image Type")
 	ErrInvalidResource      = errors.New("Invalid resource")
+	ErrInvalidDisplay       = errors.New("Invalid display")
 	ErrMisalignedData       = errors.New("Misaligned bitmap data")
+	ErrInvalidUpdateState   = errors.New("Invalid update state")
 )
 
 ////////////////////////////////////////////////////////////////////////////////

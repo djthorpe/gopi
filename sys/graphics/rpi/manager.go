@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/djthorpe/gopi"
 )
@@ -31,6 +32,8 @@ type egl struct {
 	log          gopi.Logger
 	display      gopi.Display
 	handle       eglDisplay
+	update       dxUpdateHandle
+	lock         sync.Mutex
 	major, minor int
 }
 
@@ -126,16 +129,73 @@ func (this *egl) Close() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// DO
+
+func (this *egl) Do(callback gopi.SurfaceManagerCallback) error {
+	// check parameters
+	if this.handle == eglDisplay(EGL_NO_DISPLAY) {
+		return ErrInvalidDisplay
+	}
+	// create update
+	if err := this.doUpdateStart(); err != nil {
+		return err
+	}
+	// callback
+	cb_err := callback(this)
+	// end update
+	if err := this.doUpdateEnd(); err != nil {
+		this.log.Error("doUpdateEnd: %v", err)
+	}
+	// return callback error
+	return cb_err
+}
+
+func (this *egl) doUpdateStart() error {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	if this.update != dxUpdateHandle(DX_NO_UPDATE) {
+		return ErrInvalidState
+	}
+	if update, err := dxUpdateStart(DX_UPDATE_PRIORITY_DEFAULT); err != DX_SUCCESS {
+		return os.NewSyscallError("dxUpdateStart", err)
+	} else {
+		this.update = update
+		return nil
+	}
+}
+
+func (this *egl) doUpdateEnd() error {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+	if this.update == dxUpdateHandle(DX_NO_UPDATE) {
+		return ErrInvalidState
+	}
+	if err := dxUpdateSubmitSync(this.update); err != DX_SUCCESS {
+		return os.NewSyscallError("doUpdateEnd", err)
+	} else {
+		this.update = update
+		return nil
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // SURFACE
 
-func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, opacity float32, layer uint, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
+func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, opacity float32, layer uint32, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
 	// Currently we only support RGBA32 surfaces
 	if api != gopi.SURFACE_TYPE_RGBA32 {
 		return nil, gopi.ErrNotImplemented
 	}
 
-	if element, err := gopi.Open(Element{}, this.log); err != nil {
+	// Create bitmap (in the case of RGBA32)
+	if bitmap, err := this.CreateBitmap(api,size); err != nil {
 		return nil, err
+	} else if element, err := dxElementAdd(this.update,this.display,layer,&dest_rect,bitmap.Resource(),&src_rect,DX_PROTECTION_NONE,alpha,transform) {
+		this.DestroyBitmap(bitmap)
+		return nil, err
+	} else surface, err := gopi.Open(Element{}, this.log); err != nil {
+		this.DestroyBitmap(bitmap)
+		return nil, err		
 	} else {
 		return element.(gopi.Surface), nil
 	}
@@ -148,7 +208,12 @@ func (this *egl) DestroySurface(surface gopi.Surface) error {
 ////////////////////////////////////////////////////////////////////////////////
 // BITMAP
 
-func (this *egl) CreateBitmap(size gopi.Size) (gopi.Bitmap, error) {
+func (this *egl) CreateBitmap(api gopi.SurfaceType,size gopi.Size) (gopi.Bitmap, error) {
+	// Currently we only support RGBA32 surfaces
+	if api != gopi.SURFACE_TYPE_RGBA32 {
+		return nil, gopi.ErrNotImplemented
+	}
+
 	if bitmap, err := gopi.Open(Resource{
 		ImageType: DX_IMAGETYPE_RGBA32,
 		Width:     uint32(size.W),
