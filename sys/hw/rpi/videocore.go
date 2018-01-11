@@ -30,6 +30,36 @@ import (
 	}
 */
 import "C"
+import (
+	"strings"
+
+	"github.com/djthorpe/gopi"
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// INTERFACE TYPES
+
+type VideoCore interface {
+	gopi.Hardware
+
+	// GeneralCommand executes a VideoCore "General Command"
+	GeneralCommand(command string) (string, error)
+
+	// Return list of comamnds
+	GeneralCommands() ([]string, error)
+
+	// Return OTP memory
+	GetOTP() (map[byte]uint32, error)
+
+	// GetSerialNumberUint64 returns the 64-bit serial number for the device
+	GetSerialNumberUint64() (uint64, error)
+
+	// GetRevisionUint32 returns the 32-bit revision code for the device
+	GetRevisionUint32() (uint32, error)
+
+	// GetCoreTemperatureCelcius gets CPU core temperature in celcius
+	GetCoreTemperatureCelcius() (float64, error)
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -86,9 +116,24 @@ func (this *hardware) GeneralCommand(command string) (string, error) {
 	defer C.free(unsafe.Pointer(ccommand))
 	cbuffer := make([]byte, GENCMD_BUF_SIZE)
 	if int(C.vc_gencmd_wrap((*C.char)(unsafe.Pointer(&cbuffer[0])), C.int(GENCMD_BUF_SIZE), (*C.char)(unsafe.Pointer(ccommand)))) != 0 {
-		return "", ErrGeneralCommand
+		return "", gopi.ErrAppError
 	}
 	return string(cbuffer), nil
+}
+
+// Return list of all commands
+func (this *hardware) GeneralCommands() ([]string, error) {
+	if value, err := this.GeneralCommand(GENCMD_COMMANDS); err != nil {
+		return nil, err
+	} else if matches := REGEXP_COMMANDS.FindStringSubmatch(value); len(matches) < 2 {
+		return nil, gopi.ErrUnexpectedResponse
+	} else {
+		cmds := make([]string, 0)
+		for _, cmd := range strings.Split(matches[1], ",") {
+			cmds = append(cmds, strings.TrimSpace(cmd))
+		}
+		return cmds, nil
+	}
 }
 
 // Return OTP memory
@@ -97,17 +142,17 @@ func (this *hardware) GetOTP() (map[byte]uint32, error) {
 	if value, err := this.GeneralCommand(GENCMD_OTP_DUMP); err != nil {
 		return nil, err
 	} else if matches := REGEXP_OTP_DUMP.FindAllStringSubmatch(value, -1); len(matches) == 0 {
-		return nil, ErrUnexpectedResponse
+		return nil, gopi.ErrUnexpectedResponse
 	} else {
 		otp := make(map[byte]uint32, len(matches))
 		for _, match := range matches {
 			if len(match) != 3 {
-				return nil, ErrUnexpectedResponse
+				return nil, gopi.ErrUnexpectedResponse
 			}
 			if index, err := strconv.ParseUint(match[1], 10, 8); err != nil {
-				return nil, ErrUnexpectedResponse
+				return nil, gopi.ErrUnexpectedResponse
 			} else if value, err := strconv.ParseUint(match[2], 16, 32); err != nil {
-				return nil, ErrUnexpectedResponse
+				return nil, gopi.ErrUnexpectedResponse
 			} else {
 				otp[byte(index)] = uint32(value)
 			}
@@ -149,9 +194,9 @@ func (this *hardware) GetCoreTemperatureCelcius() (float64, error) {
 	if value, err := this.GeneralCommand(GENCMD_MEASURE_TEMP); err != nil {
 		return 0.0, err
 	} else if match := REGEXP_TEMP.FindStringSubmatch(value); len(match) != 2 {
-		return 0.0, ErrUnexpectedResponse
+		return 0.0, gopi.ErrUnexpectedResponse
 	} else if value2, err := strconv.ParseFloat(match[1], 64); err != nil {
-		return 0.0, ErrUnexpectedResponse
+		return 0.0, gopi.ErrUnexpectedResponse
 	} else {
 		return value2, nil
 	}
@@ -163,7 +208,7 @@ func (this *hardware) GetCoreTemperatureCelcius() (float64, error) {
 func vcGencmdInit() (int, error) {
 	service := int(C.vc_gencmd_init())
 	if service < 0 {
-		return -1, ErrGeneralCommand
+		return -1, gopi.ErrAppError
 	}
 	return service, nil
 }

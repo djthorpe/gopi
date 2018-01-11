@@ -27,4 +27,6 @@ var (
 	ErrNotImplemented = errors.New("Feature not implemented")
 	// ErrBadParameter is returned when a supplied parameter is invalid
 	ErrBadParameter = errors.New("Bad Parameter")
+	// ErrUnexpectedResponse is returned when some response wasn't expected
+	ErrUnexpectedResponse = errors.New("Unexpected response")
 )

@@ -14,6 +14,8 @@ package rpi
 import (
 	"fmt"
 	"unsafe"
+
+	"github.com/djthorpe/gopi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -93,7 +95,7 @@ func dxDisplayOpen(display uint) (dxDisplayHandle, error) {
 	if handle := dxDisplayHandle(C.vc_dispmanx_display_open(C.uint32_t(display))); handle != DX_DISPLAY_NONE {
 		return handle, nil
 	} else {
-		return DX_DISPLAY_NONE, ErrUnexpectedResponse
+		return DX_DISPLAY_NONE, gopi.ErrUnexpectedResponse
 	}
 }
 
@@ -101,7 +103,7 @@ func dxDisplayClose(display dxDisplayHandle) error {
 	if C.vc_dispmanx_display_close(C.DISPMANX_DISPLAY_HANDLE_T(display)) == DX_SUCCESS {
 		return nil
 	} else {
-		return ErrUnexpectedResponse
+		return gopi.ErrUnexpectedResponse
 	}
 }
 
@@ -110,7 +112,7 @@ func dxDisplayGetInfo(display dxDisplayHandle) (*dxDisplayModeInfo, error) {
 	if C.vc_dispmanx_display_get_info(C.DISPMANX_DISPLAY_HANDLE_T(display), (*C.DISPMANX_MODEINFO_T)(unsafe.Pointer(info))) == DX_SUCCESS {
 		return info, nil
 	} else {
-		return nil, ErrUnexpectedResponse
+		return nil, gopi.ErrUnexpectedResponse
 	}
 }
 
