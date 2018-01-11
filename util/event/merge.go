@@ -20,6 +20,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
+// EventMerger represents a way to merge events
 type EventMerger struct {
 	change chan struct{}
 	in     []<-chan gopi.Event
