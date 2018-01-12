@@ -36,10 +36,10 @@ type FontManager interface {
 		DestroyFace(FontFace) error
 
 		// Return an array of font families which are loaded
-		GetFamilies() []string
+		Families() []string
 
 		// Return faces in a family and/or with a particular set of attributes
-		GetFaces(family string, flags FontFlags) []FontFace
+		Faces(family string, flags FontFlags) []FontFace
 	*/
 }
 

@@ -23,7 +23,10 @@ func init() {
 	gopi.RegisterModule(gopi.Module{
 		Name: "rpi/fonts",
 		Type: gopi.MODULE_TYPE_FONTS,
-		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+		Config: func(config *gopi.AppConfig) {
+			config.AppFlags.FlagString("fonts.path", "", "Path for font files")
+		},		
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {			
 			return gopi.Open(FontManager{}, app.Logger)
 		},
 	})
