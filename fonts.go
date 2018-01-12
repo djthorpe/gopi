@@ -21,9 +21,10 @@ type FontFlags uint16
 type FontManager interface {
 	Driver
 
+	// Open a font face - first face at index 0 is loaded
+	OpenFace(path string) (FontFace, error)
+
 	/*
-		// Open a font face - first face at index 0 is loaded
-		OpenFace(path string) (FontFace, error)
 
 		// Open a font face - indexed within file of several faces
 		OpenFaceAtIndex(path string, index uint) (FontFace, error)
