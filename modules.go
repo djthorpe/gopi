@@ -62,11 +62,10 @@ const (
 	MODULE_TYPE_LOGGER   // Logging module
 	MODULE_TYPE_HARDWARE // Hardware capabilities and monitoring
 	MODULE_TYPE_DISPLAY  // Displays
-	MODULE_TYPE_SURFACE  // Graphics Surface Manager
-	MODULE_TYPE_BITMAP   // Bitmap graphics
+	MODULE_TYPE_GRAPHICS // Graphics (Graphics Manager, Surfaces, Bitmaps)
+	MODULE_TYPE_FONTS    // Font Manager & Faces
 	MODULE_TYPE_VECTOR   // 2D Vector graphics
 	MODULE_TYPE_OPENGL   // 3D Graphics
-	MODULE_TYPE_VGFONT   // Font rendering
 	MODULE_TYPE_LAYOUT   // Flex 2D Rectangular Layout
 	MODULE_TYPE_GPIO     // GPIO Hardware interface
 	MODULE_TYPE_I2C      // I2C Hardware interface
@@ -84,22 +83,21 @@ var (
 	modules_by_name = make(map[string]*Module)
 	modules_by_type = make(map[ModuleType]*Module)
 	module_name_map = map[string]ModuleType{
-		"logger":  MODULE_TYPE_LOGGER,
-		"hw":      MODULE_TYPE_HARDWARE,
-		"display": MODULE_TYPE_DISPLAY,
-		"surface": MODULE_TYPE_SURFACE,
-		"bitmap":  MODULE_TYPE_BITMAP,
-		"vector":  MODULE_TYPE_VECTOR,
-		"font":    MODULE_TYPE_VGFONT,
-		"opengl":  MODULE_TYPE_OPENGL,
-		"layout":  MODULE_TYPE_LAYOUT,
-		"gpio":    MODULE_TYPE_GPIO,
-		"i2c":     MODULE_TYPE_I2C,
-		"spi":     MODULE_TYPE_SPI,
-		"input":   MODULE_TYPE_INPUT,
-		"mdns":    MODULE_TYPE_MDNS,
-		"timer":   MODULE_TYPE_TIMER,
-		"lirc":    MODULE_TYPE_LIRC,
+		"logger":   MODULE_TYPE_LOGGER,
+		"hw":       MODULE_TYPE_HARDWARE,
+		"display":  MODULE_TYPE_DISPLAY,
+		"graphics": MODULE_TYPE_GRAPHICS,
+		"fonts":    MODULE_TYPE_FONTS,
+		"vector":   MODULE_TYPE_VECTOR,
+		"opengl":   MODULE_TYPE_OPENGL,
+		"layout":   MODULE_TYPE_LAYOUT,
+		"gpio":     MODULE_TYPE_GPIO,
+		"i2c":      MODULE_TYPE_I2C,
+		"spi":      MODULE_TYPE_SPI,
+		"input":    MODULE_TYPE_INPUT,
+		"mdns":     MODULE_TYPE_MDNS,
+		"timer":    MODULE_TYPE_TIMER,
+		"lirc":     MODULE_TYPE_LIRC,
 	}
 )
 
@@ -292,14 +290,12 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_HARDWARE"
 	case MODULE_TYPE_DISPLAY:
 		return "MODULE_TYPE_DISPLAY"
-	case MODULE_TYPE_SURFACE:
-		return "MODULE_TYPE_SURFACE"
-	case MODULE_TYPE_BITMAP:
-		return "MODULE_TYPE_BITMAP"
+	case MODULE_TYPE_GRAPHICS:
+		return "MODULE_TYPE_GRAPHICS"
+	case MODULE_TYPE_FONTS:
+		return "MODULE_TYPE_FONTS"
 	case MODULE_TYPE_VECTOR:
 		return "MODULE_TYPE_VECTOR"
-	case MODULE_TYPE_VGFONT:
-		return "MODULE_TYPE_VGFONT"
 	case MODULE_TYPE_OPENGL:
 		return "MODULE_TYPE_OPENGL"
 	case MODULE_TYPE_LAYOUT:

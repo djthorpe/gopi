@@ -37,8 +37,9 @@ type AppInstance struct {
 	Logger   Logger
 	Hardware Hardware
 	Display  Display
-	Surface  SurfaceManager
+	Graphics SurfaceManager
 	Input    InputManager
+	Fonts    FontManager
 	Layout   Layout
 	Timer    Timer
 	GPIO     GPIO
@@ -286,7 +287,8 @@ func (this *AppInstance) Close() error {
 
 	this.Layout = nil
 	this.Display = nil
-	this.Surface = nil
+	this.Graphics = nil
+	this.Fonts = nil
 	this.Hardware = nil
 	this.Logger = nil
 	this.Timer = nil
@@ -354,9 +356,13 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 		if this.Display, ok = driver.(Display); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.Display", module)
 		}
-	case MODULE_TYPE_SURFACE:
-		if this.Surface, ok = driver.(SurfaceManager); !ok {
+	case MODULE_TYPE_GRAPHICS:
+		if this.Graphics, ok = driver.(SurfaceManager); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.SurfaceManager", module)
+		}
+	case MODULE_TYPE_FONTS:
+		if this.Fonts, ok = driver.(FontManager); !ok {
+			return fmt.Errorf("Module %v cannot be cast to gopi.FontManager", module)
 		}
 	case MODULE_TYPE_LAYOUT:
 		if this.Layout, ok = driver.(Layout); !ok {

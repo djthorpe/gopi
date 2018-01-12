@@ -18,25 +18,34 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// CGO
+
+/*
+  #cgo CFLAGS:   -I/usr/include/freetype2
+  #cgo LDFLAGS:  -lfreetype
+  #include <ft2build.h>
+  #include <freetype/freetype.h>
+*/
+import "C"
+
+////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type FontManager struct{}
 
 type manager struct {
-	log gopi.Logger
+	log    gopi.Logger
 	handle C.FT_Library
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// CGO
+type ftError C.FT_Error
 
-/*
-  #cgo CFLAGS:   -I/usr/include/freetype2 -I/opt/vc/include
-  #cgo LDFLAGS:  -L/opt/vc/lib -lfreetype
-  #include <ft2build.h>
-  #include <freetype.h>
-*/
-import "C"
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	FT_SUCCESS ftError = 0
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
@@ -64,10 +73,18 @@ func (this *manager) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE FUNCTIONS
 
-func (this *manager) vgfontInit() error {
-	return vgfontGetError(C.FT_Init_FreeType(&this.handle))
+func (this *manager) vgfontInit() ftError {
+	if err := C.FT_Init_FreeType(&this.handle); ftError(err) != FT_SUCCESS {
+		return ftError(err)
+	} else {
+		return FT_SUCCESS
+	}
 }
 
-func (this *manager) vgfontDestroy() error {
-	return vgfontGetError(C.FT_Done_FreeType(this.handle))
+func (this *manager) vgfontDestroy() ftError {
+	if err := C.FT_Done_FreeType(this.handle); ftError(err) != FT_SUCCESS {
+		return ftError(err)
+	} else {
+		return FT_SUCCESS
+	}
 }
