@@ -1,60 +1,78 @@
 
-# Quickstart Guide
+## Introduction & Motivation
 
-The following sections provide a quickstart guide, with more detailed 
-information provided [here](https://godoc.org/github.com/djthorpe/gopi).
+This repository implements an application framework for the Go 
+programming language ("golang"). Ultimately it targets the 
+Raspberry Pi platform running Linux to utilize many of the features 
+of the platform, but it's applicable to any platform on which golang runs.
 
-## Introduction
+The scope of this framework is as  follows:
 
-This repository contains the Golang interface to hardware and graphics devices
-for the Raspberry Pi platform with Linux. The scope of this framework is as 
-follows:
-
-  * Developing applications easily, either for use on
-    the command line or event-based applications;
-  * Enumerating the capabilities of the device and providing various
-    information about the device, including the hardware model, serial number
-    and so forth;
+  * Allows you to developing applications easily, either for use on
+    the command line or as event-based applications;
+  * Target several platforms simultaneously, making the best use of the
+    features of that platform;
   * Access to input/output devices, including GPIO, I2C, SPI, Touchscreen,
-    Mouse and Keyboard devices;
+    Mouse and Keyboard devices (depending on whether that platform
+    supports them);
   * Use of the Graphics Processing Unit (if there is one) including creating
     displays & window surfaces, and being able to move them on the screen;
-  * Access to OpenVG and OpenGL API's and rendering text with scalable
-    vector fonts;
-  * Use of the Multi-Media Abstraction for video, audio & image encoding, 
-    decoding and access to the Raspberry Pi camera.
+  * Access to vector graphics and font rendering, and basic user interface
+    element layout.
 
-In order to use the library, you'll need to have a working version of Go on 
-your Raspberry Pi, which you can [download](https://golang.org/dl/). Then 
-retrieve the library on your device, using:
+The [Raspberry Pi](https://www.raspberrypi.org/) is the first supported
+hardware platform but it wouldn't be a stretch to provide these facilities on other
+hardware platforms.
+
+In order to use the library, you'll need to have a working version of Go which you 
+can [download](https://golang.org/dl/). Then retrieve the framework on your 
+device, using:
 
 ```
-  linux% go get github.com/djthorpe/gopi
+  bash% go get github.com/djthorpe/gopi
 ```
+
+Whilst __golang__ is an excellent programming language to develop with,
+it needs more work to support multi-media application development. Providing
+a "framework" with which to develop such applications may speed up their
+quality and quantity.
 
 # Running the example programs
 
-There are many examples in the `examples` folder, which can all be installed
-on the command line using the following command:
+There are many examples in the `cmd` folder, which can all be installed
+on the command line using the following commands:
 
 ```
-  linux% cd "${GOPATH}/src/github.com/djthorpe/gopi"
-  linux% examples/build_examples.sh
-  linux% helloworld_example
+  bash% cd "${GOPATH}/src/github.com/djthorpe/gopi"
+  bash% cmd/build_rpi.sh
 ```
 
 Please see the source code for the hello world application 
-[here](https://github.com/djthorpe/gopi/tree/master/examples/helloworld).
+[here](https://github.com/djthorpe/gopi/blob/modules/cmd/helloworld/helloworld.go)
+to see how a basic command-line application is structured.
 
 # What's Next?
 
 Read the remaining documentation on the various functions of `gopi`:
 
-  * To read about getting general information about your device, read [DEVICE](DEVICE.md).
-  * To read about input devices, read [INPUT](INPUT.md).
-  * To read about opening displays, creating windows and resources, read [EGL](EGL.md).
+  * To understand how to use the framework to develop your own applications, see [GETTINGSTARTED](INTRO.md)
+  * Events, tasks and timers are described in [EVENTS](EVENTS.md)
+  * If you want to interact with hardware interfaces like GPIO, SPI and I2C see [HARDWARE](HARDWARE,md)
+  * To read about interacting with input devices, read [INPUT](INPUT.md).
+  * To read about displays, graphics, surfaces and bitmaps, read [GRAPHICS](GRAPHICS.md).
   * To use OpenVG which provides you with Vector Graphics operations, read [OpenVG](OpenVG.md).
   * To render text as graphics using scalable fonts, read [FONTS](FONTS.md).
-  * To use the GPIO peripheral port, read [GPIO](GPIO.md).
-  * The application framework can make it easy to write applications. Read [APP](APP.md).
+
+The following sections are yet to be written:
+
+  * A section on developing user interfaces, including layout
+  * 3D graphics using OpenGL
+  * Encoding and decoding video and audio
+  * Cameras
+  * Developing micro-services
+  * Interacting with IR signals from remote controls
+  * Developing your own modules and for other platforms
+
+
+
 

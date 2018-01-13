@@ -199,7 +199,7 @@ func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, op
 
 	// Check update
 	if this.update == dxUpdateHandle(DX_NO_UPDATE) {
-		return gopi.ErrOutOfOrder
+		return nil, gopi.ErrOutOfOrder
 	}
 
 	// Create bitmap then element and return surface
@@ -210,13 +210,9 @@ func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, op
 			this.log.Error("createElementWithResource: %v", err)
 		}
 		return nil, err
-	} else if surface, err := gopi.Open(Element{
-		Handle: element,
-		Origin: origin,
-		Size:   size,
-	}, this.log); err != nil {
+	} else if surface, err := this.createSurfaceWithElement(element); err != nil {
 		if err := this.DestroyBitmap(bitmap); err != nil {
-			this.log.Error("createElementWithResource: %v", err)
+			this.log.Error("DestroyBitmap: %v", err)
 		}
 		return nil, err
 	} else {
@@ -227,45 +223,58 @@ func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, op
 func (this *egl) CreateSurfaceWithBitmap(bitmap gopi.Bitmap, flags gopi.SurfaceFlags, opacity float32, layer uint16, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
 	this.log.Debug2("<sys.surface.rpi.GraphicsManager.CreateSurfaceWithBitmap>{ bitmap=%v flags=%v opacity=%v layer=%v origin=%v size=%v }", bitmap, flags, opacity, layer, origin, size)
 
-	// Bitmap must be native
-	resource, ok := bitmap.(*resource)
-	if resource == nil || ok == false {
-		return nil, gopi.ErrBadParameter
-	}
-	// Currently we only support RGBA32 bitmaps
-	if bitmap.Type() != gopi.SURFACE_TYPE_RGBA32 {
-		return nil, gopi.ErrNotImplemented
-	}
-	// Check for layer
-	if layer == gopi.SURFACE_LAYER_BACKGROUND || layer > gopi.SURFACE_LAYER_MAX {
-		return nil, gopi.ErrBadParameter
-	}
-	// Source rectangle comes from bitmap
-	dest_rect := dxRectSet(uint32(origin.X), uint32(origin.Y), uint32(size.W), uint32(size.H))
-	src_rect := dxRectSet(0, 0, resource.width, resource.height)
+	return nil, gopi.ErrNotImplemented
 
-	// Alpha and Transforms
-	alpha := dxAlpha{
-		Flags:   DX_ALPHA_FIXED_ALL_PIXELS,
-		Opacity: uint32(opacity * float32(0xFFFF)),
-		Mask:    dxResourceHandle(DX_NO_RESOURCE),
-	}
-	if flags&gopi.SURFACE_FLAG_ALPHA_FROM_SOURCE != 0 {
-		alpha.Flags = DX_ALPHA_FROM_SOURCE
-	}
-	transform := DX_TRANSFORM_NO_ROTATE
+	/*
 
-	// Create bitmap, add element and return
-	if element, err := dxElementAdd(this.update, this.display, int32(layer), &dest_rect, resource.handle, &src_rect, DX_PROTECTION_NONE, alpha, transform); err != DX_SUCCESS {
-		return nil, os.NewSyscallError("dxElementAdd", err)
-	} else if surface, err := gopi.Open(Element{}, this.log); err != nil {
-		return nil, err
-	} else {
-		return surface.(gopi.Surface), nil
-	}
+		// Bitmap must be native
+		resource, ok := bitmap.(*resource)
+		if resource == nil || ok == false {
+			return nil, gopi.ErrBadParameter
+		}
+		// Currently we only support RGBA32 bitmaps
+		if bitmap.Type() != gopi.SURFACE_TYPE_RGBA32 {
+			return nil, gopi.ErrNotImplemented
+		}
+		// Check for layer
+		if layer == gopi.SURFACE_LAYER_BACKGROUND || layer > gopi.SURFACE_LAYER_MAX {
+			return nil, gopi.ErrBadParameter
+		}
+		// Source rectangle comes from bitmap
+		dest_rect := dxRectSet(uint32(origin.X), uint32(origin.Y), uint32(size.W), uint32(size.H))
+		src_rect := dxRectSet(0, 0, resource.width, resource.height)
+
+		// Alpha and Transforms
+		alpha := dxAlpha{
+			Flags:   DX_ALPHA_FIXED_ALL_PIXELS,
+			Opacity: uint32(opacity * float32(0xFFFF)),
+			Mask:    dxResourceHandle(DX_NO_RESOURCE),
+		}
+		if flags&gopi.SURFACE_FLAG_ALPHA_FROM_SOURCE != 0 {
+			alpha.Flags = DX_ALPHA_FROM_SOURCE
+		}
+		transform := DX_TRANSFORM_NO_ROTATE
+
+		// Create bitmap, add element and return
+		if element, err := dxElementAdd(this.update, this.display, int32(layer), &dest_rect, resource.handle, &src_rect, DX_PROTECTION_NONE, alpha, transform); err != DX_SUCCESS {
+			return nil, os.NewSyscallError("dxElementAdd", err)
+		} else if surface, err := gopi.Open(Element{}, this.log); err != nil {
+			return nil, err
+		} else {
+			return surface.(gopi.Surface), nil
+		}*/
 }
 
 func (this *egl) DestroySurface(surface gopi.Surface) error {
+	// Lock
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	// Check update
+	if this.update == dxUpdateHandle(DX_NO_UPDATE) {
+		return nil, gopi.ErrOutOfOrder
+	}
+
 	return surface.Close()
 }
 
@@ -376,6 +385,12 @@ func (this *egl) createElementWithResource(bitmap *resource, flags gopi.SurfaceF
 	} else {
 		return surface.(Surface), nil
 	}
+}
+
+func (this *egl) createSurfaceWithElement(handle dxElementHandle) (gopi.Surface, error) {
+	surface := new(element)
+	surface.handle = handle
+	return surface
 }
 
 func (this *egl) getFrameBufferConfiguration() (eglConfig, error) {
