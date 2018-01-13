@@ -28,9 +28,9 @@ func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 
 	size := gopi.Size{100, 100}
 
-	if surface_manager := app.Surface; surface_manager == nil {
-		return fmt.Errorf("Missing Surface Manager")
-	} else if surface, err := surface_manager.CreateSurface(gopi.SURFACE_TYPE_RGBA32, gopi.SURFACE_FLAG_NONE, 1.0, gopi.SURFACE_LAYER_DEFAULT, gopi.ZeroPoint, size); err != nil {
+	if graphics := app.Graphics; graphics == nil {
+		return fmt.Errorf("Missing Graphics Manager")
+	} else if surface, err := graphics.CreateSurface(gopi.SURFACE_TYPE_RGBA32, gopi.SURFACE_FLAG_NONE, 1.0, gopi.SURFACE_LAYER_DEFAULT, gopi.ZeroPoint, size); err != nil {
 		return err
 	} else {
 		defer surface.Close()
@@ -42,7 +42,7 @@ func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 
 func main() {
 	// Create the configuration
-	config := gopi.NewAppConfig("surface")
+	config := gopi.NewAppConfig("graphics")
 
 	// Run the command line tool
 	os.Exit(gopi.CommandLineTool(config, mainLoop))
