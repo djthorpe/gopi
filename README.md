@@ -12,7 +12,7 @@ will allow you to develop applications which utilize a number of features
 of your computer. It's targetted at the Raspberry Pi but maybe parts of it
 would work in general environments like Linux and Macintosh.
 
-The following features are supported on various platforms:
+The following features are intended to be supported on various platforms:
 
   * The GPIO, I2C and SPI interfaces
   * Display and display surfaces, bitmaps and vector graphics
