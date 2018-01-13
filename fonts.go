@@ -24,10 +24,11 @@ type FontManager interface {
 	// Open a font face - first face at index 0 is loaded
 	OpenFace(path string) (FontFace, error)
 
+	// Open a font face - indexed within file of several faces
+	OpenFaceAtIndex(path string, index uint) (FontFace, error)
+
 	/*
 
-		// Open a font face - indexed within file of several faces
-		OpenFaceAtIndex(path string, index uint) (FontFace, error)
 
 		// Open font faces at path, checking to see if individual files should
 		// be opened through a callback function
