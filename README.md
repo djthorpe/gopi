@@ -33,7 +33,6 @@ It would also be great to support the following features in the future:
   * Building for Darwin (Macintosh) targets
 
 More information on usage is available at http://djthorpe.github.io/gopi/
-In order to get started, build some of the examples in the "cmd" folder.
 
 # Requirements
 
@@ -51,8 +50,10 @@ retrieve the library on your device, using:
 go get github.com/djthorpe/gopi
 ```
 
-The examples are in the `cmd` folder which can be built with the following
-command:
+# Getting Started
+
+In order to get started, build some of the examples in the "cmd" folder. They
+can be built with the following command or commands:
 
 ```
 cmd/build_linux.sh
@@ -60,7 +61,11 @@ cmd/build_rpi.sh
 ```
 
 Obvously the Raspberry Pi builds will include more features on the whole
-than the Linux versions.
+than the Linux versions. However, the GPIO version for Linux adds falling and rising
+edge detection, which is not available in the Raspberry Pi driver.
+
+Clearly fuller documentation of the examples and developing your own code
+against this framework is available in the documentation.
 
 # License
 
