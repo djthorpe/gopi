@@ -55,7 +55,7 @@ to see how a basic command-line application is structured.
 
 Read the remaining documentation on the various functions of `gopi`:
 
-  * To understand how to use the framework to develop your own applications, see [GETTINGSTARTED](INTRO.md)
+  * To understand how to use the framework to develop your own applications, see [INTRO](INTRO.md)
   * Events, tasks and timers are described in [EVENTS](EVENTS.md)
   * If you want to interact with hardware interfaces like GPIO, SPI and I2C see [HARDWARE](HARDWARE,md)
   * To read about interacting with input devices, read [INPUT](INPUT.md).
@@ -73,6 +73,18 @@ The following sections are yet to be written:
   * Interacting with IR signals from remote controls
   * Developing your own modules and for other platforms
 
+# Issues, Licensing & Contributing
+
+Contributions and reports of issues are very welcome, using the appropriate __github__ mechanisms.
+Otherwise, contact me directly and I hope I can get back to you.
+
+I am using the BSD License which allows you to use the framework in your own software with
+attribution. Please see the [LICENSE](https://github.com/djthorpe/gopi/blob/modules/LICENSE.md) for more
+information.
+
+
+
+ 
 
 
 

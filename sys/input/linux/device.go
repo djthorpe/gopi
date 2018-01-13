@@ -18,7 +18,7 @@ import (
 	// Frameworks
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/sys/hw/linux"
-	"github.com/djthorpe/gopi/util"
+	"github.com/djthorpe/gopi/util/event"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,7 +44,7 @@ type device struct {
 	log       gopi.Logger
 	path      string
 	filepoll  linux.FilePollInterface
-	pubsub    *util.PubSub
+	pubsub    *event.PubSub
 	exclusive bool
 
 	// Handle to the device
@@ -194,7 +194,7 @@ func (config InputDevice) Open(log gopi.Logger) (gopi.Driver, error) {
 	this.slots = make([]slot, INPUT_MAX_MULTITOUCH_SLOTS)
 
 	// PubSub
-	this.pubsub = util.NewPubSub(0)
+	this.pubsub = event.NewPubSub(0)
 
 	// Success
 	return this, nil

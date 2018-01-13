@@ -23,7 +23,7 @@ import (
 // TYPES
 
 // Input event
-type event struct {
+type input_event struct {
 	device       *device
 	timestamp    time.Duration
 	device_type  gopi.InputDeviceType
@@ -38,50 +38,50 @@ type event struct {
 ////////////////////////////////////////////////////////////////////////////////
 // gopi.InputEvent INTERFACE
 
-func (this *event) Name() string {
+func (this *input_event) Name() string {
 	return "InputEvent"
 }
 
-func (this *event) Source() gopi.Driver {
+func (this *input_event) Source() gopi.Driver {
 	return this.device
 }
 
-func (this *event) Timestamp() time.Duration {
+func (this *input_event) Timestamp() time.Duration {
 	return this.timestamp
 }
 
-func (this *event) DeviceType() gopi.InputDeviceType {
+func (this *input_event) DeviceType() gopi.InputDeviceType {
 	return this.device_type
 }
 
-func (this *event) EventType() gopi.InputEventType {
+func (this *input_event) EventType() gopi.InputEventType {
 	return this.event_type
 }
 
-func (this *event) Keycode() gopi.KeyCode {
+func (this *input_event) Keycode() gopi.KeyCode {
 	return this.key_code
 }
 
-func (this *event) Scancode() uint32 {
+func (this *input_event) Scancode() uint32 {
 	return this.scan_code
 }
 
-func (this *event) Position() gopi.Point {
+func (this *input_event) Position() gopi.Point {
 	return this.position
 }
 
-func (this *event) Relative() gopi.Point {
+func (this *input_event) Relative() gopi.Point {
 	return this.rel_position
 }
 
-func (this *event) Slot() uint {
+func (this *input_event) Slot() uint {
 	return this.slot
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *event) String() string {
+func (this *input_event) String() string {
 	switch this.event_type {
 	case gopi.INPUT_EVENT_RELPOSITION:
 		return fmt.Sprintf("<sys.input.linux.InputEvent>{ type=%v device=%v relative=%v position=%v ts=%v }", this.event_type, this.device_type, this.rel_position, this.position, this.timestamp)

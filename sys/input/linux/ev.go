@@ -190,7 +190,7 @@ func (this *device) evReceive(dev *os.File, mode linux.FilePollMode) {
 
 // Decode the EV_SYN syncronization raw event.
 func (this *device) evDecodeSyn(raw_event *evEvent) gopi.InputEvent {
-	evt := &event{
+	evt := &input_event{
 		device:      this,
 		timestamp:   time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
 		device_type: this.device_type,
@@ -316,7 +316,7 @@ func (this *device) evDecodeAbs(raw_event *evEvent) gopi.InputEvent {
 }
 
 func (this *device) evDecodeAbsTouch(raw_event *evEvent) gopi.InputEvent {
-	evt := &event{
+	evt := &input_event{
 		device:      this,
 		timestamp:   time.Duration(time.Duration(raw_event.Second)*time.Second + time.Duration(raw_event.Microsecond)*time.Microsecond),
 		device_type: this.device_type,

@@ -17,7 +17,7 @@ import (
 	// Frameworks
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/sys/hw/linux"
-	"github.com/djthorpe/gopi/util"
+	"github.com/djthorpe/gopi/util/event"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@ type InputManager struct {
 type manager struct {
 	log      gopi.Logger
 	filepoll linux.FilePollInterface
-	pubsub   *util.PubSub
+	pubsub   *event.PubSub
 
 	// Whether to try and get exclusivity when opening devices
 	exclusive bool
@@ -61,7 +61,7 @@ func (config InputManager) Open(log gopi.Logger) (gopi.Driver, error) {
 	this.exclusive = config.Exclusive
 	this.log = log
 	this.filepoll = config.FilePoll
-	this.pubsub = util.NewPubSub(0)
+	this.pubsub = event.NewPubSub(0)
 	this.devices = make([]gopi.InputDevice, 0)
 
 	// success

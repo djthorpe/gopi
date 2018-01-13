@@ -31,6 +31,7 @@ COMMANDS=(
     i2c/i2c_detect.go
     spi/spi_ctrl.go
     input/input_tester.go
+    lirc/lirc_receive.go
     rpc/rpc_discovery.go
 )
 

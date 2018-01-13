@@ -8,7 +8,7 @@
 */
 
 // Publish, Subscribe and Emit package for gopi.Publisher interface
-package util
+package event
 
 import (
 	gopi "github.com/djthorpe/gopi"
@@ -42,8 +42,8 @@ func (this *PubSub) Subscribe() <-chan gopi.Event {
 func (this *PubSub) Unsubscribe(subscriber <-chan gopi.Event) {
 	for i := range this.subscribers {
 		if this.subscribers[i] == subscriber {
-			this.subscribers[i] = nil
 			close(this.subscribers[i])
+			this.subscribers[i] = nil
 		}
 	}
 }

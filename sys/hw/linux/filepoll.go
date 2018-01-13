@@ -87,7 +87,7 @@ var (
 // OPEN AND CLOSE
 
 func (config FilePoll) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug2("<linux.filepoll.Open>{ }")
+	log.Debug("<sys.hw.linux.filepoll.Open>{ }")
 
 	this := new(filepoll)
 	this.log = log
@@ -125,12 +125,12 @@ func (config FilePoll) Open(log gopi.Logger) (gopi.Driver, error) {
 }
 
 func (this *filepoll) Close() error {
-	this.log.Debug2("<linux.filepoll.Close>{ }")
+	this.log.Debug("<sys.hw.linux.filepoll.Close>{ }")
 
 	// Unwatch all watched files
 	for _, watcher := range this.watchers {
 		if err := this.Unwatch(watcher.handle); err != nil {
-			this.log.Warn("<linux.filepoll.Close> Unwatch: %v", err)
+			this.log.Warn("Unwatch: %v", err)
 		}
 	}
 
@@ -163,7 +163,7 @@ func (this *filepoll) Close() error {
 
 // Add a file to watch for certain events
 func (this *filepoll) Watch(handle *os.File, mode FilePollMode, callback FilePollCallback) error {
-	this.log.Debug2("<linux.filepoll.Watch>{ fd=%v mode=%v }", handle.Fd(), mode)
+	this.log.Debug2("<sys.hw.linux.filepoll.Watch>{ fd=%v mode=%v }", handle.Fd(), mode)
 
 	// Make this method exclusive
 	this.lock.Lock()
@@ -219,7 +219,7 @@ func (this *filepoll) Watch(handle *os.File, mode FilePollMode, callback FilePol
 }
 
 func (this *filepoll) Unwatch(handle *os.File) error {
-	this.log.Debug2("<linux.filepoll.Unwatch>{ fd=%v }", int(handle.Fd()))
+	this.log.Debug2("<sys.hw.linux.filepoll.Unwatch>{ fd=%v }", int(handle.Fd()))
 
 	// Make this method exclusive
 	this.lock.Lock()
@@ -249,7 +249,7 @@ func (this *filepoll) Unwatch(handle *os.File) error {
 // STRINGIFY
 
 func (this *filepoll) String() string {
-	return fmt.Sprintf("<linux.filepoll>{ handle=%v }", this.handle)
+	return fmt.Sprintf("<sys.hw.linux.filepoll>{ handle=%v }", this.handle)
 }
 
 func (m FilePollMode) String() string {
@@ -306,6 +306,12 @@ func (this *filepoll) epollwait_inner(delta time.Duration) error {
 			return err
 		}
 	}
+
+	if n == 0 {
+		return nil
+	}
+
+	this.log.Debug2("<sys.hw.linux.filepoll> got event n=%v", n)
 
 	// Process incoming events
 	for _, event := range this.events[:n] {

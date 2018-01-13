@@ -25,7 +25,7 @@ import (
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
-	"github.com/djthorpe/gopi/util"
+	evt "github.com/djthorpe/gopi/util/event"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,10 +42,10 @@ type gpio struct {
 	watched  map[gopi.GPIOPin]*os.File
 	lock     sync.Mutex
 	filepoll FilePollInterface
-	pubsub   *util.PubSub
+	pubsub   *evt.PubSub
 }
 
-type event struct {
+type gpio_event struct {
 	driver *gpio
 	pin    gopi.GPIOPin
 	edge   gopi.GPIOEdge
@@ -84,7 +84,7 @@ func (config GPIO) Open(logger gopi.Logger) (gopi.Driver, error) {
 	}
 
 	// Event interface
-	this.pubsub = util.NewPubSub(0)
+	this.pubsub = evt.NewPubSub(0)
 
 	// Success
 	return this, nil
@@ -390,29 +390,29 @@ func (this *gpio) Unsubscribe(subscriber <-chan gopi.Event) {
 
 // Emit an event
 func (this *gpio) Emit(pin gopi.GPIOPin, edge gopi.GPIOEdge) {
-	this.pubsub.Emit(&event{driver: this, pin: pin, edge: edge})
+	this.pubsub.Emit(&gpio_event{driver: this, pin: pin, edge: edge})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACE - EVENT
 
-func (this *event) Name() string {
+func (this *gpio_event) Name() string {
 	return "GPIOEvent"
 }
 
-func (this *event) Source() gopi.Driver {
+func (this *gpio_event) Source() gopi.Driver {
 	return this.driver
 }
 
-func (this *event) Pin() gopi.GPIOPin {
+func (this *gpio_event) Pin() gopi.GPIOPin {
 	return this.pin
 }
 
-func (this *event) Edge() gopi.GPIOEdge {
+func (this *gpio_event) Edge() gopi.GPIOEdge {
 	return this.edge
 }
 
-func (this *event) String() string {
+func (this *gpio_event) String() string {
 	return fmt.Sprintf("<sys.hw.linux.GPIO.Event>{ pin=%v edge=%v source=%v }", this.pin, this.edge, this.driver)
 }
 

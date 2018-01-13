@@ -35,10 +35,8 @@ type egl struct {
 	update       dxUpdateHandle
 	lock         sync.Mutex
 	major, minor int
-}
-
-type surface struct {
-	handle eglSurface
+	surfaces     []*element
+	bitmaps      []*resource
 }
 
 // Raspberry-pi specific interface for SurfaceManager
@@ -71,6 +69,7 @@ var (
 
 func (config EGL) Open(log gopi.Logger) (gopi.Driver, error) {
 	log.Debug("<sys.surface.rpi.SurfaceManager.Open>{ Display=%v }", config.Display)
+
 	this := new(egl)
 	this.log = log
 
@@ -94,22 +93,25 @@ func (config EGL) Open(log gopi.Logger) (gopi.Driver, error) {
 		this.minor = int(minor)
 	}
 
+	// Initialize surfaces and bitmaps
+	this.surfaces = make([]*element, 0)
+	this.bitmaps = make([]*resource, 0)
+
 	/*
-		// Get configurations
-		if configs, err := eglGetConfigs(this.handle); err != EGL_SUCCESS {
-			return nil, os.NewSyscallError("eglGetConfigs", err)
-		} else {
-			for i, config := range configs {
-				if a, err := eglGetConfigAttribs(this.handle, config); err != EGL_SUCCESS {
-					return nil, os.NewSyscallError("eglGetConfigAttribs", err)
-				} else {
-					fmt.Println(i, a)
+			// Get configurations
+			if configs, err := eglGetConfigs(this.handle); err != EGL_SUCCESS {
+				return nil, os.NewSyscallError("eglGetConfigs", err)
+			} else {
+				for i, config := range configs {
+					if a, err := eglGetConfigAttribs(this.handle, config); err != EGL_SUCCESS {
+						return nil, os.NewSyscallError("eglGetConfigAttribs", err)
+					} else {
+						fmt.Println(i, a)
+					}
 				}
 			}
-		}
+		this.getFrameBufferConfiguration()
 	*/
-
-	this.getFrameBufferConfiguration()
 
 	return this, nil
 }
@@ -119,12 +121,20 @@ func (this *egl) Close() error {
 	if this.display == nil {
 		return nil
 	}
+
+	// TODO: Free Surfaces and Bitmaps
+
+	// Close EGL
 	if err := eglTerminate(this.handle); err != EGL_SUCCESS {
 		return os.NewSyscallError("Close", err)
-	} else {
-		this.display = nil
-		this.handle = eglDisplay(EGL_NO_DISPLAY)
 	}
+
+	// Blank out
+	this.display = nil
+	this.handle = eglDisplay(EGL_NO_DISPLAY)
+	this.surfaces = nil
+	this.bitmaps = nil
+
 	return nil
 }
 
@@ -216,7 +226,10 @@ func (this *egl) CreateSurface(api gopi.SurfaceType, flags gopi.SurfaceFlags, op
 		}
 		return nil, err
 	} else {
-		return surface.(gopi.Surface), nil
+		// Append surface to list of surfaces
+		this.surfaces = append(this.surfaces, surface)
+		// Return surface
+		return surface, nil
 	}
 }
 
@@ -270,12 +283,23 @@ func (this *egl) DestroySurface(surface gopi.Surface) error {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	// Check update
+	// Check for updates
 	if this.update == dxUpdateHandle(DX_NO_UPDATE) {
 		return nil, gopi.ErrOutOfOrder
 	}
 
-	return surface.Close()
+	// Check for element
+	if element, ok := surface.(*element); element == nil || ok == false {
+		return gopi.ErrBadParameter
+	}
+
+	// Remove element
+	if err := this.removeElement(element); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
 }
 
 // SetLayer changes a surface layer (except if it's a background or cursor). Currently
@@ -391,6 +415,14 @@ func (this *egl) createSurfaceWithElement(handle dxElementHandle) (gopi.Surface,
 	surface := new(element)
 	surface.handle = handle
 	return surface
+}
+
+func (this *egl) removeElement(handle dxElementHandle) error {
+	if err := dxElementRemove(this.update, element); err != DX_SUCCESS {
+		return os.NewSyscallError("dxElementRemove", err)
+	} else {
+		return nil
+	}
 }
 
 func (this *egl) getFrameBufferConfiguration() (eglConfig, error) {

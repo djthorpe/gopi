@@ -21,7 +21,7 @@ import (
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
-	"github.com/djthorpe/gopi/util"
+	evt "github.com/djthorpe/gopi/util/event"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -40,7 +40,7 @@ type lirc struct {
 	log         gopi.Logger
 	filepoll    FilePollInterface
 	lock        sync.Mutex
-	subscribers *util.PubSub
+	subscribers *evt.PubSub
 
 	// features
 	features lirc_feature
@@ -105,12 +105,12 @@ const (
 
 // Open creates a new LIRC object, returns error if not possible
 func (config LIRC) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<sys.hw.linux.LIRC.Open>{ device=%v }", config.Device)
-	var err error
-
 	if config.Device == "" {
 		config.Device = LIRC_DEV
 	}
+
+	// Log
+	log.Debug("<sys.hw.linux.LIRC.Open>{ device=%v }", config.Device)
 
 	// create new driver
 	this := new(lirc)
@@ -124,21 +124,26 @@ func (config LIRC) Open(log gopi.Logger) (gopi.Driver, error) {
 	}
 
 	// Open the device
-	this.dev, err = os.OpenFile(config.Device, os.O_RDWR, 0)
-	if err != nil {
+	if dev, err := os.OpenFile(config.Device, os.O_RDWR, 0); err != nil {
 		return nil, err
+	} else {
+		this.dev = dev
 	}
 
 	// Get features
-	if this.features, err = this.getFeatures(); err != nil {
+	if features, err := this.getFeatures(); err != nil {
 		this.dev.Close()
 		return nil, err
+	} else {
+		this.features = features
 	}
 
 	// Get modes
-	if this.rcv_mode, err = this.getRcvMode(); err != nil {
+	if rcv_mode, err := this.getRcvMode(); err != nil {
 		this.dev.Close()
 		return nil, err
+	} else {
+		this.rcv_mode = rcv_mode
 	}
 
 	// Start watching
@@ -148,7 +153,7 @@ func (config LIRC) Open(log gopi.Logger) (gopi.Driver, error) {
 	}
 
 	// Subscribers
-	this.subscribers = util.NewPubSub(0)
+	this.subscribers = evt.NewPubSub(0)
 
 	// return driver
 	return this, nil
@@ -162,6 +167,9 @@ func (this *lirc) Close() error {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
+	// Close subscriber channels
+	this.subscribers.Close()
+
 	// Unwatch device
 	if err := this.filepoll.Unwatch(this.dev); err != nil {
 		this.log.Warn("Unwatch: %v", err)
@@ -173,9 +181,6 @@ func (this *lirc) Close() error {
 	} else {
 		this.dev = nil
 	}
-
-	// Close subscriber channels
-	this.subscribers.Close()
 
 	// Blank out
 	this.filepoll = nil
