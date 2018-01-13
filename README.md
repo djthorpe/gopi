@@ -56,8 +56,8 @@ In order to get started, build some of the examples in the "cmd" folder. They
 can be built with the following command or commands:
 
 ```
-cmd/build_linux.sh
-cmd/build_rpi.sh
+cmd/build_linux.sh # to build relevant Linux examples
+cmd/build_rpi.sh   # to build relevant Raspberry Pi examples
 ```
 
 Obvously the Raspberry Pi builds will include more features on the whole
