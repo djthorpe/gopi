@@ -30,6 +30,7 @@ It would also be great to support the following features in the future:
   * Connected cameras
   * 3D graphics
   * Audio devices
+  * Building for Darwin (Macintosh) targets
 
 More information on usage is available at http://djthorpe.github.io/gopi/
 In order to get started, build some of the examples in the "cmd" folder.
@@ -38,8 +39,8 @@ In order to get started, build some of the examples in the "cmd" folder.
 
 The tested requirements are currently:
 
-  * Any Raspberry Pi
-  * Raspian Jessie Lite 4.4 (other distributions may work, but not tested
+  * Any Raspberry Pi (v2, v3, Zero and Zero W have been tested)
+  * Raspian Jessie Lite 4.4 (other distributions may work, but not tested)
   * Go 1.9
 
 In order to use the library, you'll need to have a working version of Go on 
@@ -49,6 +50,17 @@ retrieve the library on your device, using:
 ```
 go get github.com/djthorpe/gopi
 ```
+
+The examples are in the `cmd` folder which can be built with the following
+command:
+
+```
+cmd/build_linux.sh
+cmd/build_rpi.sh
+```
+
+Obvously the Raspberry Pi builds will include more features on the whole
+than the Linux versions.
 
 # License
 
