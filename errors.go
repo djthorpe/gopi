@@ -29,4 +29,6 @@ var (
 	ErrBadParameter = errors.New("Bad Parameter")
 	// ErrUnexpectedResponse is returned when some response wasn't expected
 	ErrUnexpectedResponse = errors.New("Unexpected response")
+	// ErrOutOfOrder is returned when an operation was executed out of order
+	ErrOutOfOrder = errors.New("Operation out of order")
 )

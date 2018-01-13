@@ -21,8 +21,8 @@ import (
 func init() {
 	// Register hardware
 	gopi.RegisterModule(gopi.Module{
-		Name:     "rpi/surface_manager",
-		Type:     gopi.MODULE_TYPE_SURFACE,
+		Name:     "rpi/graphics_manager",
+		Type:     gopi.MODULE_TYPE_GRAPHICS,
 		Requires: []string{"display"},
 		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
 			return gopi.Open(EGL{

@@ -33,7 +33,7 @@ func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 	} else if surface, err := graphics.CreateSurface(gopi.SURFACE_TYPE_RGBA32, gopi.SURFACE_FLAG_NONE, 1.0, gopi.SURFACE_LAYER_DEFAULT, gopi.ZeroPoint, size); err != nil {
 		return err
 	} else {
-		defer surface.Close()
+		defer graphics.DestroySurface(surface)
 		fmt.Println(surface)
 	}
 

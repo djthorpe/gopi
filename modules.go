@@ -70,7 +70,7 @@ const (
 	MODULE_TYPE_GPIO     // GPIO Hardware interface
 	MODULE_TYPE_I2C      // I2C Hardware interface
 	MODULE_TYPE_SPI      // SPI Hardware interface
-	MODULE_TYPE_INPUT    // Input device manager interface
+	MODULE_TYPE_INPUT    // Input manager & devices
 	MODULE_TYPE_MDNS     // DNS Service Discovery
 	MODULE_TYPE_TIMER    // Timer module
 	MODULE_TYPE_LIRC     // LIRC module
