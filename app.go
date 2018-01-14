@@ -17,6 +17,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -93,7 +94,7 @@ func NewAppConfig(modules ...string) AppConfig {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			return AppConfig{}
 		} else {
-			config.Modules = append(config.Modules, module_array...)
+			config.Modules = appendModules(config.Modules, module_array)
 		}
 	}
 
@@ -262,8 +263,20 @@ func (this *AppInstance) Verbose() bool {
 
 // WaitForSignal blocks until a signal is caught
 func (this *AppInstance) WaitForSignal() {
-	signal := <-this.sigchan
-	this.Logger.Debug2("gopi.AppInstance.WaitForSignal: %v", signal)
+	s := <-this.sigchan
+	this.Logger.Debug2("gopi.AppInstance.WaitForSignal: %v", s)
+}
+
+// WaitForSignalOrTimeout blocks until a signal is caught or
+// timeout occurs and return true if the signal is caught
+func (this *AppInstance) WaitForSignalOrTimeout(timeout time.Duration) bool {
+	select {
+	case s := <-this.sigchan:
+		this.Logger.Debug2("gopi.AppInstance.WaitForSignalOrTimeout: %v", s)
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
 
 // Close method for app
@@ -318,6 +331,31 @@ func (this *AppInstance) ModuleInstance(name string) Driver {
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
+
+// appendModules adds modules from 'others' onto 'modules' without
+// creating duplicate modules
+func appendModules(modules []*Module, others []*Module) []*Module {
+	if len(others) == 0 {
+		return modules
+	}
+	for _, other := range others {
+		if inModules(modules, other) {
+			continue
+		}
+		modules = append(modules, other)
+	}
+	return modules
+}
+
+// inModules returns true if a module is in the array
+func inModules(modules []*Module, other *Module) bool {
+	for _, module := range modules {
+		if module == other {
+			return true
+		}
+	}
+	return false
+}
 
 func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error {
 	var ok bool
