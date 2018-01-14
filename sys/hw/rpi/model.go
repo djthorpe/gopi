@@ -43,18 +43,18 @@ const (
 )
 
 const (
-	RPI_MODEL_A                Model = (0 << 4)
-	RPI_MODEL_B                Model = (1 << 4)
-	RPI_MODEL_A_PLUS           Model = (2 << 4)
-	RPI_MODEL_B_PLUS           Model = (3 << 4)
-	RPI_MODEL_B_PI_2           Model = (4 << 4)
-	RPI_MODEL_ALPHA            Model = (5 << 4)
-	RPI_MODEL_COMPUTE_MODULE   Model = (6 << 4)
-	RPI_MODEL_ZERO             Model = (7 << 4)
-	RPI_MODEL_B_PI_3           Model = (8 << 4)
-	RPI_MODEL_COMPUTE_MODULE_3 Model = (9 << 4)
-	RPI_MODEL_ZERO_W           Model = (10 << 4)
-	RPI_MODEL_UNKNOWN          Model = (15 << 4)
+	RPI_MODEL_A                Model = (0x00 << 4)
+	RPI_MODEL_B                Model = (0x01 << 4)
+	RPI_MODEL_A_PLUS           Model = (0x02 << 4)
+	RPI_MODEL_B_PLUS           Model = (0x03 << 4)
+	RPI_MODEL_B_PI_2           Model = (0x04 << 4)
+	RPI_MODEL_ALPHA            Model = (0x05 << 4)
+	RPI_MODEL_COMPUTE_MODULE   Model = (0x06 << 4)
+	RPI_MODEL_B_PI_3           Model = (0x08 << 4)
+	RPI_MODEL_ZERO             Model = (0x09 << 4)
+	RPI_MODEL_COMPUTE_MODULE_3 Model = (0x0A << 4)
+	RPI_MODEL_ZERO_W           Model = (0x0C << 4)
+	RPI_MODEL_UNKNOWN          Model = (0x0F << 4)
 )
 
 const (
@@ -194,7 +194,7 @@ func (m Model) String() string {
 	case RPI_MODEL_ZERO_W:
 		return "RPI_MODEL_ZERO_W"
 	default:
-		return fmt.Sprintf("[?? Unknown Model value %d]", uint32(m))
+		return fmt.Sprintf("[?? Unknown Model value 0x%02X]", uint32(m))
 	}
 }
 
