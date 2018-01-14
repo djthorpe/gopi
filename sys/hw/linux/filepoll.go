@@ -79,7 +79,7 @@ const (
 )
 
 var (
-	filepoll_delta  = time.Millisecond * 200
+	filepoll_delta  = time.Millisecond * 100
 	filepoll_events = 64
 )
 
@@ -87,7 +87,6 @@ var (
 // OPEN AND CLOSE
 
 func (config FilePoll) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<sys.hw.linux.filepoll.Open>{ }")
 
 	this := new(filepoll)
 	this.log = log
@@ -98,6 +97,8 @@ func (config FilePoll) Open(log gopi.Logger) (gopi.Driver, error) {
 	} else {
 		this.delta = config.Delta
 	}
+
+	log.Debug("<sys.hw.linux.filepoll.Open>{ Delta=%v }", this.delta)
 
 	// Array of events
 	if config.Events == 0 {
@@ -307,11 +308,10 @@ func (this *filepoll) epollwait_inner(delta time.Duration) error {
 		}
 	}
 
+	// Ignore if no events
 	if n == 0 {
 		return nil
 	}
-
-	this.log.Debug2("<sys.hw.linux.filepoll> got event n=%v", n)
 
 	// Process incoming events
 	for _, event := range this.events[:n] {
