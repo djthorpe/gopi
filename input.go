@@ -90,6 +90,7 @@ const (
 	INPUT_TYPE_MOUSE       InputDeviceType = 0x02
 	INPUT_TYPE_TOUCHSCREEN InputDeviceType = 0x04
 	INPUT_TYPE_JOYSTICK    InputDeviceType = 0x08
+	INPUT_TYPE_REMOTE      InputDeviceType = 0x10
 	INPUT_TYPE_ANY         InputDeviceType = 0xFF
 )
 
@@ -175,6 +176,8 @@ func (t InputDeviceType) String() string {
 		return "INPUT_TYPE_TOUCHSCREEN"
 	case INPUT_TYPE_JOYSTICK:
 		return "INPUT_TYPE_JOYSTICK"
+	case INPUT_TYPE_REMOTE:
+		return "INPUT_TYPE_REMOTE"
 	default:
 		return "[?? Invalid InputDeviceType value]"
 	}
