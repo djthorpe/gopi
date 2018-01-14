@@ -194,7 +194,7 @@ func (m Model) String() string {
 	case RPI_MODEL_ZERO_W:
 		return "RPI_MODEL_ZERO_W"
 	default:
-		return "[?? Unknown Model value]"
+		return fmt.Sprintf("[?? Unknown Model value %v]", m)
 	}
 }
 
