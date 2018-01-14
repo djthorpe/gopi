@@ -491,11 +491,8 @@ func (this *lirc) PulseSend(values []uint32) error {
 			return err
 		}
 	}
-	// Send data and flush
+	// Send data
 	if err := binary.Write(this.dev, binary.LittleEndian, values); err != nil {
-		return err
-	}
-	if err := this.dev.Sync(); err != nil {
 		return err
 	}
 	// Return success
