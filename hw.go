@@ -171,6 +171,9 @@ type LIRC interface {
 	// Send parameters
 	SetSendCarrierHz(value uint32) error
 	SetSendDutyCycle(value uint32) error
+
+	// Send Pulse Mode, values are in milliseconds
+	PulseSend(values []uint32) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -254,9 +257,9 @@ const (
 const (
 	LIRC_MODE_NONE     LIRCMode = 0x00000000
 	LIRC_MODE_RAW      LIRCMode = 0x00000001
-	LIRC_MODE_PULSE    LIRCMode = 0x00000002
-	LIRC_MODE_MODE2    LIRCMode = 0x00000004
-	LIRC_MODE_LIRCCODE LIRCMode = 0x00000010
+	LIRC_MODE_PULSE    LIRCMode = 0x00000002 // send only
+	LIRC_MODE_MODE2    LIRCMode = 0x00000004 // rcv only
+	LIRC_MODE_LIRCCODE LIRCMode = 0x00000010 // rcv only
 	LIRC_MODE_MAX      LIRCMode = LIRC_MODE_LIRCCODE
 )
 

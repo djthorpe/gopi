@@ -475,3 +475,29 @@ func (this *lirc) lircReceive(dev *os.File, mode FilePollMode) {
 		this.Emit(buf[0])
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// SEND
+
+// Send Pulse Mode, values are in milliseconds
+func (this *lirc) PulseSend(values []uint32) error {
+	// Check for odd number of values
+	if len(values) == 0 || len(values)%2 == 0 {
+		return gopi.ErrBadParameter
+	}
+	// Set send mode
+	if this.SendMode() != gopi.LIRC_MODE_PULSE {
+		if err := this.SetSendMode(gopi.LIRC_MODE_PULSE); err != nil {
+			return err
+		}
+	}
+	// Send data and flush
+	if err := binary.Write(this.dev, binary.LittleEndian, values); err != nil {
+		return err
+	}
+	if err := this.dev.Sync(); err != nil {
+		return err
+	}
+	// Return success
+	return nil
+}
