@@ -173,10 +173,113 @@ words and how they map onto module types:
 |	"timer"       | gopi.MODULE_TYPE_TIMER    | Timer Manager               |
 |	"lirc"        | gopi.MODULE_TYPE_LIRC     | Infrared Hardware Interface |
 
+If you declare the use of a module by passing it into `gopi.NewAppConfig`
+then you also need to anonymously import the module as per the example
+above. For example, to import the `logger` and `hw` modules on a Raspberry
+Pi you would do the following:
+
+```
+import (
+  // Import Frameworks
+	gopi "github.com/djthorpe/gopi"
+
+	// Import modules
+	_ "github.com/djthorpe/gopi/sys/logger"
+	_ "github.com/djthorpe/gopi/sys/hw/rpi"
+)
+```
+
+If your target platform is Linux you might want to do the following instead:
+
+```
+import (
+  // Import Frameworks
+	gopi "github.com/djthorpe/gopi"
+
+	// Import modules
+	_ "github.com/djthorpe/gopi/sys/logger"
+	_ "github.com/djthorpe/gopi/sys/hw/linux"
+)
+```
+
+You can in fact import both modules simultaneously and use 
+[build tags](https://golang.org/pkg/go/build/) to choose which variant to use.
+You can see the examples in the `cmd` folder to see how cross-platform
+applications can be developed which make the best use of the target platform.
 
 ## Declaring Command Line Flags
 
-##Foreground and Background tasks
+__golang__ has a package called `flags` to define command-line flags but __gopi__
+builds upon this to provide some additional mechanisms with `gopi.Flags`.
+Here is the list of functions:
+
+```
+// Create a new flags object
+func NewFlags(name string) Flags
+
+type Flags interface {
+  // Parse command line argumentsinto flags and pure arguments
+  Parse(args []string) error
+
+  // Parsed reports whether the command-line flags have been parsed
+  Parsed() bool
+
+  // Name returns the name of the flagset
+  Name() string
+
+  // Args returns the command line arguments as an array which aren't flags
+  Args() []string
+
+  // Flags returns the array of flags which were set on the command line
+  Flags() []string
+
+  // HasFlag returns a boolean indicating if a flag was set on the command line
+  HasFlag(name string) bool
+
+  // Define flags and return pointer to the flag value
+  FlagString(name string, value string, usage string) *string
+  FlagBool(name string, value bool, usage string) *bool
+  FlagDuration(name string, value time.Duration, usage string) *time.Duration
+  FlagInt(name string, value int, usage string) *int
+  FlagUint(name string, value uint, usage string) *uint
+  FlagFloat64(name string, value float64, usage string) *float64
+
+  // Return flag values and boolean value which indicates presence on command line
+  GetBool(name string) (bool, bool)
+  GetString(name string) (string, bool)
+  GetDuration(name string) (time.Duration, bool)
+  GetInt(name string) (int, bool)
+  GetUint(name string) (uint, bool)
+  GetUint16(name string) (uint16, bool)
+  GetFloat64(name string) (float64, bool)
+}
+```
+
+Ultimately the `gopi.NewAppConfig` function call will return a `gopi.Flags` object
+into which you can define your own command-line flags. Modules you use will also
+have the ability to add flags, which you can see from the example above. If the
+flag `-help` is invoked then instead of your application running, it simply prints
+out the usage information for the flags and exits.
+
+## Foreground and Background tasks
+
+Once you have your configuration object, you can create an application instance
+and run your application code. In general an application instance is created
+of type `gopi.AppInstance`, each module creates an instance of that module for
+use in your tasks, and foreground and background tasks are started.
+
+Your application is terminated when your foreground tasks returns with either
+an error or with `nil` indicating successful completion. Before this, you can
+choose to terminate your background tasks earlier before final cleanup. Here
+is generally what a foreground tasks might look like:
+
+XXXX
+
+In comparison this is what a background task might look like:
+
+XXXX
+
+
 
 ## Using Application Modules
 
