@@ -283,13 +283,13 @@ func ForegroundTask(app *gopi.AppInstance, done chan<- struct{}) error {
     // Continue processing until signalled to stop
     app.WaitForSignal()
 
-	// Signal to background tasks that main thread is done
-	done <- gopi.DONE
+    // Signal to background tasks that main thread is done
+    done <- gopi.DONE
 
     // ...Perform any other cleanup
 
     // Return success (exit condition is 0)
-	return nil
+    return nil
 }
 ```
 
@@ -322,7 +322,7 @@ func BackgroundTask(app *gopi.AppInstance, done chan<- struct{}) error {
     app.ModuleInstance('Module3').Unsubscribe(chan3)
 
     // Return success (exit condition is 0)
-	return nil
+    return nil
 }
 ```
 
@@ -393,6 +393,10 @@ in the rest of this guide.
 | "i2c"       | app.I2C             | `gopi.I2C`            | `github.com/djthorpe/gopi/sys/hw/linux`     |
 | "spi"       | app.SPI             | `gopi.SPI`            | `github.com/djthorpe/gopi/sys/hw/linux`     |
 | "lirc"      | app.LIRC            | `gopi.LIRC`           | `github.com/djthorpe/gopi/sys/hw/linux`     |
+
+## Logging and Debugging
+
+TODO
 
 ## What's next?
 

@@ -55,13 +55,8 @@ to see how a basic command-line application is structured.
 
 Read the remaining documentation on the various functions of `gopi`:
 
-  * To understand how to use the framework to develop your own applications, see [INTRO](INTRO.md)
-  * Events, tasks and timers are described in [EVENTS](EVENTS.md)
-  * If you want to interact with hardware interfaces like GPIO, SPI and I2C see [HARDWARE](HARDWARE,md)
-  * To read about interacting with input devices, read [INPUT](INPUT.md).
-  * To read about displays, graphics, surfaces and bitmaps, read [GRAPHICS](GRAPHICS.md).
-  * To use OpenVG which provides you with Vector Graphics operations, read [OpenVG](OpenVG.md).
-  * To render text as graphics using scalable fonts, read [FONTS](FONTS.md).
+  * To understand how to use the framework to develop your own applications, see [Helloworld](helloworld.md)
+  * Events, tasks and timers are described in [Events](events.md)
 
 The following sections are yet to be written:
 
