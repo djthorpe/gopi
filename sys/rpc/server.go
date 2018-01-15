@@ -43,7 +43,7 @@ type server struct {
 ////////////////////////////////////////////////////////////////////////////////
 // SERVER OPEN AND CLOSE
 
-// Open a logger
+// Open the server
 func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
 	log.Debug2("<grpc.Server>Open(port=%v,sslcert=%v,sslkey=%v)", config.Port, config.SSLCertificate, config.SSLKey)
 

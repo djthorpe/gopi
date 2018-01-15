@@ -49,29 +49,3 @@ func TestRPCDiscovery_000(t *testing.T) {
 		cancel()
 	}
 }
-
-/*func TestRPCServer_000(t *testing.T) {
-	if logger, err := gopi.Open(logger.Config{}, nil); err != nil {
-		t.Fatal(err)
-	} else if driver, err := gopi.Open(rpc.Server{}, logger.(gopi.Logger)); err != nil {
-		t.Fatal(err)
-	} else {
-		defer driver.Close()
-		defer logger.Close()
-
-		server := driver.(gopi.RPCServer)
-		t.Log(server)
-		if server.Addr() != nil {
-			t.Error("Expected Addr() to be nil")
-		}
-		if err := server.StartInBackground(); err != nil {
-			t.Fatal(err)
-		} else {
-			t.Log("Serving, address=", server.Addr())
-			time.Sleep(30 * time.Second)
-			if err := server.Stop(false); err != nil {
-				t.Fatal(err)
-			}
-		}
-	}
-}*/
