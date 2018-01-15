@@ -155,23 +155,23 @@ can note to refer to modules by their explicit name or use a reserved word
 to include a module by type rather than by name. Here's a list of reserved
 words and how they map onto module types:
 
-| Reserved word | Type                      | Description                 |
+| Reserved word | Type                        | Description                 |
 | -- | -- | -- |
-| "logger"      | gopi.MODULE_TYPE_LOGGER   | Logging module (implicit)   |
-|	"hw"          | gopi.MODULE_TYPE_HARDWARE | Hardware module             |
-|	"display"     | gopi.MODULE_TYPE_DISPLAY  | Display                     |
-|	"graphics"    | gopi.MODULE_TYPE_GRAPHICS | Graphics Manager            |
-|	"fonts"       | gopi.MODULE_TYPE_FONTS    | Font Manager                |
-|	"vector"      | gopi.MODULE_TYPE_VECTOR   | 2D Graphics Renderer        |
-|	"opengl"      | gopi.MODULE_TYPE_OPENGL   | 3D Graphics Renderer        |
-|	"layout"      | gopi.MODULE_TYPE_LAYOUT   | Box Layout                  |
-|	"gpio"        | gopi.MODULE_TYPE_GPIO     | GPIO Hardware Interface     |
-|	"i2c"         | gopi.MODULE_TYPE_I2C      | I2C Hardware Interface      |
-|	"spi"         | gopi.MODULE_TYPE_SPI      | SPI Hardware Interface      |
-|	"input"       | gopi.MODULE_TYPE_INPUT    | Input Manager               |
-|	"mdns"        | gopi.MODULE_TYPE_MDNS     | RPC Service Discovery       |
-|	"timer"       | gopi.MODULE_TYPE_TIMER    | Timer Manager               |
-|	"lirc"        | gopi.MODULE_TYPE_LIRC     | Infrared Hardware Interface |
+| "logger"      | `gopi.MODULE_TYPE_LOGGER`   | Logging module (implicit)   |
+|	"hw"          | `gopi.MODULE_TYPE_HARDWARE` | Hardware module             |
+|	"display"     | `gopi.MODULE_TYPE_DISPLAY`  | Display                     |
+|	"graphics"    | `gopi.MODULE_TYPE_GRAPHICS` | Graphics Manager            |
+|	"fonts"       | `gopi.MODULE_TYPE_FONTS`    | Font Manager                |
+|	"vector"      | `gopi.MODULE_TYPE_VECTOR`   | 2D Graphics Renderer        |
+|	"opengl"      | `gopi.MODULE_TYPE_OPENGL`   | 3D Graphics Renderer        |
+|	"layout"      | `gopi.MODULE_TYPE_LAYOUT`   | Box Layout                  |
+|	"gpio"        | `gopi.MODULE_TYPE_GPIO`     | GPIO Hardware Interface     |
+|	"i2c"         | `gopi.MODULE_TYPE_I2C`      | I2C Hardware Interface      |
+|	"spi"         | `gopi.MODULE_TYPE_SPI`      | SPI Hardware Interface      |
+|	"input"       | `gopi.MODULE_TYPE_INPUT`    | Input Manager               |
+|	"mdns"        | `gopi.MODULE_TYPE_MDNS`     | RPC Service Discovery       |
+|	"timer"       | `gopi.MODULE_TYPE_TIMER`    | Timer Manager               |
+|	"lirc"        | `gopi.MODULE_TYPE_LIRC`     | Infrared Hardware Interface |
 
 If you declare the use of a module by passing it into `gopi.NewAppConfig`
 then you also need to anonymously import the module as per the example
@@ -180,11 +180,7 @@ Pi you would do the following:
 
 ```
 import (
-  // Import Frameworks
-	gopi "github.com/djthorpe/gopi"
-
 	// Import modules
-	_ "github.com/djthorpe/gopi/sys/logger"
 	_ "github.com/djthorpe/gopi/sys/hw/rpi"
 )
 ```
@@ -193,11 +189,7 @@ If your target platform is Linux you might want to do the following instead:
 
 ```
 import (
-  // Import Frameworks
-	gopi "github.com/djthorpe/gopi"
-
 	// Import modules
-	_ "github.com/djthorpe/gopi/sys/logger"
 	_ "github.com/djthorpe/gopi/sys/hw/linux"
 )
 ```
@@ -250,7 +242,6 @@ type Flags interface {
   GetDuration(name string) (time.Duration, bool)
   GetInt(name string) (int, bool)
   GetUint(name string) (uint, bool)
-  GetUint16(name string) (uint16, bool)
   GetFloat64(name string) (float64, bool)
 }
 ```
@@ -270,16 +261,95 @@ use in your tasks, and foreground and background tasks are started.
 
 Your application is terminated when your foreground tasks returns with either
 an error or with `nil` indicating successful completion. Before this, you can
-choose to terminate your background tasks earlier before final cleanup. Here
-is generally what a foreground tasks might look like:
+choose to terminate your background tasks earlier before final cleanup. 
 
-XXXX
+In a __Command Line Tool__ here is generally what a foreground task might 
+look like:
+
+```
+func ForegroundTask(app *gopi.AppInstance, done chan<- struct{}) error {
+  // ...Parse command-line arguments and check for validity
+  // ...Perform any other initialization
+  err := ...
+  if err != nil {
+    // Return error which is printed out on os.Stderr
+    // and sets exit condition to -1
+    return err
+  }
+
+  // ...If there are background tasks then pass information
+  // onto them...
+
+  // Continue processing until signalled to stop
+	app.WaitForSignal()
+
+	// Signal to background tasks that main thread is done
+	done <- gopi.DONE
+
+  // ...Perform any other cleanup
+
+  // Return success (exit condition is 0)
+	return nil
+}
+```
 
 In comparison this is what a background task might look like:
 
-XXXX
+```
+func BackgroundTask(app *gopi.AppInstance, done chan<- struct{}) error {
 
+  // Subscribe to events from modules
+  chan1 := app.Module1.Subscribe()
+  chan2 := app.Module2.Subscribe()
+  chan3 := app.ModuleInstance('Module3').Subscribe()
 
+  FOR_LOOP: for {
+    select {
+      case <-done:
+        break FOR_LOOP
+      case evt := <-chan1:
+        // ... Process Module1 event
+      case evt := <-chan2:
+        // ... Process Module2 event
+      case evt := <-chan3:
+        // ... Process Module3 event        
+    }
+  }
+
+  // Unsubscribe from channels
+  app.Module1.Unsubscribe(chan1)
+  app.Module2.Unsubscribe(chan2)
+  app.ModuleInstance('Module3').Unsubscribe(chan3)
+
+  // Return success (exit condition is 0)
+	return nil
+}
+```
+
+One or more background tasks are essentially event-driven, accepting
+events from modules (or from the application itself), processing them
+and then waiting for other events, one of which can be the `done`
+signal which propogates from the foreground task.
+
+More information on events is given in a future section, but for now
+it's important to distingush between how a foreground task and a background
+task operates in a __Command Line Tool__.
+
+Finally your `main` function will invoke your tasks after set-up and
+co-ordinate communications between them. The most simple `main` function
+with one foreground task and two background tasks may look like this:
+
+```
+func main() {
+	os.Exit(
+    gopi.CommandLineTool(
+      gopi.NewAppConfig("Module1", "Module2", "Module3"),
+      ForegroundTask,
+      BackgroundTask1,BackgroundTask2,
+    )
+  )
+}
+```
 
 ## Using Application Modules
 
