@@ -371,6 +371,7 @@ func ForegroundTask(app *gopi.AppInstance, done chan<- struct{}) error {
   display := app.ModuleInstance("display").(gopi.Display) // implements the gopi.Display interface
   // ... code here
 }
+```
 
 Here is a list of some application modules, their "abstract interface" names
 and the import path you would use. Note that for some, there are different
