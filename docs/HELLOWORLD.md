@@ -114,7 +114,7 @@ As you can see with this example, there's several areas to explore:
 
 The following sections introduce these concepts.
 
-# Configuration
+## Configuration
 
 Any application starts with a _configuration_ for that application, which can determine
 the environment in which the application runs. It's intended that the configuration may
@@ -174,13 +174,13 @@ words and how they map onto module types:
 |	"lirc"        | gopi.MODULE_TYPE_LIRC     | Infrared Hardware Interface |
 
 
-# Declaring Command Line Flags
+## Declaring Command Line Flags
 
-# Foreground and Background tasks
+##Foreground and Background tasks
 
-# Using Application Modules
+## Using Application Modules
 
-# What's next?
+## What's next?
 
 
 
