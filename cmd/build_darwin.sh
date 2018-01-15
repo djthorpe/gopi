@@ -1,12 +1,12 @@
 #!/bin/bash
 ##############################################################
-# Build Raspberry Pi Flavours
+# Build Darwin (MacOS) Flavours
 ##############################################################
 
 CURRENT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 GO=`which go`
 LDFLAGS="-w -s"
-TAGS="rpi"
+TAGS="darwin"
 cd "${CURRENT_PATH}/.."
 
 ##############################################################
@@ -22,19 +22,23 @@ if [ "${GO}" == "" ] || [ ! -x ${GO} ] ; then
 fi
 
 ##############################################################
+# Generate
+
+GENERATE=(
+    rpc/rpc_server.go
+)
+
+for COMMAND in ${GENERATE[@]}; do
+    echo "go generate cmd/${COMMAND}"
+done
+
+##############################################################
 # Install
 
 COMMANDS=(
     helloworld/helloworld.go
     timer/timer_tester.go
-    hw/hw_list.go
-    hw/vcgencmd_list.go
-    hw/display_list.go
-    gpio/gpio_ctrl.go
-    i2c/i2c_detect.go
-    spi/spi_ctrl.go
-    input/input_tester.go
-    lirc/lirc_receive.go        
+    rpc/rpc_server.go
 )
 
 for COMMAND in ${COMMANDS[@]}; do

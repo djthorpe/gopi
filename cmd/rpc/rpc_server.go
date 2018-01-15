@@ -25,13 +25,13 @@ package main
 //go:generate protoc helloworld/helloworld.proto --go_out=plugins=grpc:.
 
 import (
-	"context"
 	"errors"
 	"os"
 	"reflect"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
+	context "golang.org/x/net/context"
 
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/logger"
@@ -47,6 +47,9 @@ import (
 type HelloworldService struct{}
 
 func (this *HelloworldService) Register(server gopi.RPCServer) error {
+	// Check to make sure we satisfy the interface
+	var _ hw.GreeterServer = (*HelloworldService)(nil)
+
 	return server.Fudge(reflect.ValueOf(hw.RegisterGreeterServer), this)
 }
 
