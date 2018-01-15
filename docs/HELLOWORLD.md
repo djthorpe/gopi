@@ -156,6 +156,7 @@ to include a module by type rather than by name. Here's a list of reserved
 words and how they map onto module types:
 
 | Reserved word | Type                      | Description                 |
+| -- | -- | -- |
 | "logger"      | gopi.MODULE_TYPE_LOGGER   | Logging module (implicit)   |
 |	"hw"          | gopi.MODULE_TYPE_HARDWARE | Hardware module             |
 |	"display"     | gopi.MODULE_TYPE_DISPLAY  | Display                     |
