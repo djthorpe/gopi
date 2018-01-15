@@ -27,7 +27,10 @@ import (
 	"fmt"
 	"os"
 
+  // Import Frameworks
 	gopi "github.com/djthorpe/gopi"
+
+	// Import modules
 	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
@@ -93,10 +96,10 @@ Try running the application with various flags including `-name` and `-wait`. Lo
 at the source code in more detail, apart from the framework and module import statements
 there are two functions:
 
-  1 The `main` function creates an application configuration and adds two configuration
+  1. The `main` function creates an application configuration and adds two configuration
     flags. It then runs the application as a command line application with a single
     foreground task, `helloWorld`.
-  2 The `helloWorld` function is a "foreground task" which when finished will terminate
+  2. The `helloWorld` function is a "foreground task" which when finished will terminate
     the program. It reads the configuration flags, outputs some information. If the
     `-wait` flag is used then it waits until the task is interrupted by keyboard (pressing
     CTRL and C keys) or interrupt signal (using the `kill` command). The `done <- gopi.DONE`
@@ -111,11 +114,70 @@ As you can see with this example, there's several areas to explore:
 
 The following sections introduce these concepts.
 
-# Configuration and flags
+# Configuration
+
+Any application starts with a _configuration_ for that application, which can determine
+the environment in which the application runs. It's intended that the configuration may
+include command-line flags, metadata about the application and links to resources such
+as fonts, images and other information required in order to the application to run.
+You create a configuration file using the function `gopi.NewAppConfig`
+which takes a list of modules required for the running of the application as argument,
+and returns an `gopi.AppConfig` object:
+
+```
+type AppConfig struct {
+	// The set of modules which are required, including dependencies
+	Modules  []*Module
+
+	// The command-line arguments
+	AppArgs  []string
+
+	// The command-line flags
+	AppFlags *Flags
+
+	// Whether to log at debugging level
+	Debug    bool
+
+	// Whether to output verbose information
+	Verbose  bool
+}
+```
+
+The comma-separated list of modules you provide to the `gopi.NewAppConfig` function 
+will be expanded to also include any modules where there are dependencies and 
+a logging module is implicit to the list of modules. You can set the `Debug`
+and `Verbose` variables explicitly, but it is overridden when the `-debug`
+or `-verbose` flags exist on the command-line when invoking the application
+from the command-line.
+
+More information about modules is given in a future section, but for now you
+can note to refer to modules by their explicit name or use a reserved word
+to include a module by type rather than by name. Here's a list of reserved
+words and how they map onto module types:
+
+| Reserved word | Type                      | Description                 |
+| "logger"      | gopi.MODULE_TYPE_LOGGER   | Logging module (implicit)   |
+|	"hw"          | gopi.MODULE_TYPE_HARDWARE | Hardware module             |
+|	"display"     | gopi.MODULE_TYPE_DISPLAY  | Display                     |
+|	"graphics"    | gopi.MODULE_TYPE_GRAPHICS | Graphics Manager            |
+|	"fonts"       | gopi.MODULE_TYPE_FONTS    | Font Manager                |
+|	"vector"      | gopi.MODULE_TYPE_VECTOR   | 2D Graphics Renderer        |
+|	"opengl"      | gopi.MODULE_TYPE_OPENGL   | 3D Graphics Renderer        |
+|	"layout"      | gopi.MODULE_TYPE_LAYOUT   | Box Layout                  |
+|	"gpio"        | gopi.MODULE_TYPE_GPIO     | GPIO Hardware Interface     |
+|	"i2c"         | gopi.MODULE_TYPE_I2C      | I2C Hardware Interface      |
+|	"spi"         | gopi.MODULE_TYPE_SPI      | SPI Hardware Interface      |
+|	"input"       | gopi.MODULE_TYPE_INPUT    | Input Manager               |
+|	"mdns"        | gopi.MODULE_TYPE_MDNS     | RPC Service Discovery       |
+|	"timer"       | gopi.MODULE_TYPE_TIMER    | Timer Manager               |
+|	"lirc"        | gopi.MODULE_TYPE_LIRC     | Infrared Hardware Interface |
+
+
+# Declaring Command Line Flags
 
 # Foreground and Background tasks
 
-# Importing and using application modules
+# Using Application Modules
 
 # What's next?
 
