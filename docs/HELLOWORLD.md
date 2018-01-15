@@ -396,5 +396,11 @@ in the rest of this guide.
 
 ## What's next?
 
+The [next section](events.md) gives information on __events__ and __timers__: How to subscribe to event streams, 
+process events, respond at regular time intervals and how to generate your own events. You may wish to skip
+that and understand how to enquire about the [hardware](hardware.md) platform you're running on.
+
+As always, refer to the [examples](examples.md) which demonstrate many of the features of the __gopi__ framework.
+
 
 
