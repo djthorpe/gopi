@@ -27,7 +27,7 @@ import (
 	"fmt"
 	"os"
 
-  // Import Frameworks
+    // Import Frameworks
 	gopi "github.com/djthorpe/gopi"
 
 	// Import modules
@@ -210,39 +210,39 @@ Here is the list of functions:
 func NewFlags(name string) Flags
 
 type Flags interface {
-  // Parse command line argumentsinto flags and pure arguments
-  Parse(args []string) error
+    // Parse command line argumentsinto flags and pure arguments
+    Parse(args []string) error
 
-  // Parsed reports whether the command-line flags have been parsed
-  Parsed() bool
+    // Parsed reports whether the command-line flags have been parsed
+    Parsed() bool
 
-  // Name returns the name of the flagset
-  Name() string
+    // Name returns the name of the flagset
+    Name() string
 
-  // Args returns the command line arguments as an array which aren't flags
-  Args() []string
+    // Args returns the command line arguments as an array which aren't flags
+    Args() []string
 
-  // Flags returns the array of flags which were set on the command line
-  Flags() []string
+    // Flags returns the array of flags which were set on the command line
+    Flags() []string
 
-  // HasFlag returns a boolean indicating if a flag was set on the command line
-  HasFlag(name string) bool
+    // HasFlag returns a boolean indicating if a flag was set on the command line
+    HasFlag(name string) bool
 
-  // Define flags and return pointer to the flag value
-  FlagString(name string, value string, usage string) *string
-  FlagBool(name string, value bool, usage string) *bool
-  FlagDuration(name string, value time.Duration, usage string) *time.Duration
-  FlagInt(name string, value int, usage string) *int
-  FlagUint(name string, value uint, usage string) *uint
-  FlagFloat64(name string, value float64, usage string) *float64
+    // Define flags and return pointer to the flag value
+    FlagString(name string, value string, usage string) *string
+    FlagBool(name string, value bool, usage string) *bool
+    FlagDuration(name string, value time.Duration, usage string) *time.Duration
+    FlagInt(name string, value int, usage string) *int
+    FlagUint(name string, value uint, usage string) *uint
+    FlagFloat64(name string, value float64, usage string) *float64
 
-  // Return flag values and boolean value which indicates presence on command line
-  GetBool(name string) (bool, bool)
-  GetString(name string) (string, bool)
-  GetDuration(name string) (time.Duration, bool)
-  GetInt(name string) (int, bool)
-  GetUint(name string) (uint, bool)
-  GetFloat64(name string) (float64, bool)
+    // Return flag values and boolean value which indicates presence on command line
+    GetBool(name string) (bool, bool)
+    GetString(name string) (string, bool)
+    GetDuration(name string) (time.Duration, bool)
+    GetInt(name string) (int, bool)
+    GetUint(name string) (uint, bool)
+    GetFloat64(name string) (float64, bool)
 }
 ```
 
@@ -268,27 +268,27 @@ look like:
 
 ```
 func ForegroundTask(app *gopi.AppInstance, done chan<- struct{}) error {
-  // ...Parse command-line arguments and check for validity
-  // ...Perform any other initialization
-  err := ...
-  if err != nil {
-    // Return error which is printed out on os.Stderr
-    // and sets exit condition to -1
-    return err
-  }
+    // ...Parse command-line arguments and check for validity
+    // ...Perform any other initialization
+    err := ...
+    if err != nil {
+        // Return error which is printed out on os.Stderr
+        // and sets exit condition to -1
+        return err
+    }
 
-  // ...If there are background tasks then pass information
-  // onto them...
+    // ...If there are background tasks then pass information
+    // onto them...
 
-  // Continue processing until signalled to stop
-	app.WaitForSignal()
+    // Continue processing until signalled to stop
+    app.WaitForSignal()
 
 	// Signal to background tasks that main thread is done
 	done <- gopi.DONE
 
-  // ...Perform any other cleanup
+    // ...Perform any other cleanup
 
-  // Return success (exit condition is 0)
+    // Return success (exit condition is 0)
 	return nil
 }
 ```
@@ -298,30 +298,30 @@ In comparison this is what a background task might look like:
 ```
 func BackgroundTask(app *gopi.AppInstance, done chan<- struct{}) error {
 
-  // Subscribe to events from modules
-  chan1 := app.Module1.Subscribe()
-  chan2 := app.Module2.Subscribe()
-  chan3 := app.ModuleInstance('Module3').Subscribe()
+    // Subscribe to events from modules
+    chan1 := app.Module1.Subscribe()
+    chan2 := app.Module2.Subscribe()
+    chan3 := app.ModuleInstance('Module3').Subscribe()
 
-  FOR_LOOP: for {
-    select {
-      case <-done:
-        break FOR_LOOP
-      case evt := <-chan1:
-        // ... Process Module1 event
-      case evt := <-chan2:
-        // ... Process Module2 event
-      case evt := <-chan3:
-        // ... Process Module3 event        
+    FOR_LOOP: for {
+        select {
+        case <-done:
+                break FOR_LOOP
+        case evt := <-chan1:
+            // ... Process Module1 event
+        case evt := <-chan2:
+            // ... Process Module2 event
+        case evt := <-chan3:
+            // ... Process Module3 event        
+        }
     }
-  }
 
-  // Unsubscribe from channels
-  app.Module1.Unsubscribe(chan1)
-  app.Module2.Unsubscribe(chan2)
-  app.ModuleInstance('Module3').Unsubscribe(chan3)
+    // Unsubscribe from channels
+    app.Module1.Unsubscribe(chan1)
+    app.Module2.Unsubscribe(chan2)
+    app.ModuleInstance('Module3').Unsubscribe(chan3)
 
-  // Return success (exit condition is 0)
+    // Return success (exit condition is 0)
 	return nil
 }
 ```
@@ -342,16 +342,56 @@ with one foreground task and two background tasks may look like this:
 ```
 func main() {
 	os.Exit(
-    gopi.CommandLineTool(
-      gopi.NewAppConfig("Module1", "Module2", "Module3"),
-      ForegroundTask,
-      BackgroundTask1,BackgroundTask2,
+        gopi.CommandLineTool(
+          gopi.NewAppConfig("Module1", "Module2", "Module3"),
+          ForegroundTask,
+          BackgroundTask1,BackgroundTask2,
+        )
     )
-  )
 }
 ```
 
 ## Using Application Modules
+
+As mentioned, you can use modules within your code by:
+
+  1. Importing the variant of module you wish to use anonymously into your
+     application
+  2. Indicating in your configuration file which modules you wish to use
+  3. Using the instance of the module within either your foreground or background
+     tasks, cross-referencing the abstract interface for the methods that can be used.
+
+Some modules can be referenced using the `app.Module` format, but others require
+you to use the `app.ModuleInstance()` function, and then to cast them to your chosen
+interface. For example:
+
+```
+func ForegroundTask(app *gopi.AppInstance, done chan<- struct{}) error {
+  logger := app.Logger // implements the gopi.Logger interface
+  display := app.ModuleInstance("display").(gopi.Display) // implements the gopi.Display interface
+  // ... code here
+}
+
+Here is a list of some application modules, their "abstract interface" names
+and the import path you would use. Note that for some, there are different
+implementations. Information on how to choose and use each interface is detailed
+in the rest of this guide.
+
+| Name        | Use                 | Abstract Interface    | Import                                      |
+| -- | -- | -- | -- |
+| "logger"    | app.Logger          | `gopi.Logger`         | `github.com/djthorpe/gopi/sys/logger`       |
+| "timer"     | app.Timer           | `gopi.Timer`          | `github.com/djthorpe/gopi/sys/timer`        |
+| "hw"        | app.Hardware        | `gopi.Hardware`       | `github.com/djthorpe/gopi/sys/hw/rpi`       |
+| "display"   | app.Display         | `gopi.Display`        | `github.com/djthorpe/gopi/sys/hw/rpi`       |
+| "hw"        | app.Hardware        | `gopi.Hardware`       | `github.com/djthorpe/gopi/sys/hw/linux`     |
+| "graphics"  | app.GraphicsManager | `gopi.SurfaceManager` | `github.com/djthorpe/gopi/sys/graphics/rpi` |
+| "fonts"     | app.FontManager     | `gopi.FontManager`    | `github.com/djthorpe/gopi/sys/fonts/rpi`    |
+| "input"     | app.InputManager    | `gopi.InputManager`   | `github.com/djthorpe/gopi/sys/input/linux`  |
+| "gpio"      | app.GPIO            | `gopi.GPIO`           | `github.com/djthorpe/gopi/sys/hw/linux`     |
+| "gpio"      | app.GPIO            | `gopi.GPIO`           | `github.com/djthorpe/gopi/sys/hw/rpi`       |
+| "i2c"       | app.I2C             | `gopi.I2C`            | `github.com/djthorpe/gopi/sys/hw/linux`     |
+| "spi"       | app.SPI             | `gopi.SPI`            | `github.com/djthorpe/gopi/sys/hw/linux`     |
+| "lirc"      | app.LIRC            | `gopi.LIRC`           | `github.com/djthorpe/gopi/sys/hw/linux`     |
 
 ## What's next?
 
