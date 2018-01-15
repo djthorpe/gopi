@@ -57,6 +57,7 @@ Read the remaining documentation on the various functions of `gopi`:
 
   * To understand how to use the framework to develop your own applications, see [Helloworld](helloworld.md)
   * Events, tasks and timers are described in [Events](events.md)
+  * Information about the hardware platform your applcation us running on is described in [Hardware](hardware.md)
 
 The following sections are yet to be written:
 
