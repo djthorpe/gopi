@@ -15,12 +15,14 @@ import (
 	"net"
 	"reflect"
 	"strings"
+	"sync"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
 	evt "github.com/djthorpe/gopi/util/event"
 	grpc "google.golang.org/grpc"
 	credentials "google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/grpclog"
 	reflection "google.golang.org/grpc/reflection"
 )
 
@@ -39,6 +41,14 @@ type server struct {
 	pubsub     *evt.PubSub
 	eventchans []chan gopi.RPCEvent
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// GLOBAL VARIABLES
+
+var (
+	grpclog_once sync.Once
+	grpclogger   grpclog.LoggerV2
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // SERVER OPEN AND CLOSE
@@ -68,6 +78,13 @@ func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
 
 	// Register reflection service on gRPC server.
 	reflection.Register(this.server)
+
+	// Set GRPC logger
+	grpclog_once.Do(func() {
+		// TODO: Create grpclogger if it doesn't yet exist
+		// then route through to 'log'
+		grpclog.SetLoggerV2(grpclogger)
+	})
 
 	// success
 	return this, nil
