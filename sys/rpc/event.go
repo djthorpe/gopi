@@ -20,7 +20,8 @@ import (
 
 // Event is the RPC event
 type Event struct {
-	t gopi.RPCEventType
+	source gopi.Driver
+	t      gopi.RPCEventType
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,6 +30,16 @@ type Event struct {
 // Return the type of event
 func (e *Event) Type() gopi.RPCEventType {
 	return e.t
+}
+
+// Return name of event
+func (*Event) Name() string {
+	return "RPCEvent"
+}
+
+// Return source of event
+func (e *Event) Source() gopi.Driver {
+	return e.source
 }
 
 ////////////////////////////////////////////////////////////////////////////////

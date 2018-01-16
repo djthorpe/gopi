@@ -8,7 +8,9 @@
 
 package gopi
 
-import "time"
+import (
+	"time"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
@@ -91,4 +93,12 @@ type InputEvent interface {
 
 	// Multi-touch slot identifier
 	Slot() uint
+}
+
+// RPCEvent is an event which is emitted by either discovery or
+// server.
+type RPCEvent interface {
+	Event
+
+	Type() RPCEventType
 }

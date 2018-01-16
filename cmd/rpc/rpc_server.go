@@ -11,7 +11,8 @@
 // In order to install this package, you will need to run go generate with
 // both the protoc compiler and the GRPC GO plugin available:
 //
-// brew install protobuf
+// mac# brew install protobuf
+// rpi# sudo apt install protobuf-compiler
 // go get -u github.com/golang/protobuf/protoc-gen-go
 //
 // Then:
@@ -26,6 +27,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 
@@ -67,6 +69,33 @@ func (this *HelloworldService) SayHello(ctx context.Context, req *hw.HelloReques
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
+
+	server, ok := app.ModuleInstance("rpc/server").(gopi.RPCServer)
+	if server == nil || ok == false {
+		return errors.New("rpc/server missing")
+	}
+
+	// Listen for events
+	c := server.Subscribe()
+FOR_LOOP:
+	for {
+		select {
+		case evt := <-c:
+			if evt != nil {
+				fmt.Println(evt)
+			}
+		case <-done:
+			break FOR_LOOP
+		}
+	}
+
+	// Stop listening for events
+	server.Unsubscribe(c)
+
+	return nil
+}
 
 func ServerLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 
@@ -112,5 +141,5 @@ func main() {
 	config := gopi.NewAppConfig("rpc/server")
 
 	// Run the command line tool
-	os.Exit(gopi.CommandLineTool(config, MainLoop, ServerLoop))
+	os.Exit(gopi.CommandLineTool(config, MainLoop, ServerLoop, EventLoop))
 }

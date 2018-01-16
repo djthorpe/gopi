@@ -18,8 +18,7 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
-
-	// Modules
+	evt "github.com/djthorpe/gopi/util/event"
 	grpc "google.golang.org/grpc"
 	credentials "google.golang.org/grpc/credentials"
 	reflection "google.golang.org/grpc/reflection"
@@ -37,6 +36,7 @@ type server struct {
 	port       uint
 	server     *grpc.Server
 	addr       net.Addr
+	pubsub     *evt.PubSub
 	eventchans []chan gopi.RPCEvent
 }
 
@@ -62,7 +62,9 @@ func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
 	}
 
 	this.addr = nil
-	this.eventchans = make([]chan gopi.RPCEvent, 0)
+
+	// Fan out events to subscribers
+	this.pubsub = evt.NewPubSub(0)
 
 	// Register reflection service on gRPC server.
 	reflection.Register(this.server)
@@ -73,8 +75,19 @@ func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
 
 // Close server
 func (this *server) Close() error {
-	this.log.Debug2("<grpc.Server>Close()")
-	return this.Stop(true)
+	this.log.Debug2("<grpc.Server>Close( addr=%v )", this.addr)
+
+	// Ungracefully stop the server
+	err := this.Stop(true)
+
+	// Unsubscribe
+	if this.pubsub != nil {
+		this.pubsub.Close()
+		this.pubsub = nil
+	}
+
+	// Return any error that occurred
+	return err
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,10 +108,10 @@ func (this *server) Start(modules ...gopi.RPCModule) error {
 		}
 		// Start server
 		this.addr = lis.Addr()
-		this.emitEvent(&Event{gopi.RPC_EVENT_SERVER_STARTED})
+		this.emit(&Event{source: this, t: gopi.RPC_EVENT_SERVER_STARTED})
 		this.log.Debug("<grpc.Server>{ addr=%v }", this.addr)
 		err := this.server.Serve(lis) // blocking call
-		this.emitEvent(&Event{gopi.RPC_EVENT_SERVER_STOPPED})
+		this.emit(&Event{source: this, t: gopi.RPC_EVENT_SERVER_STOPPED})
 		this.addr = nil
 		return err
 	}
@@ -144,20 +157,26 @@ func (this *server) Fudge(callback reflect.Value, module gopi.RPCModule) error {
 ///////////////////////////////////////////////////////////////////////////////
 // EVENTS
 
-// Events() creates a new channel on which to emit events and the channel
-// is returned. Subsequent events are emitted on all event channels
-func (this *server) Events() chan gopi.RPCEvent {
-	eventchan := make(chan gopi.RPCEvent)
-	this.eventchans = append(this.eventchans, eventchan)
-	return eventchan
+// Subscribe to events from the server
+func (this *server) Subscribe() <-chan gopi.Event {
+	if this.pubsub != nil {
+		return this.pubsub.Subscribe()
+	} else {
+		return nil
+	}
 }
 
-// emitEvent broadcasts events onto listening channels
-func (this *server) emitEvent(evt gopi.RPCEvent) {
-	for _, c := range this.eventchans {
-		if c != nil {
-			c <- evt
-		}
+// Unsubscribe from events from the server
+func (this *server) Unsubscribe(c <-chan gopi.Event) {
+	if this.pubsub != nil {
+		this.pubsub.Unsubscribe(c)
+	}
+}
+
+// emit broadcasts events onto listening channels
+func (this *server) emit(evt gopi.RPCEvent) {
+	if this.pubsub != nil {
+		this.pubsub.Emit(evt)
 	}
 }
 

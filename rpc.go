@@ -1,12 +1,12 @@
 /*
 	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016-2017
+	(c) Copyright David Thorpe 2016-2018
 	All Rights Reserved
 	Documentation http://djthorpe.github.io/gopi/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-package gopi // import "github.com/djthorpe/gopi"
+package gopi
 
 import (
 	"context"
@@ -17,8 +17,12 @@ import (
 	"time"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
 // RPCService defines a service which can be registered
 // or discovered on the network
+// TODO: Rename this to RPCServiceRecord
 type RPCService struct {
 	Name string
 	Type string
@@ -30,21 +34,25 @@ type RPCService struct {
 	IP6  []net.IP
 }
 
+// RPCEventType is an enumeration of event types
+type RPCEventType uint
+
 // RPCBrowseFunc is the callback function for when a service is discovered
 // on the network. It's called with a nil parameter when no more services
 // are found
 type RPCBrowseFunc func(service *RPCService)
 
+////////////////////////////////////////////////////////////////////////////////
+// INTERFACES
+
 // RPCModule is a set of functions which will service RPC calls remotely
+// TODO: Rename this as 'RPCService' instead
 type RPCModule interface {
 	// Register the module with server before the server starts
 	Register(server RPCServer) error
-
-	// Return the service type string
-	ServiceType() string
 }
 
-// RPCDiscoveryDriver is the driver for discovering
+// RPCServiceDiscovery is the driver for discovering
 // services on the network using mDNS or another mechanism
 type RPCServiceDiscovery interface {
 	Driver
@@ -61,6 +69,7 @@ type RPCServiceDiscovery interface {
 // a remote RPCClient
 type RPCServer interface {
 	Driver
+	Publisher
 
 	// Starts an RPC server in currently running thread, with
 	// current set of modules as RPC calls. The method will not
@@ -78,23 +87,12 @@ type RPCServer interface {
 
 	// Return service record, or nil when the service record
 	// cannot be generated
+	// TODO: Rename this as ServiceRecord
 	Service(name, service string) *RPCService
 
 	// Fudge is something I will fix later. It implements
 	// a hook for calling the grpc register functions
 	Fudge(callback reflect.Value, module RPCModule) error
-
-	// Return channel on which server events are emitted
-	Events() chan RPCEvent
-}
-
-// RPCEventType is an enumeration of event types
-type RPCEventType uint
-
-// RPCEvent is an event which is emitted by either discovery or
-// server.
-type RPCEvent interface {
-	Type() RPCEventType
 }
 
 // RPCClient implements a client for communicating with an RPC server
