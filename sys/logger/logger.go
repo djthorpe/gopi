@@ -1,6 +1,6 @@
 /*
 	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016-2017
+	(c) Copyright David Thorpe 2016-2018
 	All Rights Reserved
 
 	Documentation http://djthorpe.github.io/gopi/
@@ -154,20 +154,20 @@ func (this *driver) Warn(format string, v ...interface{}) {
 	}
 }
 
-func (this *driver) Error(format string, v ...interface{}) gopi.Error {
+func (this *driver) Error(format string, v ...interface{}) error {
 	message := fmt.Sprintf(format, v...)
 	if this.level <= LOG_ERROR || this.level == LOG_ANY {
 		this.log(LOG_ERROR, message)
 	}
-	return gopi.NewError(errors.New(message))
+	return errors.New(message)
 }
 
-func (this *driver) Fatal(format string, v ...interface{}) gopi.Error {
+func (this *driver) Fatal(format string, v ...interface{}) error {
 	message := fmt.Sprintf(format, v...)
 	if this.level <= LOG_FATAL || this.level == LOG_ANY {
 		this.log(LOG_FATAL, message)
 	}
-	return gopi.NewError(errors.New(message))
+	return errors.New(message)
 }
 
 func (this *driver) IsDebug() bool {

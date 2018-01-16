@@ -29,8 +29,8 @@ type Logger interface {
 	Driver
 
 	// Output logging messages
-	Fatal(format string, v ...interface{}) Error
-	Error(format string, v ...interface{}) Error
+	Fatal(format string, v ...interface{}) error
+	Error(format string, v ...interface{}) error
 	Warn(format string, v ...interface{})
 	Info(format string, v ...interface{})
 	Debug(format string, v ...interface{})
@@ -38,11 +38,6 @@ type Logger interface {
 
 	// Return IsDebug flag
 	IsDebug() bool
-}
-
-// Error type
-type Error struct {
-	reason string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,40 +50,4 @@ func Open(config Config, log Logger) (Driver, error) {
 	} else {
 		return driver, nil
 	}
-}
-
-// Open a driver - opens the concrete version given the config method
-// and only returns the driver (or nil). Will return an error as a
-// reference.
-func Open2(config Config, log Logger, error_ref *Error) Driver {
-	var err error
-	var driver Driver
-
-	// Create driver
-	if err == nil {
-		driver, err = config.Open(log)
-	}
-
-	// Return error
-	if err != nil {
-		if error_ref != nil {
-			*error_ref = NewError(err)
-		}
-		return nil
-	}
-
-	// Return success
-	return driver
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// ERROR IMPLEMENTATION
-
-// Create a gopi.Error object
-func NewError(err error) Error {
-	return Error{reason: err.Error()}
-}
-
-func (err Error) Error() string {
-	return err.reason
 }
