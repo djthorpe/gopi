@@ -34,6 +34,9 @@ func (this *PubSub) Close() {
 }
 
 func (this *PubSub) Subscribe() <-chan gopi.Event {
+	if this.subscribers == nil {
+		return nil
+	}
 	subscriber := make(chan gopi.Event)
 	this.subscribers = append(this.subscribers, subscriber)
 	return subscriber
