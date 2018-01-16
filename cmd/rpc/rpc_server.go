@@ -55,10 +55,6 @@ func (this *HelloworldService) Register(server gopi.RPCServer) error {
 	return server.Fudge(reflect.ValueOf(hw.RegisterGreeterServer), this)
 }
 
-func (this *HelloworldService) ServiceType() string {
-	return "helloworld"
-}
-
 func (this *HelloworldService) SayHello(ctx context.Context, req *hw.HelloRequest) (*hw.HelloReply, error) {
 	if req.Name == "" {
 		req.Name = "World"
@@ -70,11 +66,32 @@ func (this *HelloworldService) SayHello(ctx context.Context, req *hw.HelloReques
 
 ////////////////////////////////////////////////////////////////////////////////
 
+func EventProcess(evt gopi.RPCEvent, server gopi.RPCServer, discovery gopi.RPCServiceDiscovery) error {
+	switch evt.Type() {
+	case gopi.RPC_EVENT_SERVER_STARTED:
+		fmt.Printf("Server started, addr=%v\n", server.Addr())
+		if err := discovery.Register(server.Service()); err != nil {
+			return err
+		}
+	case gopi.RPC_EVENT_SERVER_STOPPED:
+		fmt.Printf("Server stopped\n")
+		// TODO: Unregister (same as register but with ttl=0)
+	default:
+		fmt.Printf("Error: Unhandled event: %v\n", evt)
+	}
+	return nil
+}
+
 func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 
 	server, ok := app.ModuleInstance("rpc/server").(gopi.RPCServer)
 	if server == nil || ok == false {
 		return errors.New("rpc/server missing")
+	}
+
+	discovery, ok := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery)
+	if discovery == nil || ok == false {
+		return errors.New("rpc/discovery missing")
 	}
 
 	// Listen for events
@@ -83,8 +100,8 @@ FOR_LOOP:
 	for {
 		select {
 		case evt := <-c:
-			if evt != nil {
-				fmt.Println(evt)
+			if rpc_evt, ok := evt.(gopi.RPCEvent); rpc_evt != nil && ok {
+				EventProcess(rpc_evt, server, discovery)
 			}
 		case <-done:
 			break FOR_LOOP
@@ -127,7 +144,10 @@ func MainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 	}
 
 	app.WaitForSignal()
-	server.Close()
+
+	// Indicate we want to stop the server - shutdown
+	// after we have serviced requests
+	server.Stop(false)
 
 	// Finish gracefully
 	done <- gopi.DONE
