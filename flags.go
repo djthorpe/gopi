@@ -88,9 +88,25 @@ func (this *Flags) HasFlag(name string) bool {
 	return exists
 }
 
+// SetUsageFunc sets the usage function which prints
+// usage information to stderr
+func (this *Flags) SetUsageFunc(usage_func func()) {
+	this.flagset.Usage = usage_func
+}
+
+// PrintUsage will call the usage function
+func (this *Flags) PrintUsage() {
+	this.flagset.Usage()
+}
+
+// PrintDefaults will output the flags to stderr
+func (this *Flags) PrintDefaults() {
+	this.flagset.PrintDefaults()
+}
+
 // String returns a human-readable form of the Flags object
 func (this *Flags) String() string {
-	return fmt.Sprintf("<app.Flags>{ parsed=%v flags=%v args=%v }", this.Parsed(), this.Flags(), this.Args())
+	return fmt.Sprintf("<app.Flags>{ parsed=%v name=%v flags=%v args=%v }", this.Parsed(), this.Name(), this.Flags(), this.Args())
 }
 
 ////////////////////////////////////////////////////////////////////////////////
