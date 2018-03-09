@@ -20,10 +20,9 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-// RPCService defines a service which can be registered
+// RPCServiceRecord defines a service which can be registered
 // or discovered on the network
-// TODO: Rename this to RPCServiceRecord
-type RPCService struct {
+type RPCServiceRecord struct {
 	Name string
 	Type string
 	Port uint
@@ -37,16 +36,17 @@ type RPCService struct {
 // RPCEventType is an enumeration of event types
 type RPCEventType uint
 
-// RPCBrowseFunc is the callback function for when a service is discovered
-// on the network. It's called with a nil parameter when no more services
-// are found
-type RPCBrowseFunc func(service *RPCService)
+// RPCBrowseFunc is the callback function for when a service record is
+// discovered on the network. It's called with a nil parameter when no
+// more services are found, and a service record with TTL of zero
+// indicates the service was removed
+type RPCBrowseFunc func(service *RPCServiceRecord)
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 // RPCModule is a set of functions which will service RPC calls remotely
-// TODO: Rename this as 'RPCService' instead
+// TODO: Rename this as RPCService instead
 type RPCModule interface {
 	// Register the module with server before the server starts
 	Register(server RPCServer) error
@@ -59,7 +59,7 @@ type RPCServiceDiscovery interface {
 	Publisher
 
 	// Register a service record on the network
-	Register(service *RPCService) error
+	Register(service *RPCServiceRecord) error
 
 	// Browse for service records on the network with context
 	Browse(ctx context.Context, serviceType string) error
@@ -87,8 +87,7 @@ type RPCServer interface {
 
 	// Return service record, or nil when the service record
 	// cannot be generated
-	// TODO: Rename this as ServiceRecord
-	Service(name, service string) *RPCService
+	Service(name, service string) *RPCServiceRecord
 
 	// Fudge is something I will fix later. It implements
 	// a hook for calling the grpc register functions
@@ -121,7 +120,7 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (s *RPCService) String() string {
+func (s *RPCServiceRecord) String() string {
 	p := make([]string, 0, 5)
 	if s.Name != "" {
 		p = append(p, fmt.Sprintf("name=\"%v\"", s.Name))
@@ -147,7 +146,7 @@ func (s *RPCService) String() string {
 	if len(s.Text) > 0 {
 		p = append(p, fmt.Sprintf("txt=%v", s.Text))
 	}
-	return fmt.Sprintf("<gopi.RPCService>{ %v }", strings.Join(p, " "))
+	return fmt.Sprintf("<gopi.RPCServiceRecord>{ %v }", strings.Join(p, " "))
 }
 
 func (t RPCEventType) String() string {
