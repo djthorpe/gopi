@@ -70,7 +70,7 @@ func EventProcess(evt gopi.RPCEvent, server gopi.RPCServer, discovery gopi.RPCSe
 	switch evt.Type() {
 	case gopi.RPC_EVENT_SERVER_STARTED:
 		fmt.Printf("Server started, addr=%v\n", server.Addr())
-		if err := discovery.Register(server.Service()); err != nil {
+		if err := discovery.Register(server.Service("x", "y")); err != nil {
 			return err
 		}
 	case gopi.RPC_EVENT_SERVER_STOPPED:
@@ -89,8 +89,8 @@ func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 		return errors.New("rpc/server missing")
 	}
 
-	discovery, ok := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery)
-	if discovery == nil || ok == false {
+	discovery := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery)
+	if discovery == nil {
 		return errors.New("rpc/discovery missing")
 	}
 
@@ -158,7 +158,7 @@ func MainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 
 func main() {
 	// Create the configuration, load the lirc instance
-	config := gopi.NewAppConfig("rpc/server")
+	config := gopi.NewAppConfig("rpc/server", "rpc/discovery")
 
 	// Run the command line tool
 	os.Exit(gopi.CommandLineTool(config, MainLoop, ServerLoop, EventLoop))

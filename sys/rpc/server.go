@@ -200,7 +200,7 @@ func (this *server) emit(evt gopi.RPCEvent) {
 ///////////////////////////////////////////////////////////////////////////////
 // SERVICE
 
-func (this *server) Service(name, service string) *gopi.RPCService {
+func (this *server) Service(name, service string) *gopi.RPCServiceRecord {
 	// Can't return a service unless the server is started
 	if this.addr == nil {
 		return nil
@@ -217,7 +217,7 @@ func (this *server) Service(name, service string) *gopi.RPCService {
 	if addr, ok := this.addr.(*net.TCPAddr); ok == false {
 		return nil
 	} else {
-		return &gopi.RPCService{
+		return &gopi.RPCServiceRecord{
 			Name: strings.TrimSpace(name),
 			Type: serviceType(service, addr.Network()),
 			Port: uint(addr.Port),

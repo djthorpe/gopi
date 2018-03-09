@@ -80,7 +80,7 @@ func (this *driver) Close() error {
 // INTERFACE METHODS
 
 // Register a service and announce the service when queries occur
-func (this *driver) Register(service *gopi.RPCService) error {
+func (this *driver) Register(service *gopi.RPCServiceRecord) error {
 	if server, err := zeroconf.Register(service.Name, service.Type, this.domain, int(service.Port), service.Text, nil); err != nil {
 		return err
 	} else {
@@ -97,7 +97,7 @@ func (this *driver) Browse(ctx context.Context, serviceType string, callback gop
 	} else {
 		go func(results <-chan *zeroconf.ServiceEntry) {
 			for entry := range results {
-				callback(&gopi.RPCService{
+				callback(&gopi.RPCServiceRecord{
 					Name: entry.Instance,
 					Type: entry.Service,
 					Port: uint(entry.Port),
