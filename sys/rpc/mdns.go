@@ -16,6 +16,7 @@ import (
 
 	"github.com/djthorpe/gopi"
 	"github.com/djthorpe/gopi/third_party/zeroconf"
+	"github.com/djthorpe/gopi/util/event"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,6 +33,7 @@ type driver struct {
 	domain   string
 	servers  []*zeroconf.Server
 	resolver *zeroconf.Resolver
+	pubsub   *event.PubSub
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -54,6 +56,9 @@ func (config Config) Open(log gopi.Logger) (gopi.Driver, error) {
 	} else {
 		this.domain = config.Domain
 	}
+
+	log.Debug("sys.rpc.mDNS.Open{ domain=%v }", this.domain)
+
 	this.servers = make([]*zeroconf.Server, 0, 1)
 
 	if resolver, err := zeroconf.NewResolver(); err != nil {
@@ -62,16 +67,30 @@ func (config Config) Open(log gopi.Logger) (gopi.Driver, error) {
 		this.resolver = resolver
 	}
 
+	// Publish/Subscribe
+	this.pubsub = event.NewPubSub(0)
+
 	// success
 	return this, nil
 }
 
 // Close a logger
 func (this *driver) Close() error {
+	this.log.Debug("sys.rpc.mDNS.Close{ }")
+
 	// Close servers
 	for _, server := range this.servers {
 		server.Shutdown()
 	}
+
+	// Unsubscribe
+	this.pubsub.Close()
+
+	// Empty methods
+	this.servers = nil
+	this.pubsub = nil
+	this.resolver = nil
+
 	// Return success
 	return nil
 }
@@ -90,14 +109,14 @@ func (this *driver) Register(service *gopi.RPCServiceRecord) error {
 }
 
 // Browse will find service entries
-func (this *driver) Browse(ctx context.Context, serviceType string, callback gopi.RPCBrowseFunc) error {
+func (this *driver) Browse(ctx context.Context, serviceType string) error {
 	entries := make(chan *zeroconf.ServiceEntry)
 	if err := this.resolver.Browse(ctx, serviceType, this.domain, entries); err != nil {
 		return err
 	} else {
 		go func(results <-chan *zeroconf.ServiceEntry) {
 			for entry := range results {
-				callback(&gopi.RPCServiceRecord{
+				this.Emit(&gopi.RPCServiceRecord{
 					Name: entry.Instance,
 					Type: entry.Service,
 					Port: uint(entry.Port),
@@ -108,7 +127,7 @@ func (this *driver) Browse(ctx context.Context, serviceType string, callback gop
 					TTL:  time.Duration(entry.TTL) * time.Second,
 				})
 			}
-			callback(nil)
+			this.Emit(nil)
 		}(entries)
 		return nil
 	}
@@ -116,6 +135,28 @@ func (this *driver) Browse(ctx context.Context, serviceType string, callback gop
 
 func (this *driver) DefaultServiceType(network string) string {
 	return "_gopi._" + network
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBSUB
+
+// Subscribe to events emitted
+func (this *driver) Subscribe() <-chan gopi.Event {
+	return this.pubsub.Subscribe()
+}
+
+// Unsubscribe from events emitted
+func (this *driver) Unsubscribe(subscriber <-chan gopi.Event) {
+	this.pubsub.Unsubscribe(subscriber)
+}
+
+// Emit an event
+func (this *driver) Emit(record *gopi.RPCServiceRecord) {
+	this.pubsub.Emit(&Event{
+		source: this,
+		t:      gopi.RPC_EVENT_SERVICE_RECORD,
+		r:      record,
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////

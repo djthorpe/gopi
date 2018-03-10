@@ -52,8 +52,8 @@ type RPCModule interface {
 	Register(server RPCServer) error
 }
 
-// RPCServiceDiscovery is the driver for discovering
-// services on the network using mDNS or another mechanism
+// RPCServiceDiscovery is the driver for discovering services on the network using
+// mDNS or another mechanism
 type RPCServiceDiscovery interface {
 	Driver
 	Publisher
@@ -115,6 +115,7 @@ const (
 	RPC_EVENT_NONE RPCEventType = iota
 	RPC_EVENT_SERVER_STARTED
 	RPC_EVENT_SERVER_STOPPED
+	RPC_EVENT_SERVICE_RECORD
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -157,6 +158,8 @@ func (t RPCEventType) String() string {
 		return "RPC_EVENT_SERVER_STARTED"
 	case RPC_EVENT_SERVER_STOPPED:
 		return "RPC_EVENT_SERVER_STOPPED"
+	case RPC_EVENT_SERVICE_RECORD:
+		return "RPC_EVENT_SERVICE_RECORD"
 	default:
 		return "[?? Invalid RPCEventType value]"
 	}

@@ -100,5 +100,9 @@ type InputEvent interface {
 type RPCEvent interface {
 	Event
 
+	// Type of RPC Event
 	Type() RPCEventType
+
+	// Service Record when Type()==
+	ServiceRecord() *RPCServiceRecord
 }

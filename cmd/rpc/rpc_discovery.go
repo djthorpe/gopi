@@ -10,15 +10,11 @@
 package main
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"os"
-	"strings"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
-	tablewriter "github.com/olekukonko/tablewriter"
 
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/logger"
@@ -28,8 +24,8 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 func MainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
-	mdns := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery)
-	timeout, _ := app.AppFlags.GetDuration("timeout")
+	discovery := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery)
+	//timeout, _ := app.AppFlags.GetDuration("timeout")
 	service, _ := app.AppFlags.GetString("service")
 
 	// Return error if no service
@@ -37,11 +33,16 @@ func MainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 		return errors.New("Missing -service parameter (try _smb._tcp)")
 	}
 
-	// Discover services on the network
+	// Return error if no discovery
+	if discovery == nil {
+		return errors.New("Missing discovery service")
+	}
+
+	/*// Discover services on the network
 	d := make(chan bool)
-	s := make([]*gopi.RPCService, 0)
+	s := make([]*gopi.RPCServiceRecord, 0)
 	ctx, _ := context.WithTimeout(context.Background(), timeout)
-	if err := mdns.Browse(ctx, service); err != nil {
+	if err := discovery.Browse(ctx, service); err != nil {
 		return err
 	}
 
@@ -55,6 +56,7 @@ func MainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 		table.Append([]string{service.Name, service.Type, fmt.Sprintf("%v:%v", service.Host, service.Port), strings.Join(service.Text, " ")})
 	}
 	table.Render()
+	*/
 
 	// Finish gracefully
 	done <- gopi.DONE

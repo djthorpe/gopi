@@ -22,6 +22,7 @@ import (
 type Event struct {
 	source gopi.Driver
 	t      gopi.RPCEventType
+	r      *gopi.RPCServiceRecord
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +31,11 @@ type Event struct {
 // Return the type of event
 func (e *Event) Type() gopi.RPCEventType {
 	return e.t
+}
+
+// Return the service record
+func (e *Event) ServiceRecord() *gopi.RPCServiceRecord {
+	return e.r
 }
 
 // Return name of event
@@ -46,5 +52,9 @@ func (e *Event) Source() gopi.Driver {
 // STRINGIFY
 
 func (e *Event) String() string {
-	return fmt.Sprintf("<rpc.Event>{ type=%v }", e.Type())
+	if e.r != nil {
+		return fmt.Sprintf("<rpc.Event>{ type=%v record=%v }", e.Type(), e.ServiceRecord())
+	} else {
+		return fmt.Sprintf("<rpc.Event>{ type=%v }", e.Type())
+	}
 }
