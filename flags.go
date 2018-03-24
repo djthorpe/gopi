@@ -215,3 +215,41 @@ func (this *Flags) GetFloat64(name string) (float64, bool) {
 	}
 	return value.Value.(flag.Getter).Get().(float64), this.HasFlag(name)
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// SET FLAGS
+
+// Set a flag string value. The flag must have previously been configured
+// using FlagXX method. Will return an error if the value couldn't be parsed
+func (this *Flags) SetString(name, value string) error {
+	if flag := this.flagset.Lookup(name); flag == nil {
+		return fmt.Errorf("SetString: No such flag: %v", name)
+	} else {
+		return flag.Value.Set(value)
+	}
+}
+
+// Set a flag uint value
+func (this *Flags) SetUint(name string, value uint) error {
+	return this.SetString(name, fmt.Sprint(value))
+}
+
+// Set a flag int value
+func (this *Flags) SetInt(name string, value int) error {
+	return this.SetString(name, fmt.Sprint(value))
+}
+
+// Set a flag bool value
+func (this *Flags) SetBool(name string, value bool) error {
+	return this.SetString(name, fmt.Sprint(value))
+}
+
+// Set a flag float64 value
+func (this *Flags) SetFloat64(name string, value float64) error {
+	return this.SetString(name, fmt.Sprint(value))
+}
+
+// Set a flag duration value
+func (this *Flags) SetDuration(name string, value time.Duration) error {
+	return this.SetString(name, fmt.Sprint(value))
+}
