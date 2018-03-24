@@ -90,8 +90,10 @@ func (this *Flags) HasFlag(name string) bool {
 
 // SetUsageFunc sets the usage function which prints
 // usage information to stderr
-func (this *Flags) SetUsageFunc(usage_func func()) {
-	this.flagset.Usage = usage_func
+func (this *Flags) SetUsageFunc(usage_func func(flags *Flags)) {
+	this.flagset.Usage = func() {
+		usage_func(this)
+	}
 }
 
 // PrintUsage will call the usage function
