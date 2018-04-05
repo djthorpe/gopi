@@ -108,27 +108,25 @@ func (this *driver) Register(service *gopi.RPCServiceRecord) error {
 	}
 }
 
-// Browse will find service entries
+// Browse will find service entries, will block until ctx timeout
+// or cancel
 func (this *driver) Browse(ctx context.Context, serviceType string) error {
 	entries := make(chan *zeroconf.ServiceEntry)
 	if err := this.resolver.Browse(ctx, serviceType, this.domain, entries); err != nil {
 		return err
 	} else {
-		go func(results <-chan *zeroconf.ServiceEntry) {
-			for entry := range results {
-				this.Emit(&gopi.RPCServiceRecord{
-					Name: entry.Instance,
-					Type: entry.Service,
-					Port: uint(entry.Port),
-					Text: entry.Text,
-					Host: entry.HostName,
-					IP4:  entry.AddrIPv4,
-					IP6:  entry.AddrIPv6,
-					TTL:  time.Duration(entry.TTL) * time.Second,
-				})
-			}
-			this.Emit(nil)
-		}(entries)
+		for entry := range entries {
+			this.Emit(&gopi.RPCServiceRecord{
+				Name: entry.Instance,
+				Type: entry.Service,
+				Port: uint(entry.Port),
+				Text: entry.Text,
+				Host: entry.HostName,
+				IP4:  entry.AddrIPv4,
+				IP6:  entry.AddrIPv6,
+				TTL:  time.Duration(entry.TTL) * time.Second,
+			})
+		}
 		return nil
 	}
 }

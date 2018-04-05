@@ -74,6 +74,7 @@ const (
 	MODULE_TYPE_MDNS     // DNS Service Discovery
 	MODULE_TYPE_TIMER    // Timer module
 	MODULE_TYPE_LIRC     // LIRC module
+	MODULE_TYPE_SERVICE  // RPC Service
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,6 +99,7 @@ var (
 		"mdns":     MODULE_TYPE_MDNS,
 		"timer":    MODULE_TYPE_TIMER,
 		"lirc":     MODULE_TYPE_LIRC,
+		"service":  MODULE_TYPE_SERVICE,
 	}
 )
 
@@ -125,8 +127,8 @@ func RegisterModule(module Module) {
 			modules_by_name[module.Name] = &module
 		}
 	}
-	// Register by type if module type is not None or Other
-	if module.Type != MODULE_TYPE_OTHER && module.Type != MODULE_TYPE_NONE {
+	// Register by type if module type is not None or Other or Service
+	if module.Type != MODULE_TYPE_OTHER && module.Type != MODULE_TYPE_NONE && module.Type != MODULE_TYPE_SERVICE {
 		if _, exists := modules_by_type[module.Type]; exists {
 			panic(fmt.Errorf("Duplicate Module registered: %v", &module))
 		} else {
@@ -314,6 +316,8 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_TIMER"
 	case MODULE_TYPE_LIRC:
 		return "MODULE_TYPE_LIRC"
+	case MODULE_TYPE_SERVICE:
+		return "MODULE_TYPE_SERVICE"
 	default:
 		return "[Invalid ModuleType value]"
 	}

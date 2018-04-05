@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -200,7 +201,16 @@ func (this *server) emit(evt gopi.RPCEvent) {
 ///////////////////////////////////////////////////////////////////////////////
 // SERVICE
 
-func (this *server) Service(name, service string) *gopi.RPCServiceRecord {
+func (this *server) Service(service string) *gopi.RPCServiceRecord {
+	if hostname, err := os.Hostname(); err != nil {
+		this.log.Error("<grpc.Server>Service: %v", err)
+		return nil
+	} else {
+		return this.ServiceWithName(service, hostname)
+	}
+}
+
+func (this *server) ServiceWithName(service, name string) *gopi.RPCServiceRecord {
 	// Can't return a service unless the server is started
 	if this.addr == nil {
 		return nil

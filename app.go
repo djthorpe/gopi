@@ -30,6 +30,7 @@ type AppConfig struct {
 	AppFlags *Flags
 	Debug    bool
 	Verbose  bool
+	Service  string
 }
 
 // AppInstance defines the running application instance with modules
@@ -49,6 +50,7 @@ type AppInstance struct {
 	LIRC     LIRC
 	debug    bool
 	verbose  bool
+	service  string
 	sigchan  chan os.Signal
 	byname   map[string]Driver
 	bytype   map[ModuleType]Driver
@@ -89,13 +91,11 @@ func NewAppConfig(modules ...string) AppConfig {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return AppConfig{}
 	}
-	for _, module := range modules {
-		if module_array, err := ModuleWithDependencies(module); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			return AppConfig{}
-		} else {
-			config.Modules = appendModules(config.Modules, module_array)
-		}
+
+	// append other modules
+	if config.Modules, err = AppendModulesByName(config.Modules, modules...); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return AppConfig{}
 	}
 
 	// Set the flags
@@ -103,6 +103,7 @@ func NewAppConfig(modules ...string) AppConfig {
 	config.AppFlags = NewFlags(path.Base(os.Args[0]))
 	config.Debug = false
 	config.Verbose = false
+	config.Service = ""
 
 	// Set 'debug' and 'verbose' flags
 	config.AppFlags.FlagBool("debug", false, "Set debugging mode")
@@ -182,6 +183,14 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 				return nil, err
 			}
 		}
+	}
+
+	// Set service name from configuration or the name
+	// from AppFlags
+	if config.Service != "" {
+		this.service = config.Service
+	} else {
+		this.service = this.AppFlags.Name()
 	}
 
 	// report Open() again if it's not been done yet
@@ -329,6 +338,21 @@ func (this *AppInstance) ModuleInstance(name string) Driver {
 	return instance
 }
 
+// Append Modules by name onto the configuration
+func AppendModulesByName(modules []*Module, names ...string) ([]*Module, error) {
+	if modules == nil {
+		modules = make([]*Module, 0, len(names))
+	}
+	for _, name := range names {
+		if module_array, err := ModuleWithDependencies(name); err != nil {
+			return nil, err
+		} else {
+			modules = appendModules(modules, module_array)
+		}
+	}
+	return modules, nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
@@ -454,5 +478,5 @@ func (this *AppInstance) String() string {
 	for k := range this.byname {
 		modules = append(modules, k)
 	}
-	return fmt.Sprintf("gopi.App{ debug=%v verbose=%v modules=%v instances=%v }", this.debug, this.verbose, modules, this.byorder)
+	return fmt.Sprintf("gopi.App{ debug=%v verbose=%v service=%v modules=%v instances=%v }", this.debug, this.verbose, this.service, modules, this.byorder)
 }

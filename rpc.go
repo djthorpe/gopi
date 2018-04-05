@@ -86,8 +86,10 @@ type RPCServer interface {
 	Addr() net.Addr
 
 	// Return service record, or nil when the service record
-	// cannot be generated
-	Service(name, service string) *RPCServiceRecord
+	// cannot be generated. The first version uses the current
+	// hostname as the name
+	Service(service string) *RPCServiceRecord
+	ServiceWithName(service, name string) *RPCServiceRecord
 
 	// Fudge is something I will fix later. It implements
 	// a hook for calling the grpc register functions

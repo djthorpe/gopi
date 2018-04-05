@@ -18,16 +18,13 @@
 // Then:
 //
 // cd "${GOPATH}/src/github.com/djthorpe/gopi"
-// go generate cmd/rpc/rpc_server.go
+// go generate protobuf
 // go install cmd/rpc/rpc_server.go
 //
 package main
 
-//go:generate protoc helloworld/helloworld.proto --go_out=plugins=grpc:.
-
 import (
 	"errors"
-	"fmt"
 	"os"
 	"reflect"
 
@@ -39,8 +36,8 @@ import (
 	_ "github.com/djthorpe/gopi/sys/logger"
 	_ "github.com/djthorpe/gopi/sys/rpc"
 
-	// Helloworld Protocol Buffer
-	hw "github.com/djthorpe/gopi/cmd/rpc/helloworld"
+	// RPC Services
+	_ "github.com/djthorpe/gopi/cmd/rpc/helloworld"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,7 +48,6 @@ type HelloworldService struct{}
 func (this *HelloworldService) Register(server gopi.RPCServer) error {
 	// Check to make sure we satisfy the interface
 	var _ hw.GreeterServer = (*HelloworldService)(nil)
-
 	return server.Fudge(reflect.ValueOf(hw.RegisterGreeterServer), this)
 }
 
@@ -65,54 +61,6 @@ func (this *HelloworldService) SayHello(ctx context.Context, req *hw.HelloReques
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-func EventProcess(evt gopi.RPCEvent, server gopi.RPCServer, discovery gopi.RPCServiceDiscovery) error {
-	switch evt.Type() {
-	case gopi.RPC_EVENT_SERVER_STARTED:
-		fmt.Printf("Server started, addr=%v\n", server.Addr())
-		if err := discovery.Register(server.Service("x", "y")); err != nil {
-			return err
-		}
-	case gopi.RPC_EVENT_SERVER_STOPPED:
-		fmt.Printf("Server stopped\n")
-		// TODO: Unregister (same as register but with ttl=0)
-	default:
-		fmt.Printf("Error: Unhandled event: %v\n", evt)
-	}
-	return nil
-}
-
-func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
-
-	server, ok := app.ModuleInstance("rpc/server").(gopi.RPCServer)
-	if server == nil || ok == false {
-		return errors.New("rpc/server missing")
-	}
-
-	discovery := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery)
-	if discovery == nil {
-		return errors.New("rpc/discovery missing")
-	}
-
-	// Listen for events
-	c := server.Subscribe()
-FOR_LOOP:
-	for {
-		select {
-		case evt := <-c:
-			if rpc_evt, ok := evt.(gopi.RPCEvent); rpc_evt != nil && ok {
-				EventProcess(rpc_evt, server, discovery)
-			}
-		case <-done:
-			break FOR_LOOP
-		}
-	}
-
-	// Stop listening for events
-	server.Unsubscribe(c)
-
-	return nil
-}
 
 func ServerLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 
@@ -136,30 +84,15 @@ func ServerLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 	return nil
 }
 
-func MainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
-
-	server, ok := app.ModuleInstance("rpc/server").(gopi.RPCServer)
-	if server == nil || ok == false {
-		return errors.New("rpc/server missing")
-	}
-
-	app.WaitForSignal()
-
-	// Indicate we want to stop the server - shutdown
-	// after we have serviced requests
-	server.Stop(false)
-
-	// Finish gracefully
-	done <- gopi.DONE
-	return nil
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
 	// Create the configuration, load the lirc instance
-	config := gopi.NewAppConfig("rpc/server", "rpc/discovery")
+	config := gopi.NewAppConfig()
+
+	// Set the RPC Discovery service name
+	config.Service = "helloworld"
 
 	// Run the command line tool
-	os.Exit(gopi.CommandLineTool(config, MainLoop, ServerLoop, EventLoop))
+	os.Exit(gopi.RPCServerTool(config, ServerLoop))
 }
