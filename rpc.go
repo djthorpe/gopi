@@ -45,9 +45,8 @@ type RPCBrowseFunc func(service *RPCServiceRecord)
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-// RPCModule is a set of functions which will service RPC calls remotely
-// TODO: Rename this as RPCService instead
-type RPCModule interface {
+// RPCService is a set of functions which will service RPC calls
+type RPCService interface {
 	// Register the module with server before the server starts
 	Register(server RPCServer) error
 }
@@ -72,9 +71,9 @@ type RPCServer interface {
 	Publisher
 
 	// Starts an RPC server in currently running thread, with
-	// current set of modules as RPC calls. The method will not
-	// return until Stop is called
-	Start(module ...RPCModule) error
+	// current set of services. The method will not return until
+	// Stop is called
+	Start(services ...RPCService) error
 
 	// Stop RPC server. If halt is true then it immediately
 	// ends the server without waiting for current requests to
@@ -93,7 +92,7 @@ type RPCServer interface {
 
 	// Fudge is something I will fix later. It implements
 	// a hook for calling the grpc register functions
-	Fudge(callback reflect.Value, module RPCModule) error
+	Fudge(callback reflect.Value, module RPCService) error
 }
 
 // RPCClient implements a client for communicating with an RPC server

@@ -56,7 +56,7 @@ var (
 
 // Open the server
 func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug2("<grpc.Server>Open(port=%v,sslcert=%v,sslkey=%v)", config.Port, config.SSLCertificate, config.SSLKey)
+	log.Debug2("<grpc.Server>Open(port=%v,sslcert=\"%v\",sslkey=\"%v\")", config.Port, config.SSLCertificate, config.SSLKey)
 
 	this := new(server)
 	this.log = log
@@ -111,17 +111,17 @@ func (this *server) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // SERVE
 
-func (this *server) Start(modules ...gopi.RPCModule) error {
+func (this *server) Start(services ...gopi.RPCService) error {
 	// Check for serving
 	if this.addr != nil {
 		return errors.New("Cannot call Start() when server already started")
 	} else if lis, err := net.Listen("tcp", portString(this.port)); err != nil {
 		return err
 	} else {
-		// Register modules. TODO: unregister them once server stopped?
-		for _, module := range modules {
-			if err := module.Register(this); err != nil {
-				return fmt.Errorf("Cannot register module: %v", err)
+		// Register services. TODO: unregister them once server stopped?
+		for _, service := range services {
+			if err := service.Register(this); err != nil {
+				return fmt.Errorf("Cannot register service: %v", err)
 			}
 		}
 		// Start server
@@ -159,14 +159,14 @@ func (this *server) Addr() net.Addr {
 
 // Fudge is currently a function which does the registration on the
 // server
-func (this *server) Fudge(callback reflect.Value, module gopi.RPCModule) error {
+func (this *server) Fudge(callback reflect.Value, service gopi.RPCService) error {
 	if this.server != nil {
 		if callback.Kind() != reflect.Func {
 			return errors.New("Expected callback to be a function")
 		}
 		callback.Call([]reflect.Value{
 			reflect.ValueOf(this.server),
-			reflect.ValueOf(module),
+			reflect.ValueOf(service),
 		})
 	}
 	return nil

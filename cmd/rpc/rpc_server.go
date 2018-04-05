@@ -25,12 +25,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
-	"reflect"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
-	context "golang.org/x/net/context"
 
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/logger"
@@ -41,44 +40,30 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// HelloworldService implementation
-
-type HelloworldService struct{}
-
-func (this *HelloworldService) Register(server gopi.RPCServer) error {
-	// Check to make sure we satisfy the interface
-	var _ hw.GreeterServer = (*HelloworldService)(nil)
-	return server.Fudge(reflect.ValueOf(hw.RegisterGreeterServer), this)
-}
-
-func (this *HelloworldService) SayHello(ctx context.Context, req *hw.HelloRequest) (*hw.HelloReply, error) {
-	if req.Name == "" {
-		req.Name = "World"
-	}
-	return &hw.HelloReply{
-		Message: "Hello, " + req.Name,
-	}, nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 func ServerLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 
-	server, ok := app.ModuleInstance("rpc/server").(gopi.RPCServer)
-	if server == nil || ok == false {
+	if server, ok := app.ModuleInstance("rpc/server").(gopi.RPCServer); server == nil || ok == false {
 		return errors.New("rpc/server missing")
-	}
-
-	// Create the helloworld module
-	if hw_service := new(HelloworldService); hw_service == nil {
-		return errors.New("HelloworldService missing")
+	} else if modules := gopi.ModulesByType(gopi.MODULE_TYPE_SERVICE); len(modules) == 0 {
+		return errors.New("No RPC services")
 	} else {
-		// Start server - will end when Stop is called
-		server.Start(hw_service)
+		// Create the application instances
+		services := make([]gopi.RPCService, 0, len(modules))
+		for _, module := range modules {
+			if service, ok := app.ModuleInstance(module.Name).(gopi.RPCService); service == nil || ok == false {
+				return fmt.Errorf("Unable to create service: %v", module.Name)
+			} else {
+				services = append(services, service)
+			}
+		}
+		// Start the server with the services
+		if err := server.Start(services...); err != nil {
+			return err
+		}
+		// wait for done
+		<-done
 	}
-
-	// wait for done
-	<-done
 
 	// Bomb out
 	return nil

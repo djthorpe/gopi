@@ -147,6 +147,19 @@ func ModuleByType(t ModuleType) *Module {
 	}
 }
 
+// ModulesByType returns all modules of a given type
+// or an empty array if there are no modules of that
+// type
+func ModulesByType(t ModuleType) []*Module {
+	modules := make([]*Module, 0, 1)
+	for _, module := range modules_by_name {
+		if module.Type == t {
+			modules = append(modules, module)
+		}
+	}
+	return modules
+}
+
 // ModuleByName returns a module given the name, or by type
 // if it is using the reserved word. It will return nil if
 // the module is not registered
