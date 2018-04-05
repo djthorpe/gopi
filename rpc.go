@@ -45,12 +45,6 @@ type RPCBrowseFunc func(service *RPCServiceRecord)
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-// RPCService is a set of functions which will service RPC calls
-type RPCService interface {
-	// Register the module with server before the server starts
-	Register(server RPCServer) error
-}
-
 // RPCServiceDiscovery is the driver for discovering services on the network using
 // mDNS or another mechanism
 type RPCServiceDiscovery interface {
@@ -64,16 +58,29 @@ type RPCServiceDiscovery interface {
 	Browse(ctx context.Context, serviceType string) error
 }
 
+// RPCService is a driver which implements all the necessary methods to
+// handle remote calls
+type RPCService interface {
+	Driver
+
+	// Returns the registration function...actually the reflect.ValueOf()
+	// when using the GRPC version of the RPC server
+	GRPCHook() reflect.Value
+}
+
 // RPCServer is the server which serves RPCModule methods to
 // a remote RPCClient
 type RPCServer interface {
 	Driver
 	Publisher
 
-	// Starts an RPC server in currently running thread, with
-	// current set of services. The method will not return until
-	// Stop is called
-	Start(services ...RPCService) error
+	// Register a module to act as an RPC service
+	Register(service RPCService) error
+
+	// Starts an RPC server in currently running thread.
+	// The method will not return until Stop is called
+	// which needs to be done in a different thread
+	Start() error
 
 	// Stop RPC server. If halt is true then it immediately
 	// ends the server without waiting for current requests to
@@ -86,13 +93,10 @@ type RPCServer interface {
 
 	// Return service record, or nil when the service record
 	// cannot be generated. The first version uses the current
-	// hostname as the name
-	Service(service string) *RPCServiceRecord
-	ServiceWithName(service, name string) *RPCServiceRecord
-
-	// Fudge is something I will fix later. It implements
-	// a hook for calling the grpc register functions
-	Fudge(callback reflect.Value, module RPCService) error
+	// hostname as the name. You can also include text
+	// records.
+	Service(service string, text ...string) *RPCServiceRecord
+	ServiceWithName(service, name string, text ...string) *RPCServiceRecord
 }
 
 // RPCClient implements a client for communicating with an RPC server

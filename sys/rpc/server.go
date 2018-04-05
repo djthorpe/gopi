@@ -56,7 +56,7 @@ var (
 
 // Open the server
 func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug2("<grpc.Server>Open(port=%v,sslcert=\"%v\",sslkey=\"%v\")", config.Port, config.SSLCertificate, config.SSLKey)
+	log.Debug("<grpc.Server>Open(port=%v,sslcert=\"%v\",sslkey=\"%v\")", config.Port, config.SSLCertificate, config.SSLKey)
 
 	this := new(server)
 	this.log = log
@@ -93,7 +93,7 @@ func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
 
 // Close server
 func (this *server) Close() error {
-	this.log.Debug2("<grpc.Server>Close( addr=%v )", this.addr)
+	this.log.Debug("<grpc.Server>Close( addr=%v )", this.addr)
 
 	// Ungracefully stop the server
 	err := this.Stop(true)
@@ -111,19 +111,15 @@ func (this *server) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // SERVE
 
-func (this *server) Start(services ...gopi.RPCService) error {
+func (this *server) Start() error {
+	this.log.Debug2("<grpc.Server>Start()")
+
 	// Check for serving
 	if this.addr != nil {
 		return errors.New("Cannot call Start() when server already started")
 	} else if lis, err := net.Listen("tcp", portString(this.port)); err != nil {
 		return err
 	} else {
-		// Register services. TODO: unregister them once server stopped?
-		for _, service := range services {
-			if err := service.Register(this); err != nil {
-				return fmt.Errorf("Cannot register service: %v", err)
-			}
-		}
 		// Start server
 		this.addr = lis.Addr()
 		this.emit(&Event{source: this, t: gopi.RPC_EVENT_SERVER_STARTED})
@@ -139,10 +135,10 @@ func (this *server) Stop(halt bool) error {
 	// Stop server
 	if this.addr != nil {
 		if halt {
-			this.log.Debug("<grpc.Server>Stop()")
+			this.log.Debug2("<grpc.Server>Stop()")
 			this.server.Stop()
 		} else {
-			this.log.Debug("<grpc.Server>GracefulStop()")
+			this.log.Debug2("<grpc.Server>GracefulStop()")
 			this.server.GracefulStop()
 		}
 	}
@@ -157,9 +153,30 @@ func (this *server) Addr() net.Addr {
 	return this.addr
 }
 
+func (this *server) Register(service gopi.RPCService) error {
+	this.log.Debug2("<grpc.Server>Register( service=%v )", service)
+	if this.addr != nil {
+		this.log.Error("Register: Unable to register whilst server is started")
+		return gopi.ErrOutOfOrder
+	}
+
+	// Register service with GRPC
+	if callback := service.GRPCHook(); callback.Kind() != reflect.Func {
+		return errors.New("Expected callback to be a function")
+	} else {
+		callback.Call([]reflect.Value{
+			reflect.ValueOf(this.server),
+			reflect.ValueOf(service),
+		})
+	}
+
+	// Success
+	return nil
+}
+
 // Fudge is currently a function which does the registration on the
 // server
-func (this *server) Fudge(callback reflect.Value, service gopi.RPCService) error {
+/*func (this *server) Fudge(callback reflect.Value, service gopi.RPCService) error {
 	if this.server != nil {
 		if callback.Kind() != reflect.Func {
 			return errors.New("Expected callback to be a function")
@@ -171,6 +188,7 @@ func (this *server) Fudge(callback reflect.Value, service gopi.RPCService) error
 	}
 	return nil
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // EVENTS
@@ -201,16 +219,16 @@ func (this *server) emit(evt gopi.RPCEvent) {
 ///////////////////////////////////////////////////////////////////////////////
 // SERVICE
 
-func (this *server) Service(service string) *gopi.RPCServiceRecord {
+func (this *server) Service(service string, text ...string) *gopi.RPCServiceRecord {
 	if hostname, err := os.Hostname(); err != nil {
 		this.log.Error("<grpc.Server>Service: %v", err)
 		return nil
 	} else {
-		return this.ServiceWithName(service, hostname)
+		return this.ServiceWithName(service, hostname, text...)
 	}
 }
 
-func (this *server) ServiceWithName(service, name string) *gopi.RPCServiceRecord {
+func (this *server) ServiceWithName(service, name string, text ...string) *gopi.RPCServiceRecord {
 	// Can't return a service unless the server is started
 	if this.addr == nil {
 		return nil
@@ -231,6 +249,7 @@ func (this *server) ServiceWithName(service, name string) *gopi.RPCServiceRecord
 			Name: strings.TrimSpace(name),
 			Type: serviceType(service, addr.Network()),
 			Port: uint(addr.Port),
+			Text: text,
 		}
 	}
 }

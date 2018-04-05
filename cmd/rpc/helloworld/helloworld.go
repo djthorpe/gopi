@@ -10,11 +10,13 @@ package helloworld
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 
 	// Framework
 	"github.com/djthorpe/gopi"
 
-	// Protobuf
+	// Protocol Buffer definition
 	pb "github.com/djthorpe/gopi/protobuf/helloworld"
 )
 
@@ -22,11 +24,16 @@ import (
 // INIT
 
 func init() {
-	// Register rpc/service:helloworld
+	// Register service/helloworld:grpc
 	gopi.RegisterModule(gopi.Module{
-		Name:     "rpc/service:helloworld",
+		Name:     "service/helloworld:grpc",
 		Type:     gopi.MODULE_TYPE_SERVICE,
 		Requires: []string{"rpc/server"},
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			return gopi.Open(Service{
+				Server: app.ModuleInstance("rpc/server").(gopi.RPCServer),
+			}, app.Logger)
+		},
 	})
 }
 
@@ -34,7 +41,7 @@ func init() {
 // TYPES
 
 type Service struct {
-	// No configuration parameters
+	Server gopi.RPCServer
 }
 
 type service struct {
@@ -46,22 +53,39 @@ type service struct {
 
 // Open the server
 func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<grpc.Service.helloworld>Open")
+	log.Debug("<grpc.Service.helloworld>Open{ server=%v}", config.Server)
 
 	this := new(service)
 	this.log = log
+
+	// Register service with server
+	config.Server.Register(this)
 
 	// Success
 	return this, nil
 }
 
 func (this *service) Close() error {
-	this.log.Debug("<grpc.Service.helloworld>Close")
+	this.log.Debug("<grpc.Service.helloworld>Close{}")
 
 	// No resources to release
 
 	// Success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RPCService implementation
+
+func (this *service) GRPCHook() reflect.Value {
+	return reflect.ValueOf(pb.RegisterGreeterServer)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Stringify
+
+func (this *service) String() string {
+	return fmt.Sprintf("rpc.service.helloworld{}")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -75,12 +99,3 @@ func (this *service) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.He
 		Message: "Hello, " + req.Name,
 	}, nil
 }
-
-/*
-
-func (this *HelloworldService) Register(server gopi.RPCServer) error {
-	// Check to make sure we satisfy the interface
-	var _ hw.GreeterServer = (*HelloworldService)(nil)
-	return server.Fudge(reflect.ValueOf(hw.RegisterGreeterServer), this)
-}
-*/
