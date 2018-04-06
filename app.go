@@ -270,6 +270,11 @@ func (this *AppInstance) Verbose() bool {
 	return this.verbose
 }
 
+// Service returns the current service name set from configuration
+func (this *AppInstance) Service() string {
+	return this.service
+}
+
 // WaitForSignal blocks until a signal is caught
 func (this *AppInstance) WaitForSignal() {
 	s := <-this.sigchan

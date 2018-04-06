@@ -14,6 +14,9 @@ import (
 	"os"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+// COMMAND LINE TOOL STARTUP
+
 // CommandLineTool is the basic form of running a command-line
 // application, you generally call this from the main() function
 func CommandLineTool(config AppConfig, main_task MainTask, background_tasks ...BackgroundTask) int {
@@ -40,9 +43,12 @@ func CommandLineTool(config AppConfig, main_task MainTask, background_tasks ...B
 	return 0
 }
 
-// RPCServer runs a set of RPC Services, you generally call this from the main() function
-// and ensure to import rpc/server and rpc/discovery modules anonymously into
-// your application as well as all your RPC services
+////////////////////////////////////////////////////////////////////////////////
+// RPC SERVER STARTUP
+
+// RPCServer runs a set of RPC Services, you generally call this from the main()
+// function and ensure to import rpc/server and rpc/discovery modules anonymously
+// into your application as well as all your RPC services
 func RPCServerTool(config AppConfig, background_tasks ...BackgroundTask) int {
 	// Append on "rpc/server" and "rpc/discovery" onto your module configurations
 	var err error
@@ -63,7 +69,7 @@ func RPCServerTool(config AppConfig, background_tasks ...BackgroundTask) int {
 	defer app.Close()
 
 	// Run the application with a main task and background tasks
-	if err := app.Run(mainRPCServer, appendTasks(background_tasks, bgRPCServer, bgRPCDiscovery)...); err == ErrHelp {
+	if err := app.Run(mainRPCServer, appendRPCTasks(background_tasks, bgRPCServer, bgRPCDiscovery)...); err == ErrHelp {
 		config.AppFlags.PrintUsage()
 		return 0
 	} else if err != nil {
@@ -73,7 +79,7 @@ func RPCServerTool(config AppConfig, background_tasks ...BackgroundTask) int {
 	return 0
 }
 
-func appendTasks(tasks []BackgroundTask, append_tasks ...BackgroundTask) []BackgroundTask {
+func appendRPCTasks(tasks []BackgroundTask, append_tasks ...BackgroundTask) []BackgroundTask {
 	return append(tasks, append_tasks...)
 }
 
@@ -136,7 +142,9 @@ func bgRPCDiscovery(app *AppInstance, done <-chan struct{}) error {
 			select {
 			case evt := <-events:
 				if server_event, ok := evt.(RPCEvent); server_event != nil && ok {
+					app.Logger.Info("rpc/server: %v", server_event.Type())
 					if server_event.Type() == RPC_EVENT_SERVER_STARTED {
+						app.Logger.Info("rpc/server: Listening on %v", server.Addr())
 						// Register service
 						if service := server.Service(app.service); service != nil {
 							if err := discovery.Register(service); err != nil {

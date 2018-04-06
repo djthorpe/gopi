@@ -35,6 +35,7 @@ fi
 
 COMMANDS=(
   rpc/rpc_server.go
+  rpc/rpc_client.go
 )
 
 if [ "${RPC_EXAMPLES}X" != "X" ] ; then
