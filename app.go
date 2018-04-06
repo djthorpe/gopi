@@ -224,7 +224,9 @@ func (this *AppInstance) Run(main_task MainTask, background_tasks ...BackgroundT
 			go func(i int, t BackgroundTask) {
 				defer wg.Done()
 				if err := t(this, channels[i+1]); err != nil {
-					this.Logger.Error("Error: %v [background_task %v]", err, i)
+					if this.Logger != nil {
+						this.Logger.Error("Error: %v [background_task %v]", err, i+1)
+					}
 				}
 			}(i, task)
 		}
@@ -238,6 +240,7 @@ func (this *AppInstance) Run(main_task MainTask, background_tasks ...BackgroundT
 		}
 		// Signal other tasks to complete
 		for i := 0; i < len(background_tasks); i++ {
+			this.Logger.Debug2("Sending DONE to background task %v of %v", i+1, len(background_tasks))
 			channels[i+1] <- DONE
 		}
 	}()
@@ -250,7 +253,6 @@ func (this *AppInstance) Run(main_task MainTask, background_tasks ...BackgroundT
 		if this.Logger != nil {
 			this.Logger.Debug2("Waiting for tasks to finish")
 		}
-
 	}
 	wg.Wait()
 	if this.Logger != nil {
