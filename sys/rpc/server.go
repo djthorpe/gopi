@@ -95,7 +95,8 @@ func (this *server) Close() error {
 	this.log.Debug("<grpc.Server>Close( addr=%v )", this.addr)
 
 	// Ungracefully stop the server
-	if err := this.Stop(true); err != nil {
+	err := this.Stop(true)
+	if err != nil {
 		this.log.Warn("grpc.Server: %v", err)
 	}
 
