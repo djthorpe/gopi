@@ -40,7 +40,7 @@ func init() {
 		Type: gopi.MODULE_TYPE_OTHER,
 		Config: func(config *gopi.AppConfig) {
 			config.AppFlags.FlagString("rpc.addr", "localhost:8001", "Address")
-			config.AppFlags.FlagBool("rpc.ssl", false, "SSL Enabled")
+			config.AppFlags.FlagBool("rpc.ssl", true, "SSL Enabled")
 			config.AppFlags.FlagBool("rpc.skipverify", true, "Skip SSL Verification")
 			config.AppFlags.FlagDuration("rpc.timeout", 0, "Connection Timeout")
 		},
@@ -49,7 +49,7 @@ func init() {
 			ssl, _ := app.AppFlags.GetBool("rpc.ssl")
 			skipverify, _ := app.AppFlags.GetBool("rpc.skipverify")
 			timeout, _ := app.AppFlags.GetDuration("rpc.timeout")
-			return gopi.Open(Client{Host: addr, SSL: ssl, SkipVerify: skipverify, Timeout: timeout}, app.Logger)
+			return gopi.Open(ClientConn{Addr: addr, SSL: ssl, SkipVerify: skipverify, Timeout: timeout}, app.Logger)
 		},
 	})
 

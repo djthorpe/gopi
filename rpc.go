@@ -99,18 +99,22 @@ type RPCServer interface {
 	ServiceWithName(service, name string, text ...string) *RPCServiceRecord
 }
 
-// RPCClient implements a client for communicating with an RPC server
-type RPCClient interface {
+// RPCClientConn implements a single client connection for communicating
+// with an RPC server
+type RPCClientConn interface {
 	Driver
 
-	// Connect to the remote server
-	Connect() error
+	// Connect to the remote server. Returns a list of
+	// services which are available on the server, or
+	// nil if server reflection isn't supported
+	Connect() ([]string, error)
 
 	// Disconnect from the remote server
 	Disconnect() error
 
-	// Return names of modules which server has registered
-	Modules() ([]string, error)
+	// Return a new abstract service interface given
+	// a constructor function
+	NewService(constructor reflect.Value) (interface{}, error)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

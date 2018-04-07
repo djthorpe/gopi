@@ -14,6 +14,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	// Frameworks
@@ -23,17 +24,17 @@ import (
 	reflection_pb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
-// Client is the RPC client configuration
-type Client struct {
-	Host       string
+// ClientConn is the RPC client connection
+type ClientConn struct {
+	Addr       string
 	SSL        bool
 	SkipVerify bool
 	Timeout    time.Duration // Connection timeout
 }
 
-type client struct {
+type clientconn struct {
 	log        gopi.Logger
-	host       string
+	addr       string
 	ssl        bool
 	skipverify bool
 	timeout    time.Duration
@@ -44,12 +45,12 @@ type client struct {
 // CLIENT OPEN AND CLOSE
 
 // Open a client
-func (config Client) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug2("<grpc.Client>Open(host=%v,ssl=%v,skipverify=%v,timeout=%v)", config.Host, config.SSL, config.SkipVerify, config.Timeout)
+func (config ClientConn) Open(log gopi.Logger) (gopi.Driver, error) {
+	log.Debug("<grpc.ClientConn>Open(addr=%v,ssl=%v,skipverify=%v,timeout=%v)", config.Addr, config.SSL, config.SkipVerify, config.Timeout)
 
 	// Create a client object
-	this := new(client)
-	this.host = config.Host
+	this := new(clientconn)
+	this.addr = config.Addr
 	this.ssl = config.SSL
 	this.skipverify = config.SkipVerify
 	this.timeout = config.Timeout
@@ -61,17 +62,18 @@ func (config Client) Open(log gopi.Logger) (gopi.Driver, error) {
 }
 
 // Close client
-func (this *client) Close() error {
-	this.log.Debug2("<grpc.Client>Close()")
+func (this *clientconn) Close() error {
+	this.log.Debug("<grpc.ClientConn>Close{ addr=%v }", this.addr)
 	return this.Disconnect()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// RPCClient interface implementation
+// RPCClientConn interface implementation
 
-func (this *client) Connect() error {
+func (this *clientconn) Connect() ([]string, error) {
+	this.log.Debug2("<grpc.ClientConn>Connect{ addr=%v }", this.addr)
 	if this.conn != nil {
-		return errors.New("Cannot call Connect() when connection already made")
+		return nil, errors.New("Cannot call Connect() when connection already made")
 	}
 	opts := make([]grpc.DialOption, 0, 1)
 
@@ -88,19 +90,32 @@ func (this *client) Connect() error {
 	}
 
 	// Dial connection
-	if conn, err := grpc.Dial(this.host, opts...); err != nil {
-		return err
+	if conn, err := grpc.Dial(this.addr, opts...); err != nil {
+		return nil, err
 	} else {
 		this.conn = conn
 	}
 
-	// Success
-	return nil
+	// Get services
+	reflection := this.newServerReflectionClient()
+	if reflection == nil {
+		this.log.Warn("grpc.ClientConn: Unable to create reflection client")
+		return nil, nil
+	}
+	defer reflection.CloseSend()
+
+	if services, err := this.listServices(reflection); err != nil {
+		this.log.Warn("grpc.ClientConn: %v", err)
+		return nil, nil
+	} else {
+		return services, nil
+	}
 }
 
-func (this *client) Disconnect() error {
+func (this *clientconn) Disconnect() error {
+	this.log.Debug2("<grpc.ClientConn>Disconnect{ addr=%v }", this.addr)
+
 	if this.conn != nil {
-		this.log.Debug("<grpc.Client>Disconnect()")
 		err := this.conn.Close()
 		this.conn = nil
 		return err
@@ -108,37 +123,35 @@ func (this *client) Disconnect() error {
 	return nil
 }
 
-func (this *client) Modules() ([]string, error) {
-	if this.conn == nil {
-		return nil, errors.New("Disconnected")
+func (this *clientconn) NewService(constructor reflect.Value) (interface{}, error) {
+	this.log.Debug2("<grpc.ClientConn>NewService{ func=%v }", constructor)
+
+	if constructor.Kind() != reflect.Func {
+		return nil, gopi.ErrBadParameter
 	}
-	if client := this.newServerReflectionClient(); client == nil {
-		return nil, errors.New("Unable to create client")
+
+	if service := constructor.Call([]reflect.Value{reflect.ValueOf(this.conn)}); len(service) != 1 {
+		return nil, gopi.ErrBadParameter
 	} else {
-		defer client.CloseSend()
-		if services, err := this.listServices(client); err != nil {
-			return nil, err
-		} else {
-			return services, nil
-		}
+		return service[0].Interface(), nil
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *client) String() string {
+func (this *clientconn) String() string {
 	if this.conn != nil {
-		return fmt.Sprintf("<grpc.Client>{ connected=true host=%v ssl=%v skipverify=%v }", this.host, this.ssl, this.skipverify)
+		return fmt.Sprintf("<grpc.ClientConn>{ connected=true addr=%v ssl=%v skipverify=%v }", this.addr, this.ssl, this.skipverify)
 	} else {
-		return fmt.Sprintf("<grpc.Client>{ connected=false host=%v ssl=%v skipverify=%v }", this.host, this.ssl, this.skipverify)
+		return fmt.Sprintf("<grpc.ClientConn>{ connected=false addr=%v ssl=%v skipverify=%v }", this.addr, this.ssl, this.skipverify)
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *client) newServerReflectionClient() reflection_pb.ServerReflection_ServerReflectionInfoClient {
+func (this *clientconn) newServerReflectionClient() reflection_pb.ServerReflection_ServerReflectionInfoClient {
 	if this.conn == nil {
 		return nil
 	}
@@ -154,7 +167,7 @@ func (this *client) newServerReflectionClient() reflection_pb.ServerReflection_S
 	}
 }
 
-func (this *client) listServices(c reflection_pb.ServerReflection_ServerReflectionInfoClient) ([]string, error) {
+func (this *clientconn) listServices(c reflection_pb.ServerReflection_ServerReflectionInfoClient) ([]string, error) {
 	if err := c.Send(&reflection_pb.ServerReflectionRequest{
 		MessageRequest: &reflection_pb.ServerReflectionRequest_ListServices{},
 	}); err != nil {
