@@ -97,18 +97,16 @@ func (this *clientconn) Connect() ([]string, error) {
 	}
 
 	// Get services
-	reflection := this.newServerReflectionClient()
-	if reflection == nil {
-		this.log.Warn("grpc.ClientConn: Unable to create reflection client")
-		return nil, nil
-	}
-	defer reflection.CloseSend()
-
-	if services, err := this.listServices(reflection); err != nil {
-		this.log.Warn("grpc.ClientConn: %v", err)
-		return nil, nil
+	if reflection, err := this.newServerReflectionClient(); err != nil {
+		return nil, err
 	} else {
-		return services, nil
+		defer reflection.CloseSend()
+		if services, err := this.listServices(reflection); err != nil {
+			this.log.Warn("grpc.ClientConn: %v", err)
+			return nil, nil
+		} else {
+			return services, nil
+		}
 	}
 }
 
@@ -151,19 +149,18 @@ func (this *clientconn) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *clientconn) newServerReflectionClient() reflection_pb.ServerReflection_ServerReflectionInfoClient {
+func (this *clientconn) newServerReflectionClient() (reflection_pb.ServerReflection_ServerReflectionInfoClient, error) {
 	if this.conn == nil {
-		return nil
+		return nil, gopi.ErrOutOfOrder
 	}
 	ctx := context.Background()
 	if this.timeout > 0 {
 		ctx, _ = context.WithTimeout(ctx, this.timeout)
 	}
 	if client, err := reflection_pb.NewServerReflectionClient(this.conn).ServerReflectionInfo(ctx); err != nil {
-		this.log.Error("Error: %v", err)
-		return nil
+		return nil, err
 	} else {
-		return client
+		return client, nil
 	}
 }
 
