@@ -20,7 +20,7 @@ import (
 
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/logger"
-	_ "github.com/djthorpe/gopi/sys/rpc"
+	_ "github.com/djthorpe/gopi/sys/rpc/mdns"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
