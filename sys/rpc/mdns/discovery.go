@@ -16,6 +16,7 @@ import (
 
 	// Frameworks
 	"github.com/djthorpe/gopi"
+	rpc "github.com/djthorpe/gopi/sys/rpc"
 	evt "github.com/djthorpe/gopi/util/event"
 	"github.com/djthorpe/zeroconf"
 )
@@ -35,12 +36,6 @@ type driver struct {
 	servers  []*zeroconf.Server
 	resolver *zeroconf.Resolver
 	pubsub   *evt.PubSub
-}
-
-type event struct {
-	source gopi.Driver
-	t      gopi.RPCEventType
-	r      *gopi.RPCServiceRecord
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,29 +138,6 @@ func (this *driver) DefaultServiceType(network string) string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// EVENT INTERFACE METHODS
-
-// Return the type of event
-func (this *event) Type() gopi.RPCEventType {
-	return this.t
-}
-
-// Return the service record
-func (this *event) ServiceRecord() *gopi.RPCServiceRecord {
-	return this.r
-}
-
-// Return name of event
-func (*event) Name() string {
-	return "RPCEvent"
-}
-
-// Return source of event
-func (this *event) Source() gopi.Driver {
-	return this.source
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // PUBSUB
 
 // Subscribe to events emitted
@@ -180,11 +152,7 @@ func (this *driver) Unsubscribe(subscriber <-chan gopi.Event) {
 
 // Emit an event
 func (this *driver) Emit(record *gopi.RPCServiceRecord) {
-	this.pubsub.Emit(&event{
-		source: this,
-		t:      gopi.RPC_EVENT_SERVICE_RECORD,
-		r:      record,
-	})
+	this.pubsub.Emit(rpc.NewEvent(this, gopi.RPC_EVENT_SERVICE_RECORD, record))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -192,12 +160,4 @@ func (this *driver) Emit(record *gopi.RPCServiceRecord) {
 
 func (this *driver) String() string {
 	return fmt.Sprintf("sys.mdns{ domain=\"%v\" registrations=%v }", this.domain, "TODO")
-}
-
-func (this *event) String() string {
-	if this.r != nil {
-		return fmt.Sprintf("<rpc.Event>{ type=%v record=%v }", this.Type(), this.ServiceRecord())
-	} else {
-		return fmt.Sprintf("<rpc.Event>{ type=%v }", this.Type())
-	}
 }

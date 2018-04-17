@@ -21,23 +21,6 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// INIT
-
-func init() {
-	// Register service/helloworld:grpc
-	gopi.RegisterModule(gopi.Module{
-		Name:     "service/helloworld:grpc",
-		Type:     gopi.MODULE_TYPE_SERVICE,
-		Requires: []string{"rpc/server"},
-		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
-			return gopi.Open(Service{
-				Server: app.ModuleInstance("rpc/server").(gopi.RPCServer),
-			}, app.Logger)
-		},
-	})
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type Service struct {
@@ -85,7 +68,7 @@ func (this *service) GRPCHook() reflect.Value {
 // Stringify
 
 func (this *service) String() string {
-	return fmt.Sprintf("rpc.service.helloworld{}")
+	return fmt.Sprintf("grpc.service.helloworld{}")
 }
 
 ////////////////////////////////////////////////////////////////////////////////

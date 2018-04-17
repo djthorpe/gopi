@@ -75,6 +75,7 @@ const (
 	MODULE_TYPE_TIMER    // Timer module
 	MODULE_TYPE_LIRC     // LIRC module
 	MODULE_TYPE_SERVICE  // RPC Service
+	MODULE_TYPE_CLIENT   // RPC Client
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -100,6 +101,7 @@ var (
 		"timer":    MODULE_TYPE_TIMER,
 		"lirc":     MODULE_TYPE_LIRC,
 		"service":  MODULE_TYPE_SERVICE,
+		"client":   MODULE_TYPE_CLIENT,
 	}
 )
 
@@ -127,8 +129,8 @@ func RegisterModule(module Module) {
 			modules_by_name[module.Name] = &module
 		}
 	}
-	// Register by type if module type is not None or Other or Service
-	if module.Type != MODULE_TYPE_OTHER && module.Type != MODULE_TYPE_NONE && module.Type != MODULE_TYPE_SERVICE {
+	// Register by type if module type is not None, Other, Service or Client
+	if module.Type != MODULE_TYPE_OTHER && module.Type != MODULE_TYPE_NONE && module.Type != MODULE_TYPE_SERVICE && module.Type != MODULE_TYPE_CLIENT {
 		if _, exists := modules_by_type[module.Type]; exists {
 			panic(fmt.Errorf("Duplicate Module registered: %v", &module))
 		} else {

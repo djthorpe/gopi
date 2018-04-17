@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -28,13 +29,16 @@ type RPCServiceRecord struct {
 	Port uint
 	Text []string
 	Host string
-	TTL  time.Duration
 	IP4  []net.IP
 	IP6  []net.IP
+	TTL  time.Duration
 }
 
 // RPCEventType is an enumeration of event types
 type RPCEventType uint
+
+// RPCFlag is a set of flags modifying behavior of client/service
+type RPCFlag uint
 
 // RPCBrowseFunc is the callback function for when a service record is
 // discovered on the network. It's called with a nil parameter when no
@@ -115,6 +119,19 @@ type RPCClientConn interface {
 	// Return a new abstract service interface given
 	// a constructor function
 	NewService(constructor reflect.Value) (interface{}, error)
+
+	// Return the bound address for the connection
+	Addr() string
+}
+
+// RPCClientPool implements a pool of client connections for communicating
+// with an RPC server
+type RPCClientPool interface {
+	Driver
+
+	// Connect returns an RPCClientConn object which is connected to
+	// the application service named
+	Connect(flags RPCFlag) (RPCClientConn, error)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -125,6 +142,20 @@ const (
 	RPC_EVENT_SERVER_STARTED
 	RPC_EVENT_SERVER_STOPPED
 	RPC_EVENT_SERVICE_RECORD
+)
+
+const (
+	RPC_FLAG_NONE     RPCFlag = 0
+	RPC_FLAG_INET_UDP         = (1 << iota) // Use UDP protocol (TCP assumed otherwise)
+	RPC_FLAG_INET_V4          = (1 << iota) // Use V4 addressing
+	RPC_FLAG_INET_V6          = (1 << iota) // Use V6 addressing
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// VARIABLES
+
+var (
+	reService = regexp.MustCompile("[A-za-z][A-Za-z0-9\\-]*")
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -172,4 +203,19 @@ func (t RPCEventType) String() string {
 	default:
 		return "[?? Invalid RPCEventType value]"
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RETURN DOMAIN FROM SERVICE TYPE
+
+func RPCServiceType(service_type string, flags RPCFlag) (string, error) {
+	if reService.MatchString(service_type) == false {
+		return "", ErrBadParameter
+	}
+	if flags&RPC_FLAG_INET_UDP != 0 {
+		service_type = "_" + service_type + "._udp"
+	} else {
+		service_type = "_" + service_type + "._tcp"
+	}
+	return service_type, nil
 }

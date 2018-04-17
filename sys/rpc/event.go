@@ -1,10 +1,10 @@
 /*
-  Go Language Raspberry Pi Interface
-  (c) Copyright David Thorpe 2016-2017
-  All Rights Reserved
+	Go Language Raspberry Pi Interface
+	(c) Copyright David Thorpe 2016-2018
+	All Rights Reserved
 
-  Documentation http://djthorpe.github.io/gopi/
-  For Licensing and Usage information, please see LICENSE.md
+	Documentation http://djthorpe.github.io/gopi/
+	For Licensing and Usage information, please see LICENSE.md
 */
 
 package rpc
@@ -12,6 +12,7 @@ package rpc
 import (
 	"fmt"
 
+	// Frameworks
 	"github.com/djthorpe/gopi"
 )
 
@@ -19,42 +20,46 @@ import (
 // TYPES
 
 // Event is the RPC event
-type Event struct {
-	source gopi.Driver
-	t      gopi.RPCEventType
-	r      *gopi.RPCServiceRecord
+type event struct {
+	s gopi.Driver
+	t gopi.RPCEventType
+	r *gopi.RPCServiceRecord
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
+func NewEvent(source gopi.Driver, event_type gopi.RPCEventType, service_record *gopi.RPCServiceRecord) *event {
+	return &event{s: source, t: event_type, r: service_record}
+}
+
 // Return the type of event
-func (e *Event) Type() gopi.RPCEventType {
-	return e.t
+func (this *event) Type() gopi.RPCEventType {
+	return this.t
 }
 
 // Return the service record
-func (e *Event) ServiceRecord() *gopi.RPCServiceRecord {
-	return e.r
+func (this *event) ServiceRecord() *gopi.RPCServiceRecord {
+	return this.r
 }
 
 // Return name of event
-func (*Event) Name() string {
+func (*event) Name() string {
 	return "RPCEvent"
 }
 
 // Return source of event
-func (e *Event) Source() gopi.Driver {
-	return e.source
+func (this *event) Source() gopi.Driver {
+	return this.s
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (e *Event) String() string {
-	if e.r != nil {
-		return fmt.Sprintf("<rpc.Event>{ type=%v record=%v }", e.Type(), e.ServiceRecord())
+func (this *event) String() string {
+	if this.r != nil {
+		return fmt.Sprintf("<rpc.event>{ type=%v record=%v }", this.t, this.r)
 	} else {
-		return fmt.Sprintf("<rpc.Event>{ type=%v }", e.Type())
+		return fmt.Sprintf("<rpc.event>{ type=%v }", this.t)
 	}
 }

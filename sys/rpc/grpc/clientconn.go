@@ -7,7 +7,7 @@
   For Licensing and Usage information, please see LICENSE.md
 */
 
-package rpc
+package grpc
 
 import (
 	"context"

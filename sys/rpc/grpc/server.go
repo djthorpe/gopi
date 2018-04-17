@@ -1,13 +1,13 @@
 /*
-  Go Language Raspberry Pi Interface
-  (c) Copyright David Thorpe 2016-2017
-  All Rights Reserved
+	Go Language Raspberry Pi Interface
+	(c) Copyright David Thorpe 2016-2018
+	All Rights Reserved
 
-  Documentation http://djthorpe.github.io/gopi/
-  For Licensing and Usage information, please see LICENSE.md
+	Documentation http://djthorpe.github.io/gopi/
+	For Licensing and Usage information, please see LICENSE.md
 */
 
-package rpc
+package grpc
 
 import (
 	"errors"
@@ -20,10 +20,11 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
+	rpc "github.com/djthorpe/gopi/sys/rpc"
 	evt "github.com/djthorpe/gopi/util/event"
 	grpc "google.golang.org/grpc"
 	credentials "google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/grpclog"
+	grpclog "google.golang.org/grpc/grpclog"
 	reflection "google.golang.org/grpc/reflection"
 )
 
@@ -124,10 +125,10 @@ func (this *server) Start() error {
 	} else {
 		// Start server
 		this.addr = lis.Addr()
-		this.emit(&Event{source: this, t: gopi.RPC_EVENT_SERVER_STARTED})
+		this.emit(rpc.NewEvent(this, gopi.RPC_EVENT_SERVER_STARTED, nil))
 		this.log.Debug("<grpc.Server>{ addr=%v }", this.addr)
 		err := this.server.Serve(lis) // blocking call
-		this.emit(&Event{source: this, t: gopi.RPC_EVENT_SERVER_STOPPED})
+		this.emit(rpc.NewEvent(this, gopi.RPC_EVENT_SERVER_STOPPED, nil))
 		this.addr = nil
 		return err
 	}

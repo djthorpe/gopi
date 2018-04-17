@@ -1,12 +1,12 @@
 /*
 	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016-2017
+	(c) Copyright David Thorpe 2016-2018
 	All Rights Reserved
     Documentation http://djthorpe.github.io/gopi/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-package gopi // import "github.com/djthorpe/gopi"
+package gopi
 
 import (
 	"fmt"
@@ -70,6 +70,11 @@ type BackgroundTask func(app *AppInstance, done <-chan struct{}) error
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 
+const (
+	// DEFAULT_RPC_SERVICE is the default service type
+	DEFAULT_RPC_SERVICE = "gopi"
+)
+
 var (
 	// DONE is the message sent on the channel to indicate task is completed
 	DONE = struct{}{}
@@ -103,7 +108,7 @@ func NewAppConfig(modules ...string) AppConfig {
 	config.AppFlags = NewFlags(path.Base(os.Args[0]))
 	config.Debug = false
 	config.Verbose = false
-	config.Service = ""
+	config.Service = DEFAULT_RPC_SERVICE
 
 	// Set 'debug' and 'verbose' flags
 	config.AppFlags.FlagBool("debug", false, "Set debugging mode")
@@ -150,6 +155,14 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	this.verbose = config.Verbose
 	this.AppFlags = config.AppFlags
 
+	// Set service name from configuration or the name
+	// from AppFlags
+	if config.Service != "" {
+		this.service = config.Service
+	} else {
+		this.service = this.AppFlags.Name()
+	}
+
 	// Set up signalling
 	this.sigchan = make(chan os.Signal, 1)
 	signal.Notify(this.sigchan, syscall.SIGTERM, syscall.SIGINT)
@@ -183,14 +196,6 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 				return nil, err
 			}
 		}
-	}
-
-	// Set service name from configuration or the name
-	// from AppFlags
-	if config.Service != "" {
-		this.service = config.Service
-	} else {
-		this.service = this.AppFlags.Name()
 	}
 
 	// report Open() again if it's not been done yet
