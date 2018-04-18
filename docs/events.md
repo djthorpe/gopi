@@ -30,10 +30,9 @@ to them:
 
 ```
 func eventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
-
 	// Subscribe to timers and GPIO edges
 	timer_chan := app.Timer.Subscribe()
-    gpio_chan := app.GPIO.Subscribe()
+	gpio_chan := app.GPIO.Subscribe()
 
 FOR_LOOP:
 	for {

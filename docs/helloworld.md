@@ -27,7 +27,7 @@ import (
 	"fmt"
 	"os"
 
-    // Import Frameworks
+	// Import Frameworks
 	gopi "github.com/djthorpe/gopi"
 
 	// Import modules
