@@ -1,5 +1,5 @@
 
-## Introduction & Motivation
+## Introduction
 
 This repository implements an application framework for the Go 
 programming language ("golang"). Ultimately it targets the 
@@ -18,7 +18,8 @@ The scope of this framework is as  follows:
   * Use of the Graphics Processing Unit (if there is one) including creating
     displays & window surfaces, and being able to move them on the screen;
   * Access to vector graphics and font rendering, and basic user interface
-    element layout.
+    element layout;
+  * Remote Procedure Call (RPC) server and client development.
 
 The [Raspberry Pi](https://www.raspberrypi.org/) is the first supported
 hardware platform but it wouldn't be a stretch to provide these facilities on other
@@ -48,7 +49,7 @@ on the command line using the following commands:
 ```
 
 Please see the source code for the hello world application 
-[here](https://github.com/djthorpe/gopi/blob/modules/cmd/helloworld/helloworld.go)
+[here](https://github.com/djthorpe/gopi/blob/master/cmd/helloworld/helloworld.go)
 to see how a basic command-line application is structured.
 
 # What's Next?
