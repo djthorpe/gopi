@@ -23,7 +23,6 @@
 package util /* import "github.com/djthorpe/gopi/util" */
 
 import (
-	"errors"
 	"math"
 	"regexp"
 	"strconv"
@@ -39,11 +38,6 @@ const (
 
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
-
-var (
-	// Syntax Error Occurred
-	ErrParseError = errors.New("Syntax Error")
-)
 
 var (
 	REGEXP_PPI_D  *regexp.Regexp = regexp.MustCompile("^\\s*([0-9\\.]+)\\s*(in|mm|cm)\\s*$")
