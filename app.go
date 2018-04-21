@@ -212,6 +212,18 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 func (this *AppInstance) Run(main_task MainTask, background_tasks ...BackgroundTask) error {
 	// Lock this to run in the current operating system thread (ie, the main thread)
 	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	// Call the Run method for each module instance. If any report an error,
+	// then don't run
+	for name, driver := range this.byname {
+		module := ModuleByName(name)
+		if module.Run != nil {
+			if err := module.Run(this, driver); err != nil {
+				return err
+			}
+		}
+	}
 
 	// create the channels we'll use to signal the goroutines
 	channels := make([]chan struct{}, len(background_tasks)+1)

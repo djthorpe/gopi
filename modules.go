@@ -1,8 +1,8 @@
 /*
 	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016-2017
+	(c) Copyright David Thorpe 2016-2018
 	All Rights Reserved
-    Documentation http://djthorpe.github.io/gopi/
+	Documentation http://djthorpe.github.io/gopi/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
@@ -35,12 +35,17 @@ type Module struct {
 	Type     ModuleType
 	Config   ModuleConfigFunc
 	New      ModuleNewFunc
+	Run      ModuleRunFunc
 	Requires []string
 	edges    *module_array
 }
 
 // ModuleNewFunc is the signature for creating a new module instance
 type ModuleNewFunc func(*AppInstance) (Driver, error)
+
+// ModuleRunFunc is the signature for a finalizer just before running
+// the tool
+type ModuleRunFunc func(*AppInstance, Driver) error
 
 // ModuleConfigFunc is the signature for setting up the configuration
 // for creating the app
