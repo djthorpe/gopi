@@ -95,6 +95,15 @@ func mainRPCServer(app *AppInstance, done chan<- struct{}) error {
 	app.Logger.Info("Waiting for CTRL+C or SIGTERM to stop server")
 	app.WaitForSignal()
 
+	// Cancel on-going requests for all services
+	for _, module := range ModulesByType(MODULE_TYPE_SERVICE) {
+		if instance, ok := app.ModuleInstance(module.Name).(RPCService); ok == true && instance != nil {
+			if err := instance.CancelRequests(); err != nil {
+				app.Logger.Warn("CancelRequests: %v: %v", module.Name, err)
+			}
+		}
+	}
+
 	// Indicate we want to stop the server - shutdown after we have
 	// serviced requests
 	if err := server.Stop(false); err != nil {

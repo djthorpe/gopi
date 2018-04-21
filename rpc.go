@@ -70,6 +70,10 @@ type RPCService interface {
 	// Returns the registration function...actually the reflect.ValueOf()
 	// when using the GRPC version of the RPC server
 	GRPCHook() reflect.Value
+
+	// CancelRequests is called by the server to gracefully end any
+	// on-going streaming requests, but before the service is shutdown
+	CancelRequests() error
 }
 
 // RPCServer is the server which serves RPCModule methods to
