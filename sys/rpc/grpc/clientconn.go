@@ -135,6 +135,10 @@ func (this *clientconn) NewService(constructor reflect.Value) (interface{}, erro
 	}
 }
 
+func (this *clientconn) Addr() string {
+	return this.addr
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
