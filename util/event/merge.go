@@ -137,7 +137,7 @@ func (this *merger) cases() []reflect.SelectCase {
 }
 
 func (this *merger) mergeInBackground() {
-	// Continue loop until all in channels are closed
+	// Continue loop until chanhe channel is closed
 	cases := this.cases()
 FOR_LOOP:
 	for {
@@ -147,18 +147,16 @@ FOR_LOOP:
 		}
 		// select cases
 		i, v, ok := reflect.Select(cases)
-		if i == 0 {
+		if i == 0 && ok == false {
 			// We need to reload the cases. If zero then end
-			if cases = this.cases(); ok == false {
-				break FOR_LOOP
-			} else {
-				// Reload
-				continue
-			}
+			break FOR_LOOP
+		} else if i == 0 {
+			// Reload cases
+			cases = this.cases()
 		} else if ok {
 			this.Emit(v.Interface().(gopi.Event))
 		} else {
-			// Set (i-1) to nil
+			// Set channel to nil to remove from cases
 			this.in[i-1] = nil
 			// Rebuild cases
 			cases = this.cases()
