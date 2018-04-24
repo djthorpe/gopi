@@ -21,6 +21,7 @@ import (
 // TYPES
 
 // EventMerger represents a way to merge events
+// and subscribe the emitted events
 type EventMerger interface {
 	gopi.Publisher
 
@@ -93,17 +94,20 @@ func (this *merger) Add(new_channel <-chan gopi.Event) {
 
 // Close channels and release resources
 func (this *merger) Close() {
-
 	// Close the pubsub object
 	this.pubsub.Close()
 	this.pubsub = nil
-
-	// Empty channels array to be only the change channel and close it
-	this.in = this.in[0:1]
+	// Empty channels array
+	// It's the responsibility of the
+	// adder to close those channels
+	this.in = nil
 	// Close change channel to indicate done
 	close(this.change)
 	// Wait for done signal
 	<-this.done
+	// Release done
+	close(this.done)
+	this.done = nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -118,15 +122,17 @@ func (this *merger) cases() []reflect.SelectCase {
 	}
 	// Add the remaining channels - ignoring nil channels
 	// which have been closed
-	for i := range this.in {
-		if this.in[i] != nil {
-			cases = append(cases, reflect.SelectCase{
-				Dir:  reflect.SelectRecv,
-				Chan: reflect.ValueOf(this.in[i]),
-			})
+	if this.in != nil {
+		for i := range this.in {
+			if this.in[i] != nil {
+				cases = append(cases, reflect.SelectCase{
+					Dir:  reflect.SelectRecv,
+					Chan: reflect.ValueOf(this.in[i]),
+				})
+			}
 		}
 	}
-	// TODO: return nil if all channels closed
+	// return all cases
 	return cases
 }
 
@@ -152,8 +158,10 @@ FOR_LOOP:
 		} else if ok {
 			this.Emit(v.Interface().(gopi.Event))
 		} else {
-			// Remove channel from list of cases
-			cases = append(cases[:i], cases[i+1:]...)
+			// Set (i-1) to nil
+			this.in[i-1] = nil
+			// Rebuild cases
+			cases = this.cases()
 		}
 	}
 	// Indicate the background thread is done
