@@ -81,6 +81,7 @@ const (
 	MODULE_TYPE_LIRC     // LIRC module
 	MODULE_TYPE_SERVICE  // RPC Service
 	MODULE_TYPE_CLIENT   // RPC Client
+	MODULE_TYPE_KEYMAP   // Key Mapper
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,6 +108,7 @@ var (
 		"lirc":     MODULE_TYPE_LIRC,
 		"service":  MODULE_TYPE_SERVICE,
 		"client":   MODULE_TYPE_CLIENT,
+		"keymap":   MODULE_TYPE_KEYMAP,
 	}
 )
 
@@ -338,6 +340,10 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_LIRC"
 	case MODULE_TYPE_SERVICE:
 		return "MODULE_TYPE_SERVICE"
+	case MODULE_TYPE_CLIENT:
+		return "MODULE_TYPE_CLIENT"
+	case MODULE_TYPE_KEYMAP:
+		return "MODULE_TYPE_KEYMAP"
 	default:
 		return "[Invalid ModuleType value]"
 	}
