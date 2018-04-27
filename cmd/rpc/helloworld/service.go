@@ -64,6 +64,11 @@ func (this *service) GRPCHook() reflect.Value {
 	return reflect.ValueOf(pb.RegisterGreeterServer)
 }
 
+func (this *service) CancelRequests() error {
+	// No need to cancel any requests since none are streaming
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Stringify
 

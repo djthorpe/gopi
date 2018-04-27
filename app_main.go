@@ -14,6 +14,10 @@ import (
 	"os"
 )
 
+var (
+	start_rpc chan struct{}
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // COMMAND LINE TOOL STARTUP
 
@@ -68,6 +72,9 @@ func RPCServerTool(config AppConfig, background_tasks ...BackgroundTask) int {
 	}
 	defer app.Close()
 
+	// Create the start signal
+	start_rpc = make(chan struct{})
+
 	// Run the application with a main task and background tasks
 	if err := app.Run(mainRPCServer, appendRPCTasks(background_tasks, bgRPCServer, bgRPCDiscovery)...); err == ErrHelp {
 		config.AppFlags.PrintUsage()
@@ -116,12 +123,13 @@ func mainRPCServer(app *AppInstance, done chan<- struct{}) error {
 }
 
 func bgRPCServer(app *AppInstance, done <-chan struct{}) error {
-
 	if server, ok := app.ModuleInstance("rpc/server").(RPCServer); server == nil || ok == false {
 		return errors.New("rpc/server: missing or invalid")
 	} else if modules := ModulesByType(MODULE_TYPE_SERVICE); len(modules) == 0 {
 		return errors.New("rpc/server: no RPC services registered")
 	} else {
+		// Wait for the 'start' signal
+		<-start_rpc
 
 		// Start the server
 		if err := server.Start(); err != nil {
@@ -137,21 +145,23 @@ func bgRPCServer(app *AppInstance, done <-chan struct{}) error {
 }
 
 func bgRPCDiscovery(app *AppInstance, done <-chan struct{}) error {
-
 	if server, ok := app.ModuleInstance("rpc/server").(RPCServer); server == nil || ok == false {
+		start_rpc <- DONE
 		return errors.New("rpc/server: missing or invalid")
 	} else if discovery, ok := app.ModuleInstance("rpc/discovery").(RPCServiceDiscovery); discovery == nil || ok == false {
+		start_rpc <- DONE
 		return errors.New("rpc/discovery: missing or invalid")
 	} else {
 		// Listen for server started events
 		events := server.Subscribe()
-
+		// Now we can signal the server to start
+		start_rpc <- DONE
 	FOR_LOOP:
 		for {
 			select {
 			case evt := <-events:
 				if server_event, ok := evt.(RPCEvent); server_event != nil && ok {
-					app.Logger.Info("rpc/server: %v", server_event.Type())
+					app.Logger.Debug("rpc/server: %v", server_event.Type())
 					if server_event.Type() == RPC_EVENT_SERVER_STARTED {
 						app.Logger.Info("rpc/server: Listening on %v", server.Addr())
 						// Register service
