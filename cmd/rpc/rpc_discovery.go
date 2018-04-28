@@ -76,13 +76,6 @@ func PrintRecord(s *gopi.RPCServiceRecord) {
 	})
 	table.Render()
 	table.ClearRows()
-
-	/*	table.SetHeader("NAME", "TYPE", "ADDR:PORT", "TTL", "TEXT")
-		fmt.Printf("%s\n", )
-		fmt.Printf("%-4s %-20s %-20s %-10v %-10s\n", "", s.Type, "", s.Port, s.TTL)
-		for _, txt := range s.Text {
-			fmt.Printf("%-53s %s\n", "", txt)
-		}*/
 }
 
 func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
