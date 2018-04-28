@@ -20,6 +20,7 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
+	tablewriter "github.com/olekukonko/tablewriter"
 
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/logger"
@@ -29,8 +30,9 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 var (
-	lock sync.Mutex
-	gctx context.Context
+	lock  sync.Mutex
+	gctx  context.Context
+	table *tablewriter.Table
 )
 
 func InitContext() {
@@ -51,16 +53,36 @@ func GetContext() context.Context {
 ////////////////////////////////////////////////////////////////////////////////
 
 func PrintHeader() {
-	fmt.Printf("%-10s %-20s %-10s %-10s %-10s\n", "NAME", "TYPE", "PORT", "TTL", "TEXT")
-	fmt.Printf("%-10s %-20s %-10s %-10s %-10s\n", strings.Repeat("-", 10), strings.Repeat("-", 20), strings.Repeat("-", 10), strings.Repeat("-", 10), strings.Repeat("-", 10))
+	table = tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"NAME", "TYPE", "ADDR:PORT", "TTL", "TEXT"})
+	table.SetAutoMergeCells(true)
 }
 
 func PrintRecord(s *gopi.RPCServiceRecord) {
-	fmt.Printf("%s\n", s.Name)
-	fmt.Printf("%-10s %-20s %-10v %-10s\n", "", s.Type, s.Port, s.TTL)
-	for _, txt := range s.Text {
-		fmt.Printf("%-53s %s\n", "", txt)
+	// Gather up the addresses
+	addr := ""
+	for _, ip4 := range s.IP4 {
+		addr += fmt.Sprintf("%v:%v\n", ip4.String(), s.Port)
 	}
+	for _, ip6 := range s.IP6 {
+		addr += fmt.Sprintf("%v:%v\n", ip6.String(), s.Port)
+	}
+	table.Append([]string{
+		s.Name,
+		s.Type,
+		strings.TrimSpace(addr),
+		fmt.Sprint(s.TTL),
+		strings.Join(s.Text, "\n"),
+	})
+	table.Render()
+	table.ClearRows()
+
+	/*	table.SetHeader("NAME", "TYPE", "ADDR:PORT", "TTL", "TEXT")
+		fmt.Printf("%s\n", )
+		fmt.Printf("%-4s %-20s %-20s %-10v %-10s\n", "", s.Type, "", s.Port, s.TTL)
+		for _, txt := range s.Text {
+			fmt.Printf("%-53s %s\n", "", txt)
+		}*/
 }
 
 func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
