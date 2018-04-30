@@ -481,8 +481,11 @@ func (this *lirc) lircReceive(dev *os.File, mode FilePollMode) {
 
 // Send Pulse Mode, values are in milliseconds
 func (this *lirc) PulseSend(values []uint32) error {
+	this.log.Debug2("<sys.hw.linux.LIRC.PulseSend>{ values=%v }", values)
+
 	// Check for odd number of values
 	if len(values) == 0 || len(values)%2 == 0 {
+		this.log.Debug("sys.hw.linux.LIRC.PulseSend: Requires even number of values")
 		return gopi.ErrBadParameter
 	}
 	// Set send mode

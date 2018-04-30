@@ -155,7 +155,7 @@ FOR_LOOP:
 			cases = this.cases()
 		} else if ok {
 			this.Emit(v.Interface().(gopi.Event))
-		} else {
+		} else if i > 0 {
 			// Set channel to nil to remove from cases
 			this.in[i-1] = nil
 			// Rebuild cases
