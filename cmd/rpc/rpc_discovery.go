@@ -12,11 +12,15 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 	"sync"
+	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
+	tablewriter "github.com/olekukonko/tablewriter"
 
 	// Modules
 	_ "github.com/djthorpe/gopi/sys/logger"
@@ -26,8 +30,9 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 var (
-	lock sync.Mutex
-	gctx context.Context
+	lock  sync.Mutex
+	gctx  context.Context
+	table *tablewriter.Table
 )
 
 func InitContext() {
@@ -47,13 +52,36 @@ func GetContext() context.Context {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
-	discovery := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery)
+func PrintHeader() {
+	table = tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"NAME", "TYPE", "ADDR:PORT", "TTL", "TEXT"})
+	table.SetAutoMergeCells(true)
+}
 
-	// Return error if no discovery
-	if discovery == nil {
-		return errors.New("Missing discovery service")
+func PrintRecord(s *gopi.RPCServiceRecord) {
+	// Gather up the addresses
+	addr := ""
+	for _, ip4 := range s.IP4 {
+		addr += fmt.Sprintf("%v:%v\n", ip4.String(), s.Port)
 	}
+	for _, ip6 := range s.IP6 {
+		addr += fmt.Sprintf("%v:%v\n", ip6.String(), s.Port)
+	}
+	table.Append([]string{
+		s.Name,
+		s.Type,
+		strings.TrimSpace(addr),
+		fmt.Sprint(s.TTL),
+		strings.Join(s.Text, "\n"),
+	})
+	table.Render()
+	table.ClearRows()
+}
+
+func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
+	var once sync.Once
+
+	discovery := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery)
 
 	// Subscribe to record discovery
 	c := discovery.Subscribe()
@@ -63,7 +91,8 @@ FOR_LOOP:
 		select {
 		case evt := <-c:
 			if rpc_evt, ok := evt.(gopi.RPCEvent); rpc_evt != nil && ok {
-				app.Logger.Info("rpc_evt=%v", rpc_evt)
+				once.Do(PrintHeader)
+				PrintRecord(rpc_evt.ServiceRecord())
 			}
 		case <-done:
 			break FOR_LOOP
@@ -78,10 +107,17 @@ FOR_LOOP:
 
 func BrowseLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 
-	if discovery, ok := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery); discovery == nil || ok == false {
-		return errors.New("Missing or invalid discovery service")
-	} else if err := discovery.Browse(GetContext(), "_smb._tcp"); err != nil {
+	if service, _ := app.AppFlags.GetString("service"); service == "" {
+		return errors.New("Missing or invalid -service parameter")
+	} else if service_qualified, err := gopi.RPCServiceType(service, gopi.RPC_FLAG_NONE); err != nil {
 		return err
+	} else {
+		app.Logger.Info("Browsing for '%v'", service_qualified)
+		if discovery, ok := app.ModuleInstance("rpc/discovery").(gopi.RPCServiceDiscovery); discovery == nil || ok == false {
+			return errors.New("Missing or invalid discovery service")
+		} else if err := discovery.Browse(GetContext(), service_qualified); err != nil {
+			return err
+		}
 	}
 
 	// Wait for done
@@ -92,7 +128,7 @@ func BrowseLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 func MainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 	// Set parameters
 	timeout, _ := app.AppFlags.GetDuration("timeout")
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	SetContext(ctx)
 
 	// Wait until CTRL+C is pressed
@@ -113,7 +149,8 @@ func main() {
 	config := gopi.NewAppConfig("mdns")
 
 	// Set flags
-	config.AppFlags.FlagDuration("timeout", 0, "Browse timeout")
+	config.AppFlags.FlagDuration("timeout", 1*time.Second, "Browse timeout")
+	config.AppFlags.FlagString("service", "", "Service")
 
 	// Init
 	InitContext()
