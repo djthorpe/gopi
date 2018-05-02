@@ -79,7 +79,10 @@ func (this *merger) Unsubscribe(subscriber <-chan gopi.Event) {
 }
 
 func (this *merger) Emit(evt gopi.Event) {
-	this.pubsub.Emit(evt)
+	go func() {
+		// Perform in separate goroutine to prevent blocking
+		this.pubsub.Emit(evt)
+	}()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
