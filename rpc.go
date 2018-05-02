@@ -46,6 +46,10 @@ type RPCFlag uint
 // indicates the service was removed
 type RPCBrowseFunc func(service *RPCServiceRecord)
 
+// RPCNewClientFunc creates a new client with a network connection
+// returns nil otherwise
+type RPCNewClientFunc func(RPCClientConn) RPCClient
+
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
@@ -107,36 +111,44 @@ type RPCServer interface {
 	ServiceWithName(service, name string, text ...string) *RPCServiceRecord
 }
 
-// RPCClientConn implements a single client connection for communicating
-// with an RPC server
-type RPCClientConn interface {
-	Driver
-
-	// Connect to the remote server. Returns a list of
-	// services which are available on the server, or
-	// nil if server reflection isn't supported
-	Connect() ([]string, error)
-
-	// Disconnect from the remote server
-	Disconnect() error
-
-	// Return a new abstract service interface given
-	// a constructor function
-	NewService(constructor reflect.Value) (interface{}, error)
-
-	// Return the bound address for the connection
-	Addr() string
-}
-
 // RPCClientPool implements a pool of client connections for communicating
 // with an RPC server
 type RPCClientPool interface {
 	Driver
+	Publisher
 
-	// Connect returns an RPCClientConn object which is connected to
-	// the application service named
-	Connect(flags RPCFlag) (RPCClientConn, error)
+	// Connect and disconnect
+	Connect(service *RPCServiceRecord, flags RPCFlag) (RPCClientConn, error)
+	Disconnect(RPCClientConn) error
+
+	// Register clients and create new ones given a service name
+	RegisterClient(string, RPCNewClientFunc) error
+	NewClient(string, RPCClientConn) (RPCClient, error)
 }
+
+// RPCClientConn implements a single client connection for
+// communicating with an RPC server
+type RPCClientConn interface {
+	Driver
+
+	// Connection and disconnection, plus list of available services
+	Connect() error
+	Disconnect() error
+
+	// Mutex lock for the connection
+	Lock()
+	Unlock()
+
+	// Properties
+	Name() string
+	Addr() string
+	Connected() bool
+	Timeout() time.Duration
+	Services() ([]string, error)
+}
+
+// RPCClient contains a set of RPC methods
+type RPCClient interface{}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS

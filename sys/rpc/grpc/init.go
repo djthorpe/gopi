@@ -33,27 +33,50 @@ func init() {
 			return gopi.Open(Server{Port: port, SSLCertificate: cert, SSLKey: key}, app.Logger)
 		},
 	})
-	// Register GRPC rpc/clientconn
+
+	// Register GRPC rpc/clientpool module
 	gopi.RegisterModule(gopi.Module{
-		Name: "rpc/clientconn",
+		Name: "rpc/clientpool",
 		Type: gopi.MODULE_TYPE_OTHER,
 		Config: func(config *gopi.AppConfig) {
-			config.AppFlags.FlagString("rpc.addr", "", "Server Address")
 			config.AppFlags.FlagBool("rpc.insecure", false, "Disable SSL Connection")
 			config.AppFlags.FlagBool("rpc.skipverify", true, "Skip SSL Verification")
 			config.AppFlags.FlagDuration("rpc.timeout", 0, "Connection timeout")
 		},
 		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
-			addr, _ := app.AppFlags.GetString("rpc.addr")
 			insecure, _ := app.AppFlags.GetBool("rpc.insecure")
 			skipverify, _ := app.AppFlags.GetBool("rpc.skipverify")
 			timeout, _ := app.AppFlags.GetDuration("rpc.timeout")
-			return gopi.Open(ClientConn{
-				Addr:       addr,
-				SSL:        (insecure == false),
+			return gopi.Open(ClientPool{
 				SkipVerify: skipverify,
+				SSL:        (insecure == false),
 				Timeout:    timeout,
 			}, app.Logger)
 		},
 	})
+
+	/*
+		// Register GRPC rpc/clientconn
+		gopi.RegisterModule(gopi.Module{
+			Name: "rpc/clientconn",
+			Type: gopi.MODULE_TYPE_OTHER,
+			Config: func(config *gopi.AppConfig) {
+				config.AppFlags.FlagString("rpc.addr", "", "Server Address")
+				config.AppFlags.FlagBool("rpc.insecure", false, "Disable SSL Connection")
+				config.AppFlags.FlagBool("rpc.skipverify", true, "Skip SSL Verification")
+				config.AppFlags.FlagDuration("rpc.timeout", 0, "Connection timeout")
+			},
+			New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+				addr, _ := app.AppFlags.GetString("rpc.addr")
+				insecure, _ := app.AppFlags.GetBool("rpc.insecure")
+				skipverify, _ := app.AppFlags.GetBool("rpc.skipverify")
+				timeout, _ := app.AppFlags.GetDuration("rpc.timeout")
+				return gopi.Open(ClientConn{
+					Addr:       addr,
+					SSL:        (insecure == false),
+					SkipVerify: skipverify,
+					Timeout:    timeout,
+				}, app.Logger)
+			},
+		})*/
 }
