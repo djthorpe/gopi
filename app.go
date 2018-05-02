@@ -52,6 +52,7 @@ type AppInstance struct {
 	verbose  bool
 	service  string
 	sigchan  chan os.Signal
+	modules  []*Module
 	byname   map[string]Driver
 	bytype   map[ModuleType]Driver
 	byorder  []Driver
@@ -168,6 +169,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	signal.Notify(this.sigchan, syscall.SIGTERM, syscall.SIGINT)
 
 	// Set module maps
+	this.modules = config.Modules
 	this.byname = make(map[string]Driver, len(config.Modules))
 	this.bytype = make(map[ModuleType]Driver, len(config.Modules))
 	this.byorder = make([]Driver, 0, len(config.Modules))
@@ -214,14 +216,16 @@ func (this *AppInstance) Run(main_task MainTask, background_tasks ...BackgroundT
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	// Call the Run method for each module instance. If any report an error,
-	// then don't run
-	for name, driver := range this.byname {
-		module := ModuleByName(name)
-		if module.Run != nil {
-			if err := module.Run(this, driver); err != nil {
-				return err
-			}
+	// Call the Run method for each module. If any report an error, then don't run
+	// the application. Note that some modules don't have a 'New' method in which
+	// case the driver argument is set to nil
+	for _, module := range this.modules {
+		if module.Run == nil {
+			continue
+		}
+		driver, _ := this.byname[module.Name]
+		if err := module.Run(this, driver); err != nil {
+			return err
 		}
 	}
 
