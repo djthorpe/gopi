@@ -9,6 +9,7 @@
 package helloworld
 
 import (
+	"context"
 	"fmt"
 
 	// Framework
@@ -22,7 +23,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type GreeterClient struct {
+type MyGreeterClient struct {
 	pb.GreeterClient
 	conn gopi.RPCClientConn
 }
@@ -31,12 +32,27 @@ type GreeterClient struct {
 // NEW
 
 func NewGreeterClient(conn gopi.RPCClientConn) gopi.RPCClient {
-	return &GreeterClient{pb.NewGreeterClient(conn.(grpc.GRPCClientConn).Conn()), conn}
+	return &MyGreeterClient{pb.NewGreeterClient(conn.(grpc.GRPCClientConn).Conn()), conn}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CALLS
+
+func (this *MyGreeterClient) SayHello(name string) (string, error) {
+	this.conn.Lock()
+	defer this.conn.Unlock()
+
+	// TODO Need to add a deadline
+	if reply, err := this.GreeterClient.SayHello(context.Background(), &pb.HelloRequest{Name: name}); err != nil {
+		return "", err
+	} else {
+		return reply.Message, nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *GreeterClient) String() string {
-	return fmt.Sprintf("<helloworld.GreeterClient>{ conn=%v }", this.conn)
+func (this *MyGreeterClient) String() string {
+	return fmt.Sprintf("<helloworld.MyGreeterClient>{ conn=%v }", this.conn)
 }

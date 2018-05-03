@@ -22,10 +22,57 @@ import (
 	_ "github.com/djthorpe/gopi/sys/rpc/mdns"
 
 	// RPC Clients
-	_ "github.com/djthorpe/gopi/cmd/rpc/helloworld"
+	hw "github.com/djthorpe/gopi/cmd/rpc/helloworld"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+
+func RecordMatches(app *gopi.AppInstance, record *gopi.RPCServiceRecord) bool {
+	if service_type, err := gopi.RPCServiceType(app.Service(), 0); err != nil {
+		app.Logger.Error("RecordMatches: %v", err)
+		return false
+	} else {
+		return service_type == record.Type
+	}
+}
+
+func RunClient(app *gopi.AppInstance, client *hw.MyGreeterClient) {
+	name, _ := app.AppFlags.GetString("name")
+	if message, err := client.SayHello(name); err != nil {
+		app.Logger.Error("RunClient: %v", err)
+	} else {
+		fmt.Println(message)
+	}
+}
+
+func HandleEvent(app *gopi.AppInstance, evt gopi.RPCEvent) {
+	pool := app.ModuleInstance("rpc/clientpool").(gopi.RPCClientPool)
+
+	switch evt.Type() {
+	case gopi.RPC_EVENT_SERVICE_RECORD:
+		// Create a connection if the service record is correct type
+		if RecordMatches(app, evt.ServiceRecord()) {
+			if _, err := pool.Connect(evt.ServiceRecord(), 0); err != nil {
+				app.Logger.Error("Connect: %v", err)
+			}
+		}
+	case gopi.RPC_EVENT_CLIENT_CONNECTED:
+		conn := evt.Source().(gopi.RPCClientConn)
+		if client := pool.NewClient("mutablelogic.Helloworld", conn); client == nil {
+			app.Logger.Error("Connect: Unable to create client")
+		} else {
+			RunClient(app, client.(*hw.MyGreeterClient))
+			if err := pool.Disconnect(conn); err != nil {
+				app.Logger.Error("Disconnect: %v", err)
+			}
+		}
+	case gopi.RPC_EVENT_CLIENT_DISCONNECT:
+		// Send a terminate signal to end
+		app.SendSignal()
+	default:
+		app.Logger.Warn("Unhandled event type: %v", evt.Type())
+	}
+}
 
 func EventLoop(app *gopi.AppInstance, done <-chan struct{}) error {
 	// Obtain client connection
@@ -43,7 +90,9 @@ FOR_LOOP:
 		case <-done:
 			break FOR_LOOP
 		case evt := <-poolevents:
-			fmt.Println("EVENT=", evt)
+			if evt != nil {
+				HandleEvent(app, evt.(gopi.RPCEvent))
+			}
 		}
 	}
 
@@ -70,6 +119,9 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 func main() {
 	// Create the configuration
 	config := gopi.NewAppConfig("rpc/client/helloworld:grpc")
+
+	// Name argument
+	config.AppFlags.FlagString("name", "", "Your name")
 
 	// Set the RPCServiceRecord for server discovery
 	config.Service = "helloworld"

@@ -316,6 +316,17 @@ func (this *AppInstance) WaitForSignalOrTimeout(timeout time.Duration) bool {
 	}
 }
 
+// SendSignal will send the terminate signal, breaking the WaitForSignal
+// block
+func (this *AppInstance) SendSignal() error {
+	if process, err := os.FindProcess(os.Getpid()); err != nil {
+		return err
+	} else if err := process.Signal(syscall.SIGTERM); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Close method for app
 func (this *AppInstance) Close() error {
 	this.Logger.Debug("gopi.AppInstance.Close()")
