@@ -230,7 +230,7 @@ func (this *clientpool) Lookup(ctx context.Context, name, addr string, max int) 
 	this.log.Debug2("<grpc.clientpool>Lookup{ name='%v' addr='%v' max='%v' }", name, addr, max)
 
 	// Make a buffered channel of all service records and put them in
-	records := make(chan *gopi.RPCServiceRecord, len(this.records)+1)
+	records := make(chan *gopi.RPCServiceRecord, len(this.records)+2)
 	matched := make([]*gopi.RPCServiceRecord, 0, max)
 
 	// Queue up the records we know about
@@ -260,9 +260,7 @@ FOR_LOOP:
 			if event != nil {
 				if rpc_event := event.(gopi.RPCEvent); rpc_event.Type() == gopi.RPC_EVENT_SERVICE_RECORD {
 					// Emit the service record for matching
-					go func() {
-						records <- rpc_event.ServiceRecord()
-					}()
+					records <- rpc_event.ServiceRecord()
 				}
 			}
 		}
