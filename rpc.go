@@ -112,7 +112,7 @@ type RPCServer interface {
 }
 
 // RPCClientPool implements a pool of client connections for communicating
-// with an RPC server
+// with an RPC server and aides discovery new service records
 type RPCClientPool interface {
 	Driver
 	Publisher
@@ -124,6 +124,11 @@ type RPCClientPool interface {
 	// Register clients and create new ones given a service name
 	RegisterClient(string, RPCNewClientFunc) error
 	NewClient(string, RPCClientConn) RPCClient
+
+	// Lookup service records by parameter - returns records
+	// which match either name or addr up to max number of records
+	// Can wait for new records and block until cancelled
+	Lookup(ctx context.Context, name, addr string, max int) ([]*RPCServiceRecord, error)
 }
 
 // RPCClientConn implements a single client connection for

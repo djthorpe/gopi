@@ -12,6 +12,8 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -219,6 +221,129 @@ func (this *clientpool) Unsubscribe(c <-chan gopi.Event) {
 func (this *clientpool) emit(evt gopi.Event) {
 	// Emit happens in goroutine
 	go this.pubsub.Emit(evt)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// LOOKUP
+
+func (this *clientpool) Lookup(ctx context.Context, name, addr string, max int) ([]*gopi.RPCServiceRecord, error) {
+	this.log.Debug2("<grpc.clientpool>Lookup{ name='%v' addr='%v' max='%v' }", name, addr, max)
+
+	// Make a buffered channel of all service records and put them in
+	records := make(chan *gopi.RPCServiceRecord, len(this.records)+1)
+	matched := make([]*gopi.RPCServiceRecord, 0, max)
+
+	// Queue up the records we know about
+	for _, record := range this.records {
+		records <- record
+	}
+
+	// Subscribe to receive events
+	pool_events := this.Subscribe()
+
+	// The loop continues until the context is done, all existing
+	// records are consumed and all new records are matched up to
+	// the 'max' number of records (or unlimited if max is zero)
+FOR_LOOP:
+	for {
+		select {
+		case <-ctx.Done():
+			break FOR_LOOP
+		case record := <-records:
+			if lookupMatch(name, addr, record) {
+				matched = append(matched, record)
+				if max != 0 && len(matched) >= max {
+					break FOR_LOOP
+				}
+			}
+		case event := <-pool_events:
+			if event != nil {
+				if rpc_event := event.(gopi.RPCEvent); rpc_event.Type() == gopi.RPC_EVENT_SERVICE_RECORD {
+					// Emit the service record for matching
+					go func() {
+						records <- rpc_event.ServiceRecord()
+					}()
+				}
+			}
+		}
+	}
+
+	// Cleanup
+	close(records)
+	this.Unsubscribe(pool_events)
+
+	// If we have reached max matched records, then return them
+	// without an error or else return 'DeadlineExceeded'
+	if len(matched) == 0 {
+		return nil, gopi.ErrDeadlineExceeded
+	} else if len(matched) < max {
+		return matched, gopi.ErrDeadlineExceeded
+	} else {
+		return matched, nil
+	}
+}
+
+func lookupMatch(name, addr string, record *gopi.RPCServiceRecord) bool {
+	if name != "" && name == record.Name {
+		return true
+	}
+	if addr != "" {
+		host, port := lookupMatchSplitAddr(addr)
+		if host == "" && port == 0 {
+			// Parse error occured here
+			return false
+		}
+		if host != "" {
+			// We return false if any host doesn't match
+			if lookupMatchHost(host, record) == false && lookupMatchIP(host, record) == false {
+				return false
+			}
+		}
+		if port != 0 && port != record.Port {
+			return false
+		}
+		return true
+	}
+	// No conditions so match
+	return true
+}
+
+func lookupMatchSplitAddr(addr string) (string, uint) {
+	if host, port_, err := net.SplitHostPort(addr); err != nil {
+		if strings.HasSuffix(err.Error(), "missing port in address") {
+			return addr, 0
+		} else {
+			return "", 0
+		}
+	} else if port, err := strconv.ParseUint(strings.TrimPrefix(port_, ":"), 10, 32); err != nil {
+		return addr, 0
+	} else {
+		return host, uint(port)
+	}
+}
+
+func lookupMatchHost(addr string, record *gopi.RPCServiceRecord) bool {
+	// Fully-qualify address
+	if strings.HasSuffix(addr, ".") == false {
+		addr += "."
+	}
+	return strings.ToLower(addr) == strings.ToLower(record.Host)
+}
+
+func lookupMatchIP(addr string, record *gopi.RPCServiceRecord) bool {
+	if ip := net.ParseIP(addr); ip != nil {
+		for _, ip4 := range record.IP4 {
+			if ip4.Equal(ip) {
+				return true
+			}
+		}
+		for _, ip6 := range record.IP6 {
+			if ip6.Equal(ip) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 ////////////////////////////////////////////////////////////////////////////////

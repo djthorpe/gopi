@@ -34,8 +34,8 @@ fi
 # Install RPC binaries
 
 COMMANDS=(
-  rpc/rpc_server.go
-  rpc/rpc_client.go
+  rpc/helloworld_server.go
+  rpc/helloworld_client.go
   rpc/rpc_discovery.go
 )
 
