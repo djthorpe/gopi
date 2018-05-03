@@ -39,9 +39,9 @@ func RecordMatches(app *gopi.AppInstance, record *gopi.RPCServiceRecord) bool {
 func RunClient(app *gopi.AppInstance, client *hw.MyGreeterClient) {
 	name, _ := app.AppFlags.GetString("name")
 	if message, err := client.SayHello(name); err != nil {
-		app.Logger.Error("RunClient: %v says: %v", client.Conn().Name(), err)
+		app.Logger.Error("RunClient: %v", client.Conn().Name(), err)
 	} else {
-		fmt.Println(message)
+		fmt.Printf("%v says '%v'\n\n", client.Conn().Name(), message)
 	}
 }
 
