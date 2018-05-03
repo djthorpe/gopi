@@ -28,7 +28,7 @@ import (
 
 func main() {
 	// Create the configuration
-	config := gopi.NewAppConfig("service/helloworld:grpc")
+	config := gopi.NewAppConfig("rpc/service/helloworld:grpc")
 
 	// Set the RPCServiceRecord for server discovery
 	config.Service = "helloworld"

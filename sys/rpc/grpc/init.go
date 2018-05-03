@@ -36,21 +36,29 @@ func init() {
 
 	// Register GRPC rpc/clientpool module
 	gopi.RegisterModule(gopi.Module{
-		Name: "rpc/clientpool",
-		Type: gopi.MODULE_TYPE_OTHER,
+		Name:     "rpc/clientpool",
+		Type:     gopi.MODULE_TYPE_OTHER,
+		Requires: []string{"mdns"},
 		Config: func(config *gopi.AppConfig) {
 			config.AppFlags.FlagBool("rpc.insecure", false, "Disable SSL Connection")
 			config.AppFlags.FlagBool("rpc.skipverify", true, "Skip SSL Verification")
 			config.AppFlags.FlagDuration("rpc.timeout", 0, "Connection timeout")
+			config.AppFlags.FlagString("rpc.service", "", "Comma-separated list of service names")
 		},
 		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
 			insecure, _ := app.AppFlags.GetBool("rpc.insecure")
 			skipverify, _ := app.AppFlags.GetBool("rpc.skipverify")
 			timeout, _ := app.AppFlags.GetDuration("rpc.timeout")
+			service, _ := app.AppFlags.GetString("rpc.service")
+			if service == "" {
+				service = app.Service()
+			}
 			return gopi.Open(ClientPool{
+				Discovery:  app.ModuleInstance("mdns").(gopi.RPCServiceDiscovery),
 				SkipVerify: skipverify,
 				SSL:        (insecure == false),
 				Timeout:    timeout,
+				Service:    service,
 			}, app.Logger)
 		},
 	})

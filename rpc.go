@@ -123,7 +123,7 @@ type RPCClientPool interface {
 
 	// Register clients and create new ones given a service name
 	RegisterClient(string, RPCNewClientFunc) error
-	NewClient(string, RPCClientConn) (RPCClient, error)
+	NewClient(string, RPCClientConn) RPCClient
 }
 
 // RPCClientConn implements a single client connection for

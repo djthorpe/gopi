@@ -10,47 +10,33 @@ package helloworld
 
 import (
 	"fmt"
+
 	// Framework
-	"github.com/djthorpe/gopi"
+	gopi "github.com/djthorpe/gopi"
+	grpc "github.com/djthorpe/gopi/sys/rpc/grpc"
+
+	// Protocol buffers
+	pb "github.com/djthorpe/gopi/protobuf/helloworld"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Client struct {
-}
-
-type client struct {
-	log gopi.Logger
+type GreeterClient struct {
+	pb.GreeterClient
+	conn gopi.RPCClientConn
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// OPEN AND CLOSE
+// NEW
 
-// Open the client connection
-func (config Client) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<grpc.client.helloworld>Open{}")
-
-	this := new(client)
-	this.log = log
-
-	// Success
-	return this, nil
-}
-
-// Close the client connection
-func (this *client) Close() error {
-	this.log.Debug("<grpc.client.helloworld>Close{}")
-
-	// No resources to release
-
-	// Success
-	return nil
+func NewGreeterClient(conn gopi.RPCClientConn) gopi.RPCClient {
+	return &GreeterClient{pb.NewGreeterClient(conn.(grpc.GRPCClientConn).Conn()), conn}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *client) String() string {
-	return fmt.Sprintf("grpc.client.helloworld{}")
+func (this *GreeterClient) String() string {
+	return fmt.Sprintf("<helloworld.GreeterClient>{ conn=%v }", this.conn)
 }
