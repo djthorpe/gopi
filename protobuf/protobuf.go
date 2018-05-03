@@ -9,13 +9,13 @@
 
 package protobuf
 
-//go:generate protoc remotes/remotes.proto --go_out=plugins=grpc:.
+//go:generate protoc helloworld/helloworld.proto --go_out=plugins=grpc:.
 
 /*
 	This folder contains all the protocol buffer definitions including
 	the RPC Service definitions. You generate golang code by running:
 
-	go generate -x github.com/djthorpe/remotes/protobuf
+	go generate -x github.com/djthorpe/gopi/protobuf
 
 	where you have installed the protoc compiler and the GRPC plugin for
 	golang. In order to do that on a Mac:
