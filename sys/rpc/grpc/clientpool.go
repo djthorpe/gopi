@@ -250,7 +250,7 @@ FOR_LOOP:
 		case <-ctx.Done():
 			break FOR_LOOP
 		case record := <-records:
-			if lookupMatch(name, addr, record) {
+			if record != nil && lookupMatch(name, addr, record) {
 				matched = append(matched, record)
 				if max != 0 && len(matched) >= max {
 					break FOR_LOOP
@@ -269,8 +269,8 @@ FOR_LOOP:
 	}
 
 	// Cleanup
-	close(records)
 	this.Unsubscribe(pool_events)
+	close(records)
 
 	// If we have reached max matched records, then return them
 	// without an error or else return 'DeadlineExceeded'
