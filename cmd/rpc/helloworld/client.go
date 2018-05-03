@@ -36,6 +36,13 @@ func NewGreeterClient(conn gopi.RPCClientConn) gopi.RPCClient {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// PROPERTIES
+
+func (this *MyGreeterClient) Conn() gopi.RPCClientConn {
+	return this.conn
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // CALLS
 
 func (this *MyGreeterClient) SayHello(name string) (string, error) {
