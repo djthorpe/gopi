@@ -10,10 +10,16 @@
 package grpc
 
 import (
+	"context"
+
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
 )
+
+/////////////////////////////////////////////////////////////////////
+// INTERFACES
 
 // GRPCServer interface is an RPCServer which also
 // returns gRPC-specific properties
@@ -31,4 +37,27 @@ type GRPCClientConn interface {
 
 	// Return the gRPC ClientConn object
 	GRPCConn() *grpc.ClientConn
+}
+
+/////////////////////////////////////////////////////////////////////
+// UTILITY FUNCTIONS
+
+func IsErrCanceled(err error) bool {
+	if err == nil {
+		return false
+	}
+	if err == context.Canceled {
+		return true
+	}
+	return grpc.Code(err) == codes.Canceled
+}
+
+func IsErrDeadlineExceeded(err error) bool {
+	if err == nil {
+		return false
+	}
+	if err == context.DeadlineExceeded {
+		return true
+	}
+	return grpc.Code(err) == codes.DeadlineExceeded
 }
