@@ -65,6 +65,17 @@ func (this *Client) Ping() error {
 	}
 }
 
+func (this *Client) HostMetrics() (*pb.HostMetricsReply, error) {
+	this.conn.Lock()
+	defer this.conn.Unlock()
+
+	if reply, err := this.MetricsClient.HostMetrics(this.NewContext(), &pb.EmptyRequest{}); err != nil {
+		return nil, err
+	} else {
+		return reply, nil
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

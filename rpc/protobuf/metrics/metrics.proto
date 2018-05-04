@@ -12,8 +12,7 @@ service Metrics {
     rpc Ping (EmptyRequest) returns (EmptyReply);
 
     // Return host metrics
-    //rpc HostMetrics (EmptyRequest) returns (HostMeticsReply);
-
+    rpc HostMetrics (EmptyRequest) returns (HostMetricsReply);
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -25,7 +24,7 @@ message EmptyReply { }
 /////////////////////////////////////////////////////////////////////
 // HOST METRICS REPLY
 
-message HostMeticsReply {
+message HostMetricsReply {
     string hostname = 1;
     google.protobuf.Duration host_uptime = 2;
     google.protobuf.Duration service_uptime = 3;

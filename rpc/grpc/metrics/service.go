@@ -10,10 +10,12 @@ package metrics
 
 import (
 	"fmt"
+	"os"
 
-	// Framework
-	"github.com/djthorpe/gopi"
+	// Frameworks
+	gopi "github.com/djthorpe/gopi"
 	grpc "github.com/djthorpe/gopi/sys/rpc/grpc"
+	"github.com/golang/protobuf/ptypes"
 	context "golang.org/x/net/context"
 
 	// Protocol buffers
@@ -24,11 +26,13 @@ import (
 // TYPES
 
 type Service struct {
-	Server gopi.RPCServer
+	Server  gopi.RPCServer
+	Metrics gopi.Metrics
 }
 
 type service struct {
-	log gopi.Logger
+	log     gopi.Logger
+	metrics gopi.Metrics
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,10 +40,11 @@ type service struct {
 
 // Open the server
 func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<grpc.metrics.service>Open{ server=%v}", config.Server)
+	log.Debug("<grpc.metrics.service>Open{ server=%v metrics=%v }", config.Server, config.Metrics)
 
 	this := new(service)
 	this.log = log
+	this.metrics = config.Metrics
 
 	// Register service with GRPC server
 	pb.RegisterMetricsServer(config.Server.(grpc.GRPCServer).GRPCServer(), this)
@@ -70,9 +75,19 @@ func (this *service) Ping(ctx context.Context, request *pb.EmptyRequest) (*pb.Em
 	return &pb.EmptyReply{}, nil
 }
 
-func (this *service) HostMetrics(ctx context.Context, request *pb.EmptyRequest) (*pb.HostMeticsReply, error) {
-	// Return host metrics
-	return &pb.HostMeticsReply{}, nil
+func (this *service) HostMetrics(ctx context.Context, request *pb.EmptyRequest) (*pb.HostMetricsReply, error) {
+	// Obtain hostname
+	if hostname, err := os.Hostname(); err != nil {
+		return nil, err
+	} else {
+		// Return host metrics
+		reply := &pb.HostMetricsReply{
+			Hostname:      hostname,
+			HostUptime:    ptypes.DurationProto(this.metrics.UptimeHost()),
+			ServiceUptime: ptypes.DurationProto(this.metrics.UptimeApp()),
+		}
+		return reply, nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

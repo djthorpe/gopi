@@ -21,10 +21,11 @@ func init() {
 	gopi.RegisterModule(gopi.Module{
 		Name:     "rpc/service/metrics:grpc",
 		Type:     gopi.MODULE_TYPE_SERVICE,
-		Requires: []string{"rpc/server"},
+		Requires: []string{"rpc/server", "metrics"},
 		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
 			return gopi.Open(Service{
-				Server: app.ModuleInstance("rpc/server").(gopi.RPCServer),
+				Server:  app.ModuleInstance("rpc/server").(gopi.RPCServer),
+				Metrics: app.ModuleInstance("metrics").(gopi.Metrics),
 			}, app.Logger)
 		},
 	})

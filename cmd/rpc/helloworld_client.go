@@ -87,8 +87,11 @@ func RunMetrics(app *gopi.AppInstance, conn gopi.RPCClientConn) error {
 		return gopi.ErrAppError
 	} else if err := client.Ping(); err != nil {
 		return err
+	} else if metrics, err := client.HostMetrics(); err != nil {
+		return err
 	} else {
 		fmt.Printf("Ping returned without error for connection %v\n", conn.Name())
+		fmt.Printf("Metrics for remote host are: %v\n", metrics)
 		return nil
 	}
 }
