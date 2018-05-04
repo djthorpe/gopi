@@ -14,9 +14,7 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"reflect"
 	"strings"
-	"sync"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
@@ -24,7 +22,6 @@ import (
 	evt "github.com/djthorpe/gopi/util/event"
 	grpc "google.golang.org/grpc"
 	credentials "google.golang.org/grpc/credentials"
-	grpclog "google.golang.org/grpc/grpclog"
 	reflection "google.golang.org/grpc/reflection"
 )
 
@@ -42,14 +39,6 @@ type server struct {
 	addr   net.Addr
 	pubsub *evt.PubSub
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// GLOBAL VARIABLES
-
-var (
-	grpclog_once sync.Once
-	grpclogger   grpclog.LoggerV2
-)
 
 ////////////////////////////////////////////////////////////////////////////////
 // SERVER OPEN AND CLOSE
@@ -79,13 +68,6 @@ func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
 
 	// Register reflection service on gRPC server.
 	reflection.Register(this.server)
-
-	// Set GRPC logger
-	grpclog_once.Do(func() {
-		// TODO: Create grpclogger if it doesn't yet exist
-		// then route through to 'log'
-		//grpclog.SetLoggerV2(grpclogger)
-	})
 
 	// success
 	return this, nil
@@ -150,31 +132,18 @@ func (this *server) Stop(halt bool) error {
 	return nil
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// PROPERTIES
+
 // Addr returns the currently listening address or will return
 // nil if the server is not serving requests
 func (this *server) Addr() net.Addr {
 	return this.addr
 }
 
-func (this *server) Register(service gopi.RPCService) error {
-	this.log.Debug2("<grpc.Server>Register( service=%v )", service)
-	if this.addr != nil {
-		this.log.Error("Register: Unable to register whilst server is started")
-		return gopi.ErrOutOfOrder
-	}
-
-	// Register service with GRPC
-	if callback := service.GRPCHook(); callback.Kind() != reflect.Func {
-		return errors.New("Expected callback to be a function")
-	} else {
-		callback.Call([]reflect.Value{
-			reflect.ValueOf(this.server),
-			reflect.ValueOf(service),
-		})
-	}
-
-	// Success
-	return nil
+// Return the gRPC server object
+func (this *server) GRPCServer() *grpc.Server {
+	return this.server
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,4 +1,6 @@
 syntax = "proto3";
+package mutablelogic;
+option go_package = "helloworld";
 
 // The greeting service definition
 service Greeter {

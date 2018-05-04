@@ -25,7 +25,8 @@ import (
 	_ "github.com/djthorpe/gopi/sys/rpc/mdns"
 
 	// RPC Clients
-	hw "github.com/djthorpe/gopi/cmd/rpc/helloworld"
+	hw "github.com/djthorpe/gopi/rpc/grpc/helloworld"
+	metrics "github.com/djthorpe/gopi/rpc/grpc/metrics"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,7 +35,6 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 
 	// Client Pool
 	pool := app.ModuleInstance("rpc/clientpool").(gopi.RPCClientPool)
-	name, _ := app.AppFlags.GetString("name")
 	addr, _ := app.AppFlags.GetString("addr")
 
 	// Lookup any service record for application
@@ -48,19 +48,15 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 	} else if conn, err := pool.Connect(records[0], 0); err != nil {
 		done <- gopi.DONE
 		return err
-	} else if client_ := pool.NewClient("mutablelogic.Helloworld", conn); client_ == nil {
-		done <- gopi.DONE
-		return gopi.ErrAppError
-	} else if client, ok := client_.(*hw.MyGreeterClient); ok == false {
-		fmt.Println("YY")
-		done <- gopi.DONE
-		return gopi.ErrAppError
-	} else if message, err := client.SayHello(name); err != nil {
+	} else if err := RunHelloworld(app, conn); err != nil {
 		done <- gopi.DONE
 		return err
-	} else {
-		fmt.Printf("%v says '%v'\n\n", conn.Name(), message)
-		conn.Disconnect()
+	} else if err := RunMetrics(app, conn); err != nil {
+		done <- gopi.DONE
+		return err
+	} else if err := pool.Disconnect(conn); err != nil {
+		done <- gopi.DONE
+		return err
 	}
 
 	// Success
@@ -68,11 +64,40 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 	return nil
 }
 
+func RunHelloworld(app *gopi.AppInstance, conn gopi.RPCClientConn) error {
+	pool := app.ModuleInstance("rpc/clientpool").(gopi.RPCClientPool)
+	name, _ := app.AppFlags.GetString("name")
+	if client_ := pool.NewClient("mutablelogic.Helloworld", conn); client_ == nil {
+		return gopi.ErrAppError
+	} else if client, ok := client_.(*hw.Client); ok == false {
+		return gopi.ErrAppError
+	} else if message, err := client.SayHello(name); err != nil {
+		return err
+	} else {
+		fmt.Printf("%v says '%v'\n\n", conn.Name(), message)
+		return nil
+	}
+}
+
+func RunMetrics(app *gopi.AppInstance, conn gopi.RPCClientConn) error {
+	pool := app.ModuleInstance("rpc/clientpool").(gopi.RPCClientPool)
+	if client_ := pool.NewClient("mutablelogic.Metrics", conn); client_ == nil {
+		return gopi.ErrAppError
+	} else if client, ok := client_.(*metrics.Client); ok == false {
+		return gopi.ErrAppError
+	} else if err := client.Ping(); err != nil {
+		return err
+	} else {
+		fmt.Printf("Ping returned without error for connection %v\n", conn.Name())
+		return nil
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
 	// Create the configuration
-	config := gopi.NewAppConfig("rpc/client/helloworld:grpc")
+	config := gopi.NewAppConfig("rpc/client/helloworld:grpc", "rpc/client/metrics:grpc")
 
 	if cur, err := user.Current(); err == nil {
 		config.AppFlags.FlagString("name", cur.Name, "Your name")

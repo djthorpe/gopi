@@ -13,11 +13,12 @@ import (
 	"fmt"
 	"reflect"
 
-	// Framework
+	// Frameworks
 	"github.com/djthorpe/gopi"
+	"github.com/djthorpe/gopi/sys/rpc/grpc"
 
-	// Protocol Buffer definition
-	pb "github.com/djthorpe/gopi/protobuf/helloworld"
+	// Protocol buffers
+	pb "github.com/djthorpe/gopi/rpc/protobuf/helloworld"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,8 +42,8 @@ func (config Service) Open(log gopi.Logger) (gopi.Driver, error) {
 	this := new(service)
 	this.log = log
 
-	// Register service with server
-	config.Server.Register(this)
+	// Register service with GRPC server
+	pb.RegisterGreeterServer(config.Server.(grpc.GRPCServer).GRPCServer(), this)
 
 	// Success
 	return this, nil

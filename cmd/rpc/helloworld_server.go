@@ -21,14 +21,15 @@ import (
 	_ "github.com/djthorpe/gopi/sys/rpc/mdns"
 
 	// RPC Services
-	_ "github.com/djthorpe/gopi/cmd/rpc/helloworld"
+	_ "github.com/djthorpe/gopi/rpc/grpc/helloworld"
+	_ "github.com/djthorpe/gopi/rpc/grpc/metrics"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
 	// Create the configuration
-	config := gopi.NewAppConfig("rpc/service/helloworld:grpc")
+	config := gopi.NewAppConfig("rpc/service/helloworld:grpc", "rpc/service/metrics:grpc")
 
 	// Set the RPCServiceRecord for server discovery
 	config.Service = "helloworld"

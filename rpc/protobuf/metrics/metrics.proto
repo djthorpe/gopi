@@ -1,0 +1,33 @@
+syntax = "proto3";
+package mutablelogic;
+option go_package = "metrics";
+
+import "google/protobuf/duration.proto";
+
+/////////////////////////////////////////////////////////////////////
+// SERVICES
+
+service Metrics {
+    // Simple ping method to show server is "up"
+    rpc Ping (EmptyRequest) returns (EmptyReply);
+
+    // Return host metrics
+    //rpc HostMetrics (EmptyRequest) returns (HostMeticsReply);
+
+}
+
+/////////////////////////////////////////////////////////////////////
+// EMPTY REQUEST AND REPLY
+
+message EmptyRequest { }
+message EmptyReply { }
+
+/////////////////////////////////////////////////////////////////////
+// HOST METRICS REPLY
+
+message HostMeticsReply {
+    string hostname = 1;
+    google.protobuf.Duration host_uptime = 2;
+    google.protobuf.Duration service_uptime = 3;
+}
+

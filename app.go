@@ -431,7 +431,8 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 	}
 
 	// Set by type. Currently returns an error if there is more than one module with the same type
-	if module.Type != MODULE_TYPE_NONE && module.Type != MODULE_TYPE_OTHER {
+	// Allows multiple modules accessed by name if other, service or client
+	if module.Type != MODULE_TYPE_NONE && module.Type != MODULE_TYPE_OTHER && module.Type != MODULE_TYPE_SERVICE && module.Type != MODULE_TYPE_CLIENT {
 		if _, exists := this.bytype[module.Type]; exists {
 			return fmt.Errorf("setModuleInstance: Duplicate module with type '%v'", module.Type)
 		} else {

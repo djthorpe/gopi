@@ -32,15 +32,6 @@ type ClientConn struct {
 	Timeout    time.Duration
 }
 
-// Interface to the gRPC version of the RPCClientConn
-// which is needed by gRPC client implementations
-type GRPCClientConn interface {
-	gopi.RPCClientConn
-
-	// Return the gRPC ClientConn object
-	Conn() *grpc.ClientConn
-}
-
 type clientconn struct {
 	log        gopi.Logger
 	name       string
@@ -133,6 +124,9 @@ func (this *clientconn) Disconnect() error {
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// RETURN PROPERTIES
+
 func (this *clientconn) Services() ([]string, error) {
 	this.log.Debug2("<grpc.clientconn>Services{}")
 	if this.conn == nil {
@@ -162,7 +156,7 @@ func (this *clientconn) Connected() bool {
 	return this.conn != nil
 }
 
-func (this *clientconn) Conn() *grpc.ClientConn {
+func (this *clientconn) GRPCConn() *grpc.ClientConn {
 	return this.conn
 }
 

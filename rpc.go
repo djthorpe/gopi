@@ -12,7 +12,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -71,10 +70,6 @@ type RPCServiceDiscovery interface {
 type RPCService interface {
 	Driver
 
-	// Returns the registration function...actually the reflect.ValueOf()
-	// when using the GRPC version of the RPC server
-	GRPCHook() reflect.Value
-
 	// CancelRequests is called by the server to gracefully end any
 	// on-going streaming requests, but before the service is shutdown
 	CancelRequests() error
@@ -85,9 +80,6 @@ type RPCService interface {
 type RPCServer interface {
 	Driver
 	Publisher
-
-	// Register a module to act as an RPC service
-	Register(service RPCService) error
 
 	// Starts an RPC server in currently running thread.
 	// The method will not return until Stop is called
@@ -136,10 +128,6 @@ type RPCClientPool interface {
 type RPCClientConn interface {
 	Driver
 
-	// Connection and disconnection, plus list of available services
-	Connect() error
-	Disconnect() error
-
 	// Mutex lock for the connection
 	Lock()
 	Unlock()
@@ -152,7 +140,8 @@ type RPCClientConn interface {
 	Services() ([]string, error)
 }
 
-// RPCClient contains a set of RPC methods
+// RPCClient contains the set of RPC methods. Currently
+// anything can be an RPCClient
 type RPCClient interface{}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +153,7 @@ const (
 	RPC_EVENT_SERVER_STOPPED
 	RPC_EVENT_SERVICE_RECORD
 	RPC_EVENT_CLIENT_CONNECTED
-	RPC_EVENT_CLIENT_DISCONNECT
+	RPC_EVENT_CLIENT_DISCONNECTED
 )
 
 const (
@@ -225,8 +214,8 @@ func (t RPCEventType) String() string {
 		return "RPC_EVENT_SERVICE_RECORD"
 	case RPC_EVENT_CLIENT_CONNECTED:
 		return "RPC_EVENT_CLIENT_CONNECTED"
-	case RPC_EVENT_CLIENT_DISCONNECT:
-		return "RPC_EVENT_CLIENT_DISCONNECT"
+	case RPC_EVENT_CLIENT_DISCONNECTED:
+		return "RPC_EVENT_CLIENT_DISCONNECTED"
 	default:
 		return "[?? Invalid RPCEventType value]"
 	}

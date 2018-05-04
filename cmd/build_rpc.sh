@@ -25,9 +25,11 @@ fi
 ##############################################################
 # Build protobuf go extension
 
-RPC_EXAMPLES=""
-if [ "${PROTOC}" != "" ] && [ -x ${PROTOC} ] ; then
-  RPC_EXAMPLES="1"
+PROTOC_GEN_GO=`which protoc-gen-go`
+echo 
+if [ ! -x "${PROTOC_GEN_GO}" ] ; then
+  echo "go get -u github.com/golang/protobuf/protoc-gen-go" >&2
+  go get -u github.com/golang/protobuf/protoc-gen-go || exit 1
 fi
 
 ##############################################################
@@ -39,15 +41,12 @@ COMMANDS=(
   rpc/rpc_discovery.go
 )
 
-if [ "${RPC_EXAMPLES}X" != "X" ] ; then
-  echo "go generate github.com/djthorpe/gopi/protobuf"
-  go generate -x github.com/djthorpe/gopi/protobuf || exit 1
-  echo "go get -u github.com/golang/protobuf/protoc-gen-go" >&2
-  go get -u github.com/golang/protobuf/protoc-gen-go || exit 1
-  for COMMAND in ${COMMANDS[@]}; do
-    echo "go install cmd/${COMMAND}"
-    go install -ldflags "${LDFLAGS}" -tags "${TAGS}" "cmd/${COMMAND}" || exit -1
-  done
-fi
+echo "go generate github.com/djthorpe/gopi/rpc/protobuf"
+go generate -x github.com/djthorpe/gopi/rpc/protobuf || exit 1
+for COMMAND in ${COMMANDS[@]}; do
+  echo "go install cmd/${COMMAND}"
+  go install -ldflags "${LDFLAGS}" -tags "${TAGS}" "cmd/${COMMAND}" || exit -1
+done
+
 
 

@@ -59,7 +59,7 @@ func (config Config) Open(log gopi.Logger) (gopi.Driver, error) {
 		this.domain = config.Domain
 	}
 
-	log.Debug("sys.rpc.mDNS.Open{ domain=%v }", this.domain)
+	log.Debug("<sys.rpc.mdns>Open{ domain='%v' }", this.domain)
 
 	this.servers = make([]*zeroconf.Server, 0, 1)
 
@@ -78,7 +78,7 @@ func (config Config) Open(log gopi.Logger) (gopi.Driver, error) {
 
 // Close discovery object
 func (this *driver) Close() error {
-	this.log.Debug("sys.rpc.mDNS.Close{ domain=%v }", this.domain)
+	this.log.Debug("<sys.rpc.mdns>Close{ domain='%v' }", this.domain)
 
 	// Close servers
 	for _, server := range this.servers {
@@ -102,6 +102,7 @@ func (this *driver) Close() error {
 
 // Register a service and announce the service when queries occur
 func (this *driver) Register(service *gopi.RPCServiceRecord) error {
+	this.log.Debug2("<sys.rpc.mdns>Register{ service=%v }", service)
 	if server, err := zeroconf.Register(service.Name, service.Type, this.domain, int(service.Port), service.Text, nil); err != nil {
 		return err
 	} else {
@@ -113,6 +114,7 @@ func (this *driver) Register(service *gopi.RPCServiceRecord) error {
 // Browse will find service entries, will block until ctx timeout
 // or cancel
 func (this *driver) Browse(ctx context.Context, serviceType string) error {
+	this.log.Debug2("<sys.rpc.mdns>Browse{ service_type='%v' }", serviceType)
 	entries := make(chan *zeroconf.ServiceEntry)
 	if err := this.resolver.Browse(ctx, serviceType, this.domain, entries); err != nil {
 		return err
@@ -159,5 +161,5 @@ func (this *driver) Emit(record *gopi.RPCServiceRecord) {
 // STRINGIFY
 
 func (this *driver) String() string {
-	return fmt.Sprintf("sys.mdns{ domain=\"%v\" registrations=%v }", this.domain, "TODO")
+	return fmt.Sprintf("<sys.rpc.mdns>{ domain=\"%v\" registrations=%v }", this.domain, this.servers)
 }

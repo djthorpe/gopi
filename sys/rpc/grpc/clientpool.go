@@ -154,7 +154,7 @@ func (this *clientpool) Connect(service *gopi.RPCServiceRecord, flags gopi.RPCFl
 		Timeout:    this.timeout,
 	}, this.log); err != nil {
 		return nil, err
-	} else if clientconn, ok := clientconn_.(gopi.RPCClientConn); ok == false {
+	} else if clientconn, ok := clientconn_.(*clientconn); ok == false {
 		return nil, gopi.ErrOutOfOrder
 	} else {
 		// Do connection
@@ -174,9 +174,9 @@ func (this *clientpool) Disconnect(conn gopi.RPCClientConn) error {
 	this.log.Debug2("<grpc.clientpool>Disconnect{ conn=%v }", conn)
 
 	// Emit a disconnect event - event happens just before disconnect occurs
-	this.emit(rpc.NewEvent(conn, gopi.RPC_EVENT_CLIENT_DISCONNECT, nil))
+	this.emit(rpc.NewEvent(conn, gopi.RPC_EVENT_CLIENT_DISCONNECTED, nil))
 
-	return conn.Disconnect()
+	return conn.(*clientconn).Disconnect()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
