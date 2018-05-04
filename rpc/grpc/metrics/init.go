@@ -30,6 +30,7 @@ func init() {
 		},
 	})
 
+	// Register the client
 	gopi.RegisterModule(gopi.Module{
 		Name:     "rpc/client/metrics:grpc",
 		Type:     gopi.MODULE_TYPE_CLIENT,

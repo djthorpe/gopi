@@ -10,7 +10,9 @@
 package grpc
 
 import (
-	"github.com/djthorpe/gopi"
+	// Frameworks
+	gopi "github.com/djthorpe/gopi"
+	grpc "google.golang.org/grpc"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,7 +32,12 @@ func init() {
 			port, _ := app.AppFlags.GetUint("rpc.port")
 			key, _ := app.AppFlags.GetString("rpc.sslkey")
 			cert, _ := app.AppFlags.GetString("rpc.sslcert")
-			return gopi.Open(Server{Port: port, SSLCertificate: cert, SSLKey: key}, app.Logger)
+			return gopi.Open(Server{
+				Port:           port,
+				SSLCertificate: cert,
+				SSLKey:         key,
+				ServerOption:   []grpc.ServerOption{},
+			}, app.Logger)
 		},
 	})
 

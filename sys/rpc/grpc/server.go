@@ -30,6 +30,7 @@ type Server struct {
 	SSLKey         string
 	SSLCertificate string
 	Port           uint
+	ServerOption   []grpc.ServerOption
 }
 
 type server struct {
@@ -55,10 +56,10 @@ func (config Server) Open(log gopi.Logger) (gopi.Driver, error) {
 		if creds, err := credentials.NewServerTLSFromFile(config.SSLCertificate, config.SSLKey); err != nil {
 			return nil, err
 		} else {
-			this.server = grpc.NewServer(grpc.Creds(creds))
+			this.server = grpc.NewServer(append(config.ServerOption, grpc.Creds(creds))...)
 		}
 	} else {
-		this.server = grpc.NewServer()
+		this.server = grpc.NewServer(config.ServerOption...)
 	}
 
 	this.addr = nil

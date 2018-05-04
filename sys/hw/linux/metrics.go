@@ -62,7 +62,7 @@ func (this *metrics) Close() error {
 
 func (this *metrics) UptimeHost() time.Duration {
 	if info := this.sysinfo(); info != nil {
-		return time.Second * info.Uptime
+		return time.Second * time.Duration(info.Uptime)
 	} else {
 		return 0
 	}
