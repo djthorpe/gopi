@@ -73,6 +73,17 @@ func (this *metrics) UptimeApp() time.Duration {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// RETURN LOAD AVERAGES
+
+func (this *metrics) LoadAverage() (float64, float64, float64) {
+	if info := this.sysinfo(); info != nil {
+		return float64(info.Loads[0]) / float64(1<<16), float64(info.Loads[1]) / float64(1<<16), float64(info.Loads[2]) / float64(1<<16)
+	} else {
+		return 0, 0, 0
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // GET SYSTEM INFO STRUCTURE
 
 func (this *metrics) sysinfo() *syscall.Sysinfo_t {
