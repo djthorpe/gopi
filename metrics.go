@@ -12,6 +12,25 @@ import (
 	"time"
 )
 
+/////////////////////////////////////////////////////////////////////
+// TYPES
+
+type Metric struct {
+	Rate  MetricRate
+	Type  MetricType
+	Name  string
+	Mean  float64 // Mean value per hour
+	Total uint    // Total over the past hour
+}
+
+type (
+	MetricRate uint
+	MetricType uint
+)
+
+/////////////////////////////////////////////////////////////////////
+// INTERFACE
+
 // Metrics returns various metrics for host and
 // custom metrics
 type Metrics interface {
@@ -23,4 +42,27 @@ type Metrics interface {
 
 	// Load Average (1, 5 and 15 minutes)
 	LoadAverage() (float64, float64, float64)
+
+	// Return counter channel, which when you send a value on
+	// it will increment a counter
+	//NewCounter(MetricType, MetricRate, string) (chan<- uint, error)
+
+	// Return all metrics of a particular type, or METRIC_TYPE_NONE
+	// for all metrics
+	//Metrics(MetricType) []*Metric
 }
+
+/////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	METRIC_RATE_NONE MetricRate = iota
+	METRIC_RATE_SECOND
+	METRIC_RATE_MINUTE
+	METRIC_RATE_HOUR
+	METRIC_RATE_DAY
+)
+
+const (
+	METRIC_TYPE_NONE MetricType = iota
+)

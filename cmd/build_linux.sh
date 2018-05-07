@@ -33,6 +33,7 @@ COMMANDS=(
     input/input_tester.go
     lirc/lirc_receive.go
     rpc/rpc_discovery.go
+    hw/metrics_list.go
 )
 
 for COMMAND in ${COMMANDS[@]}; do

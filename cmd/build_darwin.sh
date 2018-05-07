@@ -37,6 +37,7 @@ done
 # Install
 
 COMMANDS=(
+    hw/metrics_list.go
     helloworld/helloworld.go
     timer/timer_tester.go
     rpc/helloworld_server.go
