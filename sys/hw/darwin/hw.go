@@ -12,6 +12,9 @@
 package darwin
 
 import (
+	"bytes"
+	"encoding/binary"
+	"syscall"
 	"unsafe"
 
 	// Frameworks
@@ -23,6 +26,7 @@ import (
 
 /*
 	#cgo LDFLAGS: -framework CoreFoundation -framework IOKit
+	#include <sys/utsname.h>
 	#include <stdio.h>
 	#include <CoreFoundation/CoreFoundation.h>
 	#include <IOKit/IOKitLib.h>
@@ -88,7 +92,13 @@ func (this *hardware) Close() error {
 
 // GetName returns the name of the hardware
 func (this *hardware) Name() string {
-	return "Darwin"
+	model := make([]byte, 80)
+	if err := sysctlbyname("hw.model", model); err != nil {
+		this.log.Error("<sys.hw.darwin.Metrics>Name: %v", err)
+		return ""
+	} else {
+		return string(model)
+	}
 }
 
 // SerialNumber returns the serial number of the hardware, if available
@@ -106,4 +116,29 @@ func (this *hardware) SerialNumber() string {
 // Return the number of displays which can be opened
 func (this *hardware) NumberOfDisplays() uint {
 	return 0
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GET SYSTEM INFO
+
+// Generic Sysctl buffer unmarshalling
+// from https://github.com/cloudfoundry/gosigar/blob/master/sigar_darwin.go
+func sysctlbyname(name string, data interface{}) error {
+	if val, err := syscall.Sysctl(name); err != nil {
+		return err
+	} else {
+		buf := []byte(val)
+		switch v := data.(type) {
+		case *uint64:
+			*v = *(*uint64)(unsafe.Pointer(&buf[0]))
+			return nil
+		case []byte:
+			for i := 0; i < len(val) && i < len(v); i++ {
+				v[i] = val[i]
+			}
+			return nil
+		}
+		bbuf := bytes.NewBuffer([]byte(val))
+		return binary.Read(bbuf, binary.LittleEndian, data)
+	}
 }
