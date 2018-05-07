@@ -24,6 +24,14 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// CGO
+
+/*
+	#include <stdlib.h>
+*/
+import "C"
+
+////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type Metrics struct{}
@@ -45,7 +53,7 @@ var (
 
 // Open creates a new metrics object, returns error if not possible
 func (config Metrics) Open(log gopi.Logger) (gopi.Driver, error) {
-	log.Debug("<sys.hw.linux.Metrics>Open{}")
+	log.Debug("<sys.hw.darwin.Metrics>Open{}")
 
 	// create new driver
 	this := new(metrics)
@@ -57,7 +65,7 @@ func (config Metrics) Open(log gopi.Logger) (gopi.Driver, error) {
 
 // Close connection
 func (this *metrics) Close() error {
-	this.log.Debug("<sys.hw.linux.Metrics>Close{}")
+	this.log.Debug("<sys.hw.darwin.Metrics>Close{}")
 	return nil
 }
 
@@ -68,7 +76,7 @@ func (this *metrics) UptimeHost() time.Duration {
 	tv := syscall.Timeval32{}
 
 	if err := sysctlbyname("kern.boottime", &tv); err != nil {
-		this.log.Error("<sys.hw.linux.Metrics>UptimeHost: %v", err)
+		this.log.Error("<sys.hw.darwin.Metrics>UptimeHost: %v", err)
 		return 0
 	} else {
 		return time.Since(time.Unix(int64(tv.Sec), int64(tv.Usec)*1000))
@@ -77,6 +85,19 @@ func (this *metrics) UptimeHost() time.Duration {
 
 func (this *metrics) UptimeApp() time.Duration {
 	return time.Since(ts)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// LOAD AVERAGES
+
+func (this *metrics) LoadAverage() (float64, float64, float64) {
+	avg := []C.double{0, 0, 0}
+	if C.getloadavg(&avg[0], C.int(len(avg))) == C.int(-1) {
+		this.log.Error("<sys.hw.darwin.Metrics>LoadAverage: Unavailable")
+		return 0, 0, 0
+	} else {
+		return float64(avg[0]), float64(avg[1]), float64(avg[2])
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -103,5 +124,7 @@ func sysctlbyname(name string, data interface{}) error {
 // STRINGIFY
 
 func (this *metrics) String() string {
-	return fmt.Sprintf("<sys.hw.linux.Metrics>{}")
+	var l [3]float64
+	l[0], l[1], l[2] = this.LoadAverage()
+	return fmt.Sprintf("<sys.hw.darwin.Metrics>{ uptime_host=%v uptime_app=%v load_average=%v }", this.UptimeHost(), this.UptimeHost(), l)
 }

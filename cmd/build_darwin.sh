@@ -25,11 +25,12 @@ fi
 # Generate
 
 GENERATE=(
-    rpc/rpc_server.go
+    rpc/protobuf/protobuf.go
 )
 
 for COMMAND in ${GENERATE[@]}; do
-    echo "go generate cmd/${COMMAND}"
+    echo "go generate ${COMMAND}"
+    go generate -x "${COMMAND}"
 done
 
 ##############################################################
@@ -38,7 +39,8 @@ done
 COMMANDS=(
     helloworld/helloworld.go
     timer/timer_tester.go
-    rpc/rpc_server.go
+    rpc/helloworld_server.go
+    rpc/helloworld_client.go
 )
 
 for COMMAND in ${COMMANDS[@]}; do
