@@ -396,7 +396,44 @@ in the rest of this guide.
 
 ## Logging and Debugging
 
-TODO
+A Logger is passed to every module in the `Open` method, and can be accessed from the `AppInstance` as the
+`Logger` member function. The interface to the logger is as follows:
+
+```
+type Logger interface {
+	gopi.Driver
+
+	Fatal(format string, v ...interface{}) error
+	Error(format string, v ...interface{}) error
+	Warn(format string, v ...interface{})
+	Info(format string, v ...interface{})
+	Debug(format string, v ...interface{})
+	Debug2(format string, v ...interface{})
+
+	IsDebug() bool
+}
+```
+
+You need to include a logging module in every application you write or else your application won't run;
+simply import 'github.com/djthorpe/gopi/sys/logger' anonymously in your main application file to use the
+standard logger, or you can write your own which conforms to the logging interface.
+
+When you invoke an application on the command line, the following sets of flags output various levels of
+logging:
+
+  * With `-debug -verbose` Debug2, Debug, Info, Warn, Error and Fatal messages
+  * With `-debug` Debug, Info, Warn, Error and Fatal messages
+  * With `-verbose` Info, Fatal, Error and Warn messages
+  * With no logging flags, Fatal, Error and Warn messages
+
+The standard logging module also allows you to log to a file using the `-log.file` command line flag. To log
+in your own module code, I recommend you:
+
+  * Use the 'Debug' level to report `Open` and `Close` having been called
+  * Use the `Debug2` level to remote other methods being called
+  * Use `Info` level in your main application to report information passed around
+  * Use `Warn` for recoverable errors in your main application
+  * `Fatal` is used when panic conditions are caught
 
 ## What's next?
 
