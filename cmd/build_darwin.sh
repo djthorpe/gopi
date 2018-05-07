@@ -37,11 +37,13 @@ done
 # Install
 
 COMMANDS=(
-    hw/metrics_list.go
     helloworld/helloworld.go
     timer/timer_tester.go
+    hw/hw_list.go
+    hw/metrics_list.go
     rpc/helloworld_server.go
     rpc/helloworld_client.go
+    rpc/rpc_discovery.go
 )
 
 for COMMAND in ${COMMANDS[@]}; do

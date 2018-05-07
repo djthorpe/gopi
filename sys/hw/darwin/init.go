@@ -20,6 +20,15 @@ import (
 // INIT
 
 func init() {
+	// Register hardware
+	gopi.RegisterModule(gopi.Module{
+		Name: "darwin/hw",
+		Type: gopi.MODULE_TYPE_HARDWARE,
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			return gopi.Open(Hardware{}, app.Logger)
+		},
+	})
+
 	// Register Metrics
 	gopi.RegisterModule(gopi.Module{
 		Name: "metrics",

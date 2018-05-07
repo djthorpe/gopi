@@ -19,7 +19,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 
 	// Modules
-	"./hw_sys"
+	_ "github.com/djthorpe/gopi/sys/hw/darwin"
 	_ "github.com/djthorpe/gopi/sys/logger"
 )
 
@@ -57,7 +57,7 @@ func mainLoop(app *gopi.AppInstance, done chan<- struct{}) error {
 
 func main() {
 	// Create the configuration, load the gpio instance
-	config := gopi.NewAppConfig(hw_sys.MODULE_NAMES)
+	config := gopi.NewAppConfig("hw")
 
 	// Run the command line tool
 	os.Exit(gopi.CommandLineTool(config, mainLoop))
