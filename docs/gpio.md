@@ -198,6 +198,7 @@ type SPI interface {
 
 ### The LIRC interface
 
+```
 type LIRC interface {
 	Driver
 	Publisher
@@ -222,3 +223,4 @@ type LIRC interface {
 	// Send Pulse Mode, values are in milliseconds
 	PulseSend(values []uint32) error
 }
+```
