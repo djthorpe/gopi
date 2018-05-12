@@ -4,7 +4,7 @@
 This repository implements an application framework for the Go 
 programming language ("golang"). Ultimately it targets the 
 Raspberry Pi platform running Linux to utilize many of the features 
-of the platform, but it's applicable to any platform on which golang runs.
+of the platform, but it's applicable to any platform where golang runs.
 
 The scope of this framework is as  follows:
 

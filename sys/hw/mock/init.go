@@ -50,4 +50,14 @@ func init() {
 			return gopi.Open(GPIO{}, app.Logger)
 		},
 	})
+
+	// Register metrics
+	gopi.RegisterModule(gopi.Module{
+		Name: "metrics",
+		Type: gopi.MODULE_TYPE_OTHER,
+		New: func(app *gopi.AppInstance) (gopi.Driver, error) {
+			return gopi.Open(Metrics{}, app.Logger)
+		},
+	})
+
 }
