@@ -52,14 +52,14 @@ type InputDevice interface {
 	/*
 		// Set absolute current cursor position
 		SetPosition(Point)
-
-		// Get key states (caps lock, shift, scroll lock, num lock, etc)
-		KeyState() KeyState
-
-		// Set key state (or states) to on or off. Will return error
-		// for key states which are not modifiable
-		SetKeyState(flags KeyState, state bool) error
 	*/
+
+	// Get key states (caps lock, shift, scroll lock, num lock, etc)
+	KeyState() KeyState
+
+	// Set key state (or states) to on or off. Will return error
+	// for key states which are not modifiable
+	SetKeyState(flags KeyState, state bool) error
 
 	// Returns true if device matches conditions
 	Matches(string, InputDeviceType, InputDeviceBus) bool
