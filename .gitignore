@@ -30,3 +30,5 @@ _testmain.go
 *~
 .vscode
 *.pb.go
+go.sum
+
