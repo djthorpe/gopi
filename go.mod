@@ -1,1 +1,1 @@
-module github.com/djthorpe/gopi/v2
+module github.com/djthorpe/gopi
