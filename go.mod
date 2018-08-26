@@ -1,4 +1,4 @@
-module github.com/djthorpe/gopi
+module github.com/djthorpe/gopi/v2
 
 require (
 	github.com/mattn/go-runewidth v0.0.3 // indirect
