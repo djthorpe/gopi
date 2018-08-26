@@ -49,10 +49,9 @@ type InputDevice interface {
 
 	// Position of cursor (for mouse, joystick and touchscreen devices)
 	Position() Point
-	/*
-		// Set absolute current cursor position
-		SetPosition(Point)
-	*/
+
+	// Set absolute current cursor position
+	SetPosition(Point)
 
 	// Get key states (caps lock, shift, scroll lock, num lock, etc)
 	KeyState() KeyState
