@@ -54,9 +54,10 @@ func CommandLineTool(config AppConfig, main_task MainTask, background_tasks ...B
 // function and ensure to import rpc/server and rpc/discovery modules anonymously
 // into your application as well as all your RPC services
 func RPCServerTool(config AppConfig, background_tasks ...BackgroundTask) int {
-	// Append on "rpc/server" and "rpc/discovery" onto your module configurations
+	// Append on "rpc/server" onto module configuration
+	// you can also add rpc/discovery to register the server
 	var err error
-	if config.Modules, err = AppendModulesByName(config.Modules, "rpc/server", "rpc/discovery"); err != nil {
+	if config.Modules, err = AppendModulesByName(config.Modules, "rpc/server"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return -1
 	}
@@ -148,9 +149,9 @@ func bgRPCDiscovery(app *AppInstance, done <-chan struct{}) error {
 	if server, ok := app.ModuleInstance("rpc/server").(RPCServer); server == nil || ok == false {
 		start_rpc <- DONE
 		return errors.New("rpc/server: missing or invalid")
-	} else if discovery, ok := app.ModuleInstance("rpc/discovery").(RPCServiceDiscovery); discovery == nil || ok == false {
+	} else if discovery, ok := app.ModuleInstance("rpc/discovery").(RPCServiceDiscovery); ok == false {
 		start_rpc <- DONE
-		return errors.New("rpc/discovery: missing or invalid")
+		return errors.New("rpc/discovery: invalid")
 	} else {
 		// Listen for server started events
 		events := server.Subscribe()
@@ -166,8 +167,10 @@ func bgRPCDiscovery(app *AppInstance, done <-chan struct{}) error {
 						app.Logger.Info("rpc/server: Listening on %v", server.Addr())
 						// Register service
 						if service := server.Service(app.service); service != nil {
-							if err := discovery.Register(service); err != nil {
-								app.Logger.Error("rpc/discovery: %v", err)
+							if discovery != nil {
+								if err := discovery.Register(service); err != nil {
+									app.Logger.Error("rpc/discovery: %v", err)
+								}
 							}
 						}
 					}

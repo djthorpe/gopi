@@ -64,24 +64,24 @@ type module_array struct {
 const (
 	MODULE_TYPE_NONE ModuleType = iota
 	MODULE_TYPE_OTHER
-	MODULE_TYPE_LOGGER   // Logging module
-	MODULE_TYPE_HARDWARE // Hardware capabilities and monitoring
-	MODULE_TYPE_DISPLAY  // Displays
-	MODULE_TYPE_GRAPHICS // Graphics (Graphics Manager, Surfaces, Bitmaps)
-	MODULE_TYPE_FONTS    // Font Manager & Faces
-	MODULE_TYPE_VECTOR   // 2D Vector graphics
-	MODULE_TYPE_OPENGL   // 3D Graphics
-	MODULE_TYPE_LAYOUT   // Flex 2D Rectangular Layout
-	MODULE_TYPE_GPIO     // GPIO Hardware interface
-	MODULE_TYPE_I2C      // I2C Hardware interface
-	MODULE_TYPE_SPI      // SPI Hardware interface
-	MODULE_TYPE_INPUT    // Input manager & devices
-	MODULE_TYPE_MDNS     // DNS Service Discovery
-	MODULE_TYPE_TIMER    // Timer module
-	MODULE_TYPE_LIRC     // LIRC module
-	MODULE_TYPE_SERVICE  // RPC Service
-	MODULE_TYPE_CLIENT   // RPC Client
-	MODULE_TYPE_KEYMAP   // Key Mapper
+	MODULE_TYPE_LOGGER    // Logging module
+	MODULE_TYPE_HARDWARE  // Hardware capabilities and monitoring
+	MODULE_TYPE_DISPLAY   // Displays
+	MODULE_TYPE_GRAPHICS  // Graphics (Graphics Manager, Surfaces, Bitmaps)
+	MODULE_TYPE_FONTS     // Font Manager & Faces
+	MODULE_TYPE_VECTOR    // 2D Vector graphics
+	MODULE_TYPE_OPENGL    // 3D Graphics
+	MODULE_TYPE_LAYOUT    // Flex 2D Rectangular Layout
+	MODULE_TYPE_GPIO      // GPIO Hardware interface
+	MODULE_TYPE_I2C       // I2C Hardware interface
+	MODULE_TYPE_SPI       // SPI Hardware interface
+	MODULE_TYPE_INPUT     // Input manager & devices
+	MODULE_TYPE_TIMER     // Timer module
+	MODULE_TYPE_LIRC      // LIRC module
+	MODULE_TYPE_SERVICE   // RPC Service
+	MODULE_TYPE_CLIENT    // RPC Client
+	MODULE_TYPE_DISCOVERY // RPC Service Discovery
+	MODULE_TYPE_KEYMAP    // Key Mapper
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,24 +91,24 @@ var (
 	modules_by_name = make(map[string]*Module)
 	modules_by_type = make(map[ModuleType]*Module)
 	module_name_map = map[string]ModuleType{
-		"logger":   MODULE_TYPE_LOGGER,
-		"hw":       MODULE_TYPE_HARDWARE,
-		"display":  MODULE_TYPE_DISPLAY,
-		"graphics": MODULE_TYPE_GRAPHICS,
-		"fonts":    MODULE_TYPE_FONTS,
-		"vector":   MODULE_TYPE_VECTOR,
-		"opengl":   MODULE_TYPE_OPENGL,
-		"layout":   MODULE_TYPE_LAYOUT,
-		"gpio":     MODULE_TYPE_GPIO,
-		"i2c":      MODULE_TYPE_I2C,
-		"spi":      MODULE_TYPE_SPI,
-		"input":    MODULE_TYPE_INPUT,
-		"mdns":     MODULE_TYPE_MDNS,
-		"timer":    MODULE_TYPE_TIMER,
-		"lirc":     MODULE_TYPE_LIRC,
-		"service":  MODULE_TYPE_SERVICE,
-		"client":   MODULE_TYPE_CLIENT,
-		"keymap":   MODULE_TYPE_KEYMAP,
+		"logger":    MODULE_TYPE_LOGGER,
+		"hw":        MODULE_TYPE_HARDWARE,
+		"display":   MODULE_TYPE_DISPLAY,
+		"graphics":  MODULE_TYPE_GRAPHICS,
+		"fonts":     MODULE_TYPE_FONTS,
+		"vector":    MODULE_TYPE_VECTOR,
+		"opengl":    MODULE_TYPE_OPENGL,
+		"layout":    MODULE_TYPE_LAYOUT,
+		"gpio":      MODULE_TYPE_GPIO,
+		"i2c":       MODULE_TYPE_I2C,
+		"spi":       MODULE_TYPE_SPI,
+		"input":     MODULE_TYPE_INPUT,
+		"timer":     MODULE_TYPE_TIMER,
+		"lirc":      MODULE_TYPE_LIRC,
+		"service":   MODULE_TYPE_SERVICE,
+		"client":    MODULE_TYPE_CLIENT,
+		"discovery": MODULE_TYPE_DISCOVERY,
+		"keymap":    MODULE_TYPE_KEYMAP,
 	}
 )
 
@@ -332,8 +332,8 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_SPI"
 	case MODULE_TYPE_INPUT:
 		return "MODULE_TYPE_INPUT"
-	case MODULE_TYPE_MDNS:
-		return "MODULE_TYPE_MDNS"
+	case MODULE_TYPE_DISCOVERY:
+		return "MODULE_TYPE_DISCOVERY"
 	case MODULE_TYPE_TIMER:
 		return "MODULE_TYPE_TIMER"
 	case MODULE_TYPE_LIRC:
