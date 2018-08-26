@@ -18,20 +18,18 @@ type InputManager interface {
 	Driver
 	Publisher
 
-	// Open Devices by name, type and bus
+	// Open Devices by name, type and bus and return a list
+	// of newly opened devices
 	OpenDevicesByName(name string, flags InputDeviceType, bus InputDeviceBus) ([]InputDevice, error)
 
 	// Close Device
 	CloseDevice(device InputDevice) error
 
-	/*
-		// Add a device to managed input devices
-		AddDevice(device InputDevice) error
+	// Return a list of open devices
+	GetOpenDevices() []InputDevice
 
-
-		// Return a list of open devices
-		GetOpenDevices() []InputDevice
-	*/
+	// Add a device to managed input devices
+	AddDevice(device InputDevice) error
 }
 
 type InputDevice interface {
