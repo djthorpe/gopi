@@ -91,24 +91,24 @@ var (
 	modules_by_name = make(map[string]*Module)
 	modules_by_type = make(map[ModuleType]*Module)
 	module_name_map = map[string]ModuleType{
-		"logger":    MODULE_TYPE_LOGGER,
-		"hw":        MODULE_TYPE_HARDWARE,
-		"display":   MODULE_TYPE_DISPLAY,
-		"graphics":  MODULE_TYPE_GRAPHICS,
-		"fonts":     MODULE_TYPE_FONTS,
-		"vector":    MODULE_TYPE_VECTOR,
-		"opengl":    MODULE_TYPE_OPENGL,
-		"layout":    MODULE_TYPE_LAYOUT,
-		"gpio":      MODULE_TYPE_GPIO,
-		"i2c":       MODULE_TYPE_I2C,
-		"spi":       MODULE_TYPE_SPI,
-		"input":     MODULE_TYPE_INPUT,
-		"timer":     MODULE_TYPE_TIMER,
-		"lirc":      MODULE_TYPE_LIRC,
-		"service":   MODULE_TYPE_SERVICE,
-		"client":    MODULE_TYPE_CLIENT,
-		"discovery": MODULE_TYPE_DISCOVERY,
-		"keymap":    MODULE_TYPE_KEYMAP,
+		"logger":    MODULE_TYPE_LOGGER,    // Logging
+		"hw":        MODULE_TYPE_HARDWARE,  // Platform
+		"display":   MODULE_TYPE_DISPLAY,   // Displays
+		"graphics":  MODULE_TYPE_GRAPHICS,  // Surface management
+		"fonts":     MODULE_TYPE_FONTS,     // Font management
+		"vector":    MODULE_TYPE_VECTOR,    // Vector (2D) graphics
+		"opengl":    MODULE_TYPE_OPENGL,    // OpenGL graphics
+		"layout":    MODULE_TYPE_LAYOUT,    // Graphics layout
+		"gpio":      MODULE_TYPE_GPIO,      // General Purpose input/output
+		"i2c":       MODULE_TYPE_I2C,       // I2C Hardware interface
+		"spi":       MODULE_TYPE_SPI,       // SPI Hardware interface
+		"input":     MODULE_TYPE_INPUT,     // Input devices
+		"timer":     MODULE_TYPE_TIMER,     // Timer and backoff
+		"lirc":      MODULE_TYPE_LIRC,      // IR Sending and Receiving
+		"service":   MODULE_TYPE_SERVICE,   // Microservice service
+		"client":    MODULE_TYPE_CLIENT,    // Microservice client
+		"discovery": MODULE_TYPE_DISCOVERY, // Microservice discovery
+		"keymap":    MODULE_TYPE_KEYMAP,    // Keycode/Scancode mapping
 	}
 )
 
