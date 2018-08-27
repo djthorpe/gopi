@@ -83,10 +83,13 @@ type InputEvent interface {
 	Device() uint32
 
 	// Key or mouse button press or release
-	Keycode() KeyCode
+	KeyCode() KeyCode
+
+	// Modifier key state (caps lock, shift, alt, etc)
+	KeyState() KeyState
 
 	// Key scancode
-	Scancode() uint32
+	ScanCode() uint32
 
 	// Absolute cursor position
 	Position() Point
