@@ -27,13 +27,9 @@ fi
 COMMANDS=(
     helloworld/helloworld.go
     timer/timer_tester.go
-    gpio/gpio_ctrl.go
     i2c/i2c_detect.go
     spi/spi_ctrl.go
-    input/input_tester.go
     lirc/lirc_receive.go
-    rpc/rpc_discovery.go
-    hw/metrics_list.go
 )
 
 for COMMAND in ${COMMANDS[@]}; do
