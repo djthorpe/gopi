@@ -129,8 +129,13 @@ func bgRPCServer(app *AppInstance, done <-chan struct{}) error {
 	} else if modules := ModulesByType(MODULE_TYPE_SERVICE); len(modules) == 0 {
 		return errors.New("rpc/server: no RPC services registered")
 	} else {
-		// Wait for the 'start' signal
-		<-start_rpc
+		// Wait for the 'start' signal or 'done' signal
+		select {
+		case <-start_rpc:
+			break
+		case <-done:
+			return nil
+		}
 
 		// Start the server
 		if err := server.Start(); err != nil {
@@ -146,12 +151,14 @@ func bgRPCServer(app *AppInstance, done <-chan struct{}) error {
 }
 
 func bgRPCDiscovery(app *AppInstance, done <-chan struct{}) error {
+	// Register service when discovery is enabled
 	if server, ok := app.ModuleInstance("rpc/server").(RPCServer); server == nil || ok == false {
 		start_rpc <- DONE
 		return errors.New("rpc/server: missing or invalid")
 	} else if discovery, ok := app.ModuleInstance("rpc/discovery").(RPCServiceDiscovery); ok == false {
 		start_rpc <- DONE
-		return errors.New("rpc/discovery: invalid")
+		app.Logger.Warn("Microservice discovery is not enabled, continuing")
+		return nil
 	} else {
 		// Listen for server started events
 		events := server.Subscribe()
