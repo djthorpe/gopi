@@ -79,9 +79,6 @@ type InputEvent interface {
 	// Event type
 	EventType() InputEventType
 
-	// Device identifier
-	Device() uint32
-
 	// Key or mouse button press or release
 	KeyCode() KeyCode
 
