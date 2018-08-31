@@ -1,6 +1,1 @@
-[submodule "third_party/flex"]
-	path = third_party/flex
-	url = https://github.com/kjk/flex.git
-[submodule "third_party/zeroconf"]
-	path = third_party/zeroconf
-	url = git@github.com:djthorpe/zeroconf.git
+
