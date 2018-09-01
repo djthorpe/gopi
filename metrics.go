@@ -19,6 +19,7 @@ type Metric struct {
 	Rate  MetricRate
 	Type  MetricType
 	Name  string
+	Value uint    // Last value
 	Mean  float64 // Mean value per hour (or whatever rate)
 	Total uint    // Total over the past hour (or whatever rate)
 }
@@ -45,10 +46,7 @@ type Metrics interface {
 
 	// Return metric channel, which when you send a value on
 	// it will store the metric
-	NewMetric(MetricType, MetricRate, string) (chan<- uint, error)
-
-	// Return Metric for channel
-	Metric(chan<- uint) *Metric
+	NewMetricUint(MetricType, MetricRate, string) (chan<- uint, error)
 
 	// Return all metrics of a particular type, or METRIC_TYPE_NONE
 	// for all metrics
