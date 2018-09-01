@@ -43,9 +43,9 @@ type Metrics interface {
 	// Load Average (1, 5 and 15 minutes)
 	LoadAverage() (float64, float64, float64)
 
-	// Return counter channel, which when you send a value on
-	// it will increment a counter
-	NewCounter(MetricType, MetricRate, string) (chan<- uint, error)
+	// Return metric channel, which when you send a value on
+	// it will store the metric
+	NewMetric(MetricType, MetricRate, string) (chan<- uint, error)
 
 	// Return Metric for channel
 	Metric(chan<- uint) *Metric
@@ -66,7 +66,9 @@ const (
 )
 
 const (
-	METRIC_TYPE_NONE MetricType = iota
+	METRIC_TYPE_NONE    MetricType = iota
+	METRIC_TYPE_PURE               // Pure number
+	METRIC_TYPE_CELCIUS            // Temperature
 )
 
 /////////////////////////////////////////////////////////////////////
