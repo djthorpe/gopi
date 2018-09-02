@@ -70,7 +70,6 @@ type Metrics interface {
 
 const (
 	METRIC_RATE_NONE MetricRate = iota
-	METRIC_RATE_SECOND
 	METRIC_RATE_MINUTE
 	METRIC_RATE_HOUR
 	METRIC_RATE_DAY
@@ -87,8 +86,6 @@ const (
 
 func (v MetricRate) String() string {
 	switch v {
-	case METRIC_RATE_SECOND:
-		return "METRIC_RATE_SECOND"
 	case METRIC_RATE_MINUTE:
 		return "METRIC_RATE_MINUTE"
 	case METRIC_RATE_HOUR:
