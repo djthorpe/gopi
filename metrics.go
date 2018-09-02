@@ -15,6 +15,16 @@ import (
 /////////////////////////////////////////////////////////////////////
 // TYPES
 
+type (
+	MetricRate uint
+	MetricType uint
+)
+
+/////////////////////////////////////////////////////////////////////
+// INTERFACE
+
+// Metric is an abstract method to store values associated with
+// a measurement
 type Metric interface {
 	// Return the metric rate (store values over a period)
 	Rate() MetricRate
@@ -31,14 +41,6 @@ type Metric interface {
 	// Return the last metric value as a float64
 	FloatValue() float64
 }
-
-type (
-	MetricRate uint
-	MetricType uint
-)
-
-/////////////////////////////////////////////////////////////////////
-// INTERFACE
 
 // Metrics returns various metrics for host and
 // custom metrics
@@ -60,7 +62,7 @@ type Metrics interface {
 
 	// Return all metrics of a particular type, or METRIC_TYPE_NONE
 	// for all metrics
-	Metrics(MetricType) []*Metric
+	Metrics(MetricType) []Metric
 }
 
 /////////////////////////////////////////////////////////////////////
