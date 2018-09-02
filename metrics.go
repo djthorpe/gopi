@@ -15,13 +15,21 @@ import (
 /////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Metric struct {
-	Rate  MetricRate
-	Type  MetricType
-	Name  string
-	Value uint    // Last value
-	Mean  float64 // Mean value per hour (or whatever rate)
-	Total uint    // Total over the past hour (or whatever rate)
+type Metric interface {
+	// Return the metric rate (store values over a period)
+	Rate() MetricRate
+
+	// Return the metric type (the units used for the metric)
+	Type() MetricType
+
+	// Return the name of the metric
+	Name() string
+
+	// Return the last metric value as a uint
+	UintValue() uint
+
+	// Return the last metric value as a float64
+	FloatValue() float64
 }
 
 type (
@@ -44,9 +52,11 @@ type Metrics interface {
 	// Load Average (1, 5 and 15 minutes)
 	LoadAverage() (float64, float64, float64)
 
-	// Return metric channel, which when you send a value on
-	// it will store the metric
+	// Return metric channel which records uint values
 	NewMetricUint(MetricType, MetricRate, string) (chan<- uint, error)
+
+	// Return metric channel which records float64 values
+	NewMetricFloat64(MetricType, MetricRate, string) (chan<- float64, error)
 
 	// Return all metrics of a particular type, or METRIC_TYPE_NONE
 	// for all metrics
@@ -61,6 +71,7 @@ const (
 	METRIC_RATE_SECOND
 	METRIC_RATE_MINUTE
 	METRIC_RATE_HOUR
+	METRIC_RATE_DAY
 )
 
 const (
@@ -80,7 +91,20 @@ func (v MetricRate) String() string {
 		return "METRIC_RATE_MINUTE"
 	case METRIC_RATE_HOUR:
 		return "METRIC_RATE_HOUR"
+	case METRIC_RATE_DAY:
+		return "METRIC_RATE_DAY"
 	default:
 		return "[?? Invalid MetricRate value]"
+	}
+}
+
+func (t MetricType) String() string {
+	switch t {
+	case METRIC_TYPE_PURE:
+		return "METRIC_TYPE_PURE"
+	case METRIC_TYPE_CELCIUS:
+		return "METRIC_TYPE_CELCIUS"
+	default:
+		return "[?? Invalid MetricType value]"
 	}
 }
