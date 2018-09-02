@@ -35,6 +35,9 @@ type Metric interface {
 	// Return the name of the metric
 	Name() string
 
+	// Return the unit for the metric (°C for example)
+	Unit() string
+
 	// Return the last metric value as a uint
 	UintValue() uint
 
