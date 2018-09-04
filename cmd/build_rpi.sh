@@ -27,12 +27,6 @@ fi
 COMMANDS=(
     helloworld/helloworld.go
     timer/timer_tester.go
-    hw/hw_list.go
-    hw/display_list.go
-    hw/metrics_list.go
-    i2c/i2c_detect.go
-    spi/spi_ctrl.go
-    lirc/lirc_receive.go        
 )
 
 for COMMAND in ${COMMANDS[@]}; do

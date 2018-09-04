@@ -22,24 +22,11 @@ if [ "${GO}" == "" ] || [ ! -x ${GO} ] ; then
 fi
 
 ##############################################################
-# Generate
-
-GENERATE=(
-    rpc/protobuf/protobuf.go
-)
-
-for COMMAND in ${GENERATE[@]}; do
-    echo "go generate ${COMMAND}"
-    go generate -x "${COMMAND}"
-done
-
-##############################################################
 # Install
 
 COMMANDS=(
     helloworld/helloworld.go
     timer/timer_tester.go
-    hw/hw_list.go
 )
 
 for COMMAND in ${COMMANDS[@]}; do
