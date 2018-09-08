@@ -90,8 +90,29 @@ This repository contains two modules:
 
 ## Logger
 
-The logger module provides very basic logging functionality. A logger module is **required**
-for every application which uses this framework, so include the module in your main package:
+The logger module provides very basic logging functionality. Here is the interface for any
+logging module:
+
+
+```
+type Logger interface {
+  Driver
+
+  // Output logging messages
+  Fatal(format string, v ...interface{}) error
+  Error(format string, v ...interface{}) error
+  Warn(format string, v ...interface{})
+  Info(format string, v ...interface{})
+  Debug(format string, v ...interface{})
+  Debug2(format string, v ...interface{})
+
+  // Return IsDebug flag
+  IsDebug() bool
+}
+```
+
+A logger module is **required** for every application which uses this framework, so 
+include the module in your main package:
 
 ```
 package main
@@ -136,7 +157,40 @@ the following rules:
 ## Timer
 
 The timer module emits `gopi.Event` objects once, at regular intervals,
-or at intervals according to a backoff rule.
+or at intervals according to a backoff rule. The timer interface is as follows:
+
+```
+type Timer interface {
+  Driver
+  Publisher
+
+  // Schedule a timeout (one shot)
+  NewTimeout(duration time.Duration, userInfo interface{})
+
+  // Schedule an interval, which can fire immediately
+  NewInterval(duration time.Duration, userInfo interface{}, immediately bool)
+
+  // Schedule a backoff timer with maximum backoff
+  NewBackoff(duration time.Duration, max_duration time.Duration, userInfo interface{})
+}
+```
+
+You can subscribe to emitted events which are as follows:
+
+```
+type TimerEvent interface {
+  Event
+
+  // Provide the timestamp for the event
+  Timestamp() time.Time
+
+  // The user info for the event
+  UserInfo() interface{}
+
+  // Cancel the timer which fired this event
+  Cancel()
+}
+```
 
 # License
 
