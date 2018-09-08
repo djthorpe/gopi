@@ -51,10 +51,10 @@ Other repositories provide implementation:
 
 | Repository    | Link   | Module |
 | ------------- | ------ | ---- |
-| gopi-hw       | `http://github.com/djthorpe/gopi-hw/` | Hardware implementations  |
-| gopi-graphics | `http://github.com/djthorpe/gopi-graphics/` | Graphics & Fonts |
-| gopi-rpc      | `http://github.com/djthorpe/gopi-rpc/` | Microservices & Discovery |
-| gopi-input    | `http://github.com/djthorpe/gopi-input/` | Input services (Keyboard, Mouse, Touchscreen) |
+| gopi-hw       | [`http://github.com/djthorpe/gopi-hw/`](http://github.com/djthorpe/gopi-hw/) | Hardware implementations  |
+| gopi-graphics | [`http://github.com/djthorpe/gopi-graphics/`](http://github.com/djthorpe/gopi-graphics/) | Graphics & Fonts |
+| gopi-rpc      | [`http://github.com/djthorpe/gopi-rpc/`](http://github.com/djthorpe/gopi-rpc/) | Microservices & Discovery |
+| gopi-input    | [`http://github.com/djthorpe/gopi-input/`](http://github.com/djthorpe/gopi-input/) | Input services (Keyboard, Mouse, Touchscreen) |
 
 Please see each repository for more example code and information on the _modules_ provided.
 
