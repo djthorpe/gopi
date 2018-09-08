@@ -10,10 +10,10 @@ func TestFlags_000(t *testing.T) {
 	// Create a configuration with debug
 	flagset := gopi.NewFlags("test")
 	if flagset == nil {
-		t.Fatalf("Expected flagset != nil")
+		t.Fatal("Expected flagset != nil")
 	}
 	if flagset.Name() != "test" {
-		t.Fatalf("Unexpected Name() return:", flagset.Name())
+		t.Fatal("Unexpected Name() return:", flagset.Name())
 	}
 }
 
