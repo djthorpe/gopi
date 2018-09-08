@@ -56,7 +56,7 @@ Other repositories provide implementation:
 | gopi-rpc      | [`http://github.com/djthorpe/gopi-rpc/`](http://github.com/djthorpe/gopi-rpc/) | Microservices & Discovery |
 | gopi-input    | [`http://github.com/djthorpe/gopi-input/`](http://github.com/djthorpe/gopi-input/) | Input services (Keyboard, Mouse, Touchscreen) |
 
-Please see each repository for more example code and information on the _modules_ provided.
+Please see each repository for more example code and information on the modules provided.
 
 # Getting Started
 
@@ -69,6 +69,65 @@ can be built with the makefile.
 
 Fuller documentation of the examples and developing your own code
 against this framework is available in the documentation.
+
+# Modules
+
+This repository contains two modules:
+
+| Module | Import | Type | Name |
+| -------- | ------ | ---- | ---- |
+| Logger | `github.com/djthorpe/gopi/sys/logger` | `gopi.MODULE_TYPE_LOGGER` | `sys/logger` |
+| Timer | `github.com/djthorpe/gopi/sys/timer` | `gopi.MODULE_TYPE_TIMER` | `sys/timer` |
+
+## Logger
+
+The logger module provides very basic logging functionality. A logger module is **required**
+for every application which uses this framework, so include the module in your main package:
+
+```
+package main
+
+import (
+  // Frameworks
+	"github.com/djthorpe/gopi"
+
+  // Modules
+	_ "github.com/djthorpe/gopi/sys/logger"
+)
+```
+
+The logger is then available as `app.Logger` within your application, and is also passed
+to every gopi module with the `Open` method. The standard logger includes some command-line
+flags in case you want to log to a file, rather than to `stderr`:
+
+```
+$ helloworld -help
+Usage of helloworld:
+  -debug
+    	Set debugging mode
+  -log.append
+    	When writing log to file, append output to end of file
+  -log.file string
+    	File for logging (default: log to stderr)
+  -verbose
+    	Verbose logging
+```
+
+Logging occurs depending on the combination of the `debug` and `verbose` flags, according to
+the following rules:
+
+| Debug   | Verbose | Levels logged         |
+| ------- | ------- | --------------------- |
+| `false` | `false` | Fatal, Error and Warn |
+| `false` | `true`  | Fatal, Error, Warn and Info |
+| `true`  | `false` | Fatal, Error, Warn, Info and Debug |
+| `true`  | `true`  | Fatal, Error, Warn, Info, Debug and Debug2 |
+
+
+## Timer
+
+The timer module emits `gopi.Event` objects once, at regular intervals,
+or at intervals according to a backoff rule.
 
 # License
 
