@@ -116,32 +116,56 @@ func (this *Flags) String() string {
 
 // FlagString defines string flag and return pointer to the flag value
 func (this *Flags) FlagString(name string, value string, usage string) *string {
-	return this.flagset.String(name, value, usage)
+	if this.flagset == nil {
+		return nil
+	} else {
+		return this.flagset.String(name, value, usage)
+	}
 }
 
 // FlagBool defines a boolean flag and return pointer to the flag value
 func (this *Flags) FlagBool(name string, value bool, usage string) *bool {
-	return this.flagset.Bool(name, value, usage)
+	if this.flagset == nil {
+		return nil
+	} else {
+		return this.flagset.Bool(name, value, usage)
+	}
 }
 
 // FlagDuration defines duration flag and return pointer to the flag value
 func (this *Flags) FlagDuration(name string, value time.Duration, usage string) *time.Duration {
-	return this.flagset.Duration(name, value, usage)
+	if this.flagset == nil {
+		return nil
+	} else {
+		return this.flagset.Duration(name, value, usage)
+	}
 }
 
 // FlagInt defines integer flag and return pointer to the flag value
 func (this *Flags) FlagInt(name string, value int, usage string) *int {
-	return this.flagset.Int(name, value, usage)
+	if this.flagset == nil {
+		return nil
+	} else {
+		return this.flagset.Int(name, value, usage)
+	}
 }
 
 // FlagUint defines unsigned integer flag and return pointer to the flag value
 func (this *Flags) FlagUint(name string, value uint, usage string) *uint {
-	return this.flagset.Uint(name, value, usage)
+	if this.flagset == nil {
+		return nil
+	} else {
+		return this.flagset.Uint(name, value, usage)
+	}
 }
 
 // FlagFloat64 defines float64 flag and return pointer to the flag value
 func (this *Flags) FlagFloat64(name string, value float64, usage string) *float64 {
-	return this.flagset.Float64(name, value, usage)
+	if this.flagset == nil {
+		return nil
+	} else {
+		return this.flagset.Float64(name, value, usage)
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
