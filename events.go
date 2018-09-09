@@ -62,8 +62,17 @@ type LIRCEvent interface {
 type TimerEvent interface {
 	Event
 
+	// Provide the timestamp for the event
 	Timestamp() time.Time
+
+	// The user info for the event
 	UserInfo() interface{}
+
+	// The number of fires for the timer event
+	Counter() uint
+
+	// Cancel the timer which fired this event
+	Cancel()
 }
 
 // InputEvent is emitted when an input device changes
