@@ -20,7 +20,7 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // CREATE TASKS OBJECT
 
-func TestPublisher_000(t *testing.T) {
+func TestTasks_000(t *testing.T) {
 	tasks := &event.Tasks{}
 	defer tasks.Close()
 
@@ -29,7 +29,7 @@ func TestPublisher_000(t *testing.T) {
 	})
 }
 
-func TestPublisher_001(t *testing.T) {
+func TestTasks_001(t *testing.T) {
 	tasks := &event.Tasks{}
 	defer tasks.Close()
 
@@ -40,7 +40,7 @@ func TestPublisher_001(t *testing.T) {
 	})
 }
 
-func TestPublisher_002(t *testing.T) {
+func TestTasks_002(t *testing.T) {
 	tasks := &event.Tasks{}
 
 	tasks.Start(func(start chan<- event.Signal, stop <-chan event.Signal) error {
@@ -52,7 +52,7 @@ func TestPublisher_002(t *testing.T) {
 	tasks.Close()
 }
 
-func TestPublisher_003(t *testing.T) {
+func TestTasks_003(t *testing.T) {
 	tasks := &event.Tasks{}
 
 	tasks.Start(func(start chan<- event.Signal, stop <-chan event.Signal) error {
@@ -64,7 +64,7 @@ func TestPublisher_003(t *testing.T) {
 		t.Error("Expected ErrNumber003, got", err)
 	}
 }
-func TestPublisher_004(t *testing.T) {
+func TestTasks_004(t *testing.T) {
 	tasks := &event.Tasks{}
 
 	tasks.Start(func(start chan<- event.Signal, stop <-chan event.Signal) error {
@@ -79,7 +79,7 @@ func TestPublisher_004(t *testing.T) {
 	}
 }
 
-func TestPublisher_005(t *testing.T) {
+func TestTasks_005(t *testing.T) {
 	tasks := &event.Tasks{}
 
 	tasks.Start(func(start chan<- event.Signal, stop <-chan event.Signal) error {
@@ -96,7 +96,7 @@ func TestPublisher_005(t *testing.T) {
 	}
 }
 
-func TestPublisher_006(t *testing.T) {
+func TestTasks_006(t *testing.T) {
 	tasks := &event.Tasks{}
 
 	tasks.Start(func(start chan<- event.Signal, stop <-chan event.Signal) error {
@@ -115,7 +115,7 @@ func TestPublisher_006(t *testing.T) {
 	}
 }
 
-func TestPublisher_007(t *testing.T) {
+func TestTasks_007(t *testing.T) {
 	tasks := &event.Tasks{}
 
 	tasks.Start(func(start chan<- event.Signal, stop <-chan event.Signal) error {
