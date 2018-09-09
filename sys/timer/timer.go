@@ -14,7 +14,9 @@ import (
 	"reflect"
 	"time"
 
+	// Frameworks
 	"github.com/djthorpe/gopi"
+	"github.com/djthorpe/gopi/util/event"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,82 +25,65 @@ import (
 type Timer struct{}
 
 type timer struct {
-	log                 gopi.Logger
-	subscribers         []chan gopi.Event
-	channels            []reflect.SelectCase
-	units               map[int]*unit
-	done, reload, done2 chan struct{}
+	log      gopi.Logger
+	channels []reflect.SelectCase
+	units    map[int]*unit
+
+	event.Publisher
+	event.Tasks
 }
 
 type unit struct {
-	timer    *time.Timer
-	ticker   *time.Ticker
-	userInfo interface{}
-}
-
-type event struct {
-	source    gopi.Driver
-	userInfo  interface{}
-	timestamp time.Time
+	timer        *time.Timer
+	ticker       *time.Ticker
+	userInfo     interface{}
+	counter      uint
+	duration     time.Duration
+	max_duration time.Duration
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN AND CLOSE
 
-// Open the driver
+// Open the timer
 func (config Timer) Open(log gopi.Logger) (gopi.Driver, error) {
 	log.Debug("sys.timer.Open{ }")
 
 	this := new(timer)
 	this.log = log
-	this.subscribers = make([]chan gopi.Event, 0)
-	this.units = make(map[int]*unit, 0)
-	this.channels = make([]reflect.SelectCase, 2)
-	this.done = make(chan struct{})
-	this.reload = make(chan struct{})
-	this.done2 = make(chan struct{})
-
-	// Zero'th channel is the done signal which
-	// is emitted when Close() is called
+	this.channels = make([]reflect.SelectCase, 1)
 	this.channels[0] = reflect.SelectCase{
 		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(this.done),
+		Chan: reflect.ValueOf(make(chan event.Signal)),
 	}
-	// First channel is the reload signal when
-	// a new ticker or timer is added
-	this.channels[1] = reflect.SelectCase{
-		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(this.reload),
-	}
+	this.units = make(map[int]*unit)
 
-	// Background go routine - waits for done or reload
-	go this.wait_for_timers()
+	// Background go routine - waits for reload, stop or ticker events
+	this.Tasks.Start(this.wait_for_timers)
 
 	return this, nil
 }
 
-// Close the driver
+// Close the timer
 func (this *timer) Close() error {
 	this.log.Debug("sys.timer.Close{ }")
 
-	// Send a done signal to quit background, and wait for end
-	this.done <- gopi.DONE
-	_ = <-this.done2
-
-	// stop timer & ticker resources
+	// Cancel all the timers
 	for _, unit := range this.units {
-		if unit.ticker != nil {
-			unit.ticker.Stop()
-		}
-		if unit.timer != nil {
-			unit.timer.Stop()
-		}
+		unit.Cancel()
 	}
 
-	// Free up resources
-	this.units = nil
+	// End the task
+	if err := this.Tasks.Close(); err != nil {
+		this.log.Warn("sys.timer.Close: %v", err)
+	}
+
+	// Unsubscribe and close
+	this.Publisher.Close()
+
+	// Blank out instance variables
 	this.channels = nil
-	this.subscribers = nil
+	this.units = nil
 
 	return nil
 }
@@ -106,36 +91,63 @@ func (this *timer) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACE - TIMERS
 
-// Schedule a timeout (one shot)
-func (this *timer) NewTimeout(duration time.Duration, userInfo interface{}) {
+// NewTimeout schedules a on-shot timer
+func (this *timer) NewTimeout(duration time.Duration, userInfo interface{}) error {
+	this.log.Debug2("sys.timer.NewTimeout{ duration=%v userInfo=%v }", duration, userInfo)
+
+	// Create the timeout, append channel and reload
 	timer := time.NewTimer(duration)
-	this.channels = append(this.channels, reflect.SelectCase{
-		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(timer.C),
-	})
-	this.units[len(this.channels)-1] = &unit{
+	this.append(reflect.ValueOf(timer.C), &unit{
 		timer:    timer,
 		userInfo: userInfo,
-	}
-	this.reload <- gopi.DONE
+	})
+	// Success
+	return nil
 }
 
-// Schedule an interval, which can fire immediately
-func (this *timer) NewInterval(duration time.Duration, userInfo interface{}, immediately bool) {
+// NewInterval schedules a periodic firing, which can fire immediately
+func (this *timer) NewInterval(duration time.Duration, userInfo interface{}, immediately bool) error {
+	this.log.Debug2("sys.timer.NewInterval{ duration=%v userInfo=%v immediately=%v }", duration, userInfo, immediately)
+
+	// Create the ticker, append channel and reload
 	ticker := time.NewTicker(duration)
-	this.channels = append(this.channels, reflect.SelectCase{
-		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(ticker.C),
-	})
-	unit := &unit{
+	idx := this.append(reflect.ValueOf(ticker.C), &unit{
 		ticker:   ticker,
 		userInfo: userInfo,
-	}
-	this.units[len(this.channels)-1] = unit
-	this.reload <- gopi.DONE
+	})
 	if immediately {
-		this.emit(unit, time.Now())
+		this.emit(idx, time.Now())
 	}
+	// Success
+	return nil
+}
+
+// NewBackoff schedules a backoff timer with maximum backoff duration
+func (this *timer) NewBackoff(duration time.Duration, max_duration time.Duration, userInfo interface{}) error {
+	this.log.Debug2("sys.timer.NewBackoff{ duration=%v max_duration=%v userInfo=%v }", duration, max_duration, userInfo)
+
+	// Check for zero durations
+	if duration == 0 || max_duration == 0 {
+		return gopi.ErrBadParameter
+	}
+	if max_duration <= duration {
+		return gopi.ErrBadParameter
+	}
+
+	// Create the timeout, append channel and reload
+	timer := time.NewTimer(duration)
+	idx := this.append(reflect.ValueOf(timer.C), &unit{
+		timer:        timer,
+		userInfo:     userInfo,
+		duration:     duration,
+		max_duration: max_duration,
+	})
+
+	// Emit the event immediately
+	this.emit(idx, time.Now())
+
+	// Success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,82 +158,87 @@ func (this *timer) String() string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// INTERFACE - EVENTS
+// PRIVATE METHODS
 
-// Subscribe to events emitted. Returns unique subscriber
-// identifier and channel on which events are emitted
-func (this *timer) Subscribe() chan gopi.Event {
-	this.log.Debug2("<sys.timer.Subscribe>{ }")
-
-	// Create a new channel for emitting events
-	subscriber := make(chan gopi.Event)
-	this.subscribers = append(this.subscribers, subscriber)
-	return subscriber
-}
-
-// Unsubscribe from events emitted
-func (this *timer) Unsubscribe(subscriber chan gopi.Event) {
-	this.log.Debug2("<sys.timer.Unsubscribe>{ }")
-
-	for i := range this.subscribers {
-		if this.subscribers[i] == subscriber {
-			this.subscribers[i] = nil
+func (this *timer) emit(idx int, ts time.Time) {
+	if u, ok := this.units[idx]; ok == false {
+		this.log.Warn("sys.timer.emit: Invalid index, %v", idx)
+	} else {
+		// Increment the counter (number of times fired)
+		u.counter = u.counter + 1
+		// Emit the event
+		this.Emit(NewTimerEvent(this, u, ts))
+		// If this is a backoff timeout and the counter is above 1
+		// (it's not the immediate firing) then reset the backoff to double
+		// the current interval, up to a maximum of max_duration
+		if u.max_duration > 0 && u.counter > 1 && u.timer != nil {
+			u.duration *= 2
+			if u.duration > u.max_duration {
+				u.duration = u.max_duration
+			}
+			this.log.Debug2("sys.timer.emit: backoff interval=%v for %v", u.duration, u)
+			u.timer.Reset(u.duration)
 		}
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// EVENT INTERFACE
-
-func (this *event) Name() string {
-	return "TimerEvent"
+func (this *timer) append(c reflect.Value, u *unit) int {
+	// append channel and reload
+	this.channels = append(this.channels, reflect.SelectCase{
+		Dir:  reflect.SelectRecv,
+		Chan: c,
+	})
+	idx := len(this.channels) - 1
+	if u != nil {
+		this.units[idx] = u
+		// send a signal to the zero'th channel
+		this.channels[0].Chan.Send(reflect.ValueOf(gopi.DONE))
+	}
+	// return the index of the channel
+	return idx
 }
 
-func (this *event) Source() gopi.Driver {
-	return this.source
-}
+// wait_for_timers will wait for an event on any channel in the list of
+// channels
+func (this *timer) wait_for_timers(start chan<- event.Signal, stop <-chan event.Signal) error {
+	// Indicate we are now running
+	start <- gopi.DONE
 
-func (this *event) Timestamp() time.Time {
-	return this.timestamp
-}
+	// Append stop signal but don't reload
+	stop_idx := this.append(reflect.ValueOf(stop), nil)
 
-func (this *event) UserInfo() interface{} {
-	return this.userInfo
-}
-
-func (this *event) String() string {
-	return fmt.Sprintf("<sys.timer.event>{ ts=%v userInfo=%v }", this.timestamp, this.userInfo)
+FOR_LOOP:
+	for {
+		// Wait for reload, stop or a timer maturing
+		chosen, _, ok := reflect.Select(this.channels)
+		// We received a reload signal
+		if chosen == 0 && ok {
+			continue
+		}
+		// We received a stop signal so break out of the loop
+		if chosen == stop_idx {
+			break FOR_LOOP
+		}
+		// Otherwise, assume we received a timer maturing
+		if ok {
+			this.emit(chosen, time.Now())
+		}
+	}
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *timer) emit(userInfo *unit, value time.Time) {
-	event := &event{source: this, userInfo: userInfo.userInfo, timestamp: value}
-	for _, channel := range this.subscribers {
-		if channel != nil {
-			channel <- event
-		}
+func (this *unit) Cancel() {
+	if this.timer != nil {
+		this.timer.Stop()
+	}
+	if this.ticker != nil {
+		this.ticker.Stop()
 	}
 }
 
-// wait_for_timers will wait for an event on any channel in the list of
-// channels. The zero'th channel is the 'done' signal which indicates Close()
-// has been called
-func (this *timer) wait_for_timers() {
-
-	for {
-		if chosen, value, ok := reflect.Select(this.channels); ok && chosen == 0 {
-			// Break out
-			break
-		} else if ok && chosen == 1 {
-			// Reload
-			continue
-		} else if ok && chosen < len(this.channels) {
-			if unit, exists := this.units[chosen]; exists {
-				this.emit(unit, value.Interface().(time.Time))
-			}
-		}
-	}
-	this.done2 <- gopi.DONE
+func (this *unit) String() string {
+	return fmt.Sprintf("<sys.timer>{ userInfo=%v }", this.userInfo)
 }

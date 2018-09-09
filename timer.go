@@ -21,8 +21,11 @@ type Timer interface {
 	Publisher
 
 	// Schedule a timeout (one shot)
-	NewTimeout(duration time.Duration, userInfo interface{})
+	NewTimeout(duration time.Duration, userInfo interface{}) error
 
 	// Schedule an interval, which can fire immediately
-	NewInterval(duration time.Duration, userInfo interface{}, immediately bool)
+	NewInterval(duration time.Duration, userInfo interface{}, immediately bool) error
+
+	// Schedule a backoff timer with maximum backoff duration
+	NewBackoff(duration time.Duration, max_duration time.Duration, userInfo interface{}) error
 }
