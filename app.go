@@ -350,7 +350,7 @@ func (this *AppInstance) Run2(main_task MainTask, background_tasks ...Background
 	}
 
 	// Return error from main
-	return return_error
+	return return_error.ErrorOrSelf()
 }
 
 // Debug returns whether the application has the debug flag set

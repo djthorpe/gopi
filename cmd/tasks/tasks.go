@@ -67,7 +67,7 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 	done <- gopi.DONE
 
 	app.Logger.Info("...Finished Main")
-	return fmt.Errorf("Error from Main")
+	return gopi.ErrHelp
 }
 
 func main() {

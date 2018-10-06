@@ -49,6 +49,18 @@ func (this *CompoundError) One() error {
 	}
 }
 
+// ErrorOrSelf returns nil, the first error or self
+// if there is more than one error
+func (this *CompoundError) ErrorOrSelf() error {
+	if len(this.errs) == 1 {
+		return this.errs[0]
+	} else if len(this.errs) == 0 {
+		return nil
+	} else {
+		return this
+	}
+}
+
 // Error satisfies the error interface
 func (this *CompoundError) Error() string {
 	if len(this.errs) == 0 {
