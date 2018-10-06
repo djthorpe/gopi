@@ -299,6 +299,19 @@ func (this *AppInstance) Run2(main_task MainTask, background_tasks ...Background
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
+	// Call the Run method for each module. If any report an error, then don't run
+	// the application. Note that some modules don't have a 'New' method in which
+	// case the driver argument is set to nil
+	for _, module := range this.modules {
+		if module.Run == nil {
+			continue
+		}
+		driver, _ := this.byname[module.Name]
+		if err := module.Run(this, driver); err != nil {
+			return err
+		}
+	}
+
 	// Start the background tasks - wait for start signals
 	if len(background_tasks) > 0 {
 		t := make([]tasks.TaskFunc, len(background_tasks))
