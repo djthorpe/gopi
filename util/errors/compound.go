@@ -16,13 +16,21 @@ type CompoundError struct {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// Add appends an error onto the array of errors
-func (this *CompoundError) Add(e error) {
+// Add one or more errors onto the array of errors. If any error
+// is a CoumpoundError, then add the errors individually
+func (this *CompoundError) Add(e ...error) {
 	if this.errs == nil {
-		this.errs = make([]error, 0, 1)
+		this.errs = make([]error, 0, len(e))
 	}
-	if e != nil {
-		this.errs = append(this.errs, e)
+	for _, err := range e {
+		switch err.(type) {
+		case (*CompoundError):
+			if len(err.(*CompoundError).errs) > 0 {
+				this.errs = append(this.errs, err.(*CompoundError).errs...)
+			}
+		default:
+			this.errs = append(this.errs, err)
+		}
 	}
 }
 

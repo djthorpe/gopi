@@ -18,6 +18,10 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	// Frameworks
+	"github.com/djthorpe/gopi/util/errors"
+	"github.com/djthorpe/gopi/util/tasks"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,6 +60,9 @@ type AppInstance struct {
 	byname   map[string]Driver
 	bytype   map[ModuleType]Driver
 	byorder  []Driver
+
+	// background tasks implementation
+	tasks.Tasks
 }
 
 // MainTask defines a function which can run as a main task
@@ -67,6 +74,7 @@ type MainTask func(app *AppInstance, done chan<- struct{}) error
 // background task and has a channel which receives a value of gopi.DONE
 // then the background task should complete
 type BackgroundTask func(app *AppInstance, done <-chan struct{}) error
+type BackgroundTask2 func(app *AppInstance, start chan<- struct{}, stop <-chan struct{}) error
 
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -283,6 +291,68 @@ func (this *AppInstance) Run(main_task MainTask, background_tasks ...BackgroundT
 	return err
 }
 
+// Run all tasks simultaneously, the first task in the list on the main thread and the
+// remaining tasks background tasks. The main task doesn't start running until received
+// start signals from the background tasks
+func (this *AppInstance) Run2(main_task MainTask, background_tasks ...BackgroundTask2) error {
+	// Lock this to run in the current operating system thread (ie, the main thread)
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	// Start the background tasks - wait for start signals
+	if len(background_tasks) > 0 {
+		t := make([]tasks.TaskFunc, len(background_tasks))
+		for i := range background_tasks {
+			f := background_tasks[i]
+			t[i] = func(start chan<- struct{}, stop <-chan struct{}) error {
+				return f(this, start, stop)
+			}
+		}
+		this.Tasks.Start(t...)
+	}
+
+	// Run a background thread waiting for a done signal from main
+	errs := make(chan error)
+	done := make(chan struct{})
+	go func() {
+		// Wait for main done signal
+		<-done
+		if this.Logger != nil {
+			this.Logger.Debug2("Main thread done, stopping background tasks")
+		}
+		// Signal other tasks to complete
+		errs <- this.Tasks.Close()
+		if this.Logger != nil {
+			this.Logger.Debug2("Main thread done, Background tasks stopped")
+		}
+	}()
+
+	// Now run main task
+	return_error := new(errors.CompoundError)
+	if err := main_task(this, done); err != nil {
+		return_error.Add(err)
+		if this.Logger != nil {
+			this.Logger.Debug2("Error from main thread: %v", err)
+		}
+	}
+
+	// Close the 'done' channel and wait for closing gorouting to finish
+	close(done)
+
+	// Receive any addition errors from tasks
+	if tasks_err := <-errs; tasks_err != nil {
+		return_error.Add(tasks_err)
+	}
+
+	// Indicate all tasks finished
+	if this.Logger != nil {
+		this.Logger.Debug2("All tasks finished")
+	}
+
+	// Return error from main
+	return return_error
+}
+
 // Debug returns whether the application has the debug flag set
 func (this *AppInstance) Debug() bool {
 	return this.debug
@@ -340,6 +410,9 @@ func (this *AppInstance) Close() error {
 			this.Logger.Error("gopi.AppInstance.Close() error: %v", err)
 		}
 	}
+
+	// Quit tasks if not already quit
+	this.Tasks.Close()
 
 	// Clear out the references
 	this.bytype = nil
