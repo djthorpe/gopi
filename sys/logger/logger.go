@@ -7,15 +7,17 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-package logger /* import "github.com/djthorpe/gopi/sys/logger" */
+package logger
 
 import (
 	"errors"
 	"fmt"
+	"log/syslog"
 	"os"
 	"strings"
 	"sync"
 
+	// Frameworks
 	"github.com/djthorpe/gopi"
 )
 
@@ -30,12 +32,15 @@ type Config struct {
 	Level  Level
 	Path   string
 	Append bool
+	Syslog string
+	Tag    string
 }
 
 // The driver for the logging
 type driver struct {
 	level  Level
 	device *os.File
+	syslog *syslog.Writer
 	mutex  sync.Mutex
 }
 
@@ -70,6 +75,7 @@ func init() {
 // CONFIG AND NEW
 
 func configLogger(config *gopi.AppConfig) {
+	config.AppFlags.FlagString("log.syslog", "", "Log to syslog facility (user,daemon,local0...local7)")
 	config.AppFlags.FlagString("log.file", "", "File for logging (default: log to stderr)")
 	config.AppFlags.FlagBool("log.append", false, "When writing log to file, append output to end of file")
 }
@@ -77,10 +83,13 @@ func configLogger(config *gopi.AppConfig) {
 func newLogger(app *gopi.AppInstance) (gopi.Driver, error) {
 	path, _ := app.AppFlags.GetString("log.file")
 	append, _ := app.AppFlags.GetBool("log.append")
+	syslog, _ := app.AppFlags.GetString("log.syslog")
 	return gopi.Open(Config{
 		Path:   path,
 		Append: append,
 		Level:  getLevelForApp(app),
+		Syslog: syslog,
+		Tag:    app.AppFlags.Name(),
 	}, nil)
 }
 
@@ -106,13 +115,32 @@ func (config Config) Open(_ gopi.Logger) (gopi.Driver, error) {
 			return nil, err
 		}
 	}
+
+	// Open syslog
+	if config.Syslog != "" {
+		if priority, err := getSyslogPriority(config.Syslog); err != nil {
+			return nil, err
+		} else if syslog, err := syslog.New(priority, config.Tag); err != nil {
+			return nil, err
+		} else {
+			this.syslog = syslog
+		}
+	}
+
 	return this, nil
 }
 
 // Close a logger
 func (this *driver) Close() error {
+	if this.syslog != nil {
+		if err := this.syslog.Close(); err != nil {
+			return err
+		}
+	}
 	if this.device != nil && this.device != os.Stdout && this.device != os.Stderr {
-		return this.device.Close()
+		if err := this.device.Close(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -190,11 +218,52 @@ func getLevelForApp(app *gopi.AppInstance) Level {
 	return LOG_WARN
 }
 
+func getSyslogPriority(value string) (syslog.Priority, error) {
+	switch value {
+	case "user":
+		return syslog.LOG_USER, nil
+	case "daemon":
+		return syslog.LOG_DAEMON, nil
+	case "local0":
+		return syslog.LOG_LOCAL0, nil
+	case "local1":
+		return syslog.LOG_LOCAL1, nil
+	case "local2":
+		return syslog.LOG_LOCAL2, nil
+	case "local3":
+		return syslog.LOG_LOCAL3, nil
+	case "local4":
+		return syslog.LOG_LOCAL4, nil
+	case "local5":
+		return syslog.LOG_LOCAL5, nil
+	case "local6":
+		return syslog.LOG_LOCAL6, nil
+	case "local7":
+		return syslog.LOG_LOCAL7, nil
+	default:
+		return 0, gopi.ErrBadParameter
+	}
+}
+
 func (this *driver) log(l Level, message string) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
 	if this.device != nil {
-		this.mutex.Lock()
-		defer this.mutex.Unlock()
 		fmt.Fprintf(this.device, "[%v] %v\n", l, message)
+	}
+	if this.syslog != nil {
+		switch l {
+		case LOG_DEBUG2, LOG_DEBUG:
+			this.syslog.Debug(message)
+		case LOG_WARN:
+			this.syslog.Warning(message)
+		case LOG_INFO:
+			this.syslog.Info(message)
+		case LOG_ERROR:
+			this.syslog.Err(message)
+		case LOG_FATAL:
+			this.syslog.Crit(message)
+		}
 	}
 }
 
