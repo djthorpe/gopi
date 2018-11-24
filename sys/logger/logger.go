@@ -111,7 +111,7 @@ func (config Config) Open(_ gopi.Logger) (gopi.Driver, error) {
 	this.level = config.Level
 	this.tag = config.Tag
 
-	if facility, err := getSyslogPriority(config.Path); err != gopi.ErrBadParameter {
+	if facility, err := getSyslogPriority(config.Path); err != nil && err != gopi.ErrBadParameter {
 		// Unknown syslog error
 		return nil, err
 	} else if err == nil {
