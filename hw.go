@@ -150,6 +150,19 @@ type SPI interface {
 	Write(send []byte) error
 }
 
+// PWM implements the PWM interface for actuators, motors, etc.
+type PWM interface {
+	Driver
+
+	// Frequency in Hz
+	Frequency(GPIOPin) (float32, error)
+	SetFrequency(float32, GPIOPin) error
+
+	// Duty Cycle between 0.0 and 1,0
+	DutyCycle(GPIOPin) (float32, error)
+	SetDutyCycle(float32, GPIOPin) error
+}
+
 // LIRC implements the IR send & receive interface
 type LIRC interface {
 	Driver

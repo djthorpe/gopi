@@ -51,6 +51,7 @@ type AppInstance struct {
 	GPIO     GPIO
 	I2C      I2C
 	SPI      SPI
+	PWM      PWM
 	LIRC     LIRC
 	debug    bool
 	verbose  bool
@@ -443,6 +444,7 @@ func (this *AppInstance) Close() error {
 	this.I2C = nil
 	this.GPIO = nil
 	this.SPI = nil
+	this.PWM = nil
 	this.LIRC = nil
 
 	// Return success
@@ -566,6 +568,10 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 		}
 	case MODULE_TYPE_SPI:
 		if this.SPI, ok = driver.(SPI); !ok {
+			return fmt.Errorf("Module %v cannot be cast to gopi.SPI", module)
+		}
+	case MODULE_TYPE_PWM:
+		if this.PWM, ok = driver.(PWM); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.SPI", module)
 		}
 	case MODULE_TYPE_TIMER:
