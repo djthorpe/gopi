@@ -75,6 +75,7 @@ const (
 	MODULE_TYPE_GPIO      // GPIO Hardware interface
 	MODULE_TYPE_I2C       // I2C Hardware interface
 	MODULE_TYPE_SPI       // SPI Hardware interface
+	MODULE_TYPE_PWM       // PWM Hardware interface
 	MODULE_TYPE_INPUT     // Input manager & devices
 	MODULE_TYPE_TIMER     // Timer module
 	MODULE_TYPE_LIRC      // LIRC module
@@ -102,6 +103,7 @@ var (
 		"gpio":      MODULE_TYPE_GPIO,      // General Purpose input/output
 		"i2c":       MODULE_TYPE_I2C,       // I2C Hardware interface
 		"spi":       MODULE_TYPE_SPI,       // SPI Hardware interface
+		"pwm":       MODULE_TYPE_PWM,       // PWM Hardware interface
 		"input":     MODULE_TYPE_INPUT,     // Input devices
 		"timer":     MODULE_TYPE_TIMER,     // Timer and backoff
 		"lirc":      MODULE_TYPE_LIRC,      // IR Sending and Receiving
@@ -330,6 +332,8 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_I2C"
 	case MODULE_TYPE_SPI:
 		return "MODULE_TYPE_SPI"
+	case MODULE_TYPE_PWM:
+		return "MODULE_TYPE_PWM"
 	case MODULE_TYPE_INPUT:
 		return "MODULE_TYPE_INPUT"
 	case MODULE_TYPE_DISCOVERY:
