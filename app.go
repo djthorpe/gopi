@@ -572,7 +572,7 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 		}
 	case MODULE_TYPE_PWM:
 		if this.PWM, ok = driver.(PWM); !ok {
-			return fmt.Errorf("Module %v cannot be cast to gopi.SPI", module)
+			return fmt.Errorf("Module %v cannot be cast to gopi.PWM", module)
 		}
 	case MODULE_TYPE_TIMER:
 		if this.Timer, ok = driver.(Timer); !ok {
