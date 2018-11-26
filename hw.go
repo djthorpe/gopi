@@ -10,6 +10,7 @@ package gopi
 
 import (
 	"fmt"
+	"time"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,11 +155,14 @@ type SPI interface {
 type PWM interface {
 	Driver
 
-	// Frequency in Hz
-	Frequency(GPIOPin) (float32, error)
-	SetFrequency(float32, GPIOPin) error
+	// Return array of pins which are enabled for PWM
+	Pins() []GPIOPin
 
-	// Duty Cycle between 0.0 and 1,0
+	// Period
+	Period(GPIOPin) (time.Duration, error)
+	SetPeriod(time.Duration, GPIOPin) error
+
+	// Duty Cycle between 0.0 and 1.0 (0.0 is always off, 1.0 is always on)
 	DutyCycle(GPIOPin) (float32, error)
 	SetDutyCycle(float32, GPIOPin) error
 }
