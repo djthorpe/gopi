@@ -160,11 +160,11 @@ type PWM interface {
 
 	// Period
 	Period(GPIOPin) (time.Duration, error)
-	SetPeriod(time.Duration, GPIOPin) error
+	SetPeriod(time.Duration, ...GPIOPin) error
 
 	// Duty Cycle between 0.0 and 1.0 (0.0 is always off, 1.0 is always on)
 	DutyCycle(GPIOPin) (float32, error)
-	SetDutyCycle(float32, GPIOPin) error
+	SetDutyCycle(float32, ...GPIOPin) error
 }
 
 // LIRC implements the IR send & receive interface
