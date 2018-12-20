@@ -8,6 +8,12 @@
 
 package gopi
 
+import (
+	"fmt"
+	"log"
+	"sync"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -40,14 +46,68 @@ type Logger interface {
 	IsDebug() bool
 }
 
+// Concrete basic logger
+type logger struct {
+	sync.Mutex
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
 // Open a driver - opens the concrete version given the config method
 func Open(config Config, log Logger) (Driver, error) {
+	if log == nil {
+		log = new(logger)
+	}
 	if driver, err := config.Open(log); err != nil {
 		return nil, err
 	} else {
 		return driver, nil
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func (this *logger) Close() error {
+	this.Lock()
+	defer this.Unlock()
+	return nil
+}
+func (this *logger) Fatal(format string, v ...interface{}) error {
+	this.Lock()
+	defer this.Unlock()
+	err := fmt.Errorf(format, v...)
+	log.Printf("Fatal: %v", err.Error())
+	return err
+}
+func (this *logger) Error(format string, v ...interface{}) error {
+	this.Lock()
+	defer this.Unlock()
+	err := fmt.Errorf(format, v...)
+	log.Printf("Error: %v", err.Error())
+	return err
+}
+func (this *logger) Warn(format string, v ...interface{}) {
+	this.Lock()
+	defer this.Unlock()
+	log.Printf("Warn: %v", fmt.Sprintf(format, v...))
+}
+func (this *logger) Info(format string, v ...interface{}) {
+	this.Lock()
+	defer this.Unlock()
+	log.Printf("Info: %v", fmt.Sprintf(format, v...))
+}
+func (this *logger) Debug(format string, v ...interface{}) {
+	this.Lock()
+	defer this.Unlock()
+	log.Printf("Debug: %v", fmt.Sprintf(format, v...))
+}
+func (this *logger) Debug2(format string, v ...interface{}) {
+	this.Lock()
+	defer this.Unlock()
+	log.Printf("Debug: %v", fmt.Sprintf(format, v...))
+}
+func (this *logger) IsDebug() bool {
+	return true
 }
