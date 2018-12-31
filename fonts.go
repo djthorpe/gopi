@@ -31,7 +31,7 @@ type FontManager interface {
 
 	// Open font faces at path, checking to see if individual files should
 	// be opened through a callback function
-	OpenFacesAtPath(path string, callback func(path string, info os.FileInfo) bool) error
+	OpenFacesAtPath(path string, callback func(manager FontManager, path string, info os.FileInfo) bool) error
 
 	// Destroy a font face
 	DestroyFace(FontFace) error
