@@ -8,6 +8,8 @@
 
 package gopi
 
+import "os"
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
@@ -17,7 +19,7 @@ type FontFlags uint16
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-// Manager for fonts
+// FontManager for font management
 type FontManager interface {
 	Driver
 
@@ -27,22 +29,18 @@ type FontManager interface {
 	// Open a font face - indexed within file of several faces
 	OpenFaceAtIndex(path string, index uint) (FontFace, error)
 
-	/*
+	// Open font faces at path, checking to see if individual files should
+	// be opened through a callback function
+	OpenFacesAtPath(path string, callback func(path string, info os.FileInfo) bool) error
 
+	// Destroy a font face
+	DestroyFace(FontFace) error
 
-		// Open font faces at path, checking to see if individual files should
-		// be opened through a callback function
-		OpenFacesAtPath(path string, callback func(path string, info os.FileInfo) bool) error
+	// Return an array of font families which are loaded
+	Families() []string
 
-		// Destroy a font face
-		DestroyFace(FontFace) error
-
-		// Return an array of font families which are loaded
-		Families() []string
-
-		// Return faces in a family and/or with a particular set of attributes
-		Faces(family string, flags FontFlags) []FontFace
-	*/
+	// Return faces in a family and/or with a particular set of attributes
+	Faces(family string, flags FontFlags) []FontFace
 }
 
 // Abstract font face interface
