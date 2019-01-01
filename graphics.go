@@ -40,8 +40,8 @@ type SurfaceCallback func(Surface, Bitmap) error
 // surfaces around an open display
 type SurfaceManager interface {
 	Driver
-	SurfaceManagerSurfaceMethods
-	SurfaceManagerBitmapMethods
+	//SurfaceManagerSurfaceMethods
+	//SurfaceManagerBitmapMethods
 
 	// Return the display associated with the surface manager
 	Display() Display
