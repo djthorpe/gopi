@@ -27,12 +27,6 @@ type SurfaceFlags uint32
 // performing surface operations
 type SurfaceManagerCallback func(SurfaceManager) error
 
-// SurfaceCallback is a function callback for
-// performing drawing operations. If it's a bitmap
-// the second argument will contain the bitmap
-// resource
-type SurfaceCallback func(Surface, Bitmap) error
-
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
@@ -93,10 +87,6 @@ type Surface interface {
 	Origin() Point
 	Opacity() float32
 	Layer() uint16
-
-	//Perform drawing operations on a surface - if it's a bitmap
-	//then this reads the bitmap data from the GPU ready to draw on
-	//Do(SurfaceCallback) error
 }
 
 // Bitmap defines a rectangular bitmap which can be used
@@ -134,7 +124,9 @@ const (
 const (
 	// SurfaceType
 	SURFACE_FLAG_NONE              SurfaceFlags = (1 << iota)
-	SURFACE_FLAG_ALPHA_FROM_SOURCE              = (1 << iota)
+	SURFACE_FLAG_ALPHA_FROM_SOURCE SurfaceFlags = (1 << iota)
+	SURFACE_FLAG_MIN                            = SURFACE_FLAG_ALPHA_FROM_SOURCE
+	SURFACE_FLAG_MAX                            = SURFACE_FLAG_ALPHA_FROM_SOURCE
 )
 
 const (
@@ -166,10 +158,20 @@ func (t SurfaceType) String() string {
 }
 
 func (f SurfaceFlags) String() string {
+	parts := ""
 	if f == SURFACE_FLAG_NONE {
 		return "SURFACE_FLAG_NONE"
 	}
-	flags := ""
-	// Add flags here
-	return strings.Trim(flags, "|")
+	for flag := SURFACE_FLAG_MIN; flag <= SURFACE_FLAG_MAX; flag <<= 1 {
+		if f&flag == 0 {
+			continue
+		}
+		switch flag {
+		case SURFACE_FLAG_ALPHA_FROM_SOURCE:
+			parts += "|" + "SURFACE_FLAG_ALPHA_FROM_SOURCE"
+		default:
+			parts += "|" + "[?? Invalid SurfaceFlags value]"
+		}
+	}
+	return strings.Trim(parts, "|")
 }
