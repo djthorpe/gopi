@@ -89,15 +89,14 @@ type Surface interface {
 	Layer() uint16
 }
 
-// Bitmap defines a rectangular bitmap which can be used
-// by the GPU
+// Bitmap defines a rectangular bitmap which can be used by the GPU
 type Bitmap interface {
 	Type() SurfaceType
 	Size() Size
 
-	// Bitmap operations - requires you to use Do() on
-	// the surface in order to operate on the bitmap
+	// Bitmap operations
 	ClearToColorRGBA(color color.RGBA) error
+	ClearToColor(color color.Color) error
 }
 
 /*
