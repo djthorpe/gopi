@@ -72,8 +72,8 @@ type SurfaceManagerSurfaceMethods interface {
 
 	// Change surface properties (size, position, etc)
 	SetOrigin(Surface, Point) error
-	MoveOriginBy(Surface, Point)
-	SetSize(Surface, Size)
+	MoveOriginBy(Surface, Point) error
+	SetSize(Surface, Size) error
 	SetLayer(Surface, uint16) error
 	SetOpacity(Surface, float32) error
 	SetBitmap(Bitmap) error
