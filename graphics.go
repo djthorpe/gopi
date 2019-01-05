@@ -75,7 +75,7 @@ type SurfaceManagerSurfaceMethods interface {
 
 type SurfaceManagerBitmapMethods interface {
 	// Create and destroy bitmaps
-	CreateBitmap(SurfaceType, Size) (Bitmap, error)
+	CreateBitmap(SurfaceType, SurfaceFlags, Size) (Bitmap, error)
 	DestroyBitmap(Bitmap) error
 }
 
