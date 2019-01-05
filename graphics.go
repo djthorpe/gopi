@@ -40,7 +40,7 @@ type SurfaceCallback func(Surface, Bitmap) error
 // surfaces around an open display
 type SurfaceManager interface {
 	Driver
-	//SurfaceManagerSurfaceMethods
+	SurfaceManagerSurfaceMethods
 	//SurfaceManagerBitmapMethods
 
 	// Return the display associated with the surface manager
@@ -71,14 +71,12 @@ type SurfaceManagerSurfaceMethods interface {
 	*/
 
 	// Change surface properties (size, position, etc)
-	SetLayer(Surface, SurfaceFlags, uint16) error
-	SetOrigin(Surface, SurfaceFlags, Point) error
-	SetOpacity(Surface, SurfaceFlags, float32) error
-	/*
-		MoveOriginBy(Surface, SurfaceFlags, Point)
-		SetSize(Surface, SurfaceFlags, Size)
-		SetBitmap(Bitmap) error
-	*/
+	SetOrigin(Surface, Point) error
+	MoveOriginBy(Surface, Point)
+	SetSize(Surface, Size)
+	SetLayer(Surface, uint16) error
+	SetOpacity(Surface, float32) error
+	SetBitmap(Bitmap) error
 }
 
 type SurfaceManagerBitmapMethods interface {
