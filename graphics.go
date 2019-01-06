@@ -10,6 +10,8 @@ package gopi
 
 import (
 	"image/color"
+	"io"
+	"os"
 	"strings"
 )
 
@@ -49,8 +51,9 @@ type SurfaceManager interface {
 }
 
 type SurfaceManagerSurfaceMethods interface {
-	// Perform surface operations (create, destroy, move, set) within
-	// a 'Do' method to ensure atomic updates to the display
+	// Perform all surface operations (create, destroy, move, set, paint) within the 'Do' method
+	// to ensure atomic updates to the display. When Do returns, the display is updated and any error
+	// from the callback is returned
 	Do(SurfaceManagerCallback) error
 
 	// Create & destroy surfaces
@@ -61,7 +64,7 @@ type SurfaceManagerSurfaceMethods interface {
 	/*
 		// Create background, surface and cursors
 		CreateBackground(api SurfaceType, flags SurfaceFlags, opacity float32) (Surface, error)
-		CreateCursor(api SurfaceType, flags SurfaceFlags, opacity float32, origin Point, cursor SurfaceCursor) (Surface, error)
+		CreateCursor(cursor Sprite, flags SurfaceFlags, origin Point) (Surface, error)
 	*/
 
 	// Change surface properties (size, position, etc)
@@ -77,6 +80,9 @@ type SurfaceManagerBitmapMethods interface {
 	// Create and destroy bitmaps
 	CreateBitmap(SurfaceType, SurfaceFlags, Size) (Bitmap, error)
 	DestroyBitmap(Bitmap) error
+
+	// Snapshot the display to a bitmap
+	//SnapshotDisplay() (Bitmap, error)
 }
 
 // Surface is manipulated by surface manager, and used by
@@ -95,17 +101,33 @@ type Bitmap interface {
 	Size() Size
 
 	// Bitmap operations
-	ClearToColorRGBA(color color.RGBA) error
 	ClearToColor(color color.Color) error
+	//RectToColor(Point, Size, color.Color) error
 }
 
-/*
-type SurfaceCursor interface {
-	API()
-	Hotspot()
-	Size()
+// SpriteManager loads sprites from io.Reader buffers
+type SpriteManager interface {
+	Driver
+
+	// Open sprites and return them
+	OpenSprites(io.Reader) ([]Sprite, error)
+
+	// Open sprites from path, checking to see if individual files should
+	// be opened through a callback function
+	OpenSpritesAtPath(path string, callback func(manager FontManager, path string, info os.FileInfo) bool) error
+
+	// Return loaded sprites, or a specific sprite
+	Sprites(name string) []Sprite
 }
-*/
+
+// A Sprite is a bitmap, but has a unique name and
+// optionally a hotspot location
+type Sprite interface {
+	Bitmap
+
+	Name() string
+	Hotspot() Point
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -121,7 +143,7 @@ const (
 )
 
 const (
-	// SurfaceType
+	// SurfaceFlags
 	SURFACE_FLAG_NONE              SurfaceFlags = (1 << iota)
 	SURFACE_FLAG_ALPHA_FROM_SOURCE SurfaceFlags = (1 << iota)
 	SURFACE_FLAG_MIN                            = SURFACE_FLAG_ALPHA_FROM_SOURCE
