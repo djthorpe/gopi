@@ -109,19 +109,20 @@ type Bitmap interface {
 type SpriteManager interface {
 	Driver
 
-	// Open sprites and return them
+	// Open one or more sprites from a stream and return them
 	OpenSprites(io.Reader) ([]Sprite, error)
 
 	// Open sprites from path, checking to see if individual files should
 	// be opened through a callback function
-	OpenSpritesAtPath(path string, callback func(manager FontManager, path string, info os.FileInfo) bool) error
+	OpenSpritesAtPath(path string, callback func(manager SpriteManager, path string, info os.FileInfo) bool) error
 
 	// Return loaded sprites, or a specific sprite
 	Sprites(name string) []Sprite
 }
 
 // A Sprite is a bitmap, but has a unique name and
-// optionally a hotspot location
+// optionally a hotspot location. If there is no hotspot then
+// gopi.Point{ 0,0 } (top left) is used by default
 type Sprite interface {
 	Bitmap
 
