@@ -18,6 +18,11 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
+// Color including opacity
+type Color struct {
+	R, G, B, A float32
+}
+
 // SurfaceType of surface (which API it's bound to)
 type SurfaceType uint
 
@@ -139,8 +144,12 @@ const (
 	SURFACE_TYPE_OPENGL
 	SURFACE_TYPE_OPENGL_ES
 	SURFACE_TYPE_OPENGL_ES2
-	SURFACE_TYPE_OPENVG
-	SURFACE_TYPE_RGBA32
+	SURFACE_TYPE_OPENVG // 2D Vector
+	SURFACE_TYPE_RGBA32 // Bitmap, 4 bytes per pixel
+	SURFACE_TYPE_RGB888 // Bitmap, 3 bytes per pixel
+	SURFACE_TYPE_RGB565 // Bitmap, 2 bytes per pixel
+	SURFACE_TYPE_MIN    = SURFACE_TYPE_OPENGL
+	SURFACE_TYPE_MAX    = SURFACE_TYPE_RGB888
 )
 
 const (
@@ -159,6 +168,21 @@ const (
 	SURFACE_LAYER_CURSOR     uint16 = 0xFFFF
 )
 
+// Standard Colors
+var (
+	ColorRed       = Color{1.0, 0.0, 0.0, 1.0}
+	ColorGreen     = Color{0.0, 1.0, 0.0, 1.0}
+	ColorBlue      = Color{0.0, 0.0, 1.0, 1.0}
+	ColorWhite     = Color{1.0, 1.0, 1.0, 1.0}
+	ColorBlack     = Color{0.0, 0.0, 0.0, 1.0}
+	ColorPurple    = Color{1.0, 0.0, 1.0, 1.0}
+	ColorCyan      = Color{0.0, 1.0, 1.0, 1.0}
+	ColorYellow    = Color{1.0, 1.0, 0.0, 1.0}
+	ColorDarkGrey  = Color{0.25, 0.25, 0.25, 1.0}
+	ColorLightGrey = Color{0.75, 0.75, 0.75, 1.0}
+	ColorMidGrey   = Color{0.5, 0.5, 0.5, 1.0}
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -174,6 +198,10 @@ func (t SurfaceType) String() string {
 		return "SURFACE_TYPE_OPENVG"
 	case SURFACE_TYPE_RGBA32:
 		return "SURFACE_TYPE_RGBA32"
+	case SURFACE_TYPE_RGB565:
+		return "SURFACE_TYPE_RGB565"
+	case SURFACE_TYPE_RGB888:
+		return "SURFACE_TYPE_RGB888"
 	default:
 		return "[Invalid SurfaceType value]"
 	}
