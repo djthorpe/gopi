@@ -9,7 +9,6 @@
 package gopi
 
 import (
-	"image/color"
 	"io"
 	"os"
 	"strings"
@@ -87,7 +86,7 @@ type SurfaceManagerBitmapMethods interface {
 	DestroyBitmap(Bitmap) error
 
 	// Snapshot the display to a bitmap
-	//SnapshotDisplay() (Bitmap, error)
+	SnapshotDisplay() (Bitmap, error)
 }
 
 // Surface is manipulated by surface manager, and used by
@@ -106,8 +105,8 @@ type Bitmap interface {
 	Size() Size
 
 	// Bitmap operations
-	ClearToColor(color color.Color) error
-	//RectToColor(Point, Size, color.Color) error
+	ClearToColor(color Color) error
+	FillRectToColor(Point, Size, Color) error
 }
 
 // SpriteManager loads sprites from io.Reader buffers
@@ -125,9 +124,7 @@ type SpriteManager interface {
 	Sprites(name string) []Sprite
 }
 
-// A Sprite is a bitmap, but has a unique name and
-// optionally a hotspot location. If there is no hotspot then
-// gopi.Point{ 0,0 } (top left) is used by default
+// Sprite implemnts a bitmap with a unique name and hotspot location (for cursors)
 type Sprite interface {
 	Bitmap
 
