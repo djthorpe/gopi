@@ -11,10 +11,6 @@ package gopi
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Color struct {
-	R, G, B, A float32
-}
-
 type (
 	VGStrokeCapStyle  uint16
 	VGStrokeJoinStyle uint16
@@ -149,19 +145,4 @@ const (
 	VG_STYLE_FILL_NONE    VGFillRule = 0x0000
 	VG_STYLE_FILL_NONZERO VGFillRule = 0x1900
 	VG_STYLE_FILL_EVENODD VGFillRule = 0x1901 // Default
-)
-
-// Standard Colors
-var (
-	ColorRed       = Color{1.0, 0.0, 0.0, 1.0}
-	ColorGreen     = Color{0.0, 1.0, 0.0, 1.0}
-	ColorBlue      = Color{0.0, 0.0, 1.0, 1.0}
-	ColorWhite     = Color{1.0, 1.0, 1.0, 1.0}
-	ColorBlack     = Color{0.0, 0.0, 0.0, 1.0}
-	ColorPurple    = Color{1.0, 0.0, 1.0, 1.0}
-	ColorCyan      = Color{0.0, 1.0, 1.0, 1.0}
-	ColorYellow    = Color{1.0, 1.0, 0.0, 1.0}
-	ColorDarkGrey  = Color{0.25, 0.25, 0.25, 1.0}
-	ColorLightGrey = Color{0.75, 0.75, 0.75, 1.0}
-	ColorMidGrey   = Color{0.5, 0.5, 0.5, 1.0}
 )
