@@ -22,12 +22,10 @@ type Color struct {
 	R, G, B, A float32
 }
 
-// SurfaceType of surface (which API it's bound to)
-type SurfaceType uint
-
-// SurfaceFlags are flags associated with surface
-// usually during operations
-type SurfaceFlags uint32
+type (
+	// SurfaceFlags are flags associated with surface
+	SurfaceFlags uint16
+)
 
 // SurfaceManagerCallback is a function callback for
 // performing surface operations
@@ -51,7 +49,7 @@ type SurfaceManager interface {
 	Name() string
 
 	// Return capabilities for the GPU
-	Types() []SurfaceType
+	Types() []SurfaceFlags
 }
 
 type SurfaceManagerSurfaceMethods interface {
@@ -61,7 +59,7 @@ type SurfaceManagerSurfaceMethods interface {
 	Do(SurfaceManagerCallback) error
 
 	// Create & destroy surfaces
-	CreateSurface(api SurfaceType, flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
+	CreateSurface(flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
 	CreateSurfaceWithBitmap(bitmap Bitmap, flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
 	DestroySurface(Surface) error
 
@@ -82,17 +80,15 @@ type SurfaceManagerSurfaceMethods interface {
 
 type SurfaceManagerBitmapMethods interface {
 	// Create and destroy bitmaps
-	CreateBitmap(SurfaceType, SurfaceFlags, Size) (Bitmap, error)
+	CreateBitmap(SurfaceFlags, Size) (Bitmap, error)
+	CreateSnapshot() (Bitmap, error)
 	DestroyBitmap(Bitmap) error
-
-	// Snapshot the display to a bitmap
-	SnapshotDisplay() (Bitmap, error)
 }
 
 // Surface is manipulated by surface manager, and used by
 // a GPU API (bitmap or vector drawing mostly)
 type Surface interface {
-	Type() SurfaceType
+	Type() SurfaceFlags
 	Size() Size
 	Origin() Point
 	Opacity() float32
@@ -101,11 +97,11 @@ type Surface interface {
 
 // Bitmap defines a rectangular bitmap which can be used by the GPU
 type Bitmap interface {
-	Type() SurfaceType
+	Type() SurfaceFlags
 	Size() Size
 
 	// Bitmap operations
-	ClearToColor(color Color) error
+	ClearToColor(Color) error
 	FillRectToColor(Point, Size, Color) error
 }
 
@@ -136,25 +132,21 @@ type Sprite interface {
 // CONSTANTS
 
 const (
-	// SurfaceType
-	SURFACE_TYPE_NONE SurfaceType = iota
-	SURFACE_TYPE_OPENGL
-	SURFACE_TYPE_OPENGL_ES
-	SURFACE_TYPE_OPENGL_ES2
-	SURFACE_TYPE_OPENVG // 2D Vector
-	SURFACE_TYPE_RGBA32 // Bitmap, 4 bytes per pixel
-	SURFACE_TYPE_RGB888 // Bitmap, 3 bytes per pixel
-	SURFACE_TYPE_RGB565 // Bitmap, 2 bytes per pixel
-	SURFACE_TYPE_MIN    = SURFACE_TYPE_OPENGL
-	SURFACE_TYPE_MAX    = SURFACE_TYPE_RGB888
-)
-
-const (
-	// SurfaceFlags
-	SURFACE_FLAG_NONE              SurfaceFlags = (1 << iota)
-	SURFACE_FLAG_ALPHA_FROM_SOURCE SurfaceFlags = (1 << iota)
-	SURFACE_FLAG_MIN                            = SURFACE_FLAG_ALPHA_FROM_SOURCE
-	SURFACE_FLAG_MAX                            = SURFACE_FLAG_ALPHA_FROM_SOURCE
+	// SurfaceFlags - surface binding
+	SURFACE_FLAG_BITMAP     SurfaceFlags = 0x0000 // Bitmap
+	SURFACE_FLAG_OPENGL     SurfaceFlags = 0x0001
+	SURFACE_FLAG_OPENGL_ES  SurfaceFlags = 0x0002
+	SURFACE_FLAG_OPENGL_ES2 SurfaceFlags = 0x0003
+	SURFACE_FLAG_OPENVG     SurfaceFlags = 0x0004 // 2D Vector
+	SURFACE_FLAG_TYPEMASK   SurfaceFlags = 0x000F
+	// SurfaceFlags - surface configuration
+	SURFACE_FLAG_RGBA32     SurfaceFlags = 0x0000 // 4 bytes per pixel
+	SURFACE_FLAG_RGB888     SurfaceFlags = 0x0010 // 3 bytes per pixel
+	SURFACE_FLAG_RGB565     SurfaceFlags = 0x0020 // 2 bytes per pixel
+	SURFACE_FLAG_CONFIGMASK SurfaceFlags = 0x00F0
+	// SurfaceFlags - modifiers
+	SURFACE_FLAG_ALPHA_FROM_SOURCE SurfaceFlags = 0x0100
+	SURFACE_FLAG_MODMASK           SurfaceFlags = 0x0F00
 )
 
 const (
@@ -183,42 +175,66 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (t SurfaceType) String() string {
-	switch t {
-	case SURFACE_TYPE_OPENGL:
-		return "SURFACE_TYPE_OPENGL"
-	case SURFACE_TYPE_OPENGL_ES:
-		return "SURFACE_TYPE_OPENGL_ES"
-	case SURFACE_TYPE_OPENGL_ES2:
-		return "SURFACE_TYPE_OPENGL_ES2"
-	case SURFACE_TYPE_OPENVG:
-		return "SURFACE_TYPE_OPENVG"
-	case SURFACE_TYPE_RGBA32:
-		return "SURFACE_TYPE_RGBA32"
-	case SURFACE_TYPE_RGB565:
-		return "SURFACE_TYPE_RGB565"
-	case SURFACE_TYPE_RGB888:
-		return "SURFACE_TYPE_RGB888"
+// Type() returns the type of the surface
+func (f SurfaceFlags) Type() SurfaceFlags {
+	return f & SURFACE_FLAG_TYPEMASK
+}
+
+// Config() returns the configuration of the surface
+func (f SurfaceFlags) Config() SurfaceFlags {
+	return f & SURFACE_FLAG_CONFIGMASK
+}
+
+// Mod() returns surface modifiers
+func (f SurfaceFlags) Mod() SurfaceFlags {
+	return f & SURFACE_FLAG_MODMASK
+}
+
+func (f SurfaceFlags) TypeString() string {
+	switch f.Type() {
+	case SURFACE_FLAG_BITMAP:
+		return "SURFACE_FLAG_BITMAP"
+	case SURFACE_FLAG_OPENGL:
+		return "SURFACE_FLAG_OPENGL"
+	case SURFACE_FLAG_OPENGL_ES:
+		return "SURFACE_FLAG_OPENGL_ES"
+	case SURFACE_FLAG_OPENGL_ES2:
+		return "SURFACE_FLAG_OPENGL_ES2"
+	case SURFACE_FLAG_OPENVG:
+		return "SURFACE_FLAG_OPENVG"
 	default:
-		return "[Invalid SurfaceType value]"
+		return "[?? Invalid SurfaceFlags value]"
+	}
+}
+
+func (f SurfaceFlags) ConfigString() string {
+	m := f.Mod()
+	switch {
+	case m == 0:
+		return ""
+	case m&SURFACE_FLAG_ALPHA_FROM_SOURCE == SURFACE_FLAG_ALPHA_FROM_SOURCE:
+		return "SURFACE_FLAG_ALPHA_FROM_SOURCE"
+	default:
+		return "[?? Invalid SurfaceFlags value]"
+	}
+}
+
+func (f SurfaceFlags) ModString() string {
+	m := f.Mod()
+	switch {
+	case m == 0:
+		return ""
+	case m&SURFACE_FLAG_ALPHA_FROM_SOURCE == SURFACE_FLAG_ALPHA_FROM_SOURCE:
+		return "SURFACE_FLAG_ALPHA_FROM_SOURCE"
+	default:
+		return "[?? Invalid SurfaceFlags value]"
 	}
 }
 
 func (f SurfaceFlags) String() string {
 	parts := ""
-	if f == SURFACE_FLAG_NONE {
-		return "SURFACE_FLAG_NONE"
-	}
-	for flag := SURFACE_FLAG_MIN; flag <= SURFACE_FLAG_MAX; flag <<= 1 {
-		if f&flag == 0 {
-			continue
-		}
-		switch flag {
-		case SURFACE_FLAG_ALPHA_FROM_SOURCE:
-			parts += "|" + "SURFACE_FLAG_ALPHA_FROM_SOURCE"
-		default:
-			parts += "|" + "[?? Invalid SurfaceFlags value]"
-		}
-	}
+	parts += "|" + f.TypeString()
+	parts += "|" + f.ConfigString()
+	parts += "|" + f.ModString()
 	return strings.Trim(parts, "|")
 }
