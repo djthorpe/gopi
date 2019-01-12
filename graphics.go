@@ -9,6 +9,7 @@
 package gopi
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -173,7 +174,11 @@ var (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// STRINGIFY
+// IMPLEMENTATIONS
+
+func (c Color) RGBA() (r, g, b, a uint32) {
+	return uint32(c.R*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.G*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.B*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.A*float32(0xFFFF)) & uint32(0xFFFF)
+}
 
 // Type() returns the type of the surface
 func (f SurfaceFlags) Type() SurfaceFlags {
@@ -189,6 +194,9 @@ func (f SurfaceFlags) Config() SurfaceFlags {
 func (f SurfaceFlags) Mod() SurfaceFlags {
 	return f & SURFACE_FLAG_MODMASK
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
 
 func (f SurfaceFlags) TypeString() string {
 	switch f.Type() {
@@ -237,4 +245,8 @@ func (f SurfaceFlags) String() string {
 	parts += "|" + f.ConfigString()
 	parts += "|" + f.ModString()
 	return strings.Trim(parts, "|")
+}
+
+func (c Color) String() string {
+	return fmt.Sprintf("Color{ %.1f,%.1f,%.1f,%.1f }", c.R, c.G, c.B, c.A)
 }
