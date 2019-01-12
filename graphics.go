@@ -134,11 +134,12 @@ type Sprite interface {
 
 const (
 	// SurfaceFlags - surface binding
-	SURFACE_FLAG_BITMAP     SurfaceFlags = 0x0000 // Bitmap
-	SURFACE_FLAG_OPENGL     SurfaceFlags = 0x0001
-	SURFACE_FLAG_OPENGL_ES  SurfaceFlags = 0x0002
-	SURFACE_FLAG_OPENGL_ES2 SurfaceFlags = 0x0003
-	SURFACE_FLAG_OPENVG     SurfaceFlags = 0x0004 // 2D Vector
+	SURFACE_FLAG_NONE       SurfaceFlags = 0x0000
+	SURFACE_FLAG_BITMAP     SurfaceFlags = 0x0001 // Bitmap
+	SURFACE_FLAG_OPENGL     SurfaceFlags = 0x0002
+	SURFACE_FLAG_OPENGL_ES  SurfaceFlags = 0x0003
+	SURFACE_FLAG_OPENGL_ES2 SurfaceFlags = 0x0004
+	SURFACE_FLAG_OPENVG     SurfaceFlags = 0x0005 // 2D Vector
 	SURFACE_FLAG_TYPEMASK   SurfaceFlags = 0x000F
 	// SurfaceFlags - surface configuration
 	SURFACE_FLAG_RGBA32     SurfaceFlags = 0x0000 // 4 bytes per pixel
@@ -216,12 +217,13 @@ func (f SurfaceFlags) TypeString() string {
 }
 
 func (f SurfaceFlags) ConfigString() string {
-	m := f.Mod()
-	switch {
-	case m == 0:
-		return ""
-	case m&SURFACE_FLAG_ALPHA_FROM_SOURCE == SURFACE_FLAG_ALPHA_FROM_SOURCE:
-		return "SURFACE_FLAG_ALPHA_FROM_SOURCE"
+	switch f.Config() {
+	case SURFACE_FLAG_RGBA32:
+		return "SURFACE_FLAG_RGBA32"
+	case SURFACE_FLAG_RGB888:
+		return "SURFACE_FLAG_RGB888"
+	case SURFACE_FLAG_RGB565:
+		return "SURFACE_FLAG_RGB565"
 	default:
 		return "[?? Invalid SurfaceFlags value]"
 	}
