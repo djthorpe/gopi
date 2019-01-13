@@ -62,13 +62,9 @@ type SurfaceManagerSurfaceMethods interface {
 	// Create & destroy surfaces
 	CreateSurface(flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
 	CreateSurfaceWithBitmap(bitmap Bitmap, flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
+	CreateBackground(flags SurfaceFlags, opacity float32) (Surface, error)
+	CreateCursor(cursor Sprite, flags SurfaceFlags, origin Point) (Surface, error)
 	DestroySurface(Surface) error
-
-	/*
-		// Create background, surface and cursors
-		CreateBackground(api SurfaceType, flags SurfaceFlags, opacity float32) (Surface, error)
-		CreateCursor(cursor Sprite, flags SurfaceFlags, origin Point) (Surface, error)
-	*/
 
 	// Change surface properties (size, position, etc)
 	SetOrigin(Surface, Point) error
@@ -104,6 +100,8 @@ type Bitmap interface {
 	// Bitmap operations
 	ClearToColor(Color) error
 	FillRectToColor(Point, Size, Color) error
+	//PaintText(string, FontFace, FontSize, Point, Color) error
+	//PaintImage(image.Image, Point, Color) error
 }
 
 // SpriteManager loads sprites from io.Reader buffers
