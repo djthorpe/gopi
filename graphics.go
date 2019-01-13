@@ -82,7 +82,7 @@ type SurfaceManagerSurfaceMethods interface {
 type SurfaceManagerBitmapMethods interface {
 	// Create and destroy bitmaps
 	CreateBitmap(SurfaceFlags, Size) (Bitmap, error)
-	CreateSnapshot() (Bitmap, error)
+	CreateSnapshot(SurfaceFlags) (Bitmap, error)
 	DestroyBitmap(Bitmap) error
 }
 
