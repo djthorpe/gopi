@@ -23,6 +23,9 @@ func (this *CompoundError) Add(e ...error) {
 		this.errs = make([]error, 0, len(e))
 	}
 	for _, err := range e {
+		if err == nil {
+			continue
+		}
 		switch err.(type) {
 		case (*CompoundError):
 			if len(err.(*CompoundError).errs) > 0 {
@@ -64,7 +67,7 @@ func (this *CompoundError) ErrorOrSelf() error {
 // Error satisfies the error interface
 func (this *CompoundError) Error() string {
 	if len(this.errs) == 0 {
-		return ""
+		return "<nil>"
 	}
 	if len(this.errs) == 1 {
 		return this.errs[0].Error()
