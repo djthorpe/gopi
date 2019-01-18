@@ -99,9 +99,10 @@ type Bitmap interface {
 
 	// Bitmap operations
 	ClearToColor(Color) error
-	FillRectToColor(Point, Size, Color) error
-	//PaintText(string, FontFace, FontSize, Point, Color) error
-	//PaintImage(image.Image, Point, Color) error
+	FillRectToColor(Color, Point, Size) error
+	PaintPixel(Color, Point) error
+	//PaintImage(image.Image, Point, Size) error
+	//PaintText(Color, string, FontFace, FontSize, Point) error
 }
 
 // SpriteManager loads sprites from io.Reader buffers
