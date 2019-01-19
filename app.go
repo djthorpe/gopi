@@ -44,6 +44,7 @@ type AppInstance struct {
 	Hardware Hardware
 	Display  Display
 	Graphics SurfaceManager
+	Sprites  SpriteManager
 	Input    InputManager
 	Fonts    FontManager
 	Layout   Layout
@@ -436,6 +437,7 @@ func (this *AppInstance) Close() error {
 	this.Layout = nil
 	this.Display = nil
 	this.Graphics = nil
+	this.Sprites = nil
 	this.Fonts = nil
 	this.Hardware = nil
 	this.Logger = nil
@@ -549,6 +551,10 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 	case MODULE_TYPE_GRAPHICS:
 		if this.Graphics, ok = driver.(SurfaceManager); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.SurfaceManager", module)
+		}
+	case MODULE_TYPE_SPRITES:
+		if this.Sprites, ok = driver.(SpriteManager); !ok {
+			return fmt.Errorf("Module %v cannot be cast to gopi.SpriteManager", module)
 		}
 	case MODULE_TYPE_FONTS:
 		if this.Fonts, ok = driver.(FontManager); !ok {

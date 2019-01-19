@@ -68,6 +68,7 @@ const (
 	MODULE_TYPE_HARDWARE  // Hardware capabilities and monitoring
 	MODULE_TYPE_DISPLAY   // Displays
 	MODULE_TYPE_GRAPHICS  // Graphics (Graphics Manager, Surfaces, Bitmaps)
+	MODULE_TYPE_SPRITES   // Sprites Manager
 	MODULE_TYPE_FONTS     // Font Manager & Faces
 	MODULE_TYPE_VECTOR    // 2D Vector graphics
 	MODULE_TYPE_OPENGL    // 3D Graphics
@@ -96,6 +97,7 @@ var (
 		"hw":        MODULE_TYPE_HARDWARE,  // Platform
 		"display":   MODULE_TYPE_DISPLAY,   // Displays
 		"graphics":  MODULE_TYPE_GRAPHICS,  // Surface management
+		"sprites":   MODULE_TYPE_SPRITES,   // Sprites management
 		"fonts":     MODULE_TYPE_FONTS,     // Font management
 		"vector":    MODULE_TYPE_VECTOR,    // Vector (2D) graphics
 		"opengl":    MODULE_TYPE_OPENGL,    // OpenGL graphics
@@ -318,6 +320,8 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_DISPLAY"
 	case MODULE_TYPE_GRAPHICS:
 		return "MODULE_TYPE_GRAPHICS"
+	case MODULE_TYPE_SPRITES:
+		return "MODULE_TYPE_SPRITES"
 	case MODULE_TYPE_FONTS:
 		return "MODULE_TYPE_FONTS"
 	case MODULE_TYPE_VECTOR:
