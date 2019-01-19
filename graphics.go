@@ -29,9 +29,9 @@ type (
 	SurfaceFlags uint16
 )
 
-// SurfaceManagerCallback is a function callback for
-// performing surface operations
-type SurfaceManagerCallback func(SurfaceManager) error
+// SurfaceManagerCallback is a function callback for performing surface operations
+// and is passed the surface manager and additional arguments
+type SurfaceManagerCallback func(graphics SurfaceManager, userInfo interface{}) error
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -58,7 +58,7 @@ type SurfaceManagerSurfaceMethods interface {
 	// Perform all surface operations (create, destroy, move, set, paint) within the 'Do' method
 	// to ensure atomic updates to the display. When Do returns, the display is updated and any error
 	// from the callback is returned
-	Do(SurfaceManagerCallback) error
+	Do(SurfaceManagerCallback, interface{}) error
 
 	// Create & destroy surfaces
 	CreateSurface(flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
