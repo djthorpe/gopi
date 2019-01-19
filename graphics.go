@@ -10,6 +10,7 @@ package gopi
 
 import (
 	"fmt"
+	"image"
 	"io"
 	"os"
 	"strings"
@@ -101,7 +102,7 @@ type Bitmap interface {
 	ClearToColor(Color) error
 	FillRectToColor(Color, Point, Size) error
 	PaintPixel(Color, Point) error
-	//PaintImage(image.Image, Point, Size) error
+	PaintImage(image.Image, Point, Size) error
 	//PaintText(Color, string, FontFace, FontSize, Point) error
 }
 
@@ -160,17 +161,18 @@ const (
 
 // Standard Colors
 var (
-	ColorRed       = Color{1.0, 0.0, 0.0, 1.0}
-	ColorGreen     = Color{0.0, 1.0, 0.0, 1.0}
-	ColorBlue      = Color{0.0, 0.0, 1.0, 1.0}
-	ColorWhite     = Color{1.0, 1.0, 1.0, 1.0}
-	ColorBlack     = Color{0.0, 0.0, 0.0, 1.0}
-	ColorPurple    = Color{1.0, 0.0, 1.0, 1.0}
-	ColorCyan      = Color{0.0, 1.0, 1.0, 1.0}
-	ColorYellow    = Color{1.0, 1.0, 0.0, 1.0}
-	ColorDarkGrey  = Color{0.25, 0.25, 0.25, 1.0}
-	ColorLightGrey = Color{0.75, 0.75, 0.75, 1.0}
-	ColorMidGrey   = Color{0.5, 0.5, 0.5, 1.0}
+	ColorRed         = Color{1.0, 0.0, 0.0, 1.0}
+	ColorGreen       = Color{0.0, 1.0, 0.0, 1.0}
+	ColorBlue        = Color{0.0, 0.0, 1.0, 1.0}
+	ColorWhite       = Color{1.0, 1.0, 1.0, 1.0}
+	ColorBlack       = Color{0.0, 0.0, 0.0, 1.0}
+	ColorPurple      = Color{1.0, 0.0, 1.0, 1.0}
+	ColorCyan        = Color{0.0, 1.0, 1.0, 1.0}
+	ColorYellow      = Color{1.0, 1.0, 0.0, 1.0}
+	ColorDarkGrey    = Color{0.25, 0.25, 0.25, 1.0}
+	ColorLightGrey   = Color{0.75, 0.75, 0.75, 1.0}
+	ColorMidGrey     = Color{0.5, 0.5, 0.5, 1.0}
+	ColorTransparent = Color{}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
