@@ -29,7 +29,7 @@ func TestColors_000(t *testing.T) {
 	all_colors := []gopi.Color{
 		gopi.ColorRed, gopi.ColorGreen, gopi.ColorBlue, gopi.ColorWhite, gopi.ColorBlack,
 		gopi.ColorPurple, gopi.ColorCyan, gopi.ColorYellow, gopi.ColorDarkGrey,
-		gopi.ColorLightGrey, gopi.ColorMidGrey,
+		gopi.ColorLightGrey, gopi.ColorMidGrey, gopi.ColorTransparent,
 	}
 	for _, color := range all_colors {
 		r, g, b, a := color.RGBA()
