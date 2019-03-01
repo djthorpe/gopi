@@ -42,7 +42,7 @@ In order to use the library, you'll need to have a working version of Go on
 your Raspberry Pi, which you can [download](https://golang.org/dl/). Then 
 retrieve the library on your device, using:
 
-```
+```sh
 go get github.com/djthorpe/gopi
 ```
 
@@ -94,7 +94,7 @@ The logger module provides very basic logging functionality. Here is the interfa
 logging module:
 
 
-```
+```go
 type Logger interface {
   Driver
 
@@ -114,7 +114,7 @@ type Logger interface {
 A logger module is **required** for every application which uses this framework, so 
 include the module in your main package:
 
-```
+```go
 package main
 
 import (
@@ -130,7 +130,7 @@ The logger is then available as `app.Logger` within your application, and is als
 to every gopi module with the `Open` method. The standard logger includes some command-line
 flags in case you want to log to a file, rather than to `stderr`:
 
-```
+```go
 $ helloworld -help
 Usage of helloworld:
   -debug
@@ -159,7 +159,7 @@ the following rules:
 The timer module emits `gopi.Event` objects once, at regular intervals,
 or at intervals according to a backoff rule. The timer interface is as follows:
 
-```
+```go
 type Timer interface {
   Driver
   Publisher
@@ -177,7 +177,7 @@ type Timer interface {
 
 You can subscribe to emitted events which are as follows:
 
-```
+```go
 type TimerEvent interface {
   Event
 
