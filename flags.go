@@ -171,7 +171,7 @@ func (this *Flags) FlagFloat64(name string, value float64, usage string) *float6
 ////////////////////////////////////////////////////////////////////////////////
 // GET FLAGS
 
-// Get boolean value for a flag, and a boolean which indicates if the flag
+// GetBool gets boolean value for a flag, and a boolean which indicates if the flag
 // was set
 func (this *Flags) GetBool(name string) (bool, bool) {
 	value := this.flagset.Lookup(name)
@@ -181,7 +181,7 @@ func (this *Flags) GetBool(name string) (bool, bool) {
 	return value.Value.(flag.Getter).Get().(bool), this.HasFlag(name)
 }
 
-// Get string value for a flag, and a boolean which indicates if the flag
+// GetString gets string value for a flag, and a boolean which indicates if the flag
 // was set
 func (this *Flags) GetString(name string) (string, bool) {
 	value := this.flagset.Lookup(name)
@@ -191,7 +191,7 @@ func (this *Flags) GetString(name string) (string, bool) {
 	return value.Value.(flag.Getter).Get().(string), this.HasFlag(name)
 }
 
-// Get duration value for a flag, and a boolean which indicates if the flag
+// GetDuration gets duration value for a flag, and a boolean which indicates if the flag
 // was set
 func (this *Flags) GetDuration(name string) (time.Duration, bool) {
 	value := this.flagset.Lookup(name)
@@ -201,7 +201,7 @@ func (this *Flags) GetDuration(name string) (time.Duration, bool) {
 	return value.Value.(flag.Getter).Get().(time.Duration), this.HasFlag(name)
 }
 
-// Get integer value for a flag, and a boolean which indicates if the flag
+// GetInt gets integer value for a flag, and a boolean which indicates if the flag
 // was set
 func (this *Flags) GetInt(name string) (int, bool) {
 	value := this.flagset.Lookup(name)
@@ -211,7 +211,7 @@ func (this *Flags) GetInt(name string) (int, bool) {
 	return value.Value.(flag.Getter).Get().(int), this.HasFlag(name)
 }
 
-// Get unsigned integer value for a flag, and a boolean which indicates if
+// GetUint gets unsigned integer value for a flag, and a boolean which indicates if
 // the flag was set
 func (this *Flags) GetUint(name string) (uint, bool) {
 	value := this.flagset.Lookup(name)
@@ -221,7 +221,7 @@ func (this *Flags) GetUint(name string) (uint, bool) {
 	return value.Value.(flag.Getter).Get().(uint), this.HasFlag(name)
 }
 
-// Get unsigned integer value for a flag, and a boolean which indicates if
+// GetUint16 gets unsigned integer value for a flag, and a boolean which indicates if
 // the flag was set
 func (this *Flags) GetUint16(name string) (uint16, bool) {
 	value := this.flagset.Lookup(name)
@@ -232,7 +232,7 @@ func (this *Flags) GetUint16(name string) (uint16, bool) {
 	return uint16(uint_value), this.HasFlag(name)
 }
 
-// Get float64 value for a flag, and a boolean which indicates if
+// GetFloat64 gets float64 value for a flag, and a boolean which indicates if
 // the flag was set
 func (this *Flags) GetFloat64(name string) (float64, bool) {
 	value := this.flagset.Lookup(name)
