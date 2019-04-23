@@ -349,3 +349,16 @@ OUTER_LOOP:
 	app.Logger.Debug("WaitTask004: now finished")
 	return nil
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// PARAMETER TESTS
+
+func TestParams_000(t *testing.T) {
+	// Create config file
+	config := gopi.NewAppConfig()
+
+	// Read out the parameters
+	for k, v := range config.Params {
+		t.Logf("%v => %v", k, v)
+	}
+}

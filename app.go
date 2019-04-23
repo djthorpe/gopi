@@ -27,41 +27,44 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
+// AppParam is a list of application parameters
+type AppParam uint
+
 // AppConfig defines how an application should be created
 type AppConfig struct {
 	Modules  []*Module
 	AppArgs  []string
 	AppFlags *Flags
+	Params   map[AppParam]interface{}
 	Debug    bool
 	Verbose  bool
-	Service  string
 }
 
 // AppInstance defines the running application instance with modules
 type AppInstance struct {
-	AppFlags *Flags
-	Logger   Logger
-	Hardware Hardware
-	Display  Display
-	Graphics SurfaceManager
-	Sprites  SpriteManager
-	Input    InputManager
-	Fonts    FontManager
-	Layout   Layout
-	Timer    Timer
-	GPIO     GPIO
-	I2C      I2C
-	SPI      SPI
-	PWM      PWM
-	LIRC     LIRC
-	debug    bool
-	verbose  bool
-	service  string
-	sigchan  chan os.Signal
-	modules  []*Module
-	byname   map[string]Driver
-	bytype   map[ModuleType]Driver
-	byorder  []Driver
+	AppFlags  *Flags
+	AppParams map[AppParam]interface{}
+	Logger    Logger
+	Hardware  Hardware
+	Display   Display
+	Graphics  SurfaceManager
+	Sprites   SpriteManager
+	Input     InputManager
+	Fonts     FontManager
+	Layout    Layout
+	Timer     Timer
+	GPIO      GPIO
+	I2C       I2C
+	SPI       SPI
+	PWM       PWM
+	LIRC      LIRC
+	debug     bool
+	verbose   bool
+	sigchan   chan os.Signal
+	modules   []*Module
+	byname    map[string]Driver
+	bytype    map[ModuleType]Driver
+	byorder   []Driver
 
 	// background tasks implementation
 	tasks.Tasks
@@ -82,13 +85,27 @@ type BackgroundTask2 func(app *AppInstance, start chan<- struct{}, stop <-chan s
 // GLOBAL VARIABLES
 
 const (
-	// DEFAULT_RPC_SERVICE is the default service type
-	DEFAULT_RPC_SERVICE = "gopi"
+	// PARAM_SERVICENAME_DEFAULT is the default service type
+	PARAM_SERVICENAME_DEFAULT = "gopi"
 )
 
 var (
 	// DONE is the message sent on the channel to indicate task is completed
 	DONE = struct{}{}
+)
+
+const (
+	PARAM_NONE AppParam = iota
+	PARAM_TIMESTAMP
+	PARAM_EXECNAME
+	PARAM_SERVICENAME
+	PARAM_GOVERSION
+	PARAM_GOBUILDTIME
+	PARAM_GITTAG
+	PARAM_GITBRANCH
+	PARAM_GITHASH
+	PARAM_MAX = PARAM_GITHASH
+	PARAM_MIN = PARAM_TIMESTAMP
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +136,10 @@ func NewAppConfig(modules ...string) AppConfig {
 	config.AppFlags = NewFlags(path.Base(os.Args[0]))
 	config.Debug = false
 	config.Verbose = false
-	config.Service = DEFAULT_RPC_SERVICE
+	config.Params = make(map[AppParam]interface{}, 10)
+	config.Params[PARAM_SERVICENAME] = PARAM_SERVICENAME_DEFAULT
+	config.Params[PARAM_EXECNAME] = config.AppFlags.Name()
+	config.Params[PARAM_TIMESTAMP] = time.Now()
 
 	// Set 'debug' and 'verbose' flags
 	config.AppFlags.FlagBool("debug", false, "Set debugging mode")
@@ -165,14 +185,7 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	this.debug = config.Debug
 	this.verbose = config.Verbose
 	this.AppFlags = config.AppFlags
-
-	// Set service name from configuration or the name
-	// from AppFlags
-	if config.Service != "" {
-		this.service = config.Service
-	} else {
-		this.service = this.AppFlags.Name()
-	}
+	this.AppParams = config.Params
 
 	// Set up signalling
 	this.sigchan = make(chan os.Signal, 1)
@@ -380,7 +393,11 @@ func (this *AppInstance) Verbose() bool {
 
 // Service returns the current service name set from configuration
 func (this *AppInstance) Service() string {
-	return this.service
+	if service, exists := this.AppParams[PARAM_SERVICENAME]; exists {
+		return fmt.Sprint(service)
+	} else {
+		return this.AppFlags.Name()
+	}
 }
 
 // WaitForSignal blocks until a signal is caught
@@ -616,5 +633,30 @@ func (this *AppInstance) String() string {
 	for k := range this.byname {
 		modules = append(modules, k)
 	}
-	return fmt.Sprintf("gopi.App{ debug=%v verbose=%v service=%v modules=%v instances=%v }", this.debug, this.verbose, this.service, modules, this.byorder)
+	return fmt.Sprintf("gopi.App{ debug=%v verbose=%v service=%v modules=%v instances=%v }", this.debug, this.verbose, this.Service(), modules, this.byorder)
+}
+
+func (p AppParam) String() string {
+	switch p {
+	case PARAM_NONE:
+		return "PARAM_NONE"
+	case PARAM_TIMESTAMP:
+		return "PARAM_TIMESTAMP"
+	case PARAM_EXECNAME:
+		return "PARAM_EXECNAME"
+	case PARAM_SERVICENAME:
+		return "PARAM_SERVICENAME"
+	case PARAM_GOVERSION:
+		return "PARAM_GOVERSION"
+	case PARAM_GOBUILDTIME:
+		return "PARAM_GOBUILDTIME"
+	case PARAM_GITTAG:
+		return "PARAM_GITTAG"
+	case PARAM_GITBRANCH:
+		return "PARAM_GITBRANCH"
+	case PARAM_GITHASH:
+		return "PARAM_GITHASH"
+	default:
+		return "[?? Invalid AppParam value]"
+	}
 }

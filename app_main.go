@@ -200,7 +200,7 @@ func bgRPCDiscovery(app *AppInstance, done <-chan struct{}) error {
 					if server_event.Type() == RPC_EVENT_SERVER_STARTED {
 						app.Logger.Info("rpc/server: Listening on %v", server.Addr())
 						// Register service
-						if service := server.Service(app.service); service != nil {
+						if service := server.Service(app.Service()); service != nil {
 							if discovery != nil {
 								if err := discovery.Register(service); err != nil {
 									app.Logger.Error("rpc/discovery: %v", err)
