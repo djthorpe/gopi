@@ -12,7 +12,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/djthorpe/gopi"
@@ -114,21 +113,9 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var (
-	GitTag, GitBranch, GitHash string
-	GoBuildTime                string
-)
-
 func main() {
 	// Create the configuration, load the timer instance
 	config := gopi.NewAppConfig("timer")
-
-	// Set version parameters
-	config.AppFlags.SetParam(gopi.PARAM_GOVERSION, runtime.Version())
-	config.AppFlags.SetParam(gopi.PARAM_GITTAG, GitTag)
-	config.AppFlags.SetParam(gopi.PARAM_GITBRANCH, GitBranch)
-	config.AppFlags.SetParam(gopi.PARAM_GITHASH, GitHash)
-	config.AppFlags.SetParam(gopi.PARAM_GOBUILDTIME, GoBuildTime)
 
 	// Run the command line tool
 	os.Exit(gopi.CommandLineTool(config, Main, Events))

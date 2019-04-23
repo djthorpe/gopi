@@ -13,7 +13,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi"
@@ -45,23 +44,11 @@ func helloWorld(app *gopi.AppInstance, done chan<- struct{}) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var (
-	GitTag, GitBranch, GitHash string
-	GoBuildTime                string
-)
-
 func main() {
 	// Create the configuration
 	config := gopi.NewAppConfig()
 	config.AppFlags.FlagString("name", "", "Your name")
 	config.AppFlags.FlagBool("wait", false, "Wait for CTRL+C interrupt to end")
-
-	// Set version parameters
-	config.AppFlags.SetParam(gopi.PARAM_GOVERSION, runtime.Version())
-	config.AppFlags.SetParam(gopi.PARAM_GITTAG, GitTag)
-	config.AppFlags.SetParam(gopi.PARAM_GITBRANCH, GitBranch)
-	config.AppFlags.SetParam(gopi.PARAM_GITHASH, GitHash)
-	config.AppFlags.SetParam(gopi.PARAM_GOBUILDTIME, GoBuildTime)
 
 	// Run the command line tool
 	os.Exit(gopi.CommandLineTool(config, helloWorld))
