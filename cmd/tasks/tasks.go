@@ -11,6 +11,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
 	// Frameworks
@@ -70,7 +71,24 @@ func Main(app *gopi.AppInstance, done chan<- struct{}) error {
 	return gopi.ErrHelp
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+var (
+	GitTag, GitBranch, GitHash string
+	GoBuildTime                string
+)
+
 func main() {
+	// Create the configuration
+	config := gopi.NewAppConfig()
+
+	// Set version parameters
+	config.AppFlags.SetParam(gopi.PARAM_GOVERSION, runtime.Version())
+	config.AppFlags.SetParam(gopi.PARAM_GITTAG, GitTag)
+	config.AppFlags.SetParam(gopi.PARAM_GITBRANCH, GitBranch)
+	config.AppFlags.SetParam(gopi.PARAM_GITHASH, GitHash)
+	config.AppFlags.SetParam(gopi.PARAM_GOBUILDTIME, GoBuildTime)
+
 	// Run the command line tool
-	os.Exit(gopi.CommandLineTool2(gopi.NewAppConfig(), Main, Background1, Background2))
+	os.Exit(gopi.CommandLineTool2(config, Main, Background1, Background2))
 }

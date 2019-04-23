@@ -12,12 +12,14 @@ package gopi
 import (
 	"flag"
 	"fmt"
+	"strings"
 	"time"
 )
 
 type Flags struct {
 	flagset *flag.FlagSet
 	flagmap map[string]bool
+	params  map[AppParam]interface{}
 	name    string
 }
 
@@ -30,6 +32,7 @@ func NewFlags(name string) *Flags {
 	this.flagset = flag.NewFlagSet(name, flag.ContinueOnError)
 	this.flagmap = nil
 	this.name = name
+	this.params = make(map[AppParam]interface{}, 10)
 	return this
 }
 
@@ -104,6 +107,18 @@ func (this *Flags) PrintUsage() {
 // PrintDefaults will output the flags to stderr
 func (this *Flags) PrintDefaults() {
 	this.flagset.PrintDefaults()
+}
+
+func (this *Flags) PrintVersion() {
+	writer := this.flagset.Output()
+	for k, v := range this.params {
+		if k == PARAM_TIMESTAMP { // ignore timestamp
+			continue
+		} else if v_ := fmt.Sprint(v); v_ != "" {
+			k_ := strings.TrimPrefix(fmt.Sprint(k), "PARAM_")
+			fmt.Fprintf(writer, "%20s: %s\n", k_, v_)
+		}
+	}
 }
 
 // String returns a human-readable form of the Flags object
@@ -278,4 +293,9 @@ func (this *Flags) SetFloat64(name string, value float64) error {
 // Set a flag duration value
 func (this *Flags) SetDuration(name string, value time.Duration) error {
 	return this.SetString(name, fmt.Sprint(value))
+}
+
+// SetParam set a parameter to an opaque type
+func (this *Flags) SetParam(key AppParam, value interface{}) {
+	this.params[key] = value
 }
