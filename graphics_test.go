@@ -9,13 +9,13 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // CHECK FLAGS
 
-func TestFlags_000(t *testing.T) {
+func TestGraphicsFlags_000(t *testing.T) {
 	for f := gopi.SURFACE_FLAG_BITMAP; f <= gopi.SURFACE_FLAG_OPENVG; f++ {
 		t.Logf("%v => type %v config %v mod %v", f, f.TypeString(), f.ConfigString(), f.ModString())
 	}
 }
 
-func TestFlags_001(t *testing.T) {
+func TestGraphicsFlags_001(t *testing.T) {
 	for f := gopi.SURFACE_FLAG_BITMAP; f <= gopi.SURFACE_FLAG_OPENVG; f++ {
 		g := f | gopi.SURFACE_FLAG_RGB565 | gopi.SURFACE_FLAG_ALPHA_FROM_SOURCE
 		t.Logf("%v => type %v config %v mod %v", g, g.TypeString(), g.ConfigString(), g.ModString())
