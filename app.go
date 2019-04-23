@@ -42,29 +42,28 @@ type AppConfig struct {
 
 // AppInstance defines the running application instance with modules
 type AppInstance struct {
-	AppFlags  *Flags
-	AppParams map[AppParam]interface{}
-	Logger    Logger
-	Hardware  Hardware
-	Display   Display
-	Graphics  SurfaceManager
-	Sprites   SpriteManager
-	Input     InputManager
-	Fonts     FontManager
-	Layout    Layout
-	Timer     Timer
-	GPIO      GPIO
-	I2C       I2C
-	SPI       SPI
-	PWM       PWM
-	LIRC      LIRC
-	debug     bool
-	verbose   bool
-	sigchan   chan os.Signal
-	modules   []*Module
-	byname    map[string]Driver
-	bytype    map[ModuleType]Driver
-	byorder   []Driver
+	AppFlags *Flags
+	Logger   Logger
+	Hardware Hardware
+	Display  Display
+	Graphics SurfaceManager
+	Sprites  SpriteManager
+	Input    InputManager
+	Fonts    FontManager
+	Layout   Layout
+	Timer    Timer
+	GPIO     GPIO
+	I2C      I2C
+	SPI      SPI
+	PWM      PWM
+	LIRC     LIRC
+	debug    bool
+	verbose  bool
+	sigchan  chan os.Signal
+	modules  []*Module
+	byname   map[string]Driver
+	bytype   map[ModuleType]Driver
+	byorder  []Driver
 
 	// background tasks implementation
 	tasks.Tasks
@@ -95,6 +94,9 @@ var (
 )
 
 const (
+	// Application paramaters are used to store global constant data
+	// from startup, usually used for storing versions and other
+	// information from time of building
 	PARAM_NONE AppParam = iota
 	PARAM_TIMESTAMP
 	PARAM_EXECNAME
@@ -136,14 +138,14 @@ func NewAppConfig(modules ...string) AppConfig {
 	config.AppFlags = NewFlags(path.Base(os.Args[0]))
 	config.Debug = false
 	config.Verbose = false
-	config.Params = make(map[AppParam]interface{}, 10)
-	config.Params[PARAM_SERVICENAME] = PARAM_SERVICENAME_DEFAULT
-	config.Params[PARAM_EXECNAME] = config.AppFlags.Name()
-	config.Params[PARAM_TIMESTAMP] = time.Now()
+	config.AppFlags.params[PARAM_SERVICENAME] = PARAM_SERVICENAME_DEFAULT
+	config.AppFlags.params[PARAM_EXECNAME] = config.AppFlags.Name()
+	config.AppFlags.params[PARAM_TIMESTAMP] = time.Now()
 
-	// Set 'debug' and 'verbose' flags
+	// Set 'debug', 'verbose' and 'version' flags
 	config.AppFlags.FlagBool("debug", false, "Set debugging mode")
 	config.AppFlags.FlagBool("verbose", false, "Verbose logging")
+	config.AppFlags.FlagBool("version", false, "Print version information and exit")
 
 	// Call module.Config for each module
 	for _, module := range config.Modules {
@@ -170,6 +172,11 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 		if err := config.AppFlags.Parse(config.AppArgs); err != nil {
 			return nil, err
 		}
+		// Check for version flag
+		if version, _ := config.AppFlags.GetBool("version"); version {
+			config.AppFlags.PrintVersion()
+			return nil, ErrHelp
+		}
 	}
 
 	// Set debug and verbose flags
@@ -185,7 +192,6 @@ func NewAppInstance(config AppConfig) (*AppInstance, error) {
 	this.debug = config.Debug
 	this.verbose = config.Verbose
 	this.AppFlags = config.AppFlags
-	this.AppParams = config.Params
 
 	// Set up signalling
 	this.sigchan = make(chan os.Signal, 1)
@@ -393,7 +399,7 @@ func (this *AppInstance) Verbose() bool {
 
 // Service returns the current service name set from configuration
 func (this *AppInstance) Service() string {
-	if service, exists := this.AppParams[PARAM_SERVICENAME]; exists {
+	if service, exists := this.AppFlags.params[PARAM_SERVICENAME]; exists {
 		return fmt.Sprint(service)
 	} else {
 		return this.AppFlags.Name()
