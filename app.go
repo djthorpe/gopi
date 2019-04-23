@@ -110,6 +110,14 @@ const (
 	PARAM_MIN = PARAM_TIMESTAMP
 )
 
+var (
+	// Build and version flags
+	GitTag      string
+	GitBranch   string
+	GitHash     string
+	GoBuildTime string
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
@@ -138,9 +146,16 @@ func NewAppConfig(modules ...string) AppConfig {
 	config.AppFlags = NewFlags(path.Base(os.Args[0]))
 	config.Debug = false
 	config.Verbose = false
+
+	// Set the parameters
 	config.AppFlags.params[PARAM_SERVICENAME] = PARAM_SERVICENAME_DEFAULT
 	config.AppFlags.params[PARAM_EXECNAME] = config.AppFlags.Name()
 	config.AppFlags.params[PARAM_TIMESTAMP] = time.Now()
+	config.AppFlags.params[PARAM_GOVERSION] = runtime.Version()
+	config.AppFlags.params[PARAM_GITTAG] = GitTag
+	config.AppFlags.params[PARAM_GITBRANCH] = GitBranch
+	config.AppFlags.params[PARAM_GITHASH] = GitHash
+	config.AppFlags.params[PARAM_GOBUILDTIME] = GoBuildTime
 
 	// Set 'debug', 'verbose' and 'version' flags
 	config.AppFlags.FlagBool("debug", false, "Set debugging mode")
