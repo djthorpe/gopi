@@ -295,7 +295,19 @@ func (this *Flags) SetDuration(name string, value time.Duration) error {
 	return this.SetString(name, fmt.Sprint(value))
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// GET AND SET PARAMETERS
+
 // SetParam set a parameter to an opaque type
 func (this *Flags) SetParam(key AppParam, value interface{}) {
 	this.params[key] = value
+}
+
+// GetParam returns a parameter value as an opaque type, or nil
+func (this *Flags) GetParam(key AppParam) interface{} {
+	if value, exists := this.params[key]; exists {
+		return value
+	} else {
+		return nil
+	}
 }
