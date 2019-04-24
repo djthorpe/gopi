@@ -76,3 +76,12 @@ func TestFlags_005(t *testing.T) {
 		t.Error("Unexpected GetBool() return")
 	}
 }
+
+func TestFlagParams_001(t *testing.T) {
+	// Create a configuration with debug
+	flagset := gopi.NewFlags("test")
+	flagset.SetParam(gopi.PARAM_EXECNAME, "test")
+	if flagset.GetParam(gopi.PARAM_EXECNAME).(string) != "test" {
+		t.Error("Unexpected SetParam() value")
+	}
+}
