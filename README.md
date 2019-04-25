@@ -7,6 +7,8 @@
   </td>
 </tr></table>
 
+[![CircleCI](https://circleci.com/gh/djthorpe/gopi/tree/master.svg?style=svg)](https://circleci.com/gh/djthorpe/gopi/tree/master)
+
 This repository contains an application framework for the Go language, which
 will allow you to develop applications which utilize a number of features
 of your computer. It's targetted at the Raspberry Pi presently. The following
