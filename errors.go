@@ -1,12 +1,12 @@
 /*
 	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016-2017
+	(c) Copyright David Thorpe 2016-2019
 	All Rights Reserved
     Documentation http://djthorpe.github.io/gopi/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
-package gopi // import "github.com/djthorpe/gopi"
+package gopi
 
 import (
 	"errors"
@@ -35,4 +35,6 @@ var (
 	ErrOutOfOrder = errors.New("Operation out of order")
 	// ErrDeadlineExceeded is returned when a timeout occurred
 	ErrDeadlineExceeded = errors.New("Deadline exceeded")
+	// ErrNotModified is returned when a resource is not modified
+	ErrNotModified = errors.New("Not modified")
 )

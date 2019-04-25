@@ -10,27 +10,25 @@ package gopi
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"regexp"
-	"strings"
 	"time"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-// RPCServiceRecord defines a service which can be registered
-// or discovered on the network
-type RPCServiceRecord struct {
-	Name string
-	Type string
-	Port uint
-	Text []string
-	Host string
-	IP4  []net.IP
-	IP6  []net.IP
-	TTL  time.Duration
+// RPCServiceRecord defines a service which can be registered or discovered
+// on the network
+type RPCServiceRecord interface {
+	Name() string
+	Type() string
+	Port() uint
+	Text() []string
+	Host() string
+	IP4() []net.IP
+	IP6() []net.IP
+	TTL() time.Duration
 }
 
 // RPCEventType is an enumeration of event types
@@ -59,7 +57,7 @@ type RPCServiceDiscovery interface {
 	Publisher
 
 	// Register a service record on the network
-	Register(service *RPCServiceRecord) error
+	Register(service RPCServiceRecord) error
 
 	// Browse for service records on the network with context
 	Browse(ctx context.Context, serviceType string) error
@@ -99,8 +97,8 @@ type RPCServer interface {
 	// cannot be generated. The first version uses the current
 	// hostname as the name. You can also include text
 	// records.
-	Service(service string, text ...string) *RPCServiceRecord
-	ServiceWithName(service, name string, text ...string) *RPCServiceRecord
+	Service(service string, text ...string) RPCServiceRecord
+	ServiceWithName(service, name string, text ...string) RPCServiceRecord
 }
 
 // RPCClientPool implements a pool of client connections for communicating
@@ -120,7 +118,7 @@ type RPCClientPool interface {
 	// Lookup service records by parameter - returns records
 	// which match either name or addr up to max number of records
 	// Can wait for new records and block until cancelled
-	Lookup(ctx context.Context, name, addr string, max int) ([]*RPCServiceRecord, error)
+	Lookup(ctx context.Context, name, addr string, max int) ([]RPCServiceRecord, error)
 }
 
 // RPCClientConn implements a single client connection for
@@ -169,38 +167,6 @@ const (
 var (
 	reService = regexp.MustCompile("[A-za-z][A-Za-z0-9\\-]*")
 )
-
-////////////////////////////////////////////////////////////////////////////////
-// STRINGIFY
-
-func (s *RPCServiceRecord) String() string {
-	p := make([]string, 0, 5)
-	if s.Name != "" {
-		p = append(p, fmt.Sprintf("name=\"%v\"", s.Name))
-	}
-	if s.Type != "" {
-		p = append(p, fmt.Sprintf("type=%v", s.Type))
-	}
-	if s.Port > 0 {
-		p = append(p, fmt.Sprintf("port=%v", s.Port))
-	}
-	if s.Host != "" {
-		p = append(p, fmt.Sprintf("host=%v", s.Host))
-	}
-	if len(s.IP4) > 0 {
-		p = append(p, fmt.Sprintf("ip4=%v", s.IP4))
-	}
-	if len(s.IP6) > 0 {
-		p = append(p, fmt.Sprintf("ip6=%v", s.IP6))
-	}
-	if s.TTL > 0 {
-		p = append(p, fmt.Sprintf("ttl=%v", s.TTL))
-	}
-	if len(s.Text) > 0 {
-		p = append(p, fmt.Sprintf("txt=%v", s.Text))
-	}
-	return fmt.Sprintf("<gopi.RPCServiceRecord>{ %v }", strings.Join(p, " "))
-}
 
 func (t RPCEventType) String() string {
 	switch t {
