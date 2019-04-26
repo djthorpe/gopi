@@ -115,6 +115,6 @@ type RPCEvent interface {
 	// Type of RPC Event
 	Type() RPCEventType
 
-	// Service Record when Type()==
-	ServiceRecord() *RPCServiceRecord
+	// Service Record
+	ServiceRecord() RPCServiceRecord
 }
