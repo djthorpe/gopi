@@ -22,7 +22,7 @@ import (
 // on the network
 type RPCServiceRecord interface {
 	Name() string
-	Type() string
+	Service() string
 	Port() uint
 	Text() []string
 	Host() string
