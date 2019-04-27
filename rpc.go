@@ -57,10 +57,13 @@ type RPCServiceDiscovery interface {
 	Publisher
 
 	// Register a service record on the network
-	Register(service RPCServiceRecord) error
+	Register(RPCServiceRecord) error
 
-	// Browse for service records on the network with context
-	Browse(ctx context.Context, serviceType string) error
+	// Lookup service instances by name
+	Lookup(ctx context.Context, service string) ([]RPCServiceRecord, error)
+
+	// Return list of service names
+	EnumerateServices(ctx context.Context) ([]string, error)
 }
 
 // RPCService is a driver which implements all the necessary methods to
