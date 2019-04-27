@@ -146,13 +146,14 @@ type RPCClient interface{}
 // CONSTANTS
 
 const (
-	RPC_EVENT_NONE RPCEventType = iota
-	RPC_EVENT_SERVER_STARTED
-	RPC_EVENT_SERVER_STOPPED
-	RPC_EVENT_SERVICE_ADDED
-	RPC_EVENT_SERVICE_UPDATED
-	RPC_EVENT_SERVICE_REMOVED
-	RPC_EVENT_SERVICE_EXPIRED
+	RPC_EVENT_NONE            RPCEventType = iota
+	RPC_EVENT_SERVER_STARTED               // RPC Server started
+	RPC_EVENT_SERVER_STOPPED               // RPC Server stopped
+	RPC_EVENT_SERVICE_ADDED                // Service instance lookup (new)
+	RPC_EVENT_SERVICE_UPDATED              // Service instance lookup (updated)
+	RPC_EVENT_SERVICE_REMOVED              // Service instance lookup (removed)
+	RPC_EVENT_SERVICE_EXPIRED              // Service instance lookup (expired)
+	RPC_EVENT_SERVICE_NAME                 // Service name discovered
 	RPC_EVENT_CLIENT_CONNECTED
 	RPC_EVENT_CLIENT_DISCONNECTED
 )
@@ -187,6 +188,8 @@ func (t RPCEventType) String() string {
 		return "RPC_EVENT_SERVICE_REMOVED"
 	case RPC_EVENT_SERVICE_EXPIRED:
 		return "RPC_EVENT_SERVICE_EXPIRED"
+	case RPC_EVENT_SERVICE_NAME:
+		return "RPC_EVENT_SERVICE_NAME"
 	case RPC_EVENT_CLIENT_CONNECTED:
 		return "RPC_EVENT_CLIENT_CONNECTED"
 	case RPC_EVENT_CLIENT_DISCONNECTED:
