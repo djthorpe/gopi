@@ -111,7 +111,7 @@ type RPCClientPool interface {
 	Publisher
 
 	// Connect and disconnect
-	Connect(service *RPCServiceRecord, flags RPCFlag) (RPCClientConn, error)
+	Connect(service RPCServiceRecord, flags RPCFlag) (RPCClientConn, error)
 	Disconnect(RPCClientConn) error
 
 	// Register clients and create new ones given a service name
