@@ -154,7 +154,7 @@ func (this *driver) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // LOGGING INTERFACE
 
-// Get logging level
+// Level gets logging level
 func (this *driver) Level() Level {
 	return this.level
 }
