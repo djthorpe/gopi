@@ -77,7 +77,7 @@ func CommandLineTool2(config AppConfig, main_task MainTask, background_tasks ...
 ////////////////////////////////////////////////////////////////////////////////
 // RPC SERVER STARTUP
 
-// RPCServer runs a set of RPC Services, you generally call this from the main()
+// RPCServerTool runs a set of RPC Services, you generally call this from the main()
 // function and ensure to import rpc/server and rpc/discovery modules anonymously
 // into your application as well as all your RPC services
 func RPCServerTool(config AppConfig, background_tasks ...BackgroundTask) int {
