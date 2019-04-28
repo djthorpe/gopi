@@ -30,6 +30,12 @@ type Hardware interface {
 
 	// Return the number of possible displays for this hardware
 	NumberOfDisplays() uint
+
+	// Return host uptime
+	UptimeHost() time.Duration
+
+	// Return load averages
+	LoadAverage() (float64, float64, float64)
 }
 
 // Display implements a pixel-based display device. Displays are always numbered
