@@ -56,7 +56,7 @@ type RPCServiceDiscovery interface {
 	Driver
 	Publisher
 
-	// Register a service record on the network
+	// Register a service record on the network, and cache it
 	Register(RPCServiceRecord) error
 
 	// Lookup service instances by name
@@ -64,6 +64,9 @@ type RPCServiceDiscovery interface {
 
 	// Return list of service names
 	EnumerateServices(ctx context.Context) ([]string, error)
+
+	// Return all cached service instances for a service name
+	ServiceInstances(service string) []RPCServiceRecord
 }
 
 // RPCService is a driver which implements all the necessary methods to
