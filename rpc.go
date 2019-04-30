@@ -22,6 +22,7 @@ import (
 // on the network
 type RPCServiceRecord interface {
 	Name() string
+	Subtype() string
 	Service() string
 	Port() uint
 	Text() []string
@@ -36,12 +37,6 @@ type RPCEventType uint
 
 // RPCFlag is a set of flags modifying behavior of client/service
 type RPCFlag uint
-
-// RPCBrowseFunc is the callback function for when a service record is
-// discovered on the network. It's called with a nil parameter when no
-// more services are found, and a service record with TTL of zero
-// indicates the service was removed
-type RPCBrowseFunc func(service *RPCServiceRecord)
 
 // RPCNewClientFunc creates a new client with a network connection
 // returns nil otherwise
