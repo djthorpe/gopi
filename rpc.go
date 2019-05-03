@@ -166,13 +166,6 @@ const (
 	RPC_FLAG_INET_V6          = (1 << iota) // Use V6 addressing
 )
 
-////////////////////////////////////////////////////////////////////////////////
-// VARIABLES
-
-var (
-	reService = regexp.MustCompile("[A-za-z][A-Za-z0-9\\-]*")
-)
-
 func (t RPCEventType) String() string {
 	switch t {
 	case RPC_EVENT_NONE:
@@ -198,19 +191,4 @@ func (t RPCEventType) String() string {
 	default:
 		return "[?? Invalid RPCEventType value]"
 	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// RETURN DOMAIN FROM SERVICE TYPE
-
-func RPCServiceType(service_type string, flags RPCFlag) (string, error) {
-	if reService.MatchString(service_type) == false {
-		return "", ErrBadParameter
-	}
-	if flags&RPC_FLAG_INET_UDP != 0 {
-		service_type = "_" + service_type + "._udp"
-	} else {
-		service_type = "_" + service_type + "._tcp"
-	}
-	return service_type, nil
 }
