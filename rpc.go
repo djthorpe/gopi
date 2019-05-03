@@ -11,7 +11,6 @@ package gopi
 import (
 	"context"
 	"net"
-	"regexp"
 	"time"
 )
 
