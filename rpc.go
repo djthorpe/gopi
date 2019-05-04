@@ -11,7 +11,6 @@ package gopi
 import (
 	"context"
 	"net"
-	"regexp"
 	"time"
 )
 
@@ -95,11 +94,9 @@ type RPCServer interface {
 	Addr() net.Addr
 
 	// Return service record, or nil when the service record
-	// cannot be generated. The first version uses the current
-	// hostname as the name. You can also include text
-	// records.
-	Service(service string, text ...string) RPCServiceRecord
-	ServiceWithName(service, name string, text ...string) RPCServiceRecord
+	// cannot be generated. The service should be of the format
+	// _<service>._tcp and the subtype can only be alphanumeric
+	Service(service, subtype, name string, text ...string) RPCServiceRecord
 }
 
 // RPCClientPool implements a pool of client connections for communicating
@@ -161,17 +158,13 @@ const (
 
 const (
 	RPC_FLAG_NONE     RPCFlag = 0
-	RPC_FLAG_INET_UDP         = (1 << iota) // Use UDP protocol (TCP assumed otherwise)
-	RPC_FLAG_INET_V4          = (1 << iota) // Use V4 addressing
-	RPC_FLAG_INET_V6          = (1 << iota) // Use V6 addressing
+	RPC_FLAG_INET_UDP RPCFlag = (1 << iota) // Use UDP protocol (TCP assumed otherwise)
+	RPC_FLAG_INET_V4  RPCFlag = (1 << iota) // Use V4 addressing
+	RPC_FLAG_INET_V6  RPCFlag = (1 << iota) // Use V6 addressing
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // VARIABLES
-
-var (
-	reService = regexp.MustCompile("[A-za-z][A-Za-z0-9\\-]*")
-)
 
 func (t RPCEventType) String() string {
 	switch t {
@@ -198,19 +191,4 @@ func (t RPCEventType) String() string {
 	default:
 		return "[?? Invalid RPCEventType value]"
 	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// RETURN DOMAIN FROM SERVICE TYPE
-
-func RPCServiceType(service_type string, flags RPCFlag) (string, error) {
-	if reService.MatchString(service_type) == false {
-		return "", ErrBadParameter
-	}
-	if flags&RPC_FLAG_INET_UDP != 0 {
-		service_type = "_" + service_type + "._udp"
-	} else {
-		service_type = "_" + service_type + "._tcp"
-	}
-	return service_type, nil
 }
