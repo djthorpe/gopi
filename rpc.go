@@ -107,6 +107,7 @@ type RPCClientPool interface {
 
 	// Connect and disconnect
 	Connect(service RPCServiceRecord, flags RPCFlag) (RPCClientConn, error)
+	ConnectAddr(addr string, flags RPCFlag) (RPCClientConn, error)
 	Disconnect(RPCClientConn) error
 
 	// Register clients and create new ones given a service name
@@ -129,7 +130,6 @@ type RPCClientConn interface {
 	Unlock()
 
 	// Properties
-	Name() string
 	Addr() string
 	Connected() bool
 	Timeout() time.Duration
