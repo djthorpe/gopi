@@ -10,8 +10,12 @@
 package gopi
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -24,13 +28,20 @@ type Flags struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	DEFAULT_FLAGS_FILE = ".gopi.json"
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
 // Create a new flags object
 func NewFlags(name string) *Flags {
 	this := new(Flags)
 	this.flagset = flag.NewFlagSet(name, flag.ContinueOnError)
-	this.flagmap = nil
+	this.flagmap = make(map[string]bool)
 	this.name = name
 	this.params = make(map[AppParam]interface{}, 10)
 	return this
@@ -39,6 +50,17 @@ func NewFlags(name string) *Flags {
 // Parse command line argumentsinto flags and pure arguments
 func (this *Flags) Parse(args []string) error {
 
+	// read in defaults file
+	if user, err := user.Current(); err == nil {
+		file := filepath.Join(user.HomeDir, DEFAULT_FLAGS_FILE)
+		if stat, err := os.Stat(file); os.IsNotExist(err) == false && stat.Mode().IsRegular() {
+			// Read in file
+			if err := this.readDefaults(file, this.name); err != nil {
+				return fmt.Errorf("%v: %v", file, err)
+			}
+		}
+	}
+
 	// parse flags
 	err := this.flagset.Parse(args)
 	if err != nil {
@@ -46,7 +68,6 @@ func (this *Flags) Parse(args []string) error {
 	}
 
 	// set hash of flags that were set
-	this.flagmap = make(map[string]bool)
 	this.flagset.Visit(func(f *flag.Flag) {
 		this.flagmap[f.Name] = true
 	})
@@ -310,4 +331,29 @@ func (this *Flags) GetParam(key AppParam) interface{} {
 	} else {
 		return nil
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// READ FLAGS FROM FILE
+
+func (this *Flags) readDefaults(filename, setname string) error {
+	type Defaults map[string]map[string]string
+	if fh, err := os.Open(filename); err != nil {
+		return err
+	} else {
+		var defaults Defaults
+		defer fh.Close()
+		if err := json.NewDecoder(fh).Decode(&defaults); err != nil {
+			return err
+		} else if kv, exists := defaults[setname]; exists {
+			for k, v := range kv {
+				if flag := this.flagset.Lookup(k); flag != nil {
+					flag.Value.Set(v)
+					this.flagmap[flag.Name] = true
+				}
+			}
+		}
+	}
+	// Success
+	return nil
 }
