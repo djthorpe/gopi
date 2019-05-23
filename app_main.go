@@ -200,12 +200,14 @@ func bgRPCDiscovery(app *AppInstance, done <-chan struct{}) error {
 					if server_event.Type() == RPC_EVENT_SERVER_STARTED {
 						app.Logger.Info("rpc/server: Listening on %v", server.Addr())
 						// Register service
-						if service := server.Service(app.Service()); service != nil {
-							if discovery != nil {
-								if err := discovery.Register(service); err != nil {
-									app.Logger.Error("rpc/discovery: %v", err)
-								}
-							}
+						if discovery == nil {
+							app.Logger.Warn("rpc/discovery: Not registering service")
+						} else if service, subtype, name, err := app.Service(); err != nil {
+							app.Logger.Warn("rpc/discovery: %v", err)
+						} else if service := server.Service("_"+service+"._tcp", subtype, name); service == nil {
+							app.Logger.Warn("rpc/discovery: Unable to create service record")
+						} else if err := discovery.Register(service); err != nil {
+							app.Logger.Error("rpc/discovery: %v", err)
 						}
 					}
 				}

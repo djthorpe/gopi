@@ -2,10 +2,14 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.12
         environment:
           GO111MODULE: "on"
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    working_directory: /go/src/github.com/djthorpe/gopi
     steps:
       - checkout
       - run: make test
+      - run: make install
+      - run: make clean
+
+

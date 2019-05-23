@@ -85,7 +85,7 @@ type BackgroundTask2 func(app *AppInstance, start chan<- struct{}, stop <-chan s
 
 const (
 	// PARAM_SERVICENAME_DEFAULT is the default service type
-	PARAM_SERVICENAME_DEFAULT = "gopi"
+	PARAM_SERVICE_TYPE_DEFAULT = "gopi"
 )
 
 var (
@@ -100,7 +100,9 @@ const (
 	PARAM_NONE AppParam = iota
 	PARAM_TIMESTAMP
 	PARAM_EXECNAME
-	PARAM_SERVICENAME
+	PARAM_SERVICE_NAME
+	PARAM_SERVICE_TYPE
+	PARAM_SERVICE_SUBTYPE
 	PARAM_GOVERSION
 	PARAM_GOBUILDTIME
 	PARAM_GITTAG
@@ -148,7 +150,7 @@ func NewAppConfig(modules ...string) AppConfig {
 	config.Verbose = false
 
 	// Set the parameters
-	config.AppFlags.params[PARAM_SERVICENAME] = PARAM_SERVICENAME_DEFAULT
+	config.AppFlags.params[PARAM_SERVICE_TYPE] = PARAM_SERVICE_TYPE_DEFAULT
 	config.AppFlags.params[PARAM_EXECNAME] = config.AppFlags.Name()
 	config.AppFlags.params[PARAM_TIMESTAMP] = time.Now()
 	config.AppFlags.params[PARAM_GOVERSION] = runtime.Version()
@@ -413,12 +415,24 @@ func (this *AppInstance) Verbose() bool {
 }
 
 // Service returns the current service name set from configuration
-func (this *AppInstance) Service() string {
-	if service, exists := this.AppFlags.params[PARAM_SERVICENAME]; exists {
-		return fmt.Sprint(service)
+func (this *AppInstance) Service() (string, string, string, error) {
+	var service, subtype, name string
+	if service_, exists := this.AppFlags.params[PARAM_SERVICE_TYPE]; exists {
+		service = fmt.Sprint(service_)
 	} else {
-		return this.AppFlags.Name()
+		service = PARAM_SERVICE_TYPE_DEFAULT
 	}
+	if subtype_, exists := this.AppFlags.params[PARAM_SERVICE_SUBTYPE]; exists {
+		subtype = fmt.Sprint(subtype_)
+	}
+	if name_, exists := this.AppFlags.params[PARAM_SERVICE_NAME]; exists {
+		name = fmt.Sprint(name_)
+	} else if hostname, err := os.Hostname(); err != nil {
+		return "", "", "", err
+	} else {
+		name = hostname
+	}
+	return service, subtype, name, nil
 }
 
 // WaitForSignal blocks until a signal is caught
@@ -654,7 +668,7 @@ func (this *AppInstance) String() string {
 	for k := range this.byname {
 		modules = append(modules, k)
 	}
-	return fmt.Sprintf("gopi.App{ debug=%v verbose=%v service=%v modules=%v instances=%v }", this.debug, this.verbose, this.Service(), modules, this.byorder)
+	return fmt.Sprintf("gopi.App{ debug=%v verbose=%v modules=%v instances=%v }", this.debug, this.verbose, modules, this.byorder)
 }
 
 func (p AppParam) String() string {
@@ -665,8 +679,12 @@ func (p AppParam) String() string {
 		return "PARAM_TIMESTAMP"
 	case PARAM_EXECNAME:
 		return "PARAM_EXECNAME"
-	case PARAM_SERVICENAME:
-		return "PARAM_SERVICENAME"
+	case PARAM_SERVICE_NAME:
+		return "PARAM_SERVICE_NAME"
+	case PARAM_SERVICE_TYPE:
+		return "PARAM_SERVICE_TYPE"
+	case PARAM_SERVICE_SUBTYPE:
+		return "PARAM_SERVICE_SUBTYPE"
 	case PARAM_GOVERSION:
 		return "PARAM_GOVERSION"
 	case PARAM_GOBUILDTIME:
