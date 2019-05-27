@@ -136,9 +136,11 @@ type RPCClientConn interface {
 	Services() ([]string, error)
 }
 
-// RPCClient contains the set of RPC methods. Currently
-// anything can be an RPCClient
-type RPCClient interface{}
+// RPCClient contains the set of RPC methods
+type RPCClient interface {
+	// Return connection for the client
+	Conn() RPCClientConn
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
