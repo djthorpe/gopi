@@ -110,9 +110,10 @@ type RPCClientPool interface {
 	ConnectAddr(addr string, flags RPCFlag) (RPCClientConn, error)
 	Disconnect(RPCClientConn) error
 
-	// Register clients and create new ones given a service name
+	// Register clients and create new ones given a stub name
 	RegisterClient(string, RPCNewClientFunc) error
 	NewClient(string, RPCClientConn) RPCClient
+	NewClientEx(string, RPCServiceRecord, RPCFlag) (RPCClient, error)
 
 	// Lookup service records by parameter - returns records
 	// which match either name or addr up to max number of records
