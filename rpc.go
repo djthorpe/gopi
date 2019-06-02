@@ -160,10 +160,12 @@ const (
 )
 
 const (
-	RPC_FLAG_NONE     RPCFlag = 0
-	RPC_FLAG_INET_UDP RPCFlag = (1 << iota) // Use UDP protocol (TCP assumed otherwise)
-	RPC_FLAG_INET_V4  RPCFlag = (1 << iota) // Use V4 addressing
-	RPC_FLAG_INET_V6  RPCFlag = (1 << iota) // Use V6 addressing
+	RPC_FLAG_NONE          RPCFlag = 0
+	RPC_FLAG_INET_UDP      RPCFlag = (1 << iota) // Use UDP protocol (TCP assumed otherwise)
+	RPC_FLAG_INET_V4       RPCFlag = (1 << iota) // Use V4 addressing
+	RPC_FLAG_INET_V6       RPCFlag = (1 << iota) // Use V6 addressing
+	RPC_FLAG_SERVICE_FIRST RPCFlag = (1 << iota) // Use first service
+	RPC_FLAG_SERVICE_ANY   RPCFlag = (1 << iota) // Use any service
 )
 
 ////////////////////////////////////////////////////////////////////////////////
