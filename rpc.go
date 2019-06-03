@@ -110,9 +110,10 @@ type RPCClientPool interface {
 	ConnectAddr(addr string, flags RPCFlag) (RPCClientConn, error)
 	Disconnect(RPCClientConn) error
 
-	// Register clients and create new ones given a service name
+	// Register clients and create new ones given a stub name
 	RegisterClient(string, RPCNewClientFunc) error
 	NewClient(string, RPCClientConn) RPCClient
+	NewClientEx(string, []RPCServiceRecord, RPCFlag) (RPCClient, error)
 
 	// Lookup service records by parameter - returns records
 	// which match either name or addr up to max number of records
@@ -159,10 +160,12 @@ const (
 )
 
 const (
-	RPC_FLAG_NONE     RPCFlag = 0
-	RPC_FLAG_INET_UDP RPCFlag = (1 << iota) // Use UDP protocol (TCP assumed otherwise)
-	RPC_FLAG_INET_V4  RPCFlag = (1 << iota) // Use V4 addressing
-	RPC_FLAG_INET_V6  RPCFlag = (1 << iota) // Use V6 addressing
+	RPC_FLAG_NONE          RPCFlag = 0
+	RPC_FLAG_INET_UDP      RPCFlag = (1 << iota) // Use UDP protocol (TCP assumed otherwise)
+	RPC_FLAG_INET_V4       RPCFlag = (1 << iota) // Use V4 addressing
+	RPC_FLAG_INET_V6       RPCFlag = (1 << iota) // Use V6 addressing
+	RPC_FLAG_SERVICE_FIRST RPCFlag = (1 << iota) // Use first service
+	RPC_FLAG_SERVICE_ANY   RPCFlag = (1 << iota) // Use any service
 )
 
 ////////////////////////////////////////////////////////////////////////////////
