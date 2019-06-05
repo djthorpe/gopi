@@ -42,28 +42,29 @@ type AppConfig struct {
 
 // AppInstance defines the running application instance with modules
 type AppInstance struct {
-	AppFlags *Flags
-	Logger   Logger
-	Hardware Hardware
-	Display  Display
-	Graphics SurfaceManager
-	Sprites  SpriteManager
-	Input    InputManager
-	Fonts    FontManager
-	Layout   Layout
-	Timer    Timer
-	GPIO     GPIO
-	I2C      I2C
-	SPI      SPI
-	PWM      PWM
-	LIRC     LIRC
-	debug    bool
-	verbose  bool
-	sigchan  chan os.Signal
-	modules  []*Module
-	byname   map[string]Driver
-	bytype   map[ModuleType]Driver
-	byorder  []Driver
+	AppFlags   *Flags
+	Logger     Logger
+	Hardware   Hardware
+	Display    Display
+	Graphics   SurfaceManager
+	Sprites    SpriteManager
+	Input      InputManager
+	Fonts      FontManager
+	Layout     Layout
+	Timer      Timer
+	GPIO       GPIO
+	I2C        I2C
+	SPI        SPI
+	PWM        PWM
+	LIRC       LIRC
+	ClientPool RPCClientPool
+	debug      bool
+	verbose    bool
+	sigchan    chan os.Signal
+	modules    []*Module
+	byname     map[string]Driver
+	bytype     map[ModuleType]Driver
+	byorder    []Driver
 
 	// background tasks implementation
 	tasks.Tasks
@@ -500,6 +501,7 @@ func (this *AppInstance) Close() error {
 	this.SPI = nil
 	this.PWM = nil
 	this.LIRC = nil
+	this.ClientPool = nil
 
 	// Return success
 	return nil
@@ -643,6 +645,10 @@ func (this *AppInstance) setModuleInstance(module *Module, driver Driver) error 
 	case MODULE_TYPE_INPUT:
 		if this.Input, ok = driver.(InputManager); !ok {
 			return fmt.Errorf("Module %v cannot be cast to gopi.InputManager", module)
+		}
+	case MODULE_TYPE_CLIENTPOOL:
+		if this.ClientPool, ok = driver.(RPCClientPool); !ok {
+			return fmt.Errorf("Module %v cannot be cast to gopi.RPCClientPool", module)
 		}
 	}
 	// success
