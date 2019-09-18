@@ -64,26 +64,27 @@ type module_array struct {
 const (
 	MODULE_TYPE_NONE ModuleType = iota
 	MODULE_TYPE_OTHER
-	MODULE_TYPE_LOGGER    // Logging module
-	MODULE_TYPE_HARDWARE  // Hardware capabilities and monitoring
-	MODULE_TYPE_DISPLAY   // Displays
-	MODULE_TYPE_GRAPHICS  // Graphics (Graphics Manager, Surfaces, Bitmaps)
-	MODULE_TYPE_SPRITES   // Sprites Manager
-	MODULE_TYPE_FONTS     // Font Manager & Faces
-	MODULE_TYPE_VECTOR    // 2D Vector graphics
-	MODULE_TYPE_OPENGL    // 3D Graphics
-	MODULE_TYPE_LAYOUT    // Flex 2D Rectangular Layout
-	MODULE_TYPE_GPIO      // GPIO Hardware interface
-	MODULE_TYPE_I2C       // I2C Hardware interface
-	MODULE_TYPE_SPI       // SPI Hardware interface
-	MODULE_TYPE_PWM       // PWM Hardware interface
-	MODULE_TYPE_INPUT     // Input manager & devices
-	MODULE_TYPE_TIMER     // Timer module
-	MODULE_TYPE_LIRC      // LIRC module
-	MODULE_TYPE_SERVICE   // RPC Service
-	MODULE_TYPE_CLIENT    // RPC Client
-	MODULE_TYPE_DISCOVERY // RPC Service Discovery
-	MODULE_TYPE_KEYMAP    // Key Mapper
+	MODULE_TYPE_LOGGER     // Logging module
+	MODULE_TYPE_HARDWARE   // Hardware capabilities and monitoring
+	MODULE_TYPE_DISPLAY    // Displays
+	MODULE_TYPE_GRAPHICS   // Graphics (Graphics Manager, Surfaces, Bitmaps)
+	MODULE_TYPE_SPRITES    // Sprites Manager
+	MODULE_TYPE_FONTS      // Font Manager & Faces
+	MODULE_TYPE_VECTOR     // 2D Vector graphics
+	MODULE_TYPE_OPENGL     // 3D Graphics
+	MODULE_TYPE_LAYOUT     // Flex 2D Rectangular Layout
+	MODULE_TYPE_GPIO       // GPIO Hardware interface
+	MODULE_TYPE_I2C        // I2C Hardware interface
+	MODULE_TYPE_SPI        // SPI Hardware interface
+	MODULE_TYPE_PWM        // PWM Hardware interface
+	MODULE_TYPE_INPUT      // Input manager & devices
+	MODULE_TYPE_TIMER      // Timer module
+	MODULE_TYPE_LIRC       // LIRC module
+	MODULE_TYPE_SERVICE    // RPC Service
+	MODULE_TYPE_CLIENT     // RPC Client
+	MODULE_TYPE_CLIENTPOOL // RPC Client Pool
+	MODULE_TYPE_DISCOVERY  // RPC Service Discovery
+	MODULE_TYPE_KEYMAP     // Key Mapper
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -93,26 +94,27 @@ var (
 	modules_by_name = make(map[string]*Module)
 	modules_by_type = make(map[ModuleType]*Module)
 	module_name_map = map[string]ModuleType{
-		"logger":    MODULE_TYPE_LOGGER,    // Logging
-		"hw":        MODULE_TYPE_HARDWARE,  // Platform
-		"display":   MODULE_TYPE_DISPLAY,   // Displays
-		"graphics":  MODULE_TYPE_GRAPHICS,  // Surface management
-		"sprites":   MODULE_TYPE_SPRITES,   // Sprites management
-		"fonts":     MODULE_TYPE_FONTS,     // Font management
-		"vector":    MODULE_TYPE_VECTOR,    // Vector (2D) graphics
-		"opengl":    MODULE_TYPE_OPENGL,    // OpenGL graphics
-		"layout":    MODULE_TYPE_LAYOUT,    // Graphics layout
-		"gpio":      MODULE_TYPE_GPIO,      // General Purpose input/output
-		"i2c":       MODULE_TYPE_I2C,       // I2C Hardware interface
-		"spi":       MODULE_TYPE_SPI,       // SPI Hardware interface
-		"pwm":       MODULE_TYPE_PWM,       // PWM Hardware interface
-		"input":     MODULE_TYPE_INPUT,     // Input devices
-		"timer":     MODULE_TYPE_TIMER,     // Timer and backoff
-		"lirc":      MODULE_TYPE_LIRC,      // IR Sending and Receiving
-		"service":   MODULE_TYPE_SERVICE,   // Microservice service
-		"client":    MODULE_TYPE_CLIENT,    // Microservice client
-		"discovery": MODULE_TYPE_DISCOVERY, // Microservice discovery
-		"keymap":    MODULE_TYPE_KEYMAP,    // Keycode/Scancode mapping
+		"logger":     MODULE_TYPE_LOGGER,     // Logging
+		"hw":         MODULE_TYPE_HARDWARE,   // Platform
+		"display":    MODULE_TYPE_DISPLAY,    // Displays
+		"graphics":   MODULE_TYPE_GRAPHICS,   // Surface management
+		"sprites":    MODULE_TYPE_SPRITES,    // Sprites management
+		"fonts":      MODULE_TYPE_FONTS,      // Font management
+		"vector":     MODULE_TYPE_VECTOR,     // Vector (2D) graphics
+		"opengl":     MODULE_TYPE_OPENGL,     // OpenGL graphics
+		"layout":     MODULE_TYPE_LAYOUT,     // Graphics layout
+		"gpio":       MODULE_TYPE_GPIO,       // General Purpose input/output
+		"i2c":        MODULE_TYPE_I2C,        // I2C Hardware interface
+		"spi":        MODULE_TYPE_SPI,        // SPI Hardware interface
+		"pwm":        MODULE_TYPE_PWM,        // PWM Hardware interface
+		"input":      MODULE_TYPE_INPUT,      // Input devices
+		"timer":      MODULE_TYPE_TIMER,      // Timer and backoff
+		"lirc":       MODULE_TYPE_LIRC,       // IR Sending and Receiving
+		"service":    MODULE_TYPE_SERVICE,    // Microservice service
+		"client":     MODULE_TYPE_CLIENT,     // Microservice client
+		"clientpool": MODULE_TYPE_CLIENTPOOL, // Microservice client pool
+		"discovery":  MODULE_TYPE_DISCOVERY,  // Microservice discovery
+		"keymap":     MODULE_TYPE_KEYMAP,     // Keycode/Scancode mapping
 	}
 )
 
@@ -350,6 +352,8 @@ func (t ModuleType) String() string {
 		return "MODULE_TYPE_SERVICE"
 	case MODULE_TYPE_CLIENT:
 		return "MODULE_TYPE_CLIENT"
+	case MODULE_TYPE_CLIENTPOOL:
+		return "MODULE_TYPE_CLIENTPOOL"
 	case MODULE_TYPE_KEYMAP:
 		return "MODULE_TYPE_KEYMAP"
 	default:
