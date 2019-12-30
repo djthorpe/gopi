@@ -53,3 +53,9 @@ func (this *log) Error(err error) error {
 	defer this.Unlock()
 	return this.LoggerBase.Error(err)
 }
+
+func (this *log) Debug(args ...interface{}) {
+	this.Lock()
+	defer this.Unlock()
+	this.LoggerBase.Debug(args...)
+}

@@ -8,6 +8,7 @@
 package logger_test
 
 import (
+	"errors"
 	"os"
 	"testing"
 
@@ -53,5 +54,17 @@ func Test_Logger_003(t *testing.T) {
 	logger := logger_.(gopi.Logger)
 	if logger.IsDebug() != true {
 		t.Error("Expected IsDebug = false")
+	}
+}
+
+func Test_Logger_004(t *testing.T) {
+	logger_, err := gopi.New(logger.Log{Writer: os.Stderr, Unit: "logger_test", Debug: true}, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	logger := logger_.(gopi.Logger)
+
+	if err := logger.Error(gopi.ErrNotImplemented); errors.Is(err, gopi.ErrNotImplemented) == false {
+		t.Error("Expected error.Is(gopi.ErrNotImplemented) = true")
 	}
 }

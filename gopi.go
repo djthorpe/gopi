@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/djthorpe/gopi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -20,42 +18,32 @@ import (
 
 // Unit configuration interface
 type Config interface {
-	// Returns name of the unit
-	Name() string
-
-	// Opens the driver from configuration, or returns error
-	New(Logger) (Unit, error)
+	Name() string             // Returns name of the unit
+	New(Logger) (Unit, error) // Opens the driver from configuration, or returns error
 }
 
 // Unit interface
 type Unit interface {
-	// Close closes the driver and frees the underlying resources
-	Close() error
-
-	// String returns a string representation of the unit
-	String() string
+	Close() error   // Close closes the driver and frees the underlying resources
+	String() string // String returns a string representation of the unit
 }
 
 // Abstract logging interface
 type Logger interface {
 	Unit
 
-	// Return unit name
-	Name() string
-
-	// Output logging messages
-	Error(error) error
-
-	// Return IsDebug flag
-	IsDebug() bool
+	Name() string              // Return unit name
+	Error(error) error         // Output logging messages
+	Debug(args ...interface{}) // Debug output
+	IsDebug() bool             // Return IsDebug flag
 }
 
-// Base struct for any unit
+// UnitBase is the struct for any unit
 type UnitBase struct {
-	log Logger
+	Log Logger
 }
 
-// Base struct for any logger
+// LoggerBase is the struct for any logger
 type LoggerBase struct {
 	UnitBase
 	name   string
@@ -64,7 +52,7 @@ type LoggerBase struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS
+// IMPLEMENTATION gopi.Config
 
 func New(config Config, log Logger) (Unit, error) {
 	if log == nil {
@@ -83,27 +71,28 @@ func New(config Config, log Logger) (Unit, error) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION gopi.UnitBase
+// IMPLEMENTATION gopi.Unit
 
 func (this *UnitBase) Init(log Logger) error {
-	this.log = log
+	this.Log = log
 	return nil
 }
 
 func (this *UnitBase) Close() error {
-	return gopi.ErrNotImplemented
+	this.Log = nil
+	return nil
 }
 
 func (this *UnitBase) String() string {
-	if this.log != nil {
-		return "<" + this.log.Name() + ">"
+	if this.Log != nil {
+		return "<" + this.Log.Name() + ">"
 	} else {
 		return "<gopi.UnitBase>"
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION gopi.LoggerBase
+// IMPLEMENTATION gopi.Logger
 
 func (this *LoggerBase) Init(writer io.Writer, name string, debug bool) error {
 	if name == "" || writer == nil {
@@ -122,6 +111,12 @@ func (this *LoggerBase) Error(err error) error {
 	}
 	fmt.Fprintln(this.writer, err)
 	return err
+}
+
+func (this *LoggerBase) Debug(args ...interface{}) {
+	if this.debug {
+		fmt.Fprintln(this.writer, args...)
+	}
 }
 
 func (this *LoggerBase) IsDebug() bool {
