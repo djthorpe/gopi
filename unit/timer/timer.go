@@ -86,6 +86,40 @@ func (this *timer) NewTicker(duration time.Duration) gopi.TimerId {
 	return timerId
 }
 
+func (this *timer) NewTimer(duration time.Duration) gopi.TimerId {
+	timerId := this.nextId()
+	go func(timerId gopi.TimerId, duration time.Duration) {
+		stop := this.makeStop(timerId)
+		timer := time.NewTimer(duration)
+		this.Add(1)
+	FOR_LOOP:
+		for {
+			select {
+			case <-timer.C:
+				this.Log.Debug("Timer", timerId)
+			case <-stop:
+				timer.Stop()
+				break FOR_LOOP
+			}
+		}
+		this.Done()
+	}(timerId, duration)
+	return timerId
+}
+
+func (this *timer) Cancel(timerId gopi.TimerId) error {
+	this.Lock()
+	defer this.Unlock()
+	if stop, exists := this.stop[timerId]; exists == false {
+		return gopi.ErrBadParameter.WithPrefix("TimerId")
+	} else {
+		delete(this.stop, timerId)
+		close(stop)
+	}
+	// Success
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 

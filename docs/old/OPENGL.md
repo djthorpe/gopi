@@ -1,5 +1,0 @@
-
-# OpenGL Surfaces
-
-TODO
-

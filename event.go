@@ -13,8 +13,9 @@ import "time"
 // TYPES
 
 type (
-	// Unique ID for each timer created
-	TimerId uint
+	TimerId      uint        // Unique ID for each timer created
+	EventHandler func(Event) // Handler for an emitted event
+	EventNS      uint        // Event namespace
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -24,6 +25,30 @@ type (
 type Timer interface {
 	Unit
 
-	// Create periodic event at regular intervals
-	NewTicker(time.Duration) TimerId
+	NewTicker(time.Duration) TimerId // Create periodic event at interval
+	NewTimer(time.Duration) TimerId  // Create one-shot event after interval
+	Cancel(TimerId) error            // Cancel events
 }
+
+// Bus unit - handles events
+type Bus interface {
+	Unit
+
+	Emit(Event)                      // Emit an event on the bus
+	NewHandler(string, EventHandler) // Register an event handler for an event name
+}
+
+// Event emitted on the event bus
+type Event interface {
+	Source() Unit       // Source of the event
+	Name() string       // Name of the event
+	NS() EventNS        // Namespace for the event
+	Value() interface{} // Any value associated with the event
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	EVENT_NS_DEFAULT EventNS = iota // Default event namespace
+)

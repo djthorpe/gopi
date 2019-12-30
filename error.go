@@ -7,13 +7,24 @@
 
 package gopi
 
+import "fmt"
+
+////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
 type Error uint
 
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
 const (
-	ErrNone Error = iota
-	ErrNotImplemented
-	ErrBadParameter
+	ErrNone           Error = iota // No error condition
+	ErrNotImplemented              // Method or feature not implemented
+	ErrBadParameter                // Error with parameter passed to method
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY AND WRAP
 
 func (this Error) Error() string {
 	switch this {
@@ -24,4 +35,8 @@ func (this Error) Error() string {
 	default:
 		return "[?? Invalid Error value]"
 	}
+}
+
+func (this Error) WithPrefix(prefix string) error {
+	return fmt.Errorf("%s: %w", prefix, this)
 }

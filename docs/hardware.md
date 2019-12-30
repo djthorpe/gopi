@@ -1,7 +1,0 @@
-
-
-## Hardware and Displays
-
-TODO
-
-
