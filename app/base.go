@@ -7,7 +7,12 @@
 
 package app
 
-import "github.com/djthorpe/gopi/v2"
+import (
+	// Frameworks
+	"strconv"
+
+	"github.com/djthorpe/gopi/v2"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -17,6 +22,52 @@ type base struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.App
+
+func (this *base) Init(modules []string) error {
+	// Configure for logger
+	if logger := gopi.UnitsByType(gopi.UNIT_LOGGER); logger == nil {
+		return gopi.ErrNotFound.WithPrefix("Missing logger unit")
+	} else if logger[0].Config != nil {
+		if err := logger[0].Config(this); err != nil {
+			return err
+		} else if units := this.unitsWithDependencies(logger[0]); len(units) == 0 {
+
+		} else {
+
+		}
+	}
+
+	// Get modules and their dependendies
+	for _, name := range modules {
+		if units := gopi.UnitsByName(name); len(units) == 0 {
+			return gopi.ErrNotFound.WithPrefix("Missing " + strconv.Quote(name) + " unit")
+		} else {
+			for _, unit := range units {
+				if unit.Config != nil {
+					if err := unit.Config(this); err != nil {
+						return err
+					}
+				}
+				if units := this.unitsWithDependencies(unit); len(units) == 0 {
+					return gopi.ErrBadParameter.WithPrefix("Unable to satisfy dependencies for " + strconv.Quote(unit.Name) + " unit")
+				}
+			}
+		}
+	}
+
+	// Success
+	return nil
+}
+
+func (this *base) Run(main gopi.MainFunc) int {
+	if main == nil {
+		return -1
+	} else if err := main(this, nil); err != nil {
+		return -1
+	} else {
+		return 0
+	}
+}
 
 func (this *base) Log() gopi.Logger {
 	if logger, ok := this.Unit("logger").(gopi.Logger); ok {
@@ -42,16 +93,6 @@ func (this *base) Bus() gopi.Bus {
 	}
 }
 
-func (this *base) Run(main gopi.MainFunc) int {
-	if main == nil {
-		return -1
-	} else if err := main(this); err != nil {
-		return -1
-	} else {
-		return 0
-	}
-}
-
 func (this *base) Unit(name string) gopi.Unit {
 	if units := this.Units(name); len(units) == 0 {
 		return nil
@@ -61,6 +102,13 @@ func (this *base) Unit(name string) gopi.Unit {
 }
 
 func (this *base) Units(string) []gopi.Unit {
-	// Return units with highest priority one top
+	// TODO: Return units with highest priority one top
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func (this *base) unitsWithDependencies(unit gopi.UnitConfig) []gopi.UnitConfig {
 	return nil
 }

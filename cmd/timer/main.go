@@ -18,7 +18,7 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func Main(app gopi.App) error {
+func Main(app gopi.App, args []string) error {
 	timer := app.Unit("timer").(gopi.Timer)
 	fmt.Println("timer=", timer)
 	return gopi.ErrNotImplemented

@@ -21,6 +21,7 @@ const (
 	ErrNone           Error = iota // No error condition
 	ErrNotImplemented              // Method or feature not implemented
 	ErrBadParameter                // Error with parameter passed to method
+	ErrNotFound                    // Missing object
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,6 +33,8 @@ func (this Error) Error() string {
 		return "Not Implemented"
 	case ErrBadParameter:
 		return "Bad Parameter"
+	case ErrNotFound:
+		return "Not Found"
 	default:
 		return "[?? Invalid Error value]"
 	}

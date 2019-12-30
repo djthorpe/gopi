@@ -21,7 +21,14 @@ type command struct {
 ////////////////////////////////////////////////////////////////////////////////
 // gopi.App implementation for command-line tool
 
-func NewCommandLineTool(unit ...string) (gopi.App, error) {
+func NewCommandLineTool(units ...string) (gopi.App, error) {
 	this := new(command)
+
+	// Create module instances
+	if err := this.base.Init(units); err != nil {
+		return nil, err
+	}
+
+	// Success
 	return this, nil
 }
