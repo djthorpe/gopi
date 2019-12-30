@@ -1,65 +1,81 @@
 /*
-	Go Language Raspberry Pi Interface
-	(c) Copyright David Thorpe 2016-2017
-	All Rights Reserved
-	Documentation http://djthorpe.github.io/gopi/
-	For Licensing and Usage information, please see LICENSE.md
+  Go Language Raspberry Pi Interface
+  (c) Copyright David Thorpe 2016-2020
+  All Rights Reserved
+  For Licensing and Usage information, please see LICENSE.md
 */
 
 package gopi
 
 import (
 	"fmt"
-	"log"
-	"sync"
+	"io"
+	"os"
+
+	"github.com/djthorpe/gopi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-// Abstract driver interface
-type Driver interface {
-	// Close closes the driver and frees the underlying resources
-	Close() error
+// Unit configuration interface
+type Config interface {
+	// Returns name of the unit
+	Name() string
+
+	// Opens the driver from configuration, or returns error
+	New(Logger) (Unit, error)
 }
 
-// Abstract configuration which is used to open and return the
-// concrete driver
-type Config interface {
-	// Opens the driver from configuration, or returns error
-	Open(Logger) (Driver, error)
+// Unit interface
+type Unit interface {
+	// Close closes the driver and frees the underlying resources
+	Close() error
+
+	// String returns a string representation of the unit
+	String() string
 }
 
 // Abstract logging interface
 type Logger interface {
-	Driver
+	Unit
+
+	// Return unit name
+	Name() string
 
 	// Output logging messages
-	Fatal(format string, v ...interface{}) error
-	Error(format string, v ...interface{}) error
-	Warn(format string, v ...interface{})
-	Info(format string, v ...interface{})
-	Debug(format string, v ...interface{})
-	Debug2(format string, v ...interface{})
+	Error(error) error
 
 	// Return IsDebug flag
 	IsDebug() bool
 }
 
-// Concrete basic logger
-type logger struct {
-	sync.Mutex
+// Base struct for any unit
+type UnitBase struct {
+	log Logger
+}
+
+// Base struct for any logger
+type LoggerBase struct {
+	UnitBase
+	name   string
+	writer io.Writer
+	debug  bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// Open a driver - opens the concrete version given the config method
-func Open(config Config, log Logger) (Driver, error) {
+func New(config Config, log Logger) (Unit, error) {
 	if log == nil {
-		log = new(logger)
+		log_ := new(LoggerBase)
+		if err := log_.Init(os.Stderr, config.Name(), false); err != nil {
+			return nil, err
+		} else {
+			log = log_
+		}
 	}
-	if driver, err := config.Open(log); err != nil {
+	if driver, err := config.New(log); err != nil {
 		return nil, err
 	} else {
 		return driver, nil
@@ -67,47 +83,51 @@ func Open(config Config, log Logger) (Driver, error) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
+// IMPLEMENTATION gopi.UnitBase
 
-func (this *logger) Close() error {
-	this.Lock()
-	defer this.Unlock()
+func (this *UnitBase) Init(log Logger) error {
+	this.log = log
 	return nil
 }
-func (this *logger) Fatal(format string, v ...interface{}) error {
-	this.Lock()
-	defer this.Unlock()
-	err := fmt.Errorf(format, v...)
-	log.Printf("Fatal: %v", err.Error())
+
+func (this *UnitBase) Close() error {
+	return gopi.ErrNotImplemented
+}
+
+func (this *UnitBase) String() string {
+	if this.log != nil {
+		return "<" + this.log.Name() + ">"
+	} else {
+		return "<gopi.UnitBase>"
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION gopi.LoggerBase
+
+func (this *LoggerBase) Init(writer io.Writer, name string, debug bool) error {
+	if name == "" || writer == nil {
+		return ErrBadParameter
+	} else {
+		this.writer = writer
+		this.name = name
+		this.debug = debug
+		return nil
+	}
+}
+
+func (this *LoggerBase) Error(err error) error {
+	if this.name != "" {
+		err = fmt.Errorf("%s: %w", this.name, err)
+	}
+	fmt.Fprintln(this.writer, err)
 	return err
 }
-func (this *logger) Error(format string, v ...interface{}) error {
-	this.Lock()
-	defer this.Unlock()
-	err := fmt.Errorf(format, v...)
-	log.Printf("Error: %v", err.Error())
-	return err
+
+func (this *LoggerBase) IsDebug() bool {
+	return this.debug
 }
-func (this *logger) Warn(format string, v ...interface{}) {
-	this.Lock()
-	defer this.Unlock()
-	log.Printf("Warn: %v", fmt.Sprintf(format, v...))
-}
-func (this *logger) Info(format string, v ...interface{}) {
-	this.Lock()
-	defer this.Unlock()
-	log.Printf("Info: %v", fmt.Sprintf(format, v...))
-}
-func (this *logger) Debug(format string, v ...interface{}) {
-	this.Lock()
-	defer this.Unlock()
-	log.Printf("Debug: %v", fmt.Sprintf(format, v...))
-}
-func (this *logger) Debug2(format string, v ...interface{}) {
-	this.Lock()
-	defer this.Unlock()
-	log.Printf("Debug: %v", fmt.Sprintf(format, v...))
-}
-func (this *logger) IsDebug() bool {
-	return true
+
+func (this *LoggerBase) Name() string {
+	return this.name
 }
