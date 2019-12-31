@@ -18,9 +18,10 @@ import (
 )
 
 type Log struct {
-	Writer io.Writer
-	Unit   string
-	Debug  bool
+	Writer  io.Writer
+	Unit    string
+	Debug   bool
+	Verbose bool
 }
 
 type log struct {

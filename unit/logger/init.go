@@ -8,6 +8,8 @@
 package logger
 
 import (
+	"os"
+
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
 )
@@ -20,6 +22,14 @@ func init() {
 			app.Flags().FlagBool("verbose", true, "Verbose output")
 			app.Flags().FlagBool("debug", false, "Debugging output")
 			return nil
+		},
+		New: func(app gopi.App) (gopi.Unit, error) {
+			return gopi.New(Log{
+				Unit:    app.Flags().Name(),
+				Debug:   app.Flags().GetBool("debug", gopi.FLAG_NS_DEFAULT),
+				Verbose: app.Flags().GetBool("verbose", gopi.FLAG_NS_DEFAULT),
+				Writer:  os.Stderr,
+			}, nil)
 		},
 	})
 }

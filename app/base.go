@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -29,38 +28,27 @@ type base struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.App
 
-func (this *base) Init(name string, modules []string) error {
+////////////////////////////////////////////////////////////////////////////////
+// METHODS
+
+func (this *base) Init(name string, units []string) error {
 	// Make flags
 	if flags := config.NewFlags(filepath.Base(name)); flags == nil {
 		return nil
 	} else {
 		this.flags = flags
 	}
-	// Configure for logger
-	if logger := gopi.UnitsByType(gopi.UNIT_LOGGER); logger == nil {
-		return gopi.ErrNotFound.WithPrefix("Missing logger unit")
-	} else if logger[0].Config != nil {
-		if err := logger[0].Config(this); err != nil {
-			return err
-		} else if units := this.unitsWithDependencies(logger[0]); len(units) == 0 {
 
-		} else {
-
-		}
-	}
-	// Get modules and their dependendies
-	for _, name := range modules {
-		if units := gopi.UnitsByName(name); len(units) == 0 {
-			return gopi.ErrNotFound.WithPrefix("Missing " + strconv.Quote(name) + " unit")
-		} else {
-			for _, unit := range units {
-				if unit.Config != nil {
-					if err := unit.Config(this); err != nil {
-						return err
-					}
-				}
-				if units := this.unitsWithDependencies(unit); len(units) == 0 {
-					return gopi.ErrBadParameter.WithPrefix("Unable to satisfy dependencies for " + strconv.Quote(unit.Name) + " unit")
+	// Get units and dependendies
+	units = append([]string{"logger"}, units...)
+	if units_, err := gopi.UnitWithDependencies(units...); err != nil {
+		return err
+	} else {
+		// Call configuration for units
+		for _, unit := range units_ {
+			if unit.Config != nil {
+				if err := unit.Config(this); err != nil {
+					return fmt.Errorf("%s: %w", unit.Name, err)
 				}
 			}
 		}
