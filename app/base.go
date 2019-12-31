@@ -8,8 +8,10 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	// Frameworks
@@ -21,7 +23,7 @@ import (
 // INTERFACES
 
 type base struct {
-	flags *config.Flags
+	flags gopi.Flags
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +31,7 @@ type base struct {
 
 func (this *base) Init(name string, modules []string) error {
 	// Make flags
-	if flags := config.NewFlags(name); flags == nil {
+	if flags := config.NewFlags(filepath.Base(name)); flags == nil {
 		return nil
 	} else {
 		this.flags = flags
@@ -46,7 +48,6 @@ func (this *base) Init(name string, modules []string) error {
 
 		}
 	}
-
 	// Get modules and their dependendies
 	for _, name := range modules {
 		if units := gopi.UnitsByName(name); len(units) == 0 {
@@ -70,12 +71,19 @@ func (this *base) Init(name string, modules []string) error {
 }
 
 func (this *base) Run() int {
-	if err := this.flags.Parse(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, "TODO:", err)
+	if err := this.flags.Parse(os.Args[1:]); errors.Is(err, gopi.ErrHelp) {
+		this.flags.Usage(os.Stderr)
 		return -1
-	} else {
-		return 0
+	} else if err != nil {
+		fmt.Fprintln(os.Stderr, this.flags.Name()+":", err)
+		return -1
+	} else if this.flags.HasFlag("version", gopi.FLAG_NS_DEFAULT) && this.flags.GetBool("version", gopi.FLAG_NS_DEFAULT) {
+		this.flags.Version(os.Stderr)
+		return -1
 	}
+
+	// Success
+	return 0
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -86,7 +94,7 @@ func (this *base) Flags() gopi.Flags {
 }
 
 func (this *base) Log() gopi.Logger {
-	if logger, ok := this.Unit("logger").(gopi.Logger); ok {
+	if logger, ok := this.UnitInstance("logger").(gopi.Logger); ok {
 		return logger
 	} else {
 		return nil
@@ -94,7 +102,7 @@ func (this *base) Log() gopi.Logger {
 }
 
 func (this *base) Timer() gopi.Timer {
-	if timer, ok := this.Unit("timer").(gopi.Timer); ok {
+	if timer, ok := this.UnitInstance("timer").(gopi.Timer); ok {
 		return timer
 	} else {
 		return nil
@@ -102,14 +110,14 @@ func (this *base) Timer() gopi.Timer {
 }
 
 func (this *base) Bus() gopi.Bus {
-	if bus, ok := this.Unit("bus").(gopi.Bus); ok {
+	if bus, ok := this.UnitInstance("bus").(gopi.Bus); ok {
 		return bus
 	} else {
 		return nil
 	}
 }
 
-func (this *base) Unit(name string) gopi.Unit {
+func (this *base) UnitInstance(name string) gopi.Unit {
 	if units := this.Units(name); len(units) == 0 {
 		return nil
 	} else {
@@ -120,6 +128,13 @@ func (this *base) Unit(name string) gopi.Unit {
 func (this *base) Units(string) []gopi.Unit {
 	// TODO: Return units with highest priority one top
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (this *base) String() string {
+	return fmt.Sprintf("<gopi.App flags=%v>", this.flags)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -32,7 +32,7 @@ func Test_Config_001(t *testing.T) {
 	if len(flags.Args()) != 0 {
 		t.Error("Unexpected return value from Args()")
 	}
-	if len(flags.Flags()) != 0 {
+	if len(flags.Flags(gopi.FLAG_NS_DEFAULT)) != 0 {
 		t.Error("Unexpected return value from Flags()")
 	}
 }
@@ -76,22 +76,22 @@ func Test_Config_004(t *testing.T) {
 	if len(flags.Args()) != 2 {
 		t.Error("Unexpected return value from Args()")
 	}
-	if flags.HasFlag("test") != true {
+	if flags.HasFlag("test", gopi.FLAG_NS_DEFAULT) != true {
 		t.Error("Unexpected return value from HasFlag()")
 	}
-	if flags.HasFlag("test2") != true {
+	if flags.HasFlag("test2", gopi.FLAG_NS_DEFAULT) != true {
 		t.Error("Unexpected return value from HasFlag()")
 	}
-	if flags.HasFlag("test3") != false {
+	if flags.HasFlag("test3", gopi.FLAG_NS_DEFAULT) != false {
 		t.Error("Unexpected return value from HasFlag()")
 	}
-	if flags.GetBool("test") != true {
+	if flags.GetBool("test", gopi.FLAG_NS_DEFAULT) != true {
 		t.Error("Unexpected return value from GetBool()")
 	}
-	if flags.GetBool("test2") != false {
+	if flags.GetBool("test2", gopi.FLAG_NS_DEFAULT) != false {
 		t.Error("Unexpected return value from GetBool()")
 	}
-	if flags.GetBool("test3") != false {
+	if flags.GetBool("test3", gopi.FLAG_NS_DEFAULT) != false {
 		t.Error("Unexpected return value from GetBool()")
 	}
 }
@@ -110,15 +110,16 @@ func Test_Config_005(t *testing.T) {
 	if len(flags.Args()) != 2 {
 		t.Error("Unexpected return value from Args()")
 	}
-	if flags.GetString("test") != "hello" {
+	if flags.GetString("test", gopi.FLAG_NS_DEFAULT) != "hello" {
 		t.Error("Unexpected return value from GetString()")
 	}
-	if flags.GetString("test2") != "true" {
+	if flags.GetString("test2", gopi.FLAG_NS_DEFAULT) != "true" {
 		t.Error("Unexpected return value from GetString()")
 	}
-	if flags.GetString("test3") != "default" {
-		t.Error("Unexpected return value from GetString()")
+	if flags.GetString("test3", gopi.FLAG_NS_DEFAULT) != "default" {
+		t.Error("Unexpected return value from GetString()", flags.GetString("test3", gopi.FLAG_NS_DEFAULT))
 	}
+	t.Log(flags)
 }
 
 func Test_Config_006(t *testing.T) {
@@ -136,19 +137,19 @@ func Test_Config_006(t *testing.T) {
 	if len(flags.Args()) != 2 {
 		t.Error("Unexpected return value from Args()")
 	}
-	if flags.GetString("test") != "-1234" {
+	if flags.GetString("test", gopi.FLAG_NS_DEFAULT) != "-1234" {
 		t.Error("Unexpected return value from GetString()")
 	}
-	if flags.GetInt("test") != -1234 {
+	if flags.GetInt("test", gopi.FLAG_NS_DEFAULT) != -1234 {
 		t.Error("Unexpected return value from GetInt()")
 	}
-	if flags.GetUint("test2") != 1234 {
+	if flags.GetUint("test2", gopi.FLAG_NS_DEFAULT) != 1234 {
 		t.Error("Unexpected return value from GetUint()")
 	}
-	if flags.GetFloat64("test3") != 12.34 {
+	if flags.GetFloat64("test3", gopi.FLAG_NS_DEFAULT) != 12.34 {
 		t.Error("Unexpected return value from GetFloat64()")
 	}
-	if flags.GetDuration("test4") != 1234*time.Second {
+	if flags.GetDuration("test4", gopi.FLAG_NS_DEFAULT) != 1234*time.Second {
 		t.Error("Unexpected return value from GetDuration()")
 	}
 }

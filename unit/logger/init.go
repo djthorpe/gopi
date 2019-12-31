@@ -8,8 +8,6 @@
 package logger
 
 import (
-	"fmt"
-
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
 )
@@ -19,7 +17,8 @@ func init() {
 		Name: "gopi/logger",
 		Type: gopi.UNIT_LOGGER,
 		Config: func(app gopi.App) error {
-			fmt.Println("TODO: Logger App Config")
+			app.Flags().FlagBool("verbose", true, "Verbose output")
+			app.Flags().FlagBool("debug", false, "Debugging output")
 			return nil
 		},
 	})

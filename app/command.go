@@ -11,6 +11,7 @@ import (
 	// Frameworks
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/djthorpe/gopi/v2"
@@ -49,14 +50,14 @@ func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, e
 func (this *command) Run() int {
 	if returnValue := this.base.Run(); returnValue != 0 {
 		return returnValue
-	} else if err := this.main(this, this.Flags().Args()); err != nil {
-		if errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
-			// TODO: Usage
-		} else {
-			// TODO: Error
-		}
-		return -1
-	} else {
+	} else if err := this.main(this, this.Flags().Args()); errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
+		this.flags.Usage(os.Stderr)
 		return 0
+	} else if err != nil {
+		fmt.Fprintln(os.Stderr, this.flags.Name()+":", err)
+		return -1
 	}
+
+	// Success
+	return 0
 }

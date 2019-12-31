@@ -18,11 +18,12 @@ type Error uint
 // CONSTANTS
 
 const (
-	ErrNone           Error = iota // No error condition
-	ErrNotImplemented              // Method or feature not implemented
-	ErrBadParameter                // Error with parameter passed to method
-	ErrNotFound                    // Missing object
-	ErrHelp                        // Help requested from command line
+	ErrNone             Error = iota // No error condition
+	ErrNotImplemented                // Method or feature not implemented
+	ErrBadParameter                  // Error with parameter passed to method
+	ErrNotFound                      // Missing object
+	ErrHelp                          // Help requested from command line
+	ErrInternalAppError              // Internal application error
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,6 +39,8 @@ func (this Error) Error() string {
 		return "Not Found"
 	case ErrHelp:
 		return "Help Requested"
+	case ErrInternalAppError:
+		return "Internal Application Error"
 	default:
 		return "[?? Invalid Error value]"
 	}

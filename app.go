@@ -8,6 +8,7 @@
 package gopi
 
 import (
+	"io"
 	"time"
 )
 
@@ -15,29 +16,36 @@ import (
 // TYPES
 
 type (
-	MainCommandFunc func(App, []string) error
+	MainCommandFunc func(App, []string) error // Main handler for command line tool
+	FlagNS          uint                      // Flag Namespace
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 type App interface {
-	Run() int // Run application
+	Run() int // Run application, return error code
 
 	Flags() Flags // Return command-line flags
+
 	Log() Logger  // Return logger unit
 	Timer() Timer // Return timer unit
 	Bus() Bus     // Return event bus unit
 
-	Unit(string) Unit    // Return singular unit for name
-	Units(string) []Unit // Return multiple units for name
+	UnitInstance(string) Unit // Return singular unit for name
 }
 
 type Flags interface {
-	Name() string        // Return name of flagset
-	Args() []string      // Args returns the command line arguments
-	HasFlag(string) bool // HasFlag returns true if a flag exists
+	Name() string                // Return name of tool
+	Parse([]string) error        // Parse command-line flags
+	Args() []string              // Return command-line arguments
+	HasFlag(string, FlagNS) bool // HasFlag returns true if a flag exists
 
+	Usage(io.Writer)   // Write out usage for the application
+	Version(io.Writer) // Write out version for the application
+	//	SetUsage(func(io.Writer))    // Set command usage function
+
+	// Define flags in default namespace
 	FlagBool(name string, value bool, usage string) *bool
 	FlagString(name, value, usage string) *string
 	FlagDuration(name string, value time.Duration, usage string) *time.Duration
@@ -45,10 +53,41 @@ type Flags interface {
 	FlagUint(name string, value uint, usage string) *uint
 	FlagFloat64(name string, value float64, usage string) *float64
 
-	GetBool(string) bool
-	GetString(string) string
-	GetDuration(string) time.Duration
-	GetInt(string) int
-	GetUint(string) uint
-	GetFloat64(string) float64
+	// Get flag values
+	GetBool(string, FlagNS) bool
+	GetString(string, FlagNS) string
+	GetDuration(string, FlagNS) time.Duration
+	GetInt(string, FlagNS) int
+	GetUint(string, FlagNS) uint
+	GetFloat64(string, FlagNS) float64
+
+	// Set flag values
+	SetBool(string, FlagNS, bool)
+	SetString(string, FlagNS, string)
+	SetDuration(string, FlagNS, time.Duration)
+	SetInt(string, FlagNS, int)
+	SetUint(string, FlagNS, uint)
+	SetFloat64(string, FlagNS, float64)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	FLAG_NS_DEFAULT FlagNS = iota
+	FLAG_NS_VERSION
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (v FlagNS) String() string {
+	switch v {
+	case FLAG_NS_DEFAULT:
+		return "FLAG_NS_DEFAULT"
+	case FLAG_NS_VERSION:
+		return "FLAG_NS_VERSION"
+	default:
+		return "[?? Invalid FlagNS value]"
+	}
 }

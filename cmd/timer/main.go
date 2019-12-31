@@ -25,7 +25,7 @@ func Main(app gopi.App, args []string) error {
 }
 
 func main() {
-	if app, err := app.NewCommandLineTool(Main, "timer"); err != nil {
+	if app, err := app.NewCommandLineTool(Main); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
 		os.Exit(app.Run())
