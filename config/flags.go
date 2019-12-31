@@ -79,8 +79,8 @@ func (this *Flags) Flags() []*flag.Flag {
 	return flags
 }
 
-// Has returns true if a flag exists
-func (this *Flags) Has(name string) bool {
+// HasFlag returns true if a flag exists
+func (this *Flags) HasFlag(name string) bool {
 	if _, exists := this.flagMap[name]; exists {
 		return true
 	} else {

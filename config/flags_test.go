@@ -76,14 +76,14 @@ func Test_Config_004(t *testing.T) {
 	if len(flags.Args()) != 2 {
 		t.Error("Unexpected return value from Args()")
 	}
-	if flags.Has("test") != true {
-		t.Error("Unexpected return value from Has()")
+	if flags.HasFlag("test") != true {
+		t.Error("Unexpected return value from HasFlag()")
 	}
-	if flags.Has("test2") != true {
-		t.Error("Unexpected return value from Has()")
+	if flags.HasFlag("test2") != true {
+		t.Error("Unexpected return value from HasFlag()")
 	}
-	if flags.Has("test3") != false {
-		t.Error("Unexpected return value from Has()")
+	if flags.HasFlag("test3") != false {
+		t.Error("Unexpected return value from HasFlag()")
 	}
 	if flags.GetBool("test") != true {
 		t.Error("Unexpected return value from GetBool()")

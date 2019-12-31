@@ -8,23 +8,30 @@
 package app
 
 import (
-	// Frameworks
-
 	"strconv"
 
+	// Frameworks
 	"github.com/djthorpe/gopi/v2"
+	"github.com/djthorpe/gopi/v2/config"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 type base struct {
+	flags *config.Flags
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.App
 
-func (this *base) Init(modules []string) error {
+func (this *base) Init(name string, modules []string) error {
+	// Make flags
+	if flags := config.NewFlags(name); flags == nil {
+		return nil
+	} else {
+		this.flags = flags
+	}
 	// Configure for logger
 	if logger := gopi.UnitsByType(gopi.UNIT_LOGGER); logger == nil {
 		return gopi.ErrNotFound.WithPrefix("Missing logger unit")
@@ -58,6 +65,10 @@ func (this *base) Init(modules []string) error {
 
 	// Success
 	return nil
+}
+
+func (this *base) Flags() gopi.Flags {
+	return this.flags
 }
 
 func (this *base) Log() gopi.Logger {
