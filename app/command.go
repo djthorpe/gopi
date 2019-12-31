@@ -8,6 +8,10 @@
 package app
 
 import (
+	"fmt"
+	"os"
+
+	// Frameworks
 	"github.com/djthorpe/gopi/v2"
 )
 
@@ -16,19 +20,30 @@ import (
 
 type command struct {
 	base
+	main gopi.MainCommandFunc
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // gopi.App implementation for command-line tool
 
-func NewCommandLineTool(units ...string) (gopi.App, error) {
+func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, error) {
 	this := new(command)
 
-	// Create module instances
-	if err := this.base.Init(units); err != nil {
+	// Check parameters
+	if main == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("gopi.MainCommandFunc")
+	} else if err := this.base.Init(units); err != nil {
 		return nil, err
+	} else {
+		this.main = main
 	}
 
 	// Success
 	return this, nil
+}
+
+func (this *command) Run() int {
+
+	fmt.Fprintf(os.Stderr, "Run() is not imple,ented")
+	return -1
 }

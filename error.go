@@ -22,6 +22,7 @@ const (
 	ErrNotImplemented              // Method or feature not implemented
 	ErrBadParameter                // Error with parameter passed to method
 	ErrNotFound                    // Missing object
+	ErrHelp                        // Help requested from command line
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,6 +36,8 @@ func (this Error) Error() string {
 		return "Bad Parameter"
 	case ErrNotFound:
 		return "Not Found"
+	case ErrHelp:
+		return "Help Requested"
 	default:
 		return "[?? Invalid Error value]"
 	}

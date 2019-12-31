@@ -9,6 +9,7 @@ package app
 
 import (
 	// Frameworks
+
 	"strconv"
 
 	"github.com/djthorpe/gopi/v2"
@@ -57,16 +58,6 @@ func (this *base) Init(modules []string) error {
 
 	// Success
 	return nil
-}
-
-func (this *base) Run(main gopi.MainFunc) int {
-	if main == nil {
-		return -1
-	} else if err := main(this, nil); err != nil {
-		return -1
-	} else {
-		return 0
-	}
 }
 
 func (this *base) Log() gopi.Logger {

@@ -11,14 +11,14 @@ package gopi
 // TYPES
 
 type (
-	MainFunc func(App, []string) error
+	MainCommandFunc func(App, []string) error
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 type App interface {
-	Run(MainFunc) int // Run application
+	Run() int // Run application
 
 	Log() Logger  // Return logger unit
 	Timer() Timer // Return timer unit
