@@ -8,6 +8,8 @@
 package app
 
 import (
+	"fmt"
+	"os"
 	"strconv"
 
 	// Frameworks
@@ -66,6 +68,18 @@ func (this *base) Init(name string, modules []string) error {
 	// Success
 	return nil
 }
+
+func (this *base) Run() int {
+	if err := this.flags.Parse(os.Args[1:]); err != nil {
+		fmt.Fprintln(os.Stderr, "TODO:", err)
+		return -1
+	} else {
+		return 0
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RETURN PROPERTIES
 
 func (this *base) Flags() gopi.Flags {
 	return this.flags

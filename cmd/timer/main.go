@@ -19,16 +19,15 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 func Main(app gopi.App, args []string) error {
-	timer := app.Unit("timer").(gopi.Timer)
-	fmt.Println("timer=", timer)
+	fmt.Println("app=", app)
+	fmt.Println("args=", args)
 	return gopi.ErrNotImplemented
 }
 
 func main() {
-	// Run the command line tool with timer unit
-	if app, err := app.NewCommandLineTool("timer"); err != nil {
+	if app, err := app.NewCommandLineTool(Main, "timer"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
-		os.Exit(app.Run(Main))
+		os.Exit(app.Run())
 	}
 }

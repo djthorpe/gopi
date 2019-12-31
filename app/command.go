@@ -8,10 +8,11 @@
 package app
 
 import (
-	"fmt"
+	// Frameworks
+	"errors"
+	"flag"
 	"os"
 
-	// Frameworks
 	"github.com/djthorpe/gopi/v2"
 )
 
@@ -29,10 +30,13 @@ type command struct {
 func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, error) {
 	this := new(command)
 
+	// Name of command
+	name := os.Args[0]
+
 	// Check parameters
 	if main == nil {
 		return nil, gopi.ErrBadParameter.WithPrefix("gopi.MainCommandFunc")
-	} else if err := this.base.Init(units); err != nil {
+	} else if err := this.base.Init(name, units); err != nil {
 		return nil, err
 	} else {
 		this.main = main
@@ -43,7 +47,16 @@ func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, e
 }
 
 func (this *command) Run() int {
-
-	fmt.Fprintf(os.Stderr, "Run() is not imple,ented")
-	return -1
+	if returnValue := this.base.Run(); returnValue != 0 {
+		return returnValue
+	} else if err := this.main(this, this.Flags().Args()); err != nil {
+		if errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
+			// TODO: Usage
+		} else {
+			// TODO: Error
+		}
+		return -1
+	} else {
+		return 0
+	}
 }
