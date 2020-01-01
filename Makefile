@@ -9,13 +9,13 @@ GOLDFLAGS += -X $(GOPI).GitHash=$(shell git rev-parse HEAD)
 GOLDFLAGS += -X $(GOPI).GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)" 
 
-all: test
+all: test install
 
 test: 
 	$(GO) test -v ./...
 
-timer:
-	$(GO) install ${GOFLAGS} ./cmd/timer/...
+install:
+	$(GO) install ${GOFLAGS} ./cmd/...
 
 clean: 
 	$(GO) clean
