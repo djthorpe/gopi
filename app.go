@@ -8,7 +8,9 @@
 package gopi
 
 import (
+	"context"
 	"io"
+	"os"
 	"time"
 )
 
@@ -24,7 +26,8 @@ type (
 // INTERFACES
 
 type App interface {
-	Run() int // Run application, return error code
+	Run() int                                          // Run application, return error code
+	WaitForSignal(context.Context, ...os.Signal) error // Wait for interrupt signal with context
 
 	Flags() Flags             // Return command-line flags
 	UnitInstance(string) Unit // Return singular unit for name

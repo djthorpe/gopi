@@ -18,17 +18,18 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Timer struct{}
+type Timer struct {
+	Bus gopi.Bus
+}
 
 type timer struct {
+	timerId gopi.TimerId                   // Current Id
+	stop    map[gopi.TimerId]chan struct{} // Map of stop channels
+	bus     gopi.Bus                       // Event bus
+
 	gopi.UnitBase
 	sync.Mutex
 	sync.WaitGroup
-
-	// Current Id
-	timerId gopi.TimerId
-	// Map of stop channels
-	stop map[gopi.TimerId]chan struct{}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -40,7 +41,10 @@ func (config Timer) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(timer)
 	if err := this.UnitBase.Init(log); err != nil {
 		return nil, err
+	} else if config.Bus == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("Missing Bus")
 	} else {
+		this.bus = config.Bus
 		this.stop = make(map[gopi.TimerId]chan struct{})
 	}
 	return this, nil
@@ -75,7 +79,7 @@ func (this *timer) NewTicker(duration time.Duration) gopi.TimerId {
 		for {
 			select {
 			case <-ticker.C:
-				this.Log.Debug("Ticker", timerId)
+				this.bus.Emit(newTimerEvent(this, timerId))
 			case <-stop:
 				ticker.Stop()
 				break FOR_LOOP
@@ -96,7 +100,7 @@ func (this *timer) NewTimer(duration time.Duration) gopi.TimerId {
 		for {
 			select {
 			case <-timer.C:
-				this.Log.Debug("Timer", timerId)
+				this.bus.Emit(newTimerEvent(this, timerId))
 			case <-stop:
 				timer.Stop()
 				break FOR_LOOP

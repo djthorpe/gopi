@@ -9,10 +9,15 @@ package gopi
 
 import "fmt"
 
+import "strings"
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Error uint
+type Error uint             // Error represents a gopi error
+type CompoundError struct { // CompoundError represents a set of errors
+	errs []error
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -24,6 +29,7 @@ const (
 	ErrNotFound                      // Missing object
 	ErrHelp                          // Help requested from command line
 	ErrInternalAppError              // Internal application error
+	ErrSignalCaught                  // Signal caught
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +47,8 @@ func (this Error) Error() string {
 		return "Help Requested"
 	case ErrInternalAppError:
 		return "Internal Application Error"
+	case ErrSignalCaught:
+		return "Signal caught"
 	default:
 		return "[?? Invalid Error value]"
 	}
@@ -48,4 +56,39 @@ func (this Error) Error() string {
 
 func (this Error) WithPrefix(prefix string) error {
 	return fmt.Errorf("%s: %w", prefix, this)
+}
+
+func (this *CompoundError) Add(err error) error {
+	if err == nil {
+		return this
+	}
+	if this.errs == nil {
+		this.errs = make([]error, 0, 1)
+	}
+	this.errs = append(this.errs, err)
+	return this
+}
+
+func (this *CompoundError) Error() string {
+	if len(this.errs) == 0 {
+		return ErrNone.Error()
+	} else if len(this.errs) == 1 {
+		return this.errs[0].Error()
+	} else {
+		str := ""
+		for _, err := range this.errs {
+			str += err.Error() + ","
+		}
+		return strings.TrimSuffix(str, ",")
+	}
+}
+
+func (this *CompoundError) ErrorOrSelf() error {
+	if len(this.errs) == 0 {
+		return nil
+	} else if len(this.errs) == 1 {
+		return this.errs[0]
+	} else {
+		return this
+	}
 }

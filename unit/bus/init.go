@@ -5,21 +5,19 @@
   For Licensing and Usage information, please see LICENSE.md
 */
 
-package timer
+package bus
 
 import (
+	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
 )
 
 func init() {
 	gopi.UnitRegister(gopi.UnitConfig{
-		Name:     "gopi/timer",
-		Type:     gopi.UNIT_TIMER,
-		Requires: []string{"bus"},
+		Name: "gopi/bus",
+		Type: gopi.UNIT_BUS,
 		New: func(app gopi.App) (gopi.Unit, error) {
-			return gopi.New(Timer{
-				Bus: app.UnitInstance("bus").(gopi.Bus),
-			}, nil)
+			return gopi.New(Bus{}, nil)
 		},
 	})
 }

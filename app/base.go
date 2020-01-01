@@ -8,9 +8,12 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
+	"sync"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -21,13 +24,13 @@ import (
 // INTERFACES
 
 type base struct {
-	flags     gopi.Flags
-	units     []*gopi.UnitConfig
-	instances map[*gopi.UnitConfig]gopi.Unit
-}
+	sync.Mutex
 
-////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION gopi.App
+	flags            gopi.Flags
+	units            []*gopi.UnitConfig
+	instanceByConfig map[*gopi.UnitConfig]gopi.Unit
+	instancesByName  map[string][]gopi.Unit
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
@@ -55,12 +58,16 @@ func (this *base) Init(name string, units []string) error {
 		}
 		// Set units and instances map
 		this.units = units_
-		this.instances = make(map[*gopi.UnitConfig]gopi.Unit, len(units_))
+		this.instanceByConfig = make(map[*gopi.UnitConfig]gopi.Unit, len(units_))
+		this.instancesByName = make(map[string][]gopi.Unit, len(units_))
 	}
 
 	// Success
 	return nil
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION gopi.App
 
 func (this *base) Run() int {
 	if err := this.flags.Parse(os.Args[1:]); errors.Is(err, gopi.ErrHelp) {
@@ -82,13 +89,50 @@ func (this *base) Run() int {
 		if instance, err := unit.New(this); err != nil {
 			fmt.Fprintln(os.Stderr, unit.Name+":", err)
 			return -1
-		} else if instance != nil {
-			this.instances[unit] = instance
+		} else {
+			fmt.Fprintln(os.Stderr, "New("+unit.Name+")", "=>", instance)
+			if instance != nil {
+				this.instanceByConfig[unit] = instance
+			}
 		}
 	}
 
 	// Success
 	return 0
+}
+
+func (this *base) Close() error {
+	// Close in reverse order
+	errs := &gopi.CompoundError{}
+	for i := range this.units {
+		unit := this.units[len(this.units)-i-1]
+		if instance, exists := this.instanceByConfig[unit]; exists {
+			fmt.Fprintln(os.Stderr, "Close("+unit.Name+")")
+			errs.Add(instance.Close())
+		}
+	}
+
+	// Release resources
+	this.flags = nil
+	this.units = nil
+	this.instanceByConfig = nil
+	this.instancesByName = nil
+
+	// Return success
+	return errs.ErrorOrSelf()
+}
+
+func (this *base) WaitForSignal(ctx context.Context, signals ...os.Signal) error {
+	sigchan := make(chan os.Signal, 1)
+	defer close(sigchan)
+
+	signal.Notify(sigchan, signals...)
+	select {
+	case s := <-sigchan:
+		return gopi.ErrSignalCaught.WithPrefix(s.String())
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -131,21 +175,30 @@ func (this *base) UnitInstance(name string) gopi.Unit {
 }
 
 func (this *base) UnitInstancesByName(name string) []gopi.Unit {
-	fmt.Println("UnitInstancesByName", name, this.instances)
-	// TODO: Return units with highest priority one top
-	return nil
+	// Cached unit names
+	if units, exists := this.instancesByName[name]; exists {
+		return units
+	}
+	// Otherwise, get configurations by name and match with
+	// configurations for this applicatiomn
+	if configs := gopi.UnitsByName(name); len(configs) == 0 {
+		return nil
+	} else {
+		units := make([]gopi.Unit, 0, len(configs))
+		for _, config := range configs {
+			if instance, exists := this.instanceByConfig[config]; exists {
+				units = append(units, instance)
+			}
+		}
+		// TODO: Sort units by some sort of priority field
+		this.instancesByName[name] = units
+		return units
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *base) String() string {
-	return fmt.Sprintf("<gopi.App flags=%v instances=%v>", this.flags, this.instances)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-
-func (this *base) unitsWithDependencies(unit gopi.UnitConfig) []gopi.UnitConfig {
-	return nil
+	return fmt.Sprintf("<gopi.App flags=%v instances=%v>", this.flags, this.instanceByConfig)
 }

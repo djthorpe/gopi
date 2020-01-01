@@ -8,8 +8,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"time"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -20,7 +22,22 @@ import (
 
 func Main(app gopi.App, args []string) error {
 	app.Log().Debug("timer=", app.Timer())
-	return gopi.ErrNotImplemented
+
+	// Set up handlers
+	app.Bus().NewHandler("gopi.TimerEvent", func(evt gopi.Event) {
+		app.Log().Debug("event=", evt)
+	})
+
+	// Schedule a ticker which fires every second
+	app.Timer().NewTicker(time.Second)
+
+	// Wait for interrupt signal
+	if err := app.WaitForSignal(context.Background(), os.Interrupt); err != nil {
+		app.Log().Error(err)
+	}
+
+	// Return success
+	return nil
 }
 
 func main() {

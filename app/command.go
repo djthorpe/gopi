@@ -51,7 +51,16 @@ func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, e
 func (this *command) Run() int {
 	if returnValue := this.base.Run(); returnValue != 0 {
 		return returnValue
-	} else if err := this.main(this, this.Flags().Args()); errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
+	}
+
+	// Defer closing of instances to exit
+	defer func() {
+		if err := this.base.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, this.flags.Name()+":", err)
+		}
+	}()
+
+	if err := this.main(this, this.Flags().Args()); errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
 		this.flags.Usage(os.Stderr)
 		return 0
 	} else if err != nil {
