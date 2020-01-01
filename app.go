@@ -29,16 +29,26 @@ type (
 // INTERFACES
 
 // App encapsulates the lifecycle of a running application
+// which is created through the 'app' package and run by calling
+// the Run method. A running application has access to unit instances
+// (for example, logger, timer and event bus).
 type App interface {
-	Run() int                                          // Run application, return error code
+
+	// Run the application and return the return code
+	Run() int
+
+	// WaitForSignal stalls the application until a signal is returned,
+	// context is cancelled or deadline exceeded
 	WaitForSignal(context.Context, ...os.Signal) error // Wait for interrupt signal with context
 
-	Flags() Flags             // Return command-line flags
-	UnitInstance(string) Unit // Return singular unit for name
+	// Flags returns the set of key/value configuration parameters
+	Flags() Flags
 
-	Log() Logger  // Return logger unit
-	Timer() Timer // Return timer unit
-	Bus() Bus     // Return event bus unit
+	// Return unit instances
+	UnitInstance(string) Unit // Return singular unit for name
+	Log() Logger              // Return logger unit
+	Timer() Timer             // Return timer unit
+	Bus() Bus                 // Return event bus unit
 }
 
 // Flags encapsulates a set of key/value pairs in several namespaces

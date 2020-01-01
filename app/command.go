@@ -37,7 +37,7 @@ func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, e
 
 	// Check parameters
 	if main == nil {
-		return nil, gopi.ErrBadParameter.WithPrefix("gopi.MainCommandFunc")
+		return nil, gopi.ErrBadParameter.WithPrefix("main")
 	} else if err := this.base.Init(name, units); err != nil {
 		return nil, err
 	} else {
@@ -60,6 +60,7 @@ func (this *command) Run() int {
 		}
 	}()
 
+	// Run main function
 	if err := this.main(this, this.Flags().Args()); errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
 		this.flags.Usage(os.Stderr)
 		return 0
