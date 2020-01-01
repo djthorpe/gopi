@@ -8,6 +8,7 @@
 package gopi
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -36,6 +37,7 @@ const (
 	ErrHelp                          // Help requested from command line
 	ErrInternalAppError              // Internal application error
 	ErrSignalCaught                  // Signal caught
+	ErrMax              = ErrSignalCaught
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,6 +45,8 @@ const (
 
 func (this Error) Error() string {
 	switch this {
+	case ErrNone:
+		return "No Error"
 	case ErrNotImplemented:
 		return "Not Implemented"
 	case ErrBadParameter:
@@ -62,6 +66,14 @@ func (this Error) Error() string {
 
 func (this Error) WithPrefix(prefix string) error {
 	return fmt.Errorf("%s: %w", prefix, this)
+}
+
+func NewCompoundError(errs ...error) *CompoundError {
+	compound := &CompoundError{}
+	for _, err := range errs {
+		compound.Add(err)
+	}
+	return compound
 }
 
 func (this *CompoundError) Add(err error) error {
@@ -97,4 +109,20 @@ func (this *CompoundError) ErrorOrSelf() error {
 	} else {
 		return this
 	}
+}
+
+func (this *CompoundError) Is(other error) bool {
+	if len(this.errs) == 0 && (other == nil || errors.Is(other, ErrNone)) {
+		return true
+	} else if len(this.errs) == 1 {
+		return errors.Is(this.errs[0], other)
+	}
+	// If any of the errors match, return true
+	for _, err := range this.errs {
+		if errors.Is(err, other) == true {
+			return true
+		}
+	}
+	// Return false by default
+	return false
 }

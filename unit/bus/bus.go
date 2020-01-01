@@ -8,10 +8,11 @@
 package bus
 
 import (
-	// Frameworks
-
+	"context"
 	"sync"
+	"time"
 
+	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
 )
 
@@ -21,10 +22,16 @@ import (
 type Bus struct{}
 
 type bus struct {
-	handlers map[string][]gopi.EventHandler
+	handlers map[gopi.EventNS]map[string][]handlerWithTimeout
+	defaults map[gopi.EventNS]gopi.EventHandler
 
 	gopi.UnitBase
 	sync.Mutex
+}
+
+type handlerWithTimeout struct {
+	fn      gopi.EventHandler
+	timeout time.Duration
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,8 +43,6 @@ func (config Bus) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(bus)
 	if err := this.UnitBase.Init(log); err != nil {
 		return nil, err
-	} else {
-		this.handlers = make(map[string][]gopi.EventHandler)
 	}
 	return this, nil
 }
@@ -45,6 +50,7 @@ func (config Bus) New(log gopi.Logger) (gopi.Unit, error) {
 func (this *bus) Close() error {
 	// Release resources
 	this.handlers = nil
+	this.defaults = nil
 
 	// Return success
 	return this.UnitBase.Close()
@@ -54,38 +60,124 @@ func (this *bus) Close() error {
 // IMPLEMENTATION gopi.Bus
 
 func (this *bus) Emit(evt gopi.Event) {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
-
-	if handlers, exists := this.handlers[evt.Name()]; exists {
+	name, ns := evt.Name(), evt.NS()
+	if handlers := this.handlersForName(name, ns); len(handlers) > 0 {
 		for _, handler := range handlers {
-			go handler(evt)
+			go func(handler handlerWithTimeout) {
+				ctx, cancel := handler.contextWithCancel()
+				defer cancel()
+				handler.fn(ctx, evt)
+			}(handler)
 		}
-	} else {
-		// Unhandled event
+	} else if handler := this.defaultHandlerForNS(ns); handler != nil {
+		go func(fn gopi.EventHandler) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			fn(ctx, evt)
+		}(handler)
 	}
 }
 
 func (this *bus) NewHandler(name string, handler gopi.EventHandler) error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	return this.NewHandlerEx(name, gopi.EVENT_NS_DEFAULT, handler, 0)
+}
 
-	// Check incoming parameters and allocate array for handlers
+func (this *bus) NewHandlerEx(name string, ns gopi.EventNS, handler gopi.EventHandler, timeout time.Duration) error {
+	// Check incoming parameters
 	if name == "" {
 		return gopi.ErrBadParameter.WithPrefix("name")
 	} else if handler == nil {
 		return gopi.ErrBadParameter.WithPrefix("handler")
-	} else if _, exists := this.handlers[name]; exists == false {
-		this.handlers[name] = make([]gopi.EventHandler, 0, 1)
+	} else if timeout < 0 {
+		return gopi.ErrBadParameter.WithPrefix("timeout")
 	}
+	// Set handler
+	return this.addHandlerForName(name, ns, handler, timeout)
+}
 
-	// Append handler
-	if handlers, exists := this.handlers[name]; exists == false {
-		return gopi.ErrInternalAppError
+func (this *bus) DefaultHandler(ns gopi.EventNS, handler gopi.EventHandler) error {
+	return this.setDefaultHandler(ns, handler)
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func (this *bus) setDefaultHandler(ns gopi.EventNS, handler gopi.EventHandler) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	// Make defaults
+	if this.defaults == nil {
+		this.defaults = make(map[gopi.EventNS]gopi.EventHandler, 1)
+	}
+	// Set or delete handler for namespace
+	if handler == nil {
+		delete(this.defaults, ns)
 	} else {
-		this.handlers[name] = append(handlers, handler)
+		this.defaults[ns] = handler
+	}
+	// Return success
+	return nil
+}
+
+func (this *bus) addHandlerForName(name string, ns gopi.EventNS, handler gopi.EventHandler, timeout time.Duration) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	// Make handlers map
+	if this.handlers == nil {
+		this.handlers = make(map[gopi.EventNS]map[string][]handlerWithTimeout, 1)
 	}
 
-	// Success
+	// Make namespace map
+	if _, exists := this.handlers[ns]; exists == false {
+		this.handlers[ns] = make(map[string][]handlerWithTimeout, 1)
+	}
+
+	// Make name map
+	if _, exists := this.handlers[ns][name]; exists == false {
+		this.handlers[ns][name] = make([]handlerWithTimeout, 0, 1)
+	}
+
+	// Append a new handler
+	this.handlers[ns][name] = append(this.handlers[ns][name], handlerWithTimeout{handler, timeout})
+
+	// Return success
 	return nil
+}
+
+func (this *bus) handlersForName(name string, ns gopi.EventNS) []handlerWithTimeout {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if this.handlers == nil {
+		return nil
+	} else if names, exists := this.handlers[ns]; exists == false {
+		return nil
+	} else if handlers, exists := names[name]; exists == false {
+		return nil
+	} else {
+		return handlers
+	}
+}
+
+func (this *bus) defaultHandlerForNS(ns gopi.EventNS) gopi.EventHandler {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if this.defaults == nil {
+		return nil
+	} else if handler, exists := this.defaults[ns]; exists == false {
+		return nil
+	} else {
+		return handler
+	}
+}
+
+func (this handlerWithTimeout) contextWithCancel() (context.Context, context.CancelFunc) {
+	if this.timeout == 0 {
+		return context.WithCancel(context.Background())
+	} else {
+		return context.WithTimeout(context.Background(), this.timeout)
+	}
 }

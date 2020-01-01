@@ -18,16 +18,14 @@ import (
 
 type timerEvent struct {
 	source  gopi.Timer
-	timerId gopi.TimerId
+	eventId gopi.EventId
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 
-func newTimerEvent(source gopi.Timer, timerId gopi.TimerId) gopi.Event {
-	return &timerEvent{
-		source, timerId,
-	}
+func newTimerEvent(source gopi.Timer, eventId gopi.EventId) gopi.Event {
+	return &timerEvent{source, eventId}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,12 +43,12 @@ func (this *timerEvent) Source() gopi.Unit {
 	return this.source
 }
 
-func (this *timerEvent) TimerId() gopi.TimerId {
-	return this.timerId
+func (this *timerEvent) EventId() gopi.EventId {
+	return this.eventId
 }
 
 func (this *timerEvent) Value() interface{} {
-	return this.timerId
+	return this.eventId
 }
 
 ////////////////////////////////////////////////////////////////////////////////

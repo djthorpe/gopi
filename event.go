@@ -16,9 +16,16 @@ import (
 // TYPES
 
 type (
-	EventNS      uint                         // Event namespace
-	EventHandler func(Event, context.Context) // Handler for an emitted event
-	TimerId      uint                         // Unique ID for each timer created
+	// EventNS is the namespace in which events are emitted, usually
+	// EVENT_NS_DEFAULT
+	EventNS uint
+
+	// EventHandler is the handler for an emitted event, which should cancel
+	// when context.Done() signal is received
+	EventHandler func(context.Context, Event)
+
+	// EventId is a unique ID for each event
+	EventId uint
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -28,18 +35,27 @@ type (
 type Timer interface {
 	Unit
 
-	NewTicker(time.Duration) TimerId // Create periodic event at interval
-	NewTimer(time.Duration) TimerId  // Create one-shot event after interval
-	Cancel(TimerId) error            // Cancel events
+	NewTicker(time.Duration) EventId // Create periodic event at interval
+	NewTimer(time.Duration) EventId  // Create one-shot event after interval
+	Cancel(EventId) error            // Cancel events
 }
 
 // Bus unit - handles events
 type Bus interface {
 	Unit
 
-	Emit(Event)                                                    // Emit an event on the bus
-	NewHandler(string, EventNS, EventHandler, time.Duration) error // Register an event handler for an event name
-	DefaultHandler(EventNS, EventHandler, time.Duration) error     // Register default handler for events
+	// Emit an event on the bus
+	Emit(Event)
+
+	// NewHandler registers an event handler for an event name
+	NewHandler(string, EventHandler) error
+
+	// NewHandlerEx registers an event handler for an event name, in a
+	// particular event namespace, and with a timeout value for the handler
+	NewHandlerEx(string, EventNS, EventHandler, time.Duration) error
+
+	// DefaultHandler registers a default handler for an event namespace
+	DefaultHandler(EventNS, EventHandler) error
 }
 
 // Event emitted on the event bus
@@ -55,6 +71,7 @@ type Event interface {
 
 const (
 	EVENT_NS_DEFAULT EventNS = iota // Default event namespace
+	EVENT_NS_MAX             = EVENT_NS_DEFAULT
 )
 
 ////////////////////////////////////////////////////////////////////////////////

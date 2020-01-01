@@ -24,8 +24,8 @@ func Main(app gopi.App, args []string) error {
 	app.Log().Debug("timer=", app.Timer())
 
 	// Set up handlers
-	app.Bus().NewHandler("gopi.TimerEvent", func(evt gopi.Event) {
-		app.Log().Debug("event=", evt)
+	app.Bus().NewHandler("gopi.TimerEvent", func(_ context.Context, evt gopi.Event) {
+		app.Log().Debug("handle event=", evt)
 	})
 
 	// Schedule a ticker which fires every second

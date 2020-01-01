@@ -23,8 +23,8 @@ type Timer struct {
 }
 
 type timer struct {
-	timerId gopi.TimerId                   // Current Id
-	stop    map[gopi.TimerId]chan struct{} // Map of stop channels
+	eventId gopi.EventId                   // Current EventId
+	stop    map[gopi.EventId]chan struct{} // Map of stop channels
 	bus     gopi.Bus                       // Event bus
 
 	gopi.UnitBase
@@ -45,7 +45,7 @@ func (config Timer) New(log gopi.Logger) (gopi.Unit, error) {
 		return nil, gopi.ErrBadParameter.WithPrefix("Missing Bus")
 	} else {
 		this.bus = config.Bus
-		this.stop = make(map[gopi.TimerId]chan struct{})
+		this.stop = make(map[gopi.EventId]chan struct{})
 	}
 	return this, nil
 }
@@ -69,55 +69,55 @@ func (this *timer) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Timer
 
-func (this *timer) NewTicker(duration time.Duration) gopi.TimerId {
-	timerId := this.nextId()
-	go func(timerId gopi.TimerId, duration time.Duration) {
-		stop := this.makeStop(timerId)
+func (this *timer) NewTicker(duration time.Duration) gopi.EventId {
+	eventId := this.nextId()
+	go func(timerId gopi.EventId, duration time.Duration) {
+		stop := this.makeStop(eventId)
 		ticker := time.NewTicker(duration)
 		this.Add(1)
 	FOR_LOOP:
 		for {
 			select {
 			case <-ticker.C:
-				this.bus.Emit(newTimerEvent(this, timerId))
+				this.bus.Emit(newTimerEvent(this, eventId))
 			case <-stop:
 				ticker.Stop()
 				break FOR_LOOP
 			}
 		}
 		this.Done()
-	}(timerId, duration)
-	return timerId
+	}(eventId, duration)
+	return eventId
 }
 
-func (this *timer) NewTimer(duration time.Duration) gopi.TimerId {
-	timerId := this.nextId()
-	go func(timerId gopi.TimerId, duration time.Duration) {
-		stop := this.makeStop(timerId)
+func (this *timer) NewTimer(duration time.Duration) gopi.EventId {
+	eventId := this.nextId()
+	go func(timerId gopi.EventId, duration time.Duration) {
+		stop := this.makeStop(eventId)
 		timer := time.NewTimer(duration)
 		this.Add(1)
 	FOR_LOOP:
 		for {
 			select {
 			case <-timer.C:
-				this.bus.Emit(newTimerEvent(this, timerId))
+				this.bus.Emit(newTimerEvent(this, eventId))
 			case <-stop:
 				timer.Stop()
 				break FOR_LOOP
 			}
 		}
 		this.Done()
-	}(timerId, duration)
-	return timerId
+	}(eventId, duration)
+	return eventId
 }
 
-func (this *timer) Cancel(timerId gopi.TimerId) error {
+func (this *timer) Cancel(eventId gopi.EventId) error {
 	this.Lock()
 	defer this.Unlock()
-	if stop, exists := this.stop[timerId]; exists == false {
-		return gopi.ErrBadParameter.WithPrefix("TimerId")
+	if stop, exists := this.stop[eventId]; exists == false {
+		return gopi.ErrBadParameter.WithPrefix("eventId")
 	} else {
-		delete(this.stop, timerId)
+		delete(this.stop, eventId)
 		close(stop)
 	}
 	// Success
@@ -127,17 +127,17 @@ func (this *timer) Cancel(timerId gopi.TimerId) error {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *timer) nextId() gopi.TimerId {
+func (this *timer) nextId() gopi.EventId {
 	this.Lock()
 	defer this.Unlock()
-	this.timerId = this.timerId + 1
-	return this.timerId
+	this.eventId = this.eventId + 1
+	return this.eventId
 }
 
-func (this *timer) makeStop(timerId gopi.TimerId) chan struct{} {
+func (this *timer) makeStop(eventId gopi.EventId) chan struct{} {
 	this.Lock()
 	defer this.Unlock()
 	stop := make(chan struct{})
-	this.stop[timerId] = stop
+	this.stop[eventId] = stop
 	return stop
 }
