@@ -32,9 +32,6 @@ func Test_Config_001(t *testing.T) {
 	if len(flags.Args()) != 0 {
 		t.Error("Unexpected return value from Args()")
 	}
-	if len(flags.Flags(gopi.FLAG_NS_DEFAULT)) != 0 {
-		t.Error("Unexpected return value from Flags()")
-	}
 }
 
 func Test_Config_002(t *testing.T) {

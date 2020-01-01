@@ -8,16 +8,16 @@
 package timer_test
 
 import (
-	"os"
 	"testing"
-	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
+	app "github.com/djthorpe/gopi/v2/app"
 
 	// Units
-	logger "github.com/djthorpe/gopi/v2/unit/logger"
-	timer "github.com/djthorpe/gopi/v2/unit/timer"
+	_ "github.com/djthorpe/gopi/v2/unit/bus"
+	_ "github.com/djthorpe/gopi/v2/unit/logger"
+	_ "github.com/djthorpe/gopi/v2/unit/timer"
 )
 
 func Test_Timer_000(t *testing.T) {
@@ -25,27 +25,14 @@ func Test_Timer_000(t *testing.T) {
 }
 
 func Test_Timer_001(t *testing.T) {
-	config := timer.Timer{}
-	// Create logger
-	logger_, err := gopi.New(logger.Log{
-		Writer: os.Stderr,
-		Unit:   config.Name(),
-		Debug:  true,
-	}, nil)
-	if err != nil {
+	if app, err := app.NewCommandLineTool(func(app gopi.App, _ []string) error {
+		if timer := app.Timer(); timer == nil {
+			t.Error("nil timer unit")
+		}
+		return nil
+	}, "timer", "bus"); err != nil {
 		t.Error(err)
-	}
-	// Create timer
-	timer, err := gopi.New(config, logger_.(gopi.Logger))
-	if err != nil {
-		t.Error(err)
-	}
-	defer timer.Close()
-	// Create a ticker
-	if tickerId := timer.(gopi.Timer).NewTicker(time.Second); tickerId == 0 {
-		t.Error("NewTicker returned zero")
-	} else {
-		t.Log("timerId = ", tickerId)
-		time.Sleep(10 * time.Second)
+	} else if returnValue := app.Run(); returnValue != 0 {
+		t.Error("Unexpected return value")
 	}
 }

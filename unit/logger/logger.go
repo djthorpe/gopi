@@ -15,6 +15,7 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
+	base "github.com/djthorpe/gopi/v2/base"
 )
 
 type Log struct {
@@ -25,9 +26,10 @@ type Log struct {
 }
 
 type log struct {
-	gopi.LoggerBase
-	sync.Mutex
 	verbose bool
+
+	base.Logger
+	sync.Mutex
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,7 +39,7 @@ func (Log) Name() string { return "gopi.Logger" }
 
 func (config Log) New(gopi.Logger) (gopi.Unit, error) {
 	this := new(log)
-	if err := this.LoggerBase.Init(config.Writer, config.Unit, config.Debug); err != nil {
+	if err := this.Logger.Init(config.Writer, config.Unit, config.Debug); err != nil {
 		return nil, err
 	} else {
 		this.verbose = config.Verbose
@@ -55,11 +57,11 @@ func (this *log) String() string {
 func (this *log) Error(err error) error {
 	this.Lock()
 	defer this.Unlock()
-	return this.LoggerBase.Error(err)
+	return this.Logger.Error(err)
 }
 
 func (this *log) Debug(args ...interface{}) {
 	this.Lock()
 	defer this.Unlock()
-	this.LoggerBase.Debug(args...)
+	this.Logger.Debug(args...)
 }

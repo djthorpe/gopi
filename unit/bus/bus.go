@@ -14,6 +14,7 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
+	base "github.com/djthorpe/gopi/v2/base"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,7 +26,7 @@ type bus struct {
 	handlers map[gopi.EventNS]map[string][]handlerWithTimeout
 	defaults map[gopi.EventNS]gopi.EventHandler
 
-	gopi.UnitBase
+	base.Unit
 	sync.Mutex
 }
 
@@ -41,7 +42,7 @@ func (Bus) Name() string { return "gopi.Bus" }
 
 func (config Bus) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(bus)
-	if err := this.UnitBase.Init(log); err != nil {
+	if err := this.Unit.Init(log); err != nil {
 		return nil, err
 	}
 	return this, nil
@@ -53,7 +54,7 @@ func (this *bus) Close() error {
 	this.defaults = nil
 
 	// Return success
-	return this.UnitBase.Close()
+	return this.Unit.Close()
 }
 
 ///////////////////////////////////////////////////////////////////////////////

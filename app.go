@@ -56,6 +56,7 @@ type App interface {
 type Flags interface {
 	Name() string                // Return name of tool
 	Parse([]string) error        // Parse command-line flags
+	Parsed() bool                // Returns true if Parsed() has been called
 	Args() []string              // Return command-line arguments
 	HasFlag(string, FlagNS) bool // HasFlag returns true if a flag exists
 

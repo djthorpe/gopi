@@ -10,12 +10,14 @@ package gopi_test
 import (
 	"testing"
 
+	"github.com/djthorpe/gopi/v2/base"
+
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
 )
 
 type Config struct{}
-type unit struct{ gopi.UnitBase }
+type unit struct{ base.Unit }
 
 func (Config) Name() string { return "gopi_test.Config" }
 

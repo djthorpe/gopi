@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/djthorpe/gopi/v2/base"
+
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
 )
@@ -27,7 +29,7 @@ type timer struct {
 	stop    map[gopi.EventId]chan struct{} // Map of stop channels
 	bus     gopi.Bus                       // Event bus
 
-	gopi.UnitBase
+	base.Unit
 	sync.Mutex
 	sync.WaitGroup
 }
@@ -39,7 +41,7 @@ func (Timer) Name() string { return "gopi.Timer" }
 
 func (config Timer) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(timer)
-	if err := this.UnitBase.Init(log); err != nil {
+	if err := this.Unit.Init(log); err != nil {
 		return nil, err
 	} else if config.Bus == nil {
 		return nil, gopi.ErrBadParameter.WithPrefix("Missing Bus")
@@ -63,7 +65,7 @@ func (this *timer) Close() error {
 	this.stop = nil
 
 	// Call other close
-	return this.UnitBase.Close()
+	return this.Unit.Close()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
