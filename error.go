@@ -7,17 +7,23 @@
 
 package gopi
 
-import "fmt"
-
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Error uint             // Error represents a gopi error
-type CompoundError struct { // CompoundError represents a set of errors
-	errs []error
-}
+type (
+	// Error represents a gopi error
+	Error uint
+
+	// CompoundError represents a set of errors
+	CompoundError struct {
+		errs []error
+	}
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
