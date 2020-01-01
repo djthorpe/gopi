@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 
 	// Frameworks
@@ -48,18 +49,24 @@ func (this *base) Init(name string, units []string) error {
 	if units_, err := gopi.UnitWithDependencies(units...); err != nil {
 		return err
 	} else {
-		// Call configuration for units
+		// Call configuration for units - don't visit a unit more
+		// than once
+		unitmap := make(map[*gopi.UnitConfig]bool)
+		this.units = make([]*gopi.UnitConfig, 0, len(units_))
 		for _, unit := range units_ {
-			if unit.Config != nil {
+			if _, exists := unitmap[unit]; exists {
+				continue
+			} else if unit.Config != nil {
 				if err := unit.Config(this); err != nil {
 					return fmt.Errorf("%s: %w", unit.Name, err)
 				}
 			}
+			this.units = append(this.units, unit)
+			unitmap[unit] = true
 		}
 		// Set units and instances map
-		this.units = units_
-		this.instanceByConfig = make(map[*gopi.UnitConfig]gopi.Unit, len(units_))
-		this.instancesByName = make(map[string][]gopi.Unit, len(units_))
+		this.instanceByConfig = make(map[*gopi.UnitConfig]gopi.Unit, len(this.units))
+		this.instancesByName = make(map[string][]gopi.Unit, len(this.units))
 	}
 
 	// Success
@@ -70,7 +77,7 @@ func (this *base) Init(name string, units []string) error {
 // IMPLEMENTATION gopi.App
 
 func (this *base) Run() int {
-	if err := this.flags.Parse(os.Args[1:]); errors.Is(err, gopi.ErrHelp) {
+	if err := this.flags.Parse(testlessArguments(os.Args[1:])); errors.Is(err, gopi.ErrHelp) {
 		this.flags.Usage(os.Stderr)
 		return -1
 	} else if err != nil {
@@ -201,4 +208,18 @@ func (this *base) UnitInstancesByName(name string) []gopi.Unit {
 
 func (this *base) String() string {
 	return fmt.Sprintf("<gopi.App flags=%v instances=%v>", this.flags, this.instanceByConfig)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func testlessArguments(input []string) []string {
+	output := make([]string, 0, len(input))
+	for _, arg := range input {
+		if strings.HasPrefix(arg, "-test.") {
+			continue
+		}
+		output = append(output, arg)
+	}
+	return output
 }
