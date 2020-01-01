@@ -34,13 +34,17 @@ It would also be great to support the following features in the future:
 
 # Documentation
 
-Please read the documentation at [mutablelogic.com](https://gopi.mutablelogic.com/)
-for all the relevant information about requirements, getting started
-and contributing.
+Please read the documentation at [mutablelogic.com](https://gopi.mutablelogic.com/v/v2/)
+for all the relevant information about requirements, getting started and contributing.
 
-# License
+# Contributing and License
 
 This repository is released under the Apache License. Please see the file
 [LICENSE](LICENSE.md) for a copy of this license and for a list of the
 conditions for redistribution and use.
+
+I welcome contributions, feature requests and issues. In order to contribute, please fork
+and send pull requests. Feel free to contact me for feature requests and bugs by filing
+issues [here](https://github.com/djthorpe/gopi/issues).
+
 
