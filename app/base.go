@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -22,7 +21,9 @@ import (
 // INTERFACES
 
 type base struct {
-	flags gopi.Flags
+	flags     gopi.Flags
+	units     []*gopi.UnitConfig
+	instances map[*gopi.UnitConfig]gopi.Unit
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,7 +34,7 @@ type base struct {
 
 func (this *base) Init(name string, units []string) error {
 	// Make flags
-	if flags := config.NewFlags(filepath.Base(name)); flags == nil {
+	if flags := config.NewFlags(name); flags == nil {
 		return nil
 	} else {
 		this.flags = flags
@@ -52,6 +53,9 @@ func (this *base) Init(name string, units []string) error {
 				}
 			}
 		}
+		// Set units and instances map
+		this.units = units_
+		this.instances = make(map[*gopi.UnitConfig]gopi.Unit, len(units_))
 	}
 
 	// Success
@@ -68,6 +72,19 @@ func (this *base) Run() int {
 	} else if this.flags.HasFlag("version", gopi.FLAG_NS_DEFAULT) && this.flags.GetBool("version", gopi.FLAG_NS_DEFAULT) {
 		this.flags.Version(os.Stderr)
 		return -1
+	}
+
+	// Create unit instances
+	for _, unit := range this.units {
+		if unit.New == nil {
+			continue
+		}
+		if instance, err := unit.New(this); err != nil {
+			fmt.Fprintln(os.Stderr, unit.Name+":", err)
+			return -1
+		} else if instance != nil {
+			this.instances[unit] = instance
+		}
 	}
 
 	// Success
@@ -106,14 +123,15 @@ func (this *base) Bus() gopi.Bus {
 }
 
 func (this *base) UnitInstance(name string) gopi.Unit {
-	if units := this.Units(name); len(units) == 0 {
+	if units := this.UnitInstancesByName(name); len(units) == 0 {
 		return nil
 	} else {
 		return units[0]
 	}
 }
 
-func (this *base) Units(string) []gopi.Unit {
+func (this *base) UnitInstancesByName(name string) []gopi.Unit {
+	fmt.Println("UnitInstancesByName", name, this.instances)
 	// TODO: Return units with highest priority one top
 	return nil
 }
@@ -122,7 +140,7 @@ func (this *base) Units(string) []gopi.Unit {
 // STRINGIFY
 
 func (this *base) String() string {
-	return fmt.Sprintf("<gopi.App flags=%v>", this.flags)
+	return fmt.Sprintf("<gopi.App flags=%v instances=%v>", this.flags, this.instances)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -8,12 +8,13 @@
 package app
 
 import (
-	// Frameworks
 	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
+	// Frameworks
 	"github.com/djthorpe/gopi/v2"
 )
 
@@ -32,7 +33,7 @@ func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, e
 	this := new(command)
 
 	// Name of command
-	name := os.Args[0]
+	name := filepath.Base(os.Args[0])
 
 	// Check parameters
 	if main == nil {

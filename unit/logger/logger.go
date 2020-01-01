@@ -27,6 +27,7 @@ type Log struct {
 type log struct {
 	gopi.LoggerBase
 	sync.Mutex
+	verbose bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,12 +39,14 @@ func (config Log) New(gopi.Logger) (gopi.Unit, error) {
 	this := new(log)
 	if err := this.LoggerBase.Init(config.Writer, config.Unit, config.Debug); err != nil {
 		return nil, err
+	} else {
+		this.verbose = config.Verbose
 	}
 	return this, nil
 }
 
 func (this *log) String() string {
-	return fmt.Sprintf("<gopi.Logger unit=%s debug=%v>", strconv.Quote(this.Name()), this.IsDebug())
+	return fmt.Sprintf("<gopi.Logger unit=%s debug=%v verbose=%v>", strconv.Quote(this.Name()), this.IsDebug(), this.verbose)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

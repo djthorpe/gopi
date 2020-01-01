@@ -15,5 +15,8 @@ func init() {
 	gopi.UnitRegister(gopi.UnitConfig{
 		Name: "gopi/timer",
 		Type: gopi.UNIT_TIMER,
+		New: func(app gopi.App) (gopi.Unit, error) {
+			return gopi.New(Timer{}, nil)
+		},
 	})
 }

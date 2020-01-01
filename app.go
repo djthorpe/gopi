@@ -26,13 +26,12 @@ type (
 type App interface {
 	Run() int // Run application, return error code
 
-	Flags() Flags // Return command-line flags
+	Flags() Flags             // Return command-line flags
+	UnitInstance(string) Unit // Return singular unit for name
 
 	Log() Logger  // Return logger unit
 	Timer() Timer // Return timer unit
 	Bus() Bus     // Return event bus unit
-
-	UnitInstance(string) Unit // Return singular unit for name
 }
 
 type Flags interface {

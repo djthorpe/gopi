@@ -19,8 +19,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 
 func Main(app gopi.App, args []string) error {
-	fmt.Println("app=", app)
-	fmt.Println("args=", args)
+	app.Log().Debug("timer=", app.Timer())
 	return gopi.ErrNotImplemented
 }
 
