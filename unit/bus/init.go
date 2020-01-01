@@ -17,7 +17,7 @@ func init() {
 		Name: "gopi/bus",
 		Type: gopi.UNIT_BUS,
 		New: func(app gopi.App) (gopi.Unit, error) {
-			return gopi.New(Bus{}, nil)
+			return gopi.New(Bus{}, app.Log())
 		},
 	})
 }

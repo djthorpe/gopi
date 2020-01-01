@@ -5,7 +5,7 @@
   For Licensing and Usage information, please see LICENSE.md
 */
 
-package app
+package base
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-type base struct {
+type App struct {
 	sync.Mutex
 
 	flags            gopi.Flags
@@ -36,7 +36,7 @@ type base struct {
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 
-func (this *base) Init(name string, units []string) error {
+func (this *App) Init(name string, units []string) error {
 	// Make flags
 	if flags := config.NewFlags(name); flags == nil {
 		return nil
@@ -76,7 +76,7 @@ func (this *base) Init(name string, units []string) error {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.App
 
-func (this *base) Run() int {
+func (this *App) Run() int {
 	if err := this.flags.Parse(testlessArguments(os.Args[1:])); errors.Is(err, gopi.ErrHelp) {
 		this.flags.Usage(os.Stderr)
 		return -1
@@ -87,7 +87,6 @@ func (this *base) Run() int {
 		this.flags.Version(os.Stderr)
 		return -1
 	}
-
 	// Create unit instances
 	for _, unit := range this.units {
 		if unit.New == nil {
@@ -97,7 +96,6 @@ func (this *base) Run() int {
 			fmt.Fprintln(os.Stderr, unit.Name+":", err)
 			return -1
 		} else {
-			fmt.Fprintln(os.Stderr, "New("+unit.Name+")", "=>", instance)
 			if instance != nil {
 				this.instanceByConfig[unit] = instance
 			}
@@ -108,13 +106,12 @@ func (this *base) Run() int {
 	return 0
 }
 
-func (this *base) Close() error {
+func (this *App) Close() error {
 	// Close in reverse order
 	errs := &gopi.CompoundError{}
 	for i := range this.units {
 		unit := this.units[len(this.units)-i-1]
 		if instance, exists := this.instanceByConfig[unit]; exists {
-			fmt.Fprintln(os.Stderr, "Close("+unit.Name+")")
 			errs.Add(instance.Close())
 		}
 	}
@@ -129,7 +126,7 @@ func (this *base) Close() error {
 	return errs.ErrorOrSelf()
 }
 
-func (this *base) WaitForSignal(ctx context.Context, signals ...os.Signal) error {
+func (this *App) WaitForSignal(ctx context.Context, signals ...os.Signal) error {
 	sigchan := make(chan os.Signal, 1)
 	defer close(sigchan)
 
@@ -145,11 +142,11 @@ func (this *base) WaitForSignal(ctx context.Context, signals ...os.Signal) error
 ////////////////////////////////////////////////////////////////////////////////
 // RETURN PROPERTIES
 
-func (this *base) Flags() gopi.Flags {
+func (this *App) Flags() gopi.Flags {
 	return this.flags
 }
 
-func (this *base) Log() gopi.Logger {
+func (this *App) Log() gopi.Logger {
 	if logger, ok := this.UnitInstance("logger").(gopi.Logger); ok {
 		return logger
 	} else {
@@ -157,7 +154,7 @@ func (this *base) Log() gopi.Logger {
 	}
 }
 
-func (this *base) Timer() gopi.Timer {
+func (this *App) Timer() gopi.Timer {
 	if timer, ok := this.UnitInstance("timer").(gopi.Timer); ok {
 		return timer
 	} else {
@@ -165,7 +162,7 @@ func (this *base) Timer() gopi.Timer {
 	}
 }
 
-func (this *base) Bus() gopi.Bus {
+func (this *App) Bus() gopi.Bus {
 	if bus, ok := this.UnitInstance("bus").(gopi.Bus); ok {
 		return bus
 	} else {
@@ -173,7 +170,7 @@ func (this *base) Bus() gopi.Bus {
 	}
 }
 
-func (this *base) UnitInstance(name string) gopi.Unit {
+func (this *App) UnitInstance(name string) gopi.Unit {
 	if units := this.UnitInstancesByName(name); len(units) == 0 {
 		return nil
 	} else {
@@ -181,7 +178,7 @@ func (this *base) UnitInstance(name string) gopi.Unit {
 	}
 }
 
-func (this *base) UnitInstancesByName(name string) []gopi.Unit {
+func (this *App) UnitInstancesByName(name string) []gopi.Unit {
 	// Cached unit names
 	if units, exists := this.instancesByName[name]; exists {
 		return units
@@ -206,7 +203,7 @@ func (this *base) UnitInstancesByName(name string) []gopi.Unit {
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *base) String() string {
+func (this *App) String() string {
 	return fmt.Sprintf("<gopi.App flags=%v instances=%v>", this.flags, this.instanceByConfig)
 }
 

@@ -19,7 +19,7 @@ func init() {
 		New: func(app gopi.App) (gopi.Unit, error) {
 			return gopi.New(Timer{
 				Bus: app.UnitInstance("bus").(gopi.Bus),
-			}, nil)
+			}, app.Log())
 		},
 	})
 }

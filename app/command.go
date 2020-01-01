@@ -15,15 +15,16 @@ import (
 	"path/filepath"
 
 	// Frameworks
-	"github.com/djthorpe/gopi/v2"
+	gopi "github.com/djthorpe/gopi/v2"
+	base "github.com/djthorpe/gopi/v2/base"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 type command struct {
-	base
 	main gopi.MainCommandFunc
+	base.App
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,7 +39,7 @@ func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, e
 	// Check parameters
 	if main == nil {
 		return nil, gopi.ErrBadParameter.WithPrefix("main")
-	} else if err := this.base.Init(name, units); err != nil {
+	} else if err := this.App.Init(name, units); err != nil {
 		return nil, err
 	} else {
 		this.main = main
@@ -49,23 +50,23 @@ func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, e
 }
 
 func (this *command) Run() int {
-	if returnValue := this.base.Run(); returnValue != 0 {
+	if returnValue := this.App.Run(); returnValue != 0 {
 		return returnValue
 	}
 
 	// Defer closing of instances to exit
 	defer func() {
-		if err := this.base.Close(); err != nil {
-			fmt.Fprintln(os.Stderr, this.flags.Name()+":", err)
+		if err := this.App.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
 		}
 	}()
 
 	// Run main function
 	if err := this.main(this, this.Flags().Args()); errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
-		this.flags.Usage(os.Stderr)
+		this.App.Flags().Usage(os.Stderr)
 		return 0
 	} else if err != nil {
-		fmt.Fprintln(os.Stderr, this.flags.Name()+":", err)
+		fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
 		return -1
 	}
 
