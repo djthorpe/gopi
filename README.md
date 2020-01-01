@@ -34,7 +34,7 @@ It would also be great to support the following features in the future:
 
 # Documentation
 
-Please read the documentation at [mutablelogic.com](https://gopi.mutablelogic.com/v/v2/)
+Please read the documentation at [gopi.mutablelogic.com](https://gopi.mutablelogic.com/v/v2/)
 for all the relevant information about requirements, getting started and contributing.
 
 # Contributing and License
