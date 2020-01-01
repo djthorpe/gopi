@@ -18,13 +18,17 @@ import (
 // TYPES
 
 type (
-	MainCommandFunc func(App, []string) error // Main handler for command line tool
-	FlagNS          uint                      // Flag Namespace
+	// MainCommandFunc is the main handler for command line tool
+	MainCommandFunc func(App, []string) error
+
+	// FlagNS is the namespace for a flag
+	FlagNS uint
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
+// App encapsulates the lifecycle of a running application
 type App interface {
 	Run() int                                          // Run application, return error code
 	WaitForSignal(context.Context, ...os.Signal) error // Wait for interrupt signal with context
@@ -37,6 +41,8 @@ type App interface {
 	Bus() Bus     // Return event bus unit
 }
 
+// Flags encapsulates a set of key/value pairs in several namespaces
+// with parsing of command-line flags in the default namespace
 type Flags interface {
 	Name() string                // Return name of tool
 	Parse([]string) error        // Parse command-line flags
