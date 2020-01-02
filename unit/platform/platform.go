@@ -42,5 +42,5 @@ func (config Platform) New(log gopi.Logger) (gopi.Unit, error) {
 }
 
 func (this *platform) String() string {
-	return fmt.Sprintf("<gopi.Platform type=%v serial=%v uptime=%vhr>", this.Type(), strconv.Quote(this.SerialNumber()), this.Uptime().Truncate(time.Hour).Hours())
+	return fmt.Sprintf("<gopi.Platform product=%v type=%v serial=%v uptime=%vhr>", strconv.Quote(this.Product()), this.Type(), strconv.Quote(this.SerialNumber()), this.Uptime().Truncate(time.Hour).Hours())
 }

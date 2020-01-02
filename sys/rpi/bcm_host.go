@@ -168,13 +168,11 @@ func VCOTPDump() (map[byte]uint32, error) {
 	}
 }
 
-// VCGetSerialRevision returns the 64-bit serial number and 32-bit revision number for the device
-func VCGetSerialRevision() (uint64, uint32, error) {
+// VCGetSerialProduct returns the 64-bit serial number and 32-bit product number for the device
+func VCGetSerialProduct() (uint64, uint32, error) {
 	if otp, err := VCOTPDump(); err != nil {
 		return 0, 0, err
 	} else {
-		serial := uint64(otp[GENCMD_OTP_DUMP_SERIAL])
-		revision := uint32(otp[GENCMD_OTP_DUMP_REVISION])
-		return serial, revision, nil
+		return uint64(otp[GENCMD_OTP_DUMP_SERIAL]), uint32(otp[GENCMD_OTP_DUMP_REVISION]), nil
 	}
 }

@@ -56,6 +56,9 @@ func Main_Test_Platform_001(app gopi.App, _ []string) error {
 	} else {
 		app.Log().Debug("Load Average", l1, l5, l15)
 	}
+
+	app.Log().Debug("Number of displays", platform.NumberOfDisplays())
+
 	// Success
 	return nil
 }

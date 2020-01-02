@@ -47,3 +47,11 @@ func Test_Platform_003(t *testing.T) {
 		t.Log("load averages", l1, l5, l15)
 	}
 }
+
+func Test_Platform_004(t *testing.T) {
+	if product := darwin.Product(); product == "" {
+		t.Error("Unexpected response from Product")
+	} else {
+		t.Log("product", product)
+	}
+}

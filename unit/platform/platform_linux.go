@@ -33,3 +33,13 @@ func (this *platform) Type() gopi.PlatformType {
 func (this *platform) SerialNumber() string {
 	return linux.SerialNumber()
 }
+
+// Return number of displays
+func (this *platform) NumberOfDisplays() uint {
+	return 0
+}
+
+// Return product
+func (this *platform) Product() string {
+	return "linux"
+}

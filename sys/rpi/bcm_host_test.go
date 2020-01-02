@@ -92,9 +92,9 @@ func Test_Platform_006(t *testing.T) {
 func Test_Platform_007(t *testing.T) {
 	if err := rpi.BCMHostInit(); err != nil {
 		t.Error("Unexpected response from BCMHostInit")
-	} else if serial, revision, err := rpi.VCGetSerialRevision(); err != nil {
-		t.Error("Unexpected response from VCOTPDump", err)
+	} else if serial, product, err := rpi.VCGetSerialProduct(); err != nil {
+		t.Error("Unexpected response from VCGetSerialProduct", err)
 	} else {
-		t.Logf("VCGetSerialRevision => %08X %04X", serial, revision)
+		t.Logf("VCGetSerialProduct => %08X %04X", serial, product)
 	}
 }

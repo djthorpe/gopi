@@ -87,6 +87,16 @@ func LoadAverage() (float64, float64, float64) {
 	}
 }
 
+// Product returns the name of the hardware
+func Product() string {
+	model := make([]byte, 80)
+	if err := sysctlbyname("hw.model", model); err != nil {
+		return ""
+	} else {
+		return string(model)
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
