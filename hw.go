@@ -8,6 +8,7 @@
 package gopi
 
 import (
+	"strings"
 	"time"
 )
 
@@ -47,5 +48,37 @@ const (
 	PLATFORM_DARWIN PlatformType = (1 << iota) >> 1
 	PLATFORM_RPI
 	PLATFORM_LINUX
+	PLATFORM_MIN = PLATFORM_DARWIN
 	PLATFORM_MAX = PLATFORM_LINUX
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (p PlatformType) String() string {
+	str := ""
+	if p == 0 {
+		return p.FlagString()
+	}
+	for v := PLATFORM_MIN; v <= PLATFORM_MAX; v <<= 1 {
+		if p&v == v {
+			str = "|" + v.FlagString()
+		}
+	}
+	return strings.TrimPrefix(str, "|")
+}
+
+func (p PlatformType) FlagString() string {
+	switch p {
+	case PLATFORM_NONE:
+		return "PLATFORM_NONE"
+	case PLATFORM_DARWIN:
+		return "PLATFORM_DARWIN"
+	case PLATFORM_RPI:
+		return "PLATFORM_RPI"
+	case PLATFORM_LINUX:
+		return "PLATFORM_LINUX"
+	default:
+		return "[?? Invalid PlatformType value]"
+	}
+}

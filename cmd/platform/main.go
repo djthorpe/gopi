@@ -34,7 +34,7 @@ func Main(app gopi.App, args []string) error {
 		"SERIAL NUMBER", fmt.Sprint(platform.SerialNumber()),
 	})
 	table.Append([]string{
-		"UPTIME HOURS", fmt.Sprint(platform.Uptime().Truncate(time.Hour).Hours()),
+		"UPTIME", fmt.Sprint(platform.Uptime().Truncate(time.Hour).Hours()) + " hrs",
 	})
 	l1, l5, l15 := platform.LoadAverages()
 	table.Append([]string{
