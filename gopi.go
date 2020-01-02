@@ -26,10 +26,20 @@ type Unit interface {
 type Logger interface {
 	Unit
 
-	Name() string              // Return unit name
-	Error(error) error         // Output logging messages
-	Debug(args ...interface{}) // Debug output
-	IsDebug() bool             // Return IsDebug flag
+	// Name returns the name of the logger
+	Name() string
+
+	// Clone returns a new logger with a different name
+	Clone(string) Logger
+
+	// Error logs an error, and returns an error with the name prefixed
+	Error(error) error
+
+	// Debug will log a debug message when debugging is on
+	Debug(args ...interface{})
+
+	// IsDebug returns true if debugging is enabled
+	IsDebug() bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////

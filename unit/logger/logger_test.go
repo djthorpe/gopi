@@ -68,3 +68,15 @@ func Test_Logger_004(t *testing.T) {
 		t.Error("Expected error.Is(gopi.ErrNotImplemented) = true")
 	}
 }
+
+func Test_Logger_005(t *testing.T) {
+	logger_, err := gopi.New(logger.Log{Writer: os.Stderr, Unit: "logger_test", Debug: true}, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	if logger := logger_.(gopi.Logger).Clone("logger_test_clone"); logger == nil {
+		t.Error("Unexpected response from Clone")
+	} else if logger.Name() != "logger_test_clone" {
+		t.Error("Unexpected response from Clone,", logger.Name())
+	}
+}

@@ -48,7 +48,7 @@ func (config Log) New(gopi.Logger) (gopi.Unit, error) {
 }
 
 func (this *log) String() string {
-	return fmt.Sprintf("<gopi.Logger unit=%s debug=%v verbose=%v>", strconv.Quote(this.Name()), this.IsDebug(), this.verbose)
+	return fmt.Sprintf("<gopi.Logger name=%s debug=%v verbose=%v>", strconv.Quote(this.Name()), this.IsDebug(), this.verbose)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -64,4 +64,15 @@ func (this *log) Debug(args ...interface{}) {
 	this.Lock()
 	defer this.Unlock()
 	this.Logger.Debug(args...)
+}
+
+func (this *log) Clone(name string) gopi.Logger {
+	that := new(log)
+	if base := this.Logger.Clone(name).(*base.Logger); base == nil {
+		return nil
+	} else {
+		that.Logger = *base
+		that.verbose = this.verbose
+		return that
+	}
 }

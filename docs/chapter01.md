@@ -24,7 +24,7 @@ The tested requirements are currently:
   * Raspbian GNU/Linux (Raspian or Buster)
   * Go 1.13
 
-## Getting Started
+## Building Examples
 
 In order to use the framework, you'll need to have a working version of Go on 
 your Raspberry Pi, which you can download from [here](https://golang.org/dl/). Then 
@@ -33,6 +33,7 @@ retrieve the library on your device, using:
 ```sh
 bash% git clone https://github.com/djthorpe/gopi
 bash% cd gopi
+bash% git checkout v2
 ```
 
 Then, build some of the examples in the "cmd" folder. They can be built with the makefile.

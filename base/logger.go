@@ -10,6 +10,7 @@ package base
 import (
 	"fmt"
 	"io"
+	"strconv"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -44,6 +45,10 @@ func (this *Logger) Init(writer io.Writer, name string, debug bool) error {
 	}
 }
 
+func (this *Logger) String() string {
+	return "<gopi.Logger name=" + strconv.Quote(this.name) + " debug=" + fmt.Sprint(this.debug) + ">"
+}
+
 func (this *Logger) Error(err error) error {
 	if this.name != "" {
 		err = fmt.Errorf("%s: %w", this.name, err)
@@ -64,4 +69,17 @@ func (this *Logger) IsDebug() bool {
 
 func (this *Logger) Name() string {
 	return this.name
+}
+
+func (this *Logger) Clone(name string) gopi.Logger {
+	that := &Logger{
+		name:   name,
+		writer: this.writer,
+		debug:  this.debug,
+	}
+	if err := that.Unit.Init(this); err != nil {
+		return nil
+	} else {
+		return that
+	}
 }
