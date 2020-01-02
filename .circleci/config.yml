@@ -4,24 +4,24 @@ defaults: &defaults
 version: 2
 
 jobs:
-  test:
+  test_buster:
     <<: *defaults
     docker:
       - image: circleci/golang:1.13-buster    
     steps:
       - checkout
-      - run make test
-  build:
+      - run: make test
+  build_buster:
     <<: *defaults
     docker:
       - image: circleci/golang:1.13-buster    
     steps:
       - checkout
-      - run make install
+      - run: make install
   
 workflows:
   version: 2
-  test_and_build:
+  test_and_build_buster:
     jobs:
-      - test
-      - build
+      - test_buster
+      - build_buster
