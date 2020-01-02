@@ -24,17 +24,42 @@ type (
 
 type Platform interface {
 
-	// Return platform type
+	// Product returns product name
+	Product() string
+
+	// Type returns flags identifying platform type
 	Type() PlatformType
 
-	// Return serial number
+	// SerialNumber returns unique serial number for host
 	SerialNumber() string
 
-	// Return uptime
+	// Uptime returns uptime for host
 	Uptime() time.Duration
 
-	// Return 1, 5 and 15 minute load averages
+	// LoadAverages returns 1, 5 and 15 minute load averages
 	LoadAverages() (float64, float64, float64)
+
+	// NumberOfDisplays returns the number of possible displays for this host
+	NumberOfDisplays() uint
+
+	// Implements gopi.Unit
+	Unit
+}
+
+// Display implements a pixel-based display device. Displays are always numbered
+// from zero onwards
+type Display interface {
+	// Return display number
+	DisplayId() uint
+
+	// Return name of the display
+	Name() string
+
+	// Return display size for nominated display number, or (0,0) if display does not exist
+	Size() (uint32, uint32)
+
+	// Return the PPI (pixels-per-inch) for the display, or return zero if unknown
+	PixelsPerInch() uint32
 
 	// Implements gopi.Unit
 	Unit

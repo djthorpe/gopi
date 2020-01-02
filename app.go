@@ -50,6 +50,7 @@ type App interface {
 	Timer() Timer             // Return timer unit
 	Bus() Bus                 // Return event bus unit
 	Platform() Platform       // Return hardware platform unit
+	Display() Display         // Return display
 }
 
 // Flags encapsulates a set of key/value pairs in several namespaces

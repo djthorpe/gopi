@@ -35,10 +35,26 @@ func (this *platform) Type() gopi.PlatformType {
 
 // Return serial number
 func (this *platform) SerialNumber() string {
-	if serial, _, err := rpi.VCGetSerialRevision(); err != nil {
+	if serial, _, err := rpi.VCGetSerialProduct(); err != nil {
 		this.Log.Error(err)
 		return ""
 	} else {
 		return fmt.Sprintf("%08X", serial)
 	}
+}
+
+// Return product name
+func (this *platform) Product() string {
+	if _, product, err := rpi.VCGetSerialProduct(); err != nil {
+		this.Log.Error(err)
+		return ""
+	} else {
+		productinfo := rpi.NewProductInfo(product)
+		return fmt.Sprint(productinfo.Model)
+	}
+}
+
+// Return number of displays
+func (this *platform) NumberOfDisplays() uint {
+	return uint(rpi.DXNumberOfDisplays())
 }

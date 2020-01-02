@@ -31,6 +31,9 @@ func Main(app gopi.App, args []string) error {
 		"PLATFORM", fmt.Sprint(platform.Type()),
 	})
 	table.Append([]string{
+		"PRODUCT", platform.Product(),
+	})
+	table.Append([]string{
 		"SERIAL NUMBER", fmt.Sprint(platform.SerialNumber()),
 	})
 	table.Append([]string{
@@ -39,6 +42,9 @@ func Main(app gopi.App, args []string) error {
 	l1, l5, l15 := platform.LoadAverages()
 	table.Append([]string{
 		"LOAD AVERAGES", fmt.Sprintf("%.2f %.2f %.2f", l1, l5, l15),
+	})
+	table.Append([]string{
+		"NUMBER OF DISPLAYS", fmt.Sprint(platform.NumberOfDisplays()),
 	})
 	table.Render()
 

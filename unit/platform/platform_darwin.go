@@ -43,3 +43,13 @@ func (this *platform) Uptime() time.Duration {
 func (this *platform) LoadAverages() (float64, float64, float64) {
 	return darwin.LoadAverage()
 }
+
+// Return number of displays
+func (this *platform) NumberOfDisplays() uint {
+	return 0
+}
+
+// Return product
+func (this *platform) Product() string {
+	return darwin.Product()
+}
