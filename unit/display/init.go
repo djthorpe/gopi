@@ -25,7 +25,7 @@ func init() {
 			return gopi.New(Display{
 				Id:       app.Flags().GetUint("display", gopi.FLAG_NS_DEFAULT),
 				Platform: app.Platform(),
-			}, nil)
+			}, app.Log().Clone("gopi/display"))
 		},
 	})
 }

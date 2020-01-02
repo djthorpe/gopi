@@ -45,6 +45,8 @@ const (
 	UNIT_BUS
 	UNIT_PLATFORM
 	UNIT_DISPLAY
+	UNIT_RPC_DISCOVERY
+	UNIT_RPC_REGISTER
 	UNIT_MAX = UNIT_PLATFORM
 )
 
@@ -54,11 +56,12 @@ const (
 var (
 	unitMutex   sync.Mutex
 	unitNameMap = map[string]UnitType{
-		"logger":   UNIT_LOGGER,   // Logging
-		"timer":    UNIT_TIMER,    // Timer
-		"bus":      UNIT_BUS,      // Event Bus
-		"platform": UNIT_PLATFORM, // Hardware Platform
-		"display":  UNIT_DISPLAY,  // Display
+		"logger":    UNIT_LOGGER,        // Logging
+		"timer":     UNIT_TIMER,         // Timer
+		"bus":       UNIT_BUS,           // Event Bus
+		"platform":  UNIT_PLATFORM,      // Hardware Platform
+		"display":   UNIT_DISPLAY,       // Display
+		"discovery": UNIT_RPC_DISCOVERY, // RPC Service Discovery
 	}
 	unitByName map[string]*UnitConfig
 	unitByType map[UnitType]*UnitConfig
@@ -258,6 +261,10 @@ func (v UnitType) String() string {
 		return "UNIT_TIMER"
 	case UNIT_BUS:
 		return "UNIT_BUS"
+	case UNIT_RPC_DISCOVERY:
+		return "UNIT_RPC_DISCOVERY"
+	case UNIT_RPC_REGISTER:
+		return "UNIT_RPC_REGISTER"
 	default:
 		return "[?? Invalid UnitType value]"
 	}

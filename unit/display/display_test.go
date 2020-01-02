@@ -13,10 +13,9 @@ package display_test
 import (
 	"testing"
 
-	gopi "github.com/djthorpe/gopi/v2"
-	"github.com/djthorpe/gopi/v2/app"
-
 	// Frameworks
+	gopi "github.com/djthorpe/gopi/v2"
+	app "github.com/djthorpe/gopi/v2/app"
 
 	// Modules
 	_ "github.com/djthorpe/gopi/v2/unit/display"
