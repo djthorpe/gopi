@@ -5,7 +5,7 @@
   For Licensing and Usage information, please see LICENSE.md
 */
 
-package logger
+package platform
 
 import (
 	// Frameworks

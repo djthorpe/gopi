@@ -9,13 +9,25 @@ GOLDFLAGS += -X $(GOPI).GitHash=$(shell git rev-parse HEAD)
 GOLDFLAGS += -X $(GOPI).GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)" 
 
-all: test install
+all:
+	@echo "Synax: make linux|darwin|rpi"
 
+# Build for different platforms
+linux: TAGS = -tags linux
+linux: test install
+
+rpi: TAGS = -tags rpi
+rpi: test install
+
+darwin: TAGS = -tags darwin
+darwin: test install
+
+# Build rules
 test: 
-	$(GO) test -v ./...
+	$(GO) test $(TAGS) -v ./...
 
 install:
-	$(GO) install ${GOFLAGS} ./cmd/...
+	$(GO) install $(TAGS) ${GOFLAGS} ./cmd/...
 
 clean: 
 	$(GO) clean

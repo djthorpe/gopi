@@ -43,7 +43,8 @@ const (
 	UNIT_LOGGER
 	UNIT_TIMER
 	UNIT_BUS
-	UNIT_MAX = UNIT_BUS
+	UNIT_PLATFORM
+	UNIT_MAX = UNIT_PLATFORM
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,9 +53,10 @@ const (
 var (
 	unitMutex   sync.Mutex
 	unitNameMap = map[string]UnitType{
-		"logger": UNIT_LOGGER, // Logging
-		"timer":  UNIT_TIMER,  // Timer
-		"bus":    UNIT_BUS,    // Event Bus
+		"logger":   UNIT_LOGGER,   // Logging
+		"timer":    UNIT_TIMER,    // Timer
+		"bus":      UNIT_BUS,      // Event Bus
+		"platform": UNIT_PLATFORM, // Hardware Platform
 	}
 	unitByName map[string]*UnitConfig
 	unitByType map[UnitType]*UnitConfig

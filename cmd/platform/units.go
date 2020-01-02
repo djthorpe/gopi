@@ -5,6 +5,9 @@
   For Licensing and Usage information, please see LICENSE.md
 */
 
-package rpi
+package main
 
-// Empty file
+import (
+	_ "github.com/djthorpe/gopi/v2/unit/logger"
+	_ "github.com/djthorpe/gopi/v2/unit/platform"
+)

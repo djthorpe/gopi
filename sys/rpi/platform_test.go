@@ -1,3 +1,6 @@
+// +build rpi
+// +build !darwin
+
 /*
   Go Language Raspberry Pi Interface
   (c) Copyright David Thorpe 2016-2020
@@ -5,15 +8,43 @@
   For Licensing and Usage information, please see LICENSE.md
 */
 
-// +build rpi
-// +build linux
-
 package rpi_test
 
 import (
 	"testing"
+
+	// Frameworks
+	"github.com/djthorpe/gopi/v2/sys/rpi"
 )
 
 func Test_Platform_000(t *testing.T) {
 	t.Log("Test_Platform_000")
+}
+
+func Test_Platform_001(t *testing.T) {
+	if serial := rpi.SerialNumber(); serial == "" {
+		t.Error("Unexpected response from SerialNumber")
+	} else {
+		t.Log("serial", serial)
+	}
+}
+
+func Test_Platform_002(t *testing.T) {
+	if uptime := rpi.Uptime(); uptime <= 0 {
+		t.Error("Unexpected response from Uptime")
+	} else {
+		t.Log("uptime", uptime)
+	}
+}
+
+func Test_Platform_003(t *testing.T) {
+	if l1, l5, l15 := rpi.LoadAverage(); l1 == 0 {
+		t.Error("Unexpected response from LoadAverage")
+	} else if l5 == 0 {
+		t.Error("Unexpected response from LoadAverage")
+	} else if l15 == 0 {
+		t.Error("Unexpected response from LoadAverage")
+	} else {
+		t.Log("load averages", l1, l5, l15)
+	}
 }

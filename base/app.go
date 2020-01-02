@@ -173,6 +173,14 @@ func (this *App) Bus() gopi.Bus {
 	}
 }
 
+func (this *App) Platform() gopi.Platform {
+	if platform, ok := this.UnitInstance("platform").(gopi.Platform); ok {
+		return platform
+	} else {
+		return nil
+	}
+}
+
 func (this *App) UnitInstance(name string) gopi.Unit {
 	if units := this.UnitInstancesByName(name); len(units) == 0 {
 		return nil

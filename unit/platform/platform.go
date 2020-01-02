@@ -10,7 +10,6 @@ package platform
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -34,31 +33,12 @@ func (config Platform) New(log gopi.Logger) (gopi.Unit, error) {
 	if err := this.Unit.Init(log); err != nil {
 		return nil, err
 	}
+	if err := this.Init(); err != nil {
+		return nil, err
+	}
 	return this, nil
 }
 
 func (this *platform) String() string {
 	return fmt.Sprintf("<gopi.Platform>")
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION gopi.Platform
-
-func (this *platform) Platform() gopi.PlatformType {
-	return gopi.PLATFORM_NONE
-}
-
-// Return serial number
-func (this *platform) SerialNumber() string {
-	return ""
-}
-
-// Return uptime
-func (this *platform) Uptime() time.Duration {
-	return 0
-}
-
-// Return 1, 5 and 15 minute load averages
-func (this *platform) LoadAverages() (float32, float32, float32) {
-	return 0, 0, 0
 }

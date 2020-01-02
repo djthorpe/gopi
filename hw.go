@@ -33,7 +33,7 @@ type Platform interface {
 	Uptime() time.Duration
 
 	// Return 1, 5 and 15 minute load averages
-	LoadAverages() (float32, float32, float32)
+	LoadAverages() (float64, float64, float64)
 
 	// Implements gopi.Unit
 	Unit

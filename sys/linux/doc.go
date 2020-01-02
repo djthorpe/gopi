@@ -4,6 +4,7 @@
   All Rights Reserved
   For Licensing and Usage information, please see LICENSE.md
 */
-// +build linux
 
 package linux
+
+// Empty file
