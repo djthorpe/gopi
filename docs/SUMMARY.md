@@ -6,4 +6,3 @@
   * [What's Next](introduction.md#whats-next)
   * [License](introduction.md#license)
   * [Contributing](introduction.md#contributing)
-
