@@ -1,15 +1,27 @@
+defaults: &defaults
+  working_directory: /go/src/github.com/djthorpe/gopi
+
 version: 2
+
 jobs:
-  build:
+  test:
+    <<: *defaults
     docker:
-      - image: circleci/golang:1.12
-        environment:
-          GO111MODULE: "on"
-    working_directory: /go/src/github.com/djthorpe/gopi
+      - image: circleci/golang:1.13-buster    
     steps:
       - checkout
-      - run: make test
-      - run: make install
-      - run: make clean
-
-
+      - run make test
+  build:
+    <<: *defaults
+    docker:
+      - image: circleci/golang:1.13-buster    
+    steps:
+      - checkout
+      - run make install
+  
+workflows:
+  version: 2
+  test_and_build:
+    jobs:
+      - test
+      - build
