@@ -1,12 +1,4 @@
 
-
-* [Introduction](introduction.md)
-  * [Requirements](introduction.md#requirements)
-  * [Getting Started](introduction.md#getting-started)
-  * [License](introduction.md#license)
-  * [Contributing](introduction.md#contributing)
-  * [What's Next](introduction.md#whats-next)
-
 # Introduction
 
 __Gopi__ is an application framework for the Go language ("golang"). Ultimately it targets the Raspberry Pi platform running Linux to utilize many of the features of the platform, but it's applicable to any platform where golang runs.
