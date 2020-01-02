@@ -28,6 +28,7 @@ type bus struct {
 
 	base.Unit
 	sync.Mutex
+	sync.WaitGroup
 }
 
 type handlerWithTimeout struct {
@@ -49,6 +50,9 @@ func (config Bus) New(log gopi.Logger) (gopi.Unit, error) {
 }
 
 func (this *bus) Close() error {
+	// Wait for handlers to complete
+	this.WaitGroup.Wait()
+
 	// Release resources
 	this.handlers = nil
 	this.defaults = nil
@@ -61,21 +65,36 @@ func (this *bus) Close() error {
 // IMPLEMENTATION gopi.Bus
 
 func (this *bus) Emit(evt gopi.Event) {
+	// Set NullEvent
+	if evt == nil {
+		evt = gopi.NullEvent
+	}
+
+	// TODO: hold cancel functions and call them with Close() to quickly
+	// end handlers by cancelling them
+
+	// Set name and namespace
 	name, ns := evt.Name(), evt.NS()
 	if handlers := this.handlersForName(name, ns); len(handlers) > 0 {
 		for _, handler := range handlers {
+			this.WaitGroup.Add(1)
 			go func(handler handlerWithTimeout) {
 				ctx, cancel := handler.contextWithCancel()
 				defer cancel()
 				handler.fn(ctx, evt)
+				this.WaitGroup.Done()
 			}(handler)
 		}
 	} else if handler := this.defaultHandlerForNS(ns); handler != nil {
+		this.WaitGroup.Add(1)
 		go func(fn gopi.EventHandler) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			fn(ctx, evt)
+			this.WaitGroup.Done()
 		}(handler)
+	} else {
+		this.Log.Debug("Unhandled event:", evt)
 	}
 }
 

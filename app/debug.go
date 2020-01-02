@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -23,16 +22,17 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-type command struct {
+type debug struct {
 	main gopi.MainCommandFunc
+	args []string
 	base.App
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// gopi.App implementation for command-line tool
+// gopi.App implementation for debug tool
 
-func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, error) {
-	this := new(command)
+func NewDebugTool(main gopi.MainCommandFunc, args []string, units []string) (gopi.App, error) {
+	this := new(debug)
 
 	// Name of command
 	name := filepath.Base(os.Args[0])
@@ -44,15 +44,15 @@ func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, e
 		return nil, err
 	} else {
 		this.main = main
+		this.args = args
 	}
 
 	// Success
 	return this, nil
 }
 
-func (this *command) Run() int {
-	args := testlessArguments(os.Args[1:])
-	if returnValue := this.App.Start(args); returnValue != 0 {
+func (this *debug) Run() int {
+	if returnValue := this.App.Start(this.args); returnValue != 0 {
 		return returnValue
 	}
 
@@ -74,18 +74,4 @@ func (this *command) Run() int {
 
 	// Success
 	return 0
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-
-func testlessArguments(input []string) []string {
-	output := make([]string, 0, len(input))
-	for _, arg := range input {
-		if strings.HasPrefix(arg, "-test.") {
-			continue
-		}
-		output = append(output, arg)
-	}
-	return output
 }

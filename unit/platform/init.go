@@ -5,7 +5,7 @@
   For Licensing and Usage information, please see LICENSE.md
 */
 
-package bus
+package logger
 
 import (
 	// Frameworks
@@ -14,10 +14,10 @@ import (
 
 func init() {
 	gopi.UnitRegister(gopi.UnitConfig{
-		Name: "gopi/bus",
-		Type: gopi.UNIT_BUS,
+		Name: "gopi/platform",
+		Type: gopi.UNIT_PLATFORM,
 		New: func(app gopi.App) (gopi.Unit, error) {
-			return gopi.New(Bus{}, app.Log().Clone("gopi/bus"))
+			return gopi.New(Platform{}, nil)
 		},
 	})
 }

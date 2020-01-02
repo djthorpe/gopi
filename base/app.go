@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 
 	// Frameworks
@@ -77,7 +76,11 @@ func (this *App) Init(name string, units []string) error {
 // IMPLEMENTATION gopi.App
 
 func (this *App) Run() int {
-	if err := this.flags.Parse(testlessArguments(os.Args[1:])); errors.Is(err, gopi.ErrHelp) {
+	return this.Start([]string{})
+}
+
+func (this *App) Start(args []string) int {
+	if err := this.flags.Parse(args); errors.Is(err, gopi.ErrHelp) {
 		this.flags.Usage(os.Stderr)
 		return -1
 	} else if err != nil {
@@ -205,18 +208,4 @@ func (this *App) UnitInstancesByName(name string) []gopi.Unit {
 
 func (this *App) String() string {
 	return fmt.Sprintf("<gopi.App flags=%v instances=%v>", this.flags, this.instanceByConfig)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-
-func testlessArguments(input []string) []string {
-	output := make([]string, 0, len(input))
-	for _, arg := range input {
-		if strings.HasPrefix(arg, "-test.") {
-			continue
-		}
-		output = append(output, arg)
-	}
-	return output
 }

@@ -7,8 +7,12 @@
 
 package gopi
 
+import (
+	"base"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
-// TYPES
+// INTERFACES
 
 // Unit configuration interface
 type Config interface {
