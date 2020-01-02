@@ -44,6 +44,7 @@ const (
 	UNIT_TIMER
 	UNIT_BUS
 	UNIT_PLATFORM
+	UNIT_DISPLAY
 	UNIT_MAX = UNIT_PLATFORM
 )
 
@@ -57,6 +58,7 @@ var (
 		"timer":    UNIT_TIMER,    // Timer
 		"bus":      UNIT_BUS,      // Event Bus
 		"platform": UNIT_PLATFORM, // Hardware Platform
+		"display":  UNIT_DISPLAY,  // Display
 	}
 	unitByName map[string]*UnitConfig
 	unitByType map[UnitType]*UnitConfig

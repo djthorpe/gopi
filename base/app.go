@@ -181,6 +181,14 @@ func (this *App) Platform() gopi.Platform {
 	}
 }
 
+func (this *App) Display() gopi.Display {
+	if display, ok := this.UnitInstance("display").(gopi.Display); ok {
+		return display
+	} else {
+		return nil
+	}
+}
+
 func (this *App) UnitInstance(name string) gopi.Unit {
 	if units := this.UnitInstancesByName(name); len(units) == 0 {
 		return nil

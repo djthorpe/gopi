@@ -46,6 +46,25 @@ type Platform interface {
 	Unit
 }
 
+// Display implements a pixel-based display device. Displays are always numbered
+// from zero onwards
+type Display interface {
+	// Return display number
+	DisplayId() uint
+
+	// Return name of the display
+	Name() string
+
+	// Return display size for nominated display number, or (0,0) if display does not exist
+	Size() (uint32, uint32)
+
+	// Return the PPI (pixels-per-inch) for the display, or return zero if unknown
+	PixelsPerInch() uint32
+
+	// Implements gopi.Unit
+	Unit
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 

@@ -17,7 +17,7 @@ func init() {
 		Name: "gopi/platform",
 		Type: gopi.UNIT_PLATFORM,
 		New: func(app gopi.App) (gopi.Unit, error) {
-			return gopi.New(Platform{}, nil)
+			return gopi.New(Platform{}, app.Log().Clone("gopi/platform"))
 		},
 	})
 }
