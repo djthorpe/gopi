@@ -25,7 +25,7 @@ func (this *platform) Init() error {
 	return nil
 }
 
-func (this *platform) Platform() gopi.PlatformType {
+func (this *platform) Type() gopi.PlatformType {
 	return gopi.PLATFORM_DARWIN
 }
 

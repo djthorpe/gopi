@@ -28,7 +28,7 @@ func Main(app gopi.App, args []string) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Append([]string{
-		"PLATFORM", fmt.Sprint(platform.Platform()),
+		"PLATFORM", fmt.Sprint(platform.Type()),
 	})
 	table.Append([]string{
 		"SERIAL NUMBER", fmt.Sprint(platform.SerialNumber()),

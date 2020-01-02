@@ -1,5 +1,4 @@
 // +build linux
-// +build !rpi
 // +build !darwin
 
 /*
@@ -12,24 +11,21 @@
 package platform
 
 import (
+	"time"
+
 	// Frameworks
-	gopi "github.com/djthorpe/gopi/v2"
 	linux "github.com/djthorpe/gopi/v2/sys/linux"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Platform
 
-func (this *platform) Init() error {
-	// No special init for linux
-	return nil
+// Return uptime
+func (this *platform) Uptime() time.Duration {
+	return linux.Uptime()
 }
 
-func (this *platform) Type() gopi.PlatformType {
-	return gopi.PLATFORM_LINUX
-}
-
-// Return serial number
-func (this *platform) SerialNumber() string {
-	return linux.SerialNumber()
+// Return 1, 5 and 15 minute load averages
+func (this *platform) LoadAverages() (float64, float64, float64) {
+	return linux.LoadAverage()
 }

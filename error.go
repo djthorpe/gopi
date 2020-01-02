@@ -30,14 +30,15 @@ type (
 // CONSTANTS
 
 const (
-	ErrNone             Error = iota // No error condition
-	ErrNotImplemented                // Method or feature not implemented
-	ErrBadParameter                  // Error with parameter passed to method
-	ErrNotFound                      // Missing object
-	ErrHelp                          // Help requested from command line
-	ErrInternalAppError              // Internal application error
-	ErrSignalCaught                  // Signal caught
-	ErrMax              = ErrSignalCaught
+	ErrNone               Error = iota // No error condition
+	ErrNotImplemented                  // Method or feature not implemented
+	ErrBadParameter                    // Error with parameter passed to method
+	ErrNotFound                        // Missing object
+	ErrHelp                            // Help requested from command line
+	ErrInternalAppError                // Internal application error
+	ErrSignalCaught                    // Signal caught
+	ErrUnexpectedResponse              // Unexpected Response
+	ErrMax                = ErrUnexpectedResponse
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,6 +60,8 @@ func (this Error) Error() string {
 		return "Internal Application Error"
 	case ErrSignalCaught:
 		return "Signal caught"
+	case ErrUnexpectedResponse:
+		return "Unexpected response"
 	default:
 		return "[?? Invalid Error value]"
 	}
