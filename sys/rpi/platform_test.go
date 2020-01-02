@@ -24,8 +24,6 @@ func Test_Platform_000(t *testing.T) {
 func Test_Platform_001(t *testing.T) {
 	if err := rpi.BCMHostInit(); err != nil {
 		t.Error("Unexpected response from BCMHostInit")
-	} else if err := rpi.BCMHostTerminate(); err != nil {
-		t.Error("Unexpected response from BCMHostTerminate")
 	}
 }
 
@@ -33,7 +31,6 @@ func Test_Platform_002(t *testing.T) {
 	if err := rpi.BCMHostInit(); err != nil {
 		t.Error("Unexpected response from BCMHostInit")
 	} else {
-		defer rpi.BCMHostTerminate()
 		if addr := rpi.BCMHostGetPeripheralAddress(); addr == 0 {
 			t.Error("Unexpected response from BCMHostGetPeripheralAddress")
 		} else {
@@ -58,16 +55,46 @@ func Test_Platform_003(t *testing.T) {
 	} else {
 		t.Logf("VCGencmdInit => %08X", service)
 	}
-	rpi.VCGencmdTerminate()
 }
 
 func Test_Platform_004(t *testing.T) {
-	if service := rpi.VCGencmdInit(); service < 0 {
-		t.Error("Unexpected response from VCGencmdInit")
+	if err := rpi.BCMHostInit(); err != nil {
+		t.Error("Unexpected response from BCMHostInit")
 	} else if dump, err := rpi.VCGeneralCommand("commands"); err != nil {
 		t.Error("Unexpected response from VCGeneralCommand", err)
 	} else {
 		t.Logf("VCGeneralCommand => %v", dump)
-		rpi.VCGencmdTerminate()
+	}
+}
+
+func Test_Platform_005(t *testing.T) {
+	if err := rpi.BCMHostInit(); err != nil {
+		t.Error("Unexpected response from BCMHostInit")
+	} else if commands, err := rpi.VCGeneralCommands(); err != nil {
+		t.Error("Unexpected response from VCGeneralCommand", err)
+	} else if len(commands) == 0 {
+		t.Error("Unexpected response from VCGeneralCommand")
+	} else {
+		t.Logf("VCGeneralCommands => %v", commands)
+	}
+}
+
+func Test_Platform_006(t *testing.T) {
+	if err := rpi.BCMHostInit(); err != nil {
+		t.Error("Unexpected response from BCMHostInit")
+	} else if dump, err := rpi.VCOTPDump(); err != nil {
+		t.Error("Unexpected response from VCOTPDump", err)
+	} else {
+		t.Logf("OTPDump => %v", dump)
+	}
+}
+
+func Test_Platform_007(t *testing.T) {
+	if err := rpi.BCMHostInit(); err != nil {
+		t.Error("Unexpected response from BCMHostInit")
+	} else if serial, revision, err := rpi.VCGetSerialRevision(); err != nil {
+		t.Error("Unexpected response from VCOTPDump", err)
+	} else {
+		t.Logf("VCGetSerialRevision => %08X %04X", serial, revision)
 	}
 }
