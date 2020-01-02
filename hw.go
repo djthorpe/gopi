@@ -25,7 +25,7 @@ type (
 type Platform interface {
 
 	// Return platform type
-	Platform() PlatformType
+	Type() PlatformType
 
 	// Return serial number
 	SerialNumber() string
@@ -62,7 +62,7 @@ func (p PlatformType) String() string {
 	}
 	for v := PLATFORM_MIN; v <= PLATFORM_MAX; v <<= 1 {
 		if p&v == v {
-			str = "|" + v.FlagString()
+			str += "|" + v.FlagString()
 		}
 	}
 	return strings.TrimPrefix(str, "|")

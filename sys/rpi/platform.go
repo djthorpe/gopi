@@ -10,17 +10,37 @@
 
 package rpi
 
+import (
+	"unsafe"	
+	"fmt"
+
+	// Frameworks
+	"github.com/djthorpe/gopi/v2"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // CGO
 
 /*
 #cgo pkg-config: bcm_host
 #include "bcm_host.h"
+#include <stdio.h>
 int vc_gencmd_wrap(char* response,int maxlen,const char* command) {
-  return vc_gencmd(response,maxlen,command);
+	return vc_gencmd(response,maxlen,command);
 }
 */
 import "C"
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	GENCMD_BUF_SIZE     = 1024
+)
+
+var (
+	gencmdBuffer = make([]byte, GENCMD_BUF_SIZE)
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS: BCMHOST
@@ -45,4 +65,33 @@ func BCMHostGetPeripheralSize() uint32 {
 
 func BCMHostGetSDRAMAddress() uint32 {
 	return uint32(C.bcm_host_get_sdram_address())
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS: VIDEOCORE
+
+func VCGencmdInit() int {
+	return int(C.vc_gencmd_init())
+}
+
+func VCGencmdTerminate() {
+	C.vc_gencmd_stop()
+}
+
+// GeneralCommand executes a VideoCore "General Command" and return the results
+// of that command as a string. See http://elinux.org/RPI_vcgencmd_usage for
+// some examples of usage
+func VCGeneralCommand(command string) (string, error) {
+	fmt.Println(command)
+	ccommand := C.CString(command)
+	defer C.free(unsafe.Pointer(ccommand))
+	ret := C.vc_gencmd_wrap(
+		(*C.char)(&gencmdBuffer[0]),
+		C.int(GENCMD_BUF_SIZE),
+		(*C.char)(ccommand))
+	if ret != 0 {
+		fmt.Println("buf",string(gencmdBuffer))
+		return "", gopi.ErrUnexpectedResponse.WithPrefix(fmt.Sprint(ret))
+	}
+	return string(gencmdBuffer), nil
 }

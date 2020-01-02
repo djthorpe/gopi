@@ -22,29 +22,52 @@ func Test_Platform_000(t *testing.T) {
 }
 
 func Test_Platform_001(t *testing.T) {
-	if serial := rpi.SerialNumber(); serial == "" {
-		t.Error("Unexpected response from SerialNumber")
-	} else {
-		t.Log("serial", serial)
+	if err := rpi.BCMHostInit(); err != nil {
+		t.Error("Unexpected response from BCMHostInit")
+	} else if err := rpi.BCMHostTerminate(); err != nil {
+		t.Error("Unexpected response from BCMHostTerminate")
 	}
 }
 
 func Test_Platform_002(t *testing.T) {
-	if uptime := rpi.Uptime(); uptime <= 0 {
-		t.Error("Unexpected response from Uptime")
+	if err := rpi.BCMHostInit(); err != nil {
+		t.Error("Unexpected response from BCMHostInit")
 	} else {
-		t.Log("uptime", uptime)
+		defer rpi.BCMHostTerminate()
+		if addr := rpi.BCMHostGetPeripheralAddress(); addr == 0 {
+			t.Error("Unexpected response from BCMHostGetPeripheralAddress")
+		} else {
+			t.Logf("BCMHostGetPeripheralAddress => %08X", addr)
+		}
+		if size := rpi.BCMHostGetPeripheralSize(); size == 0 {
+			t.Error("Unexpected response from BCMHostGetPeripheralSize")
+		} else {
+			t.Logf("BCMHostGetPeripheralSize => %08X", size)
+		}
+		if addr := rpi.BCMHostGetSDRAMAddress(); addr == 0 {
+			t.Error("Unexpected response from BCMHostGetSDRAMAddress")
+		} else {
+			t.Logf("BCMHostGetSDRAMAddress => %08X", addr)
+		}
 	}
 }
 
 func Test_Platform_003(t *testing.T) {
-	if l1, l5, l15 := rpi.LoadAverage(); l1 == 0 {
-		t.Error("Unexpected response from LoadAverage")
-	} else if l5 == 0 {
-		t.Error("Unexpected response from LoadAverage")
-	} else if l15 == 0 {
-		t.Error("Unexpected response from LoadAverage")
+	if service := rpi.VCGencmdInit(); service < 0 {
+		t.Error("Unexpected response from VCGencmdInit")
 	} else {
-		t.Log("load averages", l1, l5, l15)
+		t.Logf("VCGencmdInit => %08X", service)
+	}
+	rpi.VCGencmdTerminate()
+}
+
+func Test_Platform_004(t *testing.T) {
+	if service := rpi.VCGencmdInit(); service < 0 {
+		t.Error("Unexpected response from VCGencmdInit")
+	} else if dump, err := rpi.VCGeneralCommand("commands"); err != nil {
+		t.Error("Unexpected response from VCGeneralCommand", err)
+	} else {
+		t.Logf("VCGeneralCommand => %v", dump)
+		rpi.VCGencmdTerminate()
 	}
 }

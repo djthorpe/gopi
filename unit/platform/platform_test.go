@@ -35,6 +35,12 @@ func Main_Test_Platform_001(app gopi.App, _ []string) error {
 	if platform == nil {
 		return gopi.ErrInternalAppError.WithPrefix("Platform() failed")
 	}
+	app.Log().Debug("Platform", platform)
+	if type_ := platform.Type(); type_ == 0 {
+		return gopi.ErrInternalAppError.WithPrefix("Type() failed")
+	} else {
+		app.Log().Debug("Type", type_)
+	}
 	if platform.SerialNumber() == "" {
 		return gopi.ErrInternalAppError.WithPrefix("SerialNumber() failed")
 	} else {

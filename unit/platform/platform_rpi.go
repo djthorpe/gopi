@@ -1,4 +1,5 @@
 // +build rpi
+// +build !darwin
 
 /*
   Go Language Raspberry Pi Interface
@@ -10,10 +11,7 @@
 package platform
 
 import (
-	"time"
-
-	// Frameworks
-	gopi "github.com/djthorpe/gopi/v2"
+	"github.com/djthorpe/gopi/v2"
 	rpi "github.com/djthorpe/gopi/v2/sys/rpi"
 )
 
@@ -37,21 +35,12 @@ func (this *platform) Close() error {
 	return nil
 }
 
-func (this *platform) Platform() gopi.PlatformType {
+func (this *platform) Type() gopi.PlatformType {
 	return gopi.PLATFORM_RPI | gopi.PLATFORM_LINUX
 }
 
 // Return serial number
 func (this *platform) SerialNumber() string {
-	return rpi.SerialNumber()
-}
-
-// Return uptime
-func (this *platform) Uptime() time.Duration {
-	return rpi.Uptime()
-}
-
-// Return 1, 5 and 15 minute load averages
-func (this *platform) LoadAverages() (float64, float64, float64) {
-	return rpi.LoadAverage()
+	// TODO
+	return "TO BE DONE"
 }

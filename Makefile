@@ -17,6 +17,7 @@ linux: TAGS = -tags linux
 linux: test install
 
 rpi: TAGS = -tags rpi
+rpi: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
 rpi: test install
 
 darwin: TAGS = -tags darwin
@@ -24,10 +25,10 @@ darwin: test install
 
 # Build rules
 test: 
-	$(GO) test $(TAGS) -v ./...
+	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) -v ./...
 
 install:
-	$(GO) install $(TAGS) ${GOFLAGS} ./cmd/...
+	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) install $(TAGS) ${GOFLAGS} ./cmd/...
 
 clean: 
 	$(GO) clean
