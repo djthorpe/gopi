@@ -9,7 +9,9 @@ package gopi
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -21,15 +23,16 @@ import (
 type RPCServiceRecord struct {
 	Name    string
 	Service string
-	Subtype string
 	Host    string
 	Port    uint16
 	Addrs   []net.IP
 	Txt     []string
 }
 
-// RPCFlag is a set of flags modifying behavior of client/service
-type RPCFlag uint
+type (
+	RPCFlag      uint // RPCFlag is a set of flags modifying behavior
+	RPCEventType uint // RPCEventType is an enumeration of event types
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -40,9 +43,13 @@ type RPCServiceDiscovery interface {
 
 	// Return list of service names
 	EnumerateServices(ctx context.Context) ([]string, error)
+}
 
-	// Return all cached service instances for a service name
-	ServiceInstances(service string) []RPCServiceRecord
+type RPCEvent interface {
+	Type() RPCEventType
+	Service() RPCServiceRecord
+
+	Event
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -57,6 +64,21 @@ const (
 	RPC_FLAG_SERVICE_ANY                              // Use any service
 	RPC_FLAG_MIN           = RPC_FLAG_INET_UDP
 	RPC_FLAG_MAX           = RPC_FLAG_SERVICE_ANY
+)
+
+const (
+	RPC_EVENT_NONE            RPCEventType = iota
+	RPC_EVENT_SERVER_STARTED               // RPC Server started
+	RPC_EVENT_SERVER_STOPPED               // RPC Server stopped
+	RPC_EVENT_SERVICE_ADDED                // Service instance lookup (new)
+	RPC_EVENT_SERVICE_UPDATED              // Service instance lookup (updated)
+	RPC_EVENT_SERVICE_REMOVED              // Service instance lookup (removed)
+	RPC_EVENT_SERVICE_EXPIRED              // Service instance lookup (expired)
+	RPC_EVENT_SERVICE_NAME                 // Service name discovered
+	RPC_EVENT_SERVICE_RECORD               // Service record lookup
+	RPC_EVENT_CLIENT_CONNECTED
+	RPC_EVENT_CLIENT_DISCONNECTED
+	RPC_EVENT_MAX = RPC_EVENT_CLIENT_DISCONNECTED
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,4 +114,58 @@ func (v RPCFlag) FlagString() string {
 	default:
 		return "[?? Invalid PlatformType value]"
 	}
+}
+
+func (t RPCEventType) String() string {
+	switch t {
+	case RPC_EVENT_NONE:
+		return "RPC_EVENT_NONE"
+	case RPC_EVENT_SERVER_STARTED:
+		return "RPC_EVENT_SERVER_STARTED"
+	case RPC_EVENT_SERVER_STOPPED:
+		return "RPC_EVENT_SERVER_STOPPED"
+	case RPC_EVENT_SERVICE_ADDED:
+		return "RPC_EVENT_SERVICE_ADDED"
+	case RPC_EVENT_SERVICE_UPDATED:
+		return "RPC_EVENT_SERVICE_UPDATED"
+	case RPC_EVENT_SERVICE_REMOVED:
+		return "RPC_EVENT_SERVICE_REMOVED"
+	case RPC_EVENT_SERVICE_EXPIRED:
+		return "RPC_EVENT_SERVICE_EXPIRED"
+	case RPC_EVENT_SERVICE_NAME:
+		return "RPC_EVENT_SERVICE_NAME"
+	case RPC_EVENT_SERVICE_RECORD:
+		return "RPC_EVENT_SERVICE_RECORD"
+	case RPC_EVENT_CLIENT_CONNECTED:
+		return "RPC_EVENT_CLIENT_CONNECTED"
+	case RPC_EVENT_CLIENT_DISCONNECTED:
+		return "RPC_EVENT_CLIENT_DISCONNECTED"
+	default:
+		return "[?? Invalid RPCEventType value]"
+	}
+}
+
+func (this RPCServiceRecord) String() string {
+	str := "<RPCServiceRecord name=" + strconv.Quote(this.Name)
+	if this.Service != "" {
+		str += " service=" + strconv.Quote(this.Service)
+	}
+	if this.Host != "" {
+		str += " host=" + strconv.Quote(this.Host)
+	}
+	if this.Port != 0 {
+		str += " port=" + fmt.Sprint(this.Port)
+	}
+	if len(this.Addrs) > 0 {
+		str += " addrs="
+		for _, addr := range this.Addrs {
+			str += addr.String() + ","
+		}
+		str = strings.TrimSuffix(str, ",")
+	}
+	if len(this.Txt) > 0 {
+		str += " txt=" + fmt.Sprint(this.Txt)
+	}
+	str += ">"
+	return str
 }

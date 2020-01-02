@@ -8,15 +8,12 @@
 package mdns
 
 import (
-	"fmt"
 	"net"
-	"strconv"
 	"strings"
-
-	"github.com/miekg/dns"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
+	dns "github.com/miekg/dns"
 )
 
 type service struct {
@@ -63,32 +60,4 @@ func (this *service) SetAAAA(addr net.IP) {
 		this.Addrs = make([]net.IP, 0, 1)
 	}
 	this.Addrs = append(this.Addrs, addr)
-}
-
-func (this *service) String() string {
-	str := "<service name=" + strconv.Quote(this.Name)
-	if this.Service != "" {
-		str += " service=" + strconv.Quote(this.Service)
-	}
-	if this.Subtype != "" {
-		str += " subtype=" + strconv.Quote(this.Subtype)
-	}
-	if this.Host != "" {
-		str += " host=" + strconv.Quote(this.Host)
-	}
-	if this.Port != 0 {
-		str += " port=" + fmt.Sprint(this.Port)
-	}
-	if len(this.Addrs) > 0 {
-		str += " addrs="
-		for _, addr := range this.Addrs {
-			str += addr.String() + ","
-		}
-		str = strings.TrimSuffix(str, ",")
-	}
-	if len(this.Txt) > 0 {
-		str += " txt=" + fmt.Sprint(this.Txt)
-	}
-	str += ">"
-	return str
 }

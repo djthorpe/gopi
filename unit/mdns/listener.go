@@ -8,13 +8,16 @@
 package mdns
 
 import (
+	"context"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -43,6 +46,7 @@ type Listener struct {
 
 const (
 	MDNS_DEFAULT_DOMAIN = "local."
+	DELTA_QUERY_MS      = 500
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -138,6 +142,32 @@ func (this *Listener) Destroy() error {
 
 func (this Listener) String() string {
 	return "<Listener domain=" + strconv.Quote(this.domain) + ">"
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// QUERY
+
+// QueryAll sends a message to all multicast addresses
+func (this *Listener) QueryAll(ctx context.Context, msg *dns.Msg, count uint) error {
+	// Send out message a certain number of times
+	ticker := time.NewTimer(1 * time.Millisecond)
+	for {
+		select {
+		case <-ticker.C:
+			if err := this.multicast_send(msg, 0); err != nil {
+				return err
+			}
+			if count > 0 {
+				// Restart timer to send query again
+				r := time.Duration(rand.Intn(DELTA_QUERY_MS))
+				ticker.Reset(time.Millisecond * r)
+				count--
+			}
+		case <-ctx.Done():
+			ticker.Stop()
+			return ctx.Err()
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -294,5 +324,44 @@ func (this *Listener) parse_packet(packet []byte, ifIndex int, from net.Addr) er
 	if this.messages != nil {
 		this.messages <- &msg
 	}
+	return nil
+}
+
+// multicastSend sends a multicast response packet to a particular interface
+// or all interfaces if 0
+func (this *Listener) multicast_send(msg *dns.Msg, ifIndex int) error {
+	var buf []byte
+	if msg == nil {
+		return gopi.ErrBadParameter
+	} else if buf_, err := msg.Pack(); err != nil {
+		return err
+	} else {
+		buf = buf_
+	}
+	if this.ip4 != nil {
+		var cm ipv4.ControlMessage
+		if ifIndex != 0 {
+			cm.IfIndex = ifIndex
+			this.ip4.WriteTo(buf, &cm, MDNS_ADDR_IPV4)
+		} else {
+			for _, intf := range this.ifaces {
+				cm.IfIndex = intf.Index
+				this.ip4.WriteTo(buf, &cm, MDNS_ADDR_IPV4)
+			}
+		}
+	}
+	if this.ip6 != nil {
+		var cm ipv6.ControlMessage
+		if ifIndex != 0 {
+			cm.IfIndex = ifIndex
+			this.ip6.WriteTo(buf, &cm, MDNS_ADDR_IPV6)
+		} else {
+			for _, intf := range this.ifaces {
+				cm.IfIndex = intf.Index
+				this.ip6.WriteTo(buf, &cm, MDNS_ADDR_IPV6)
+			}
+		}
+	}
+	// Success
 	return nil
 }

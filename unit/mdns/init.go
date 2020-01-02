@@ -19,8 +19,9 @@ import (
 
 func init() {
 	gopi.UnitRegister(gopi.UnitConfig{
-		Name: "gopi/mdns/discovery",
-		Type: gopi.UNIT_RPC_DISCOVERY,
+		Name:     "gopi/mdns/discovery",
+		Type:     gopi.UNIT_RPC_DISCOVERY,
+		Requires: []string{"bus"},
 		Config: func(app gopi.App) error {
 			app.Flags().FlagString("mdns.domain", "local", "mDNS domain")
 			app.Flags().FlagString("mdns.iface", "", "mDNS network interface")
@@ -40,6 +41,7 @@ func init() {
 					flags |= gopi.RPC_FLAG_INET_V6
 				}
 				return gopi.New(Discovery{
+					Bus:       app.Bus(),
 					Domain:    app.Flags().GetString("mdns.domain", gopi.FLAG_NS_DEFAULT),
 					Interface: iface,
 					Flags:     flags,
