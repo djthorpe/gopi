@@ -1,4 +1,12 @@
 
+
+* [Introduction](introduction.md)
+  * [Requirements](introduction.md#requirements)
+  * [Getting Started](introduction.md#getting-started)
+  * [License](introduction.md#license)
+  * [Contributing](introduction.md#contributing)
+  * [What's Next](introduction.md#whats-next)
+
 # Introduction
 
 __Gopi__ is an application framework for the Go language ("golang"). Ultimately it targets the Raspberry Pi platform running Linux to utilize many of the features of the platform, but it's applicable to any platform where golang runs.
@@ -13,6 +21,60 @@ The scope of this framework is as follows:
 * Remote Procedure Call (RPC) server and client development.
 
 The Raspberry Pi is the first supported hardware platform but it wouldn't be a stretch to provide these facilities on other hardware platforms.
+
+## Requirements
+
+The tested requirements are currently:
+
+  * Any Raspberry Pi (v2, v3, v4, Zero and Zero W have been tested)
+  * Raspbian GNU/Linux (Raspian or Buster)
+  * Go 1.13
+
+## Getting Started
+
+In order to use the framework, you'll need to have a working version of Go on 
+your Raspberry Pi, which you can download from [here](https://golang.org/dl/). Then 
+retrieve the library on your device, using:
+
+```sh
+bash% git clone https://github.com/djthorpe/gopi
+bash% cd gopi
+```
+
+Then, build some of the examples in the "cmd" folder. They can be built with the makefile.
+
+```sh
+bash% make test
+bash% make install
+bash% make clean
+```
+
+## License
+
+This repository is released under the Apache License. Please see the file
+[LICENSE](LICENSE.md) file in the reposiroty for a copy of this license and 
+for a list of the conditions for redistribution and use.
+
+## Contributing
+
+I welcome contributions, feature requests and issues. In order to contribute, please fork
+and send pull requests. Feel free to contact me for feature requests and bugs by filing
+issues [here](https://github.com/djthorpe/gopi/issues).
+
+## What's Next
+
+The following sections are yet to be written:
+
+  * Describing Helloworld
+  * Event Handling
+  * Hardware platforms
+  * A section on developing user interfaces, including layout
+  * 3D graphics using OpenGL
+  * Encoding and decoding video and audio
+  * Cameras
+  * Developing micro-services
+  * Interacting with IR signals from remote controls
+  * Developing your own modules and for other platforms
 
 In order to use the framework, you'll need to have a working version of Go which you can download. Then retrieve the framework on your device, using:
 
@@ -36,16 +98,3 @@ features working on some platforms and not others. The framework is split into a
 
 
 # What's Next?
-
-The following sections are yet to be written:
-
-  * Describing Helloworld
-  * Event Handling
-  * Hardware platforms
-  * A section on developing user interfaces, including layout
-  * 3D graphics using OpenGL
-  * Encoding and decoding video and audio
-  * Cameras
-  * Developing micro-services
-  * Interacting with IR signals from remote controls
-  * Developing your own modules and for other platforms
