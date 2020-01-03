@@ -165,3 +165,31 @@ Go interfaces provide excellent abstractions for encapsulating an object and met
 
 Being able to include modules at runtime and for those modules to be magically created and automatically depend on others reduces run-time complexity.
 
+## The Logger
+
+You have already seen the logger unit used in the first "Hello, World" tool. In fact, every tool needs to have a logger defined and it's not necessary to declare the usage of the logger when calling `app.NewCommandLineTool`.
+
+A convenience method `app.Log()` will return the logging unit. For example,
+
+```go
+func Main(app gopi.App, args []string) error {
+    app.Log().Debug("In Main")
+    // Return success
+	return nil
+}
+```
+
+You can only import one logger of type `gopi.UNIT_LOGGER` into your tool.
+The unit you import as `github.com/djthorpe/gopi/v2/unit/logger` outputs
+messages to `os.Stderr` and defines some command-line flags so that when you invoke your tool. For example, if you invoke it with the `-help` flag:
+
+```bash
+bash$ helloworld -help
+  -debug
+    	Debugging output
+  -verbose
+    	Verbose output (default true)
+```
+
+Other implementations of the `gopi.UNIT_LOGGER` could output messages to file or to the `syslog` service, for example.
+
