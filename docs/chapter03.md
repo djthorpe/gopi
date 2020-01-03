@@ -32,6 +32,7 @@ Here are the parameters you'll need in order to use the ticker:
 | Type             | `gopi.UNIT_TIMER`    |
 | Requires         | `gopi.UNIT_BUS`      |
 | Import           | `github.com/djthorpe/gopi/v2/unit/timer` |
+| Events           | `gopi.TimerEvent`    |
 | Compatibility    | Linux, Darwin        |
 
 The interface is defined as follows:
@@ -71,7 +72,7 @@ The message bus allows any other unit to:
 
   * Emit events
   * Register functions that can handle events
-  * Register a default function which can handle any events not handled otherwise
+  * Register a default function which can handle any events not handled otherwise.
 
 Here are the parameters you'll need in order to access the message bus:
 
@@ -81,7 +82,6 @@ Here are the parameters you'll need in order to access the message bus:
 | Interface        | `gopi.Bus`           |
 | Type             | `gopi.UNIT_BUS`      |
 | Import           | `github.com/djthorpe/gopi/v2/unit/bus` |
-| Emits            | `gopi.TimerEvent`    |
 | Compatibility    | Linux, Darwin        |
 
 The interface is defined as follows:
