@@ -209,31 +209,26 @@ func (this *discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 // BACKGROUND PROCESSOR
 
 func (this *discovery) ProcessMessages(stop <-chan struct{}) {
-	// Subscribe to messages and errors
-	errors := this.listener.Subscribe(QUEUE_ERRORS, 0)
+	defer this.WaitGroup.Done()
+
 	messages := this.listener.Subscribe(QUEUE_MESSAGES, 0)
+	go func() {
+		<-stop
+		this.listener.Unsubscribe(messages)
+	}()
 FOR_LOOP:
 	for {
 		select {
-		case err := <-errors:
-			if err == nil {
-				break FOR_LOOP
-			} else {
-				this.Log.Error(err.(error))
-			}
 		case msg := <-messages:
-			if msg == nil {
+			if msg_, ok := msg.(*dns.Msg); ok && msg != nil {
+				if len(msg_.Answer) > 0 {
+					this.ProcessAnswer(msg_)
+				}
+			} else {
 				break FOR_LOOP
-			} else if msg_ := msg.(*dns.Msg); len(msg_.Answer) > 0 {
-				this.ProcessAnswer(msg_)
 			}
-		case <-stop:
-			break FOR_LOOP
 		}
 	}
-	this.listener.Unsubscribe(errors)
-	this.listener.Unsubscribe(messages)
-	this.WaitGroup.Done()
 }
 
 func (this *discovery) ProcessAnswer(msg *dns.Msg) {

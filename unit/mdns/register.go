@@ -92,7 +92,6 @@ func (this *register) String() string {
 
 // Register service record, and de-register when deadline is exceeded
 func (this *register) Register(ctx context.Context, record gopi.RPCServiceRecord) error {
-
 	// Indicate Close() method should wait until all Register methods have ended
 	this.WaitGroup.Add(1)
 	defer this.WaitGroup.Done()
@@ -277,34 +276,29 @@ func (this *register) sendUnregister(record gopi.RPCServiceRecord) error {
 // BACKGROUND PROCESSOR
 
 func (this *register) ProcessMessages(stop <-chan struct{}) {
-	// Subscribe to messages and errors
-	errors := this.listener.Subscribe(QUEUE_ERRORS, 0)
+	defer this.WaitGroup.Done()
+
 	messages := this.listener.Subscribe(QUEUE_MESSAGES, 0)
+	go func() {
+		<-stop
+		this.listener.Unsubscribe(messages)
+	}()
+
 FOR_LOOP:
 	for {
 		select {
-		case err := <-errors:
-			if err == nil {
-				break FOR_LOOP
-			} else {
-				this.Log.Error(err.(error))
-			}
 		case msg := <-messages:
-			if msg == nil {
-				break FOR_LOOP
-			} else if msg_ := msg.(*dns.Msg); len(msg_.Question) > 0 {
-				if err := this.ProcessQuestion(msg_); err != nil {
-					this.Log.Error(err.(error))
+			if msg_, ok := msg.(*dns.Msg); msg_ != nil && ok {
+				if len(msg_.Question) > 0 {
+					if err := this.ProcessQuestion(msg_); err != nil {
+						this.Log.Error(err.(error))
+					}
 				}
+			} else {
+				break FOR_LOOP
 			}
-		case <-stop:
-			break FOR_LOOP
 		}
 	}
-	// Unsubscribe and flag process is done
-	this.listener.Unsubscribe(errors)
-	this.listener.Unsubscribe(messages)
-	this.WaitGroup.Done()
 }
 
 func (this *register) ProcessQuestion(msg *dns.Msg) error {

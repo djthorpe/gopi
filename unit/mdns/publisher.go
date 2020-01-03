@@ -7,11 +7,17 @@
 
 package mdns
 
+import (
+	"sync"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type Publisher struct {
 	q map[uint][]chan interface{}
+
+	sync.Mutex
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +33,22 @@ func (this *Publisher) NewChannels(queue uint) []chan interface{} {
 	return this.q[queue]
 }
 
+func (this *Publisher) Close() error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+	// close all channels
+	for _, chans := range this.q {
+		for _, c := range chans {
+			close(c)
+		}
+	}
+	this.q = nil
+	return nil
+}
+
 func (this *Publisher) Emit(queue uint, value interface{}) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
 	if chans := this.NewChannels(queue); chans != nil {
 		for _, c := range chans {
 			c <- value
@@ -36,6 +57,8 @@ func (this *Publisher) Emit(queue uint, value interface{}) {
 }
 
 func (this *Publisher) Subscribe(queue uint, capacity int) <-chan interface{} {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
 	if chans := this.NewChannels(queue); chans == nil {
 		return nil
 	} else {
@@ -46,11 +69,14 @@ func (this *Publisher) Subscribe(queue uint, capacity int) <-chan interface{} {
 }
 
 func (this *Publisher) Unsubscribe(c <-chan interface{}) bool {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	for queue, chans := range this.q {
 		for i, other := range chans {
 			if other == c {
-				this.q[queue] = append(chans[:i], chans[i+1:]...)
 				close(other)
+				this.q[queue] = append(chans[:i], chans[i+1:]...)
 				return true
 			}
 		}
@@ -59,5 +85,7 @@ func (this *Publisher) Unsubscribe(c <-chan interface{}) bool {
 }
 
 func (this *Publisher) Len(queue uint) int {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
 	return len(this.NewChannels(queue))
 }

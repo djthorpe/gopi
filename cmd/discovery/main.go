@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	// Frameworks
@@ -66,9 +67,61 @@ func LookupServices(app gopi.App, services []string) error {
 	return nil
 }
 
+func ServiceRecord(app gopi.App, service string) (gopi.RPCServiceRecord, error) {
+	if hostname, err := os.Hostname(); err != nil {
+		return gopi.RPCServiceRecord{}, err
+	} else {
+		return gopi.RPCServiceRecord{
+			Name:    service,
+			Service: "_gopi._tcp",
+			Host:    hostname,
+			Port:    8080,
+		}, nil
+	}
+}
+
+func RegisterServices(app gopi.App, services []string) error {
+	register := app.UnitInstance("register").(gopi.RPCServiceRegister)
+	timeout := app.Flags().GetDuration("timeout", gopi.FLAG_NS_DEFAULT)
+	var wait sync.WaitGroup
+	cancels := []context.CancelFunc{}
+	for _, service := range services {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancels = append(cancels, cancel)
+		if record, err := ServiceRecord(app, service); err != nil {
+			return err
+		} else {
+			wait.Add(1)
+			go func(record gopi.RPCServiceRecord) {
+				defer wait.Done()
+				fmt.Println("Register:", record)
+				if err := register.Register(ctx, record); err != nil {
+					app.Log().Error(err)
+				}
+			}(record)
+		}
+	}
+
+	fmt.Println("Press CTRL+C to exit")
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	app.WaitForSignal(ctx, os.Interrupt)
+
+	// Cancel and wait until all goroutines have completed
+	for _, cancel := range cancels {
+		cancel()
+	}
+	wait.Wait()
+
+	// Success
+	return nil
+}
+
 func Main(app gopi.App, args []string) error {
 	if len(args) == 0 {
 		return EnumerateServices(app)
+	} else if app.Flags().GetBool("register", gopi.FLAG_NS_DEFAULT) {
+		return RegisterServices(app, args)
 	} else {
 		return LookupServices(app, args)
 	}
@@ -78,11 +131,13 @@ func Main(app gopi.App, args []string) error {
 // BOOTSTRAP
 
 func main() {
-	if app, err := app.NewCommandLineTool(Main, "discovery"); err != nil {
+	if app, err := app.NewCommandLineTool(Main, "discovery", "register"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
-		// Timeout flag
+		// Flags
 		app.Flags().FlagDuration("timeout", time.Second, "Timeout for discovery")
+		app.Flags().FlagBool("register", false, "Register service")
+
 		// Run and exit
 		os.Exit(app.Run())
 	}

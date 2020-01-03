@@ -154,7 +154,8 @@ func (this *listener) Close() error {
 	this.ifaces = nil
 	this.end = 0
 
-	// Unit close
+	// Close units/publisher
+	errs.Add(this.Publisher.Close())
 	errs.Add(this.Unit.Close())
 
 	// Return compound errors
