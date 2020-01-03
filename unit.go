@@ -45,6 +45,10 @@ const (
 	UNIT_BUS
 	UNIT_PLATFORM
 	UNIT_DISPLAY
+	UNIT_I2C
+	UNIT_LIRC
+	UNIT_GPIO
+	UNIT_SPI
 	UNIT_RPC_DISCOVERY
 	UNIT_RPC_REGISTER
 	UNIT_MAX = UNIT_PLATFORM
@@ -56,11 +60,15 @@ const (
 var (
 	unitMutex   sync.Mutex
 	unitNameMap = map[string]UnitType{
-		"logger":    UNIT_LOGGER,        // Logging
-		"timer":     UNIT_TIMER,         // Timer
-		"bus":       UNIT_BUS,           // Event Bus
-		"platform":  UNIT_PLATFORM,      // Hardware Platform
-		"display":   UNIT_DISPLAY,       // Display
+		"logger":    UNIT_LOGGER,   // Logging
+		"timer":     UNIT_TIMER,    // Timer
+		"bus":       UNIT_BUS,      // Event Bus
+		"platform":  UNIT_PLATFORM, // Hardware Platform
+		"display":   UNIT_DISPLAY,  // Display
+		"i2c":       UNIT_I2C,
+		"lirc":      UNIT_LIRC,
+		"gpio":      UNIT_GPIO,
+		"spi":       UNIT_SPI,
 		"discovery": UNIT_RPC_DISCOVERY, // RPC Service Discovery
 		"register":  UNIT_RPC_REGISTER,  // RPC Service Registration
 	}
