@@ -18,10 +18,9 @@ import (
 )
 
 func init() {
+
 	gopi.UnitRegister(gopi.UnitConfig{
-		Name:     "gopi/mdns/discovery",
-		Type:     gopi.UNIT_RPC_DISCOVERY,
-		Requires: []string{"bus"},
+		Name: "gopi/mdns/listener",
 		Config: func(app gopi.App) error {
 			app.Flags().FlagString("mdns.domain", "local", "mDNS domain")
 			app.Flags().FlagString("mdns.iface", "", "mDNS network interface")
@@ -40,13 +39,32 @@ func init() {
 				if app.Flags().GetBool("mdns.ip6", gopi.FLAG_NS_DEFAULT) {
 					flags |= gopi.RPC_FLAG_INET_V6
 				}
-				return gopi.New(Discovery{
-					Bus:       app.Bus(),
+				return gopi.New(Listener{
 					Domain:    app.Flags().GetString("mdns.domain", gopi.FLAG_NS_DEFAULT),
 					Interface: iface,
 					Flags:     flags,
-				}, app.Log().Clone("gopi/mdns/discovery"))
+				}, app.Log().Clone("gopi/mdns/listener"))
 			}
+		},
+	})
+	gopi.UnitRegister(gopi.UnitConfig{
+		Name:     "gopi/mdns/discovery",
+		Type:     gopi.UNIT_RPC_DISCOVERY,
+		Requires: []string{"gopi/mdns/listener"},
+		New: func(app gopi.App) (gopi.Unit, error) {
+			return gopi.New(Discovery{
+				Listener: app.UnitInstance("gopi/mdns/listener").(ListenerIface),
+			}, app.Log().Clone("gopi/mdns/discovery"))
+		},
+	})
+	gopi.UnitRegister(gopi.UnitConfig{
+		Name:     "gopi/mdns/register",
+		Type:     gopi.UNIT_RPC_REGISTER,
+		Requires: []string{"gopi/mdns/listener"},
+		New: func(app gopi.App) (gopi.Unit, error) {
+			return gopi.New(Register{
+				Listener: app.UnitInstance("gopi/mdns/listener").(ListenerIface),
+			}, app.Log().Clone("gopi/mdns/register"))
 		},
 	})
 }

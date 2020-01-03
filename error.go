@@ -38,7 +38,8 @@ const (
 	ErrInternalAppError                // Internal application error
 	ErrSignalCaught                    // Signal caught
 	ErrUnexpectedResponse              // Unexpected Response
-	ErrMax                = ErrUnexpectedResponse
+	ErrDuplicateItem                   // Duplicate Item
+	ErrMax                = ErrDuplicateItem
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -62,6 +63,8 @@ func (this Error) Error() string {
 		return "Signal caught"
 	case ErrUnexpectedResponse:
 		return "Unexpected response"
+	case ErrDuplicateItem:
+		return "Duplicate Item"
 	default:
 		return "[?? Invalid Error value]"
 	}

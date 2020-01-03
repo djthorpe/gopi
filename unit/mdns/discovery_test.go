@@ -42,10 +42,19 @@ func Main_Test_Discovery_001(app gopi.App, _ []string) error {
 	}
 	app.Log().Debug(discovery)
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+	if services, err := discovery.EnumerateServices(ctx); err != nil {
+		return err
+	} else {
+		app.Log().Debug("services=", services)
+	}
+
 	// Success
 	return nil
 }
 
+/*
 func Test_Discovery_002(t *testing.T) {
 	flags := []string{"-debug"}
 	if app, err := app.NewDebugTool(Main_Test_Discovery_002, flags, []string{"discovery"}); err != nil {
@@ -71,3 +80,4 @@ func Main_Test_Discovery_002(app gopi.App, _ []string) error {
 	// Success
 	return nil
 }
+*/

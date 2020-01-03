@@ -10,6 +10,7 @@ package mdns
 import (
 	"net"
 	"strings"
+	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -18,6 +19,7 @@ import (
 
 type service struct {
 	Zone string
+	TTL  time.Duration
 	gopi.RPCServiceRecord
 }
 
@@ -37,6 +39,8 @@ func (this *service) SetPTR(ptr *dns.PTR) {
 	if name, err := Unquote(this.Name); err == nil {
 		this.Name = name
 	}
+	// Set TTL from PTR
+	this.TTL = time.Duration(ptr.Hdr.Ttl) * time.Second
 }
 
 func (this *service) SetSRV(host string, port, priority uint16) {

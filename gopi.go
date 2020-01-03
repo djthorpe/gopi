@@ -22,6 +22,15 @@ type Unit interface {
 	String() string // String returns a string representation of the unit
 }
 
+// Publisher interface for Subscribe/Emit mechanism for arbitary messages
+type Publisher interface {
+	// Subscribe to a queue with a capacity
+	Subscribe(queue uint, capacity int) <-chan interface{}
+
+	// Unsubscribe channel from queue, returning true if successful
+	Unsubscribe(<-chan interface{}) bool
+}
+
 // Abstract logging interface
 type Logger interface {
 	Unit

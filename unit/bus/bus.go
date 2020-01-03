@@ -73,6 +73,8 @@ func (this *bus) Emit(evt gopi.Event) {
 	// TODO: hold cancel functions and call them with Close() to quickly
 	// end handlers by cancelling them
 
+	this.Log.Debug("Emit:", evt)
+
 	// Set name and namespace
 	name, ns := evt.Name(), evt.NS()
 	if handlers := this.handlersForName(name, ns); len(handlers) > 0 {

@@ -9,6 +9,7 @@ package mdns
 
 import (
 	"fmt"
+	"time"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -21,10 +22,11 @@ type event struct {
 	source  gopi.Unit
 	type_   gopi.RPCEventType
 	service gopi.RPCServiceRecord
+	ttl     time.Duration
 }
 
-func NewEvent(source gopi.Unit, type_ gopi.RPCEventType, service gopi.RPCServiceRecord) gopi.RPCEvent {
-	return &event{source, type_, service}
+func NewEvent(source gopi.Unit, type_ gopi.RPCEventType, service gopi.RPCServiceRecord, ttl time.Duration) gopi.RPCEvent {
+	return &event{source, type_, service, ttl}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,9 +57,18 @@ func (this *event) Service() gopi.RPCServiceRecord {
 	return this.service
 }
 
+func (this *event) TTL() time.Duration {
+	return this.ttl
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *event) String() string {
-	return "<" + this.Name() + " type=" + fmt.Sprint(this.type_) + " service=" + fmt.Sprint(this.service) + ">"
+	str := "<" + this.Name() + " type=" + fmt.Sprint(this.type_)
+	if this.service.Name != "" {
+		str += " service=" + fmt.Sprint(this.service)
+		str += " ttl=" + fmt.Sprint(this.ttl)
+	}
+	return str + ">"
 }

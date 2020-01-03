@@ -62,6 +62,7 @@ var (
 		"platform":  UNIT_PLATFORM,      // Hardware Platform
 		"display":   UNIT_DISPLAY,       // Display
 		"discovery": UNIT_RPC_DISCOVERY, // RPC Service Discovery
+		"register":  UNIT_RPC_REGISTER,  // RPC Service Registration
 	}
 	unitByName map[string]*UnitConfig
 	unitByType map[UnitType]*UnitConfig

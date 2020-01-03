@@ -13,6 +13,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,6 +38,7 @@ type (
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
+// RPCServiceDiscovery will lookup services and classes of service
 type RPCServiceDiscovery interface {
 	// Lookup service instances by name
 	Lookup(ctx context.Context, service string) ([]RPCServiceRecord, error)
@@ -45,9 +47,21 @@ type RPCServiceDiscovery interface {
 	EnumerateServices(ctx context.Context) ([]string, error)
 }
 
+// RPCServiceRegister will register services
+type RPCServiceRegister interface {
+	// Register service record, and de-register when deadline is exceeded
+	Register(ctx context.Context, record RPCServiceRecord) error
+}
+
 type RPCEvent interface {
+	// Type of event
 	Type() RPCEventType
+
+	// Service record associated with event
 	Service() RPCServiceRecord
+
+	// Time-to-live value for event
+	TTL() time.Duration
 
 	Event
 }
