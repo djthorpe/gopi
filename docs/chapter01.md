@@ -36,7 +36,7 @@ bash% cd gopi
 bash% git checkout v2
 ```
 
-Then, build some of the examples in the "cmd" folder. They can be built with the makefile.
+Then, build some of the examples in the "cmd" folder. They can be built with the makefile:
 
 ```sh
 bash% make test
@@ -44,10 +44,16 @@ bash% make install
 bash% make clean
 ```
 
+There are specific versions which can take advantage of Raspberry Pi features:
+
+```sh
+bash% make rpi
+```
+
 ## License
 
 This repository is released under the Apache License. Please see the file
-[LICENSE](LICENSE.md) file in the reposiroty for a copy of this license and 
+[LICENSE](../LICENSE.md) file in the reposiroty for a copy of this license and 
 for a list of the conditions for redistribution and use.
 
 ## Contributing
@@ -59,17 +65,8 @@ issues [here](https://github.com/djthorpe/gopi/issues).
 ## What's Next
 
 The current status is that of a framework is _in development_, with the
-features working on some platforms and not others. The framework is split into a number of repositories which are roughly:
-
-| Repository    | Link   | Module |
-| ------------- | ------ | ---- |
-| gopi-hw       | [`github.com/djthorpe/gopi-hw`](http://github.com/djthorpe/gopi-hw/) | Hardware implementations  |
-| gopi-graphics | [`github.com/djthorpe/gopi-graphics`](http://github.com/djthorpe/gopi-graphics/) | Graphics & Fonts |
-| gopi-rpc      | [`github.com/djthorpe/gopi-rpc`](http://github.com/djthorpe/gopi-rpc/) | Microservices & Discovery |
-| gopi-input    | [`github.com/djthorpe/gopi-input`](http://github.com/djthorpe/gopi-input/) | Input services (Keyboard, Mouse, Touchscreen) |
-| gopi-media    | [`github.com/djthorpe/gopi-media`](http://github.com/djthorpe/gopi-media/) | Media services (Encoding, Decoding, Cameras) |
-
-The following sections are yet to be written:
+features working on some platforms and not others. The following sections are yet to be 
+written:
 
   * Describing Helloworld
   * Event Handling

@@ -1,6 +1,6 @@
 
 
-Copyright (c) 2016-2018, David Thorpe
+Copyright (c) 2016-2020, David Thorpe
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,

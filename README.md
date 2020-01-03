@@ -39,8 +39,8 @@ for all the relevant information about requirements, getting started and contrib
 
 # Contributing and License
 
-This repository is released under the Apache License. Please see the file
-[LICENSE](LICENSE.md) for a copy of this license and for a list of the
+This repository is released under the Apache License. Please see the LICENSE file
+in the root of the repository for a copy of this license and for a list of the
 conditions for redistribution and use.
 
 I welcome contributions, feature requests and issues. In order to contribute, please fork

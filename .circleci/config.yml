@@ -17,7 +17,7 @@ jobs:
       - image: circleci/golang:1.13-buster    
     steps:
       - checkout
-      - run: make install
+      - run: make linux
   
 workflows:
   version: 2
