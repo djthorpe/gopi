@@ -29,17 +29,17 @@ func Test_Register_000(t *testing.T) {
 
 func Test_Register_001(t *testing.T) {
 	flags := []string{"-debug"}
-	if app, err := app.NewDebugTool(Main_Test_Register_001, flags, []string{"register"}); err != nil {
+	if app, err := app.NewTestTool(t, Main_Test_Register_001, flags, "register"); err != nil {
 		t.Error(err)
 	} else if returnCode := app.Run(); returnCode != 0 {
 		t.Error("Unexpected return code", returnCode)
 	}
 }
 
-func Main_Test_Register_001(app gopi.App, _ []string) error {
+func Main_Test_Register_001(app gopi.App, t *testing.T) {
 	register := app.UnitInstance("register").(gopi.RPCServiceRegister)
 	if register == nil {
-		return gopi.ErrInternalAppError.WithPrefix("UnitInstance() failed")
+		t.Fatal(gopi.ErrInternalAppError.WithPrefix("UnitInstance() failed"))
 	}
 
 	go func() {
@@ -54,7 +54,7 @@ func Main_Test_Register_001(app gopi.App, _ []string) error {
 			Txt:     []string{"name=test1"},
 			Addrs:   []net.IP{addr},
 		}); err != nil {
-			app.Log().Error(err)
+			t.Error(err)
 		}
 	}()
 
@@ -70,12 +70,9 @@ func Main_Test_Register_001(app gopi.App, _ []string) error {
 			Txt:     []string{"name=test2"},
 			Addrs:   []net.IP{addr},
 		}); err != nil {
-			app.Log().Error(err)
+			t.Error(err)
 		}
 	}()
 
 	time.Sleep(30 * time.Second)
-
-	// Success
-	return nil
 }

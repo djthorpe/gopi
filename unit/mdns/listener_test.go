@@ -27,20 +27,18 @@ func Test_Listener_000(t *testing.T) {
 
 func Test_Listener_001(t *testing.T) {
 	flags := []string{"-debug"}
-	if app, err := app.NewDebugTool(Main_Test_Listener_001, flags, []string{"gopi/mdns/listener"}); err != nil {
+	if app, err := app.NewTestTool(t, Main_Test_Listener_001, flags, "gopi/mdns/listener"); err != nil {
 		t.Error(err)
 	} else if returnCode := app.Run(); returnCode != 0 {
 		t.Error("Unexpected return code", returnCode)
 	}
 }
 
-func Main_Test_Listener_001(app gopi.App, _ []string) error {
+func Main_Test_Listener_001(app gopi.App, t *testing.T) {
 	listener := app.UnitInstance("gopi/mdns/listener").(gopi.Publisher)
 	if listener == nil {
-		return gopi.ErrInternalAppError.WithPrefix("UnitInstance() failed")
+		t.Fatal(gopi.ErrInternalAppError.WithPrefix("UnitInstance() failed"))
 	}
 	app.Log().Debug(listener)
 	time.Sleep(1 * time.Second)
-	// Success
-	return nil
 }

@@ -26,11 +26,11 @@ func Test_Bus_000(t *testing.T) {
 
 func Test_Bus_001(t *testing.T) {
 	gotEvent := false
-	main := func(app gopi.App, _ []string) error {
+	main := func(app gopi.App, t *testing.T) {
 		t.Log(app)
 		bus := app.Bus()
 		if bus == nil {
-			return gopi.ErrInternalAppError.WithPrefix("Missing Bus()")
+			t.Fatal(gopi.ErrInternalAppError.WithPrefix("Missing Bus()"))
 		}
 		t.Log("-> RUN()", app.Bus())
 
@@ -49,12 +49,11 @@ func Test_Bus_001(t *testing.T) {
 		bus.Emit(gopi.NullEvent)
 		// End of run
 		t.Log("<- RUN()")
-		return nil
 	}
 	args := []string{"-debug"}
 	units := []string{"bus"}
 
-	if app, err := app.NewDebugTool(main, args, units); err != nil {
+	if app, err := app.NewTestTool(t, main, args, units...); err != nil {
 		t.Error(err)
 	} else if returnCode := app.Run(); returnCode != 0 {
 		t.Error("Unexpected return code", returnCode)
