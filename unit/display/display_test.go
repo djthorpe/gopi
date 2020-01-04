@@ -28,19 +28,20 @@ func Test_Display_000(t *testing.T) {
 
 func Test_Display_001(t *testing.T) {
 	flags := []string{"-debug"}
-	if app, err := app.NewDebugTool(Main_Test_Display_001, flags, []string{"display"}); err != nil {
+	if app, err := app.NewTestTool(t, Main_Test_Display_001, flags, "display"); err != nil {
 		t.Error(err)
 	} else if returnCode := app.Run(); returnCode != 0 {
 		t.Error("Unexpected return code", returnCode)
 	}
 }
 
-func Main_Test_Display_001(app gopi.App, _ []string) error {
+func Main_Test_Display_001(app gopi.App, t *testing.T) {
 	display := app.Display()
 	if display == nil {
-		return gopi.ErrInternalAppError.WithPrefix("Display() failed")
+		t.Fatal(gopi.ErrInternalAppError.WithPrefix("Display() failed"))
+	} else if display.Name() == "" {
+		t.Error("Unexpected Name")
+	} else {
+		t.Log(display)
 	}
-	app.Log().Debug(display)
-	// Success
-	return nil
 }
