@@ -18,10 +18,9 @@ Events may be emitted for example by:
   * A service becoming available on the network;
   * A ticker which fires at a regular interval.
 
-There are many other cases where events could fire. In this chapter, I will
-describe a tool which handles a ticker, firing at a regular interval.
+There are many other cases where events could fire. In this chapter, I will describe a tool which handles a ticker, firing at a regular interval.
 
-## The Ticker unit
+## The Ticker Unit
 
 Here are the parameters you'll need in order to use the ticker:
 
@@ -62,59 +61,83 @@ func Main(app gopi.App, args []string) error {
 }
 ```
 
-This will fire a `gopi.Event` once every second. But as nothing has been set up to handle the messages, you may just see some debugging output if you have used the `-debug` flag which indicates the events are not being handled.
+This will fire a `gopi.TimerEvent` once every second. But as nothing has been set up to handle the messages, you may just see some debugging output if you have used the `-debug` flag which indicates the events are not being handled.
 
-In fact, the timer emits the ticker events into the __message bus__, which is unsuprisingly yet another __unit__.
+In fact, the timer emits the ticker events into a __message bus__, which is unsuprisingly yet another __unit__. You don't need to use the message bus directly, but you can simply use it by defining handlers when setting up your application.
 
-## The Message Bus unit
+## Setting up event handlers for your application
 
-The message bus allows any other unit to:
-
-  * Emit events
-  * Register functions that can handle events
-  * Register a default function which can handle any events not handled otherwise.
-
-Here are the parameters you'll need in order to access the message bus:
-
-| Parameter        | Value                |
-| ---------------- | -------------------- |
-| Name             | `gopi/bus`           |
-| Interface        | `gopi.Bus`           |
-| Type             | `gopi.UNIT_BUS`      |
-| Import           | `github.com/djthorpe/gopi/v2/unit/bus` |
-| Compatibility    | Linux, Darwin        |
-
-The interface is defined as follows:
+An event handler is defined as follows:
 
 ```go
-type Bus interface {
-	Unit
-
-	Emit(gopi.Event) // Emit an event on the bus
-    NewHandler(string, gopi.EventHandler) error 	// Register an event handler
-    DefaultHandler(EventNS, gopi.EventHandler) error // Register a default handler
+type EventHandler struct {
+	Name string
+	Handler EventHandlerFunc
+	EventNS EventNS
+	Timeout time.Duration
 }
 ```
 
-You can access the unit instance using the `app.Bus()` convenience method. The relevant `Main` function then looks like this:
+The fields are:
+
+  * The `Name` of the event;
+  * The `Handler` function, which has the signature of `func(context,Context,gopi.App,gopi.Event)`;
+  * Optionally, a namespace for events, or `gopi.EVENT_NS_DEFAULT` otherwise;
+  * Optionally, a deadline for the event handling, or zero otherwise.
+
+You define an array of event handlers when creating your application. For example,
 
 ```go
-func HandleTicker(_ context.Context,evt gopi.Event) {
-    fmt.Println("Event=",evt.(gopi.TimerEvent))
+func TimerHandler(ctx context.Context,app gopi.App, evt gopi.Event) {
+	// ...
+}
+
+func OtherEventHandler(ctx context.Context,app gopi.App, evt gopi.Event) {
+	// ...
 }
 
 func Main(app gopi.App, args []string) error {
-    app.Bus().NewHandler("gopi.TimerEvent",HandleTicker)
-    app.Timer().NewTicker(time.Second)
+	// ...
+}
 
-	// Wait for CTRL+C
-	fmt.Println("Press CTRL+C to exit")
-	app.WaitForSignal(context.Background(), os.Interrupt)
-
-	// Return success
-	return nil
+func main() {
+	Events := []gopi.EventHandler{
+		gopi.EventHandler{Name: "gopi.TimerEvent", Handler: TimerHandler},
+		gopi.EventHandler{Name: "gopi.Event", Handler: OtherEventHandler},
+	}
+	app, err := app.NewCommandLineTool(Main, Events, "timer")
+	// ...
 }
 ```
 
-The `HandleTicker` method is called whenever an appropriate event is fired, in this case the `gopi.TimerEvent`. The `context.Context` parameter can generally be ignored, except for handlers which take a long time to complete.
+The `TimerHandler` method is called whenever a `gopi.TimerEvent` is fired. The `context.Context` parameter can generally be ignored, except for handlers which take a long time to complete, and require a timeout value to cancel. You tool
+won't complete until all handlers have returned, so it's possible to create
+deadlock.
+
+## Emitting events
+
+When you develop your own tools you may want to emit your own events. There's an application method `Emit` which does that (or the EmitNS version which emits in a different event namespace):
+
+```go
+
+func Main(app gopi.App, args []string) error {
+	// ...emit null event...
+	app.Emit(gopi.NullEvent)
+	// ...is equivalent to...
+	app.EmitNS(gopi.NullEvent,gopi.EVENT_NS_DEFAULT)
+}
+```
+
+The `NullEvent` is simply an event with no information. You can also create your
+own events which can bve emitted as long as they adhere to the gopi.Event interface.
+
+Take extra caution when emitting events within handlers. It's easy to create a deadlock situation when you are both handling events of a particular type and also emitting them.
+
+## Conclusion
+
+In the next section you'll see how units like GPIO emit events when the state
+changes on a pin (from low to high, or vice-versa, for example). In subsequent chapters (yet to be written!) events can be emitted from input devices, networks or other external stimulous.
+
+The __Message Bus__ is mostly hidden as you respond to events through handlers. But it is implemented through goroutines and channels so using the go language to maximum extent. There are clearly still challenges around syncronization and deadlock to be careful of when developing your own tools and units.
+
 
