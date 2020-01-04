@@ -116,7 +116,7 @@ deadlock.
 
 ## Emitting events
 
-When you develop your own tools you may want to emit your own events. There's an application method `Emit` which does that:
+When you develop tools you may want to emit your own events. There's an application method `Emit` which does that:
 
 ```go
 
