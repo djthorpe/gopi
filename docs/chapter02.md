@@ -35,7 +35,7 @@ func Main(app gopi.App, args []string) error {
 // BOOTSTRAP
 
 func main() {
-    app, err := app.NewCommandLineTool(Main)
+    app, err := app.NewCommandLineTool(Main,nil)
     if err != nil {
         panic(err)
     }
@@ -151,7 +151,7 @@ func Main(app gopi.App, args []string) error {
 
 func main() {
     // Use units A and B
-    app, err := app.NewCommandLineTool(Main,"A","B")
+    app, err := app.NewCommandLineTool(Main,nil,"A","B")
     if err != nil {
         panic(err)
     }

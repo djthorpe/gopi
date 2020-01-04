@@ -65,17 +65,24 @@ issues [here](https://github.com/djthorpe/gopi/issues).
 ## What's Next
 
 The current status is that of a framework is _in development_, with the
-features working on some platforms and not others. The following sections are yet to be 
-written:
+features working on some platforms and not others. In the next few chapters you can
+learn about:
 
-  * Describing Helloworld
-  * Event Handling
-  * Hardware platforms
-  * A section on developing user interfaces, including layout
-  * 3D graphics using OpenGL
-  * Encoding and decoding video and audio
-  * Cameras
-  * Developing micro-services
-  * Interacting with IR signals from remote controls
-  * Developing your own modules and for other platforms
+  * Writing a [helloworld](chapter02.md) application;
+  * Understanding [event-driven](chapter03.md) applications;
+  * Interacting with your [hardware platform](chapter04.md).
+
+The following sections are yet to be written:
+
+  * Responding to events from keyboards, mice and touchscreens;
+  * Discovering services on your network;
+  * Developing services which respond to remote procedure calls;
+  * Calling remote services;
+  * Interacting with IR signals from remote controls;
+  * Developing your own modules and for other platforms;
+  * A section on developing user interfaces, including layout;
+  * 3D graphics using OpenGL;
+  * Encoding and decoding video and audio;
+  * Capturing audio and video from cameras.
+
 
