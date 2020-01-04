@@ -8,11 +8,9 @@
 package app
 
 import (
-	"errors"
-	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
+	"testing"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -23,7 +21,8 @@ import (
 // INTERFACES
 
 type debug struct {
-	main gopi.MainCommandFunc
+	main gopi.MainTestFunc
+	t    *testing.T
 	args []string
 	base.App
 }
@@ -31,11 +30,11 @@ type debug struct {
 ////////////////////////////////////////////////////////////////////////////////
 // gopi.App implementation for debug tool
 
-func NewDebugTool(main gopi.MainCommandFunc, args []string, units []string) (gopi.App, error) {
+func NewTestTool(t *testing.T, main gopi.MainTestFunc, args []string, units ...string) (gopi.App, error) {
 	this := new(debug)
 
-	// Name of command
-	name := filepath.Base(os.Args[0])
+	// Name of test
+	name := t.Name()
 
 	// Check parameters
 	if main == nil {
@@ -45,6 +44,7 @@ func NewDebugTool(main gopi.MainCommandFunc, args []string, units []string) (gop
 	} else {
 		this.main = main
 		this.args = args
+		this.t = t
 	}
 
 	// Success
@@ -63,15 +63,10 @@ func (this *debug) Run() int {
 		}
 	}()
 
-	// Run main function
-	if err := this.main(this, this.Flags().Args()); errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
-		this.App.Flags().Usage(os.Stderr)
-		return 0
-	} else if err != nil {
-		fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
-		return -1
-	}
+	// Run main function - doesn't return any errors since they are
+	// handled by the testing package
+	this.main(this, this.t)
 
-	// Success
+	// Always return 0
 	return 0
 }
