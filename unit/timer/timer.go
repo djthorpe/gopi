@@ -11,10 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/djthorpe/gopi/v2/base"
-
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
+	base "github.com/djthorpe/gopi/v2/base"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

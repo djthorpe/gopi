@@ -26,13 +26,11 @@ var (
 	}
 )
 
-func TimerHandler(_ context.Context, app gopi.App, evt gopi.Event) {
-	app.Log().Debug("handle event=", evt)
+func TimerHandler(_ context.Context, _ gopi.App, evt gopi.Event) {
+	fmt.Println("Handling Event:", evt)
 }
 
 func Main(app gopi.App, args []string) error {
-	app.Log().Debug("timer=", app.Timer())
-
 	// Schedule a ticker which fires every second
 	app.Timer().NewTicker(time.Second)
 

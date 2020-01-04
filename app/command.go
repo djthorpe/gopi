@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	// Frameworks
@@ -72,7 +73,15 @@ func (this *command) Run() int {
 
 	// Set up handlers
 	if len(this.handlers) > 0 {
-		fmt.Println("TODO: HANLERS")
+		for _, handler := range this.handlers {
+			if handler.Name != "" && handler.Handler != nil {
+				this.Log().Debug(this.App.Flags().Name()+":", "Set up event handler for", strconv.Quote(handler.Name), "in namespace", handler.EventNS)
+				if err := this.Bus().NewHandler(handler); err != nil {
+					fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
+					return -1
+				}
+			}
+		}
 	}
 
 	// Run main function
