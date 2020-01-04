@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	// Frameworks
+	gopi "github.com/djthorpe/gopi/v2"
 	base "github.com/djthorpe/gopi/v2/base"
 )
 
@@ -87,6 +88,53 @@ func (this *i2c) Close() error {
 
 	// Return error
 	return this.Unit.Close()
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION gopi.I2C
+
+// SetSlave sets current slave address
+func (this *i2c) SetSlave(uint8) error {
+	return gopi.ErrNotImplemented
+}
+
+// GetSlave gets current slave address
+func (this *i2c) GetSlave() uint8 {
+	return this.slave
+}
+
+// DetectSlave returns true if a slave was detected at a particular address
+func (this *i2c) DetectSlave(uint8) (bool, error) {
+	return false, gopi.ErrNotImplemented
+}
+
+func (this *i2c) ReadUint8(reg uint8) (uint8, error) {
+	return 0, gopi.ErrNotImplemented
+}
+func (this *i2c) ReadInt8(reg uint8) (int8, error) {
+	return 0, gopi.ErrNotImplemented
+}
+func (this *i2c) ReadUint16(reg uint8) (uint16, error) {
+	return 0, gopi.ErrNotImplemented
+}
+func (this *i2c) ReadInt16(reg uint8) (int16, error) {
+	return 0, gopi.ErrNotImplemented
+}
+func (this *i2c) ReadBlock(reg, length uint8) ([]byte, error) {
+	return nil, gopi.ErrNotImplemented
+}
+
+func (this *i2c) WriteUint8(reg, value uint8) error {
+	return gopi.ErrNotImplemented
+}
+func (this *i2c) WriteInt8(reg uint8, value int8) error {
+	return gopi.ErrNotImplemented
+}
+func (this *i2c) WriteUint16(reg uint8, value uint16) error {
+	return gopi.ErrNotImplemented
+}
+func (this *i2c) WriteInt16(reg uint8, value int16) error {
+	return gopi.ErrNotImplemented
 }
 
 ////////////////////////////////////////////////////////////////////////////////
