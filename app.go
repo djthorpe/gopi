@@ -11,6 +11,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"testing"
 	"time"
 )
 
@@ -20,6 +21,9 @@ import (
 type (
 	// MainCommandFunc is the main handler for command line tool
 	MainCommandFunc func(App, []string) error
+
+	// MainTestFunc is the main handler for a testing tool
+	MainTestFunc func(App, *testing.T)
 
 	// FlagNS is the namespace for a flag
 	FlagNS uint
