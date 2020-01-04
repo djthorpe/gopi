@@ -88,11 +88,11 @@ func init() {
 The __Type__ parameter is tied to the interface for the returned unit, in this case the `New` function returns a unit which satisfies the `gopi.Logger` interface:
 
 ```go
-type Logger interface {
-	Unit
+type gopi.Logger interface {
+	gopi.Unit
 
 	Name() string 	// Name returns the name of the logger
-	Clone(string) Logger 	// Returns a new logger with a different name
+	Clone(string) gopi.Logger 	// Returns a new logger with a different name
     Error(error) error 	// Error logs an error
 	Debug(args ...interface{}) // Output debug message
 	IsDebug() bool 	// IsDebug returns true if debugging is enabled

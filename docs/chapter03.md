@@ -3,7 +3,7 @@
 Fundamentally the `gopi` framework implements tools by reacting to events. The `gopi.Event` interface defines a basic event to be handled:
 
 ```go
-type Event interface {
+type gopi.Event interface {
 	Source() Unit       // Source of the event
 	Name() string       // Name of the event
 	NS() gopi.EventNS   // Namespace for the event
@@ -20,9 +20,9 @@ Events may be emitted for example by:
 
 There are many other cases where events could fire. In this chapter, I will describe a tool which handles a ticker, firing at a regular interval.
 
-## The Ticker Unit
+## The Timer Unit
 
-Here are the parameters you'll need in order to use the ticker:
+The __timer__ can fire events at a regular interval or only once. Here are the parameters you'll need in order to use the timer:
 
 | Parameter        | Value                |
 | ---------------- | -------------------- |
@@ -34,11 +34,15 @@ Here are the parameters you'll need in order to use the ticker:
 | Events           | `gopi.TimerEvent`    |
 | Compatibility    | Linux, Darwin        |
 
-The interface is defined as follows:
+For every unit you'll need some of this information in order to import
+and use it in your tools. Any unit can be referred to by `Name` or by `Type`. Often a unit may require you to import other units into your tool, these are called `Requires`. Some units will emit on or more events which can be referred to
+by their event name (and which also adhere to an interface). Finally, the `Compatibility` refers to whether the unit functions with Linux, Darwin or Raspberry Pi specifically. All units which are compatible with Linux are also compatible with the Raspberry Pi, but not vice-versa.
+
+The `gopi.Timer` interface is defined as follows:
 
 ```go
-type Timer interface {
-	Unit
+type gopi.Timer interface {
+	gopi.Unit
 
 	NewTicker(time.Duration) gopi.EventId // Create periodic event at interval
 	NewTimer(time.Duration) gopi.EventId  // Create one-shot event after interval
@@ -70,10 +74,10 @@ In fact, the timer emits the ticker events into a __message bus__, which is unsu
 An event handler is defined as follows:
 
 ```go
-type EventHandler struct {
+type gopi.EventHandler struct {
 	Name string
-	Handler EventHandlerFunc
-	EventNS EventNS
+	Handler gopi.EventHandlerFunc
+	EventNS gopi.EventNS
 	Timeout time.Duration
 }
 ```
