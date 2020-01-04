@@ -143,11 +143,23 @@ func (this *App) WaitForSignal(ctx context.Context, signals ...os.Signal) error 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// EMIT EVENTS
+
+func (this *App) Emit(e gopi.Event) {
+	if bus, exists := this.instancesByName["bus"]; exists && len(bus) > 0 {
+		bus[0].(gopi.Bus).Emit(e)
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // RETURN PROPERTIES
 
 func (this *App) Flags() gopi.Flags {
 	return this.flags
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// RETURN UNIT INSTANCES
 
 func (this *App) Log() gopi.Logger {
 	if logger, ok := this.UnitInstance("logger").(gopi.Logger); ok {

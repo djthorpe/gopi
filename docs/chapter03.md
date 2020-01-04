@@ -116,22 +116,20 @@ deadlock.
 
 ## Emitting events
 
-When you develop your own tools you may want to emit your own events. There's an application method `Emit` which does that (or the EmitNS version which emits in a different event namespace):
+When you develop your own tools you may want to emit your own events. There's an application method `Emit` which does that:
 
 ```go
 
 func Main(app gopi.App, args []string) error {
 	// ...emit null event...
 	app.Emit(gopi.NullEvent)
-	// ...is equivalent to...
-	app.EmitNS(gopi.NullEvent,gopi.EVENT_NS_DEFAULT)
 }
 ```
 
 The `NullEvent` is simply an event with no information. You can also create your
-own events which can bve emitted as long as they adhere to the gopi.Event interface.
+own events which can be emitted to handlers as long as they adhere to the gopi.Event interface.
 
-Take extra caution when emitting events within handlers. It's easy to create a deadlock situation when you are both handling events of a particular type and also emitting them.
+Take extra caution when emitting events within handlers. It's easy to create a deadlock situation when you are both handling events of a particular type and also emitting them, resulting in a freeze or panic.
 
 ## Conclusion
 

@@ -48,6 +48,9 @@ type App interface {
 	// Flags returns the set of key/value configuration parameters
 	Flags() Flags
 
+	// Emit events
+	Emit(Event)
+
 	// Return unit instances
 	UnitInstance(string) Unit // Return singular unit for name
 	Log() Logger              // Return logger unit
