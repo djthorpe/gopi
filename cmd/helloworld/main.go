@@ -37,7 +37,7 @@ func Main(app gopi.App, args []string) error {
 // BOOTSTRAP
 
 func main() {
-	if app, err := app.NewCommandLineTool(Main); err != nil {
+	if app, err := app.NewCommandLineTool(Main, nil); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else if user, err := user.Current(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

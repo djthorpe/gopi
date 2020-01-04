@@ -62,8 +62,8 @@ type listener struct {
 	end    int32
 
 	base.Unit
+	base.Publisher
 	sync.WaitGroup
-	Publisher
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -298,14 +298,13 @@ func listMulticastInterfaces(iface net.Interface) ([]net.Interface, error) {
 
 // recv_loop4 is a long running routine to receive packets from an interface
 func (this *listener) recv_loop4(conn *ipv4.PacketConn) {
+	this.WaitGroup.Add(1)
+	defer this.WaitGroup.Done()
+
 	// Sanity check
 	if conn == nil {
 		return
 	}
-
-	// Indicate end of loop
-	this.Add(1)
-	defer this.Done()
 
 	// Perform loop
 	buf := make([]byte, 65536)
@@ -322,14 +321,13 @@ func (this *listener) recv_loop4(conn *ipv4.PacketConn) {
 
 // recv_loop6 is a long running routine to receive packets from an interface
 func (this *listener) recv_loop6(conn *ipv6.PacketConn) {
+	this.WaitGroup.Add(1)
+	defer this.WaitGroup.Done()
+
 	// Sanity check
 	if conn == nil {
 		return
 	}
-
-	// Indicate end of loop
-	this.WaitGroup.Add(1)
-	defer this.WaitGroup.Done()
 
 	// Perform loop
 	buf := make([]byte, 65536)

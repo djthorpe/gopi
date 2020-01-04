@@ -24,18 +24,24 @@ import (
 // INTERFACES
 
 type command struct {
-	main gopi.MainCommandFunc
+	main     gopi.MainCommandFunc
+	handlers []gopi.EventHandler
 	base.App
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // gopi.App implementation for command-line tool
 
-func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, error) {
+func NewCommandLineTool(main gopi.MainCommandFunc, handlers []gopi.EventHandler, units ...string) (gopi.App, error) {
 	this := new(command)
 
 	// Name of command
 	name := filepath.Base(os.Args[0])
+
+	// If there are any handlers, then append "bus" onto required units
+	if len(handlers) > 0 {
+		units = append(units, "bus")
+	}
 
 	// Check parameters
 	if main == nil {
@@ -44,6 +50,7 @@ func NewCommandLineTool(main gopi.MainCommandFunc, units ...string) (gopi.App, e
 		return nil, err
 	} else {
 		this.main = main
+		this.handlers = handlers
 	}
 
 	// Success
@@ -62,6 +69,11 @@ func (this *command) Run() int {
 			fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
 		}
 	}()
+
+	// Set up handlers
+	if len(this.handlers) > 0 {
+		fmt.Println("TODO: HANLERS")
+	}
 
 	// Run main function
 	if err := this.main(this, this.Flags().Args()); errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {

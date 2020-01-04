@@ -93,7 +93,7 @@ func Product() string {
 	if err := sysctlbyname("hw.model", model); err != nil {
 		return ""
 	} else {
-		return string(model)
+		return C.GoString((*C.char)(unsafe.Pointer(&model[0])))
 	}
 }
 

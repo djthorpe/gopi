@@ -8,6 +8,14 @@
 package gopi
 
 ////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
+type (
+	// Channel is an arbitary communication channel
+	Channel chan struct{}
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 // Unit configuration interface
@@ -22,13 +30,18 @@ type Unit interface {
 	String() string // String returns a string representation of the unit
 }
 
-// Publisher interface for Subscribe/Emit mechanism for arbitary messages
+// Publisher interface for Emit/Receive mechanism for arbitary messages
 type Publisher interface {
-	// Subscribe to a queue with a capacity
-	Subscribe(queue uint, capacity int) <-chan interface{}
+	// Emit sends values to be received by handlers
+	Emit(queue uint, value interface{})
 
-	// Unsubscribe channel from queue, returning true if successful
-	Unsubscribe(<-chan interface{}) bool
+	// Subscribe and handle messages which are emitted. This method call returns
+	// when the receive loop has started as a goroutine, so is non-blocking.
+	Subscribe(queue uint, capacity int, callback func(value interface{})) Channel
+
+	// Unsubscribe from a channel. This method will return when the receive loop
+	// has completed
+	Unsubscribe(Channel)
 }
 
 // Abstract logging interface

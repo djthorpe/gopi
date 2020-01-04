@@ -35,7 +35,7 @@ func Test_Bus_001(t *testing.T) {
 		t.Log("-> RUN()", app.Bus())
 
 		// Set a default handler
-		bus.DefaultHandler(gopi.EVENT_NS_DEFAULT, func(_ context.Context, evt gopi.Event) {
+		bus.DefaultHandler(gopi.EVENT_NS_DEFAULT, func(_ context.Context, _ gopi.App, evt gopi.Event) {
 			t.Log("-> EVENT()", evt)
 			if evt == gopi.NullEvent {
 				gotEvent = true
@@ -73,7 +73,7 @@ func Test_Bus_002(t *testing.T) {
 		t.Log("-> RUN()", app.Bus())
 
 		// Set a default handler
-		bus.NewHandler("gopi.NullEvent", func(_ context.Context, evt gopi.Event) {
+		bus.NewHandler(gopi.EventHandler{Name: "gopi.NullEvent", Handler: func(_ context.Context, _ gopi.App, evt gopi.Event) {
 			t.Log("-> EVENT()", evt)
 			if evt == gopi.NullEvent {
 				gotEvent = true
@@ -81,7 +81,7 @@ func Test_Bus_002(t *testing.T) {
 			// Simulate event taking a while to handle...
 			time.Sleep(time.Second)
 			t.Log("<- EVENT()")
-		})
+		}})
 
 		// Emit null event
 		bus.Emit(nil)
@@ -90,7 +90,7 @@ func Test_Bus_002(t *testing.T) {
 		t.Log("<- RUN()")
 
 		return nil
-	}, "bus"); err != nil {
+	}, nil, "bus"); err != nil {
 		t.Error(err)
 	} else if returnCode := app.Run(); returnCode != 0 {
 		t.Error("Unexpected return code", returnCode)
@@ -111,7 +111,7 @@ func Test_Bus_003(t *testing.T) {
 		t.Log("-> RUN()", app.Bus())
 
 		// Set a default handler
-		bus.NewHandlerEx("gopi.NullEvent", gopi.EVENT_NS_DEFAULT, func(ctx context.Context, evt gopi.Event) {
+		bus.NewHandler(gopi.EventHandler{"gopi.NullEvent", func(ctx context.Context, _ gopi.App, evt gopi.Event) {
 			t.Log("-> EVENT()", evt)
 			then := time.Now()
 			if evt == gopi.NullEvent {
@@ -131,7 +131,7 @@ func Test_Bus_003(t *testing.T) {
 				t.Log("GOT TIMER DONE AFTER", time.Now().Sub(then).Truncate(time.Second))
 			}
 			t.Log("<- EVENT()")
-		}, timeout)
+		}, gopi.EVENT_NS_DEFAULT, timeout})
 
 		// Emit null event
 		bus.Emit(nil)
@@ -140,7 +140,7 @@ func Test_Bus_003(t *testing.T) {
 		t.Log("<- RUN()")
 
 		return nil
-	}, "bus"); err != nil {
+	}, nil, "bus"); err != nil {
 		t.Error(err)
 	} else if returnCode := app.Run(); returnCode != 0 {
 		t.Error("Unexpected return code", returnCode)

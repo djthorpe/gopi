@@ -131,7 +131,7 @@ func Main(app gopi.App, args []string) error {
 // BOOTSTRAP
 
 func main() {
-	if app, err := app.NewCommandLineTool(Main, "discovery", "register"); err != nil {
+	if app, err := app.NewCommandLineTool(Main, nil, "discovery", "register"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
 		// Flags

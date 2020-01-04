@@ -20,9 +20,9 @@ type (
 	// EVENT_NS_DEFAULT
 	EventNS uint
 
-	// EventHandler is the handler for an emitted event, which should cancel
-	// when context.Done() signal is received
-	EventHandler func(context.Context, Event)
+	// EventHandlerFunc is the handler for an emitted event, which
+	// should cancel when context.Done() signal is received
+	EventHandlerFunc func(context.Context, App, Event)
 
 	// EventId is a unique ID for each event
 	EventId uint
@@ -48,14 +48,10 @@ type Bus interface {
 	Emit(Event)
 
 	// NewHandler registers an event handler for an event name
-	NewHandler(string, EventHandler) error
-
-	// NewHandlerEx registers an event handler for an event name, in a
-	// particular event namespace, and with a timeout value for the handler
-	NewHandlerEx(string, EventNS, EventHandler, time.Duration) error
+	NewHandler(EventHandler) error
 
 	// DefaultHandler registers a default handler for an event namespace
-	DefaultHandler(EventNS, EventHandler) error
+	DefaultHandler(EventNS, EventHandlerFunc) error
 }
 
 // Event emitted on the event bus
@@ -64,6 +60,21 @@ type Event interface {
 	Name() string       // Name of the event
 	NS() EventNS        // Namespace for the event
 	Value() interface{} // Any value associated with the event
+}
+
+// EventHandler defines how an emitted event is handled in the application
+type EventHandler struct {
+	// The name of the event
+	Name string
+
+	// The handler function for the event
+	Handler EventHandlerFunc
+
+	// The namespace of the event, usually 0
+	EventNS EventNS
+
+	// The timeout value for the handler, usually 0
+	Timeout time.Duration
 }
 
 ////////////////////////////////////////////////////////////////////////////////

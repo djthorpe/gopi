@@ -30,7 +30,7 @@ func Test_Timer_001(t *testing.T) {
 			t.Error("nil timer unit")
 		}
 		return nil
-	}, "timer", "bus"); err != nil {
+	}, nil, "timer", "bus"); err != nil {
 		t.Error(err)
 	} else if returnValue := app.Run(); returnValue != 0 {
 		t.Error("Unexpected return value")

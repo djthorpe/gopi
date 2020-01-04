@@ -20,11 +20,14 @@ import (
 ///////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Bus struct{}
+type Bus struct {
+	App gopi.App
+}
 
 type bus struct {
+	app      gopi.App
 	handlers map[gopi.EventNS]map[string][]handlerWithTimeout
-	defaults map[gopi.EventNS]gopi.EventHandler
+	defaults map[gopi.EventNS]gopi.EventHandlerFunc
 
 	base.Unit
 	sync.Mutex
@@ -32,7 +35,7 @@ type bus struct {
 }
 
 type handlerWithTimeout struct {
-	fn      gopi.EventHandler
+	fn      gopi.EventHandlerFunc
 	timeout time.Duration
 }
 
@@ -45,6 +48,8 @@ func (config Bus) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(bus)
 	if err := this.Unit.Init(log); err != nil {
 		return nil, err
+	} else {
+		this.app = config.App
 	}
 	return this, nil
 }
@@ -83,16 +88,16 @@ func (this *bus) Emit(evt gopi.Event) {
 			go func(handler handlerWithTimeout) {
 				ctx, cancel := handler.contextWithCancel()
 				defer cancel()
-				handler.fn(ctx, evt)
+				handler.fn(ctx, this.app, evt)
 				this.WaitGroup.Done()
 			}(handler)
 		}
 	} else if handler := this.defaultHandlerForNS(ns); handler != nil {
 		this.WaitGroup.Add(1)
-		go func(fn gopi.EventHandler) {
+		go func(fn gopi.EventHandlerFunc) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			fn(ctx, evt)
+			fn(ctx, this.app, evt)
 			this.WaitGroup.Done()
 		}(handler)
 	} else {
@@ -100,37 +105,33 @@ func (this *bus) Emit(evt gopi.Event) {
 	}
 }
 
-func (this *bus) NewHandler(name string, handler gopi.EventHandler) error {
-	return this.NewHandlerEx(name, gopi.EVENT_NS_DEFAULT, handler, 0)
-}
-
-func (this *bus) NewHandlerEx(name string, ns gopi.EventNS, handler gopi.EventHandler, timeout time.Duration) error {
+func (this *bus) NewHandler(handler gopi.EventHandler) error {
 	// Check incoming parameters
-	if name == "" {
+	if handler.Name == "" {
 		return gopi.ErrBadParameter.WithPrefix("name")
-	} else if handler == nil {
+	} else if handler.Handler == nil {
 		return gopi.ErrBadParameter.WithPrefix("handler")
-	} else if timeout < 0 {
+	} else if handler.Timeout < 0 {
 		return gopi.ErrBadParameter.WithPrefix("timeout")
 	}
 	// Set handler
-	return this.addHandlerForName(name, ns, handler, timeout)
+	return this.addHandlerForName(handler.Name, handler.EventNS, handler.Handler, handler.Timeout)
 }
 
-func (this *bus) DefaultHandler(ns gopi.EventNS, handler gopi.EventHandler) error {
+func (this *bus) DefaultHandler(ns gopi.EventNS, handler gopi.EventHandlerFunc) error {
 	return this.setDefaultHandler(ns, handler)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *bus) setDefaultHandler(ns gopi.EventNS, handler gopi.EventHandler) error {
+func (this *bus) setDefaultHandler(ns gopi.EventNS, handler gopi.EventHandlerFunc) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
 	// Make defaults
 	if this.defaults == nil {
-		this.defaults = make(map[gopi.EventNS]gopi.EventHandler, 1)
+		this.defaults = make(map[gopi.EventNS]gopi.EventHandlerFunc, 1)
 	}
 	// Set or delete handler for namespace
 	if handler == nil {
@@ -142,7 +143,7 @@ func (this *bus) setDefaultHandler(ns gopi.EventNS, handler gopi.EventHandler) e
 	return nil
 }
 
-func (this *bus) addHandlerForName(name string, ns gopi.EventNS, handler gopi.EventHandler, timeout time.Duration) error {
+func (this *bus) addHandlerForName(name string, ns gopi.EventNS, handler gopi.EventHandlerFunc, timeout time.Duration) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -183,7 +184,7 @@ func (this *bus) handlersForName(name string, ns gopi.EventNS) []handlerWithTime
 	}
 }
 
-func (this *bus) defaultHandlerForNS(ns gopi.EventNS) gopi.EventHandler {
+func (this *bus) defaultHandlerForNS(ns gopi.EventNS) gopi.EventHandlerFunc {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 

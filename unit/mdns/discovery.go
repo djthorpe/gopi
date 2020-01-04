@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"sync"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -30,11 +29,9 @@ type Discovery struct {
 
 type discovery struct {
 	listener ListenerIface
-	stop     chan struct{}
+	stop     gopi.Channel
 
-	sync.WaitGroup
 	base.Unit
-	Publisher
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,18 +55,19 @@ func (config Discovery) New(log gopi.Logger) (gopi.Unit, error) {
 		this.stop = make(chan struct{})
 	}
 
-	// Start background processor
-	this.WaitGroup.Add(1)
-	go this.ProcessMessages(this.stop)
+	// Start background message processor
+	if this.stop = this.listener.Subscribe(QUEUE_MESSAGES, 0, this.EventHandler); this.stop == nil {
+		return nil, gopi.ErrInternalAppError
+	}
 
 	// Success
 	return this, nil
 }
 
 func (this *discovery) Close() error {
-	// Wait for process messages ends
-	close(this.stop)
-	this.Wait()
+
+	// Wait for EventHandler to end
+	this.listener.Unsubscribe(this.stop)
 
 	// Release resources
 	this.listener = nil
@@ -88,48 +86,33 @@ func (this *discovery) String() string {
 
 // Lookup service instances by name
 func (this *discovery) Lookup(ctx context.Context, service string) ([]gopi.RPCServiceRecord, error) {
-	var wait sync.WaitGroup
-
-	// The message should be to lookup service by name
 	msg := new(dns.Msg)
-	msg.SetQuestion(service+"."+this.listener.Zone(), dns.TypePTR)
-	msg.RecursionDesired = false
-
-	// Set up map for service records
-	serviceRecords := make(map[string]gopi.RPCServiceRecord)
+	serviceRecords := map[string]gopi.RPCServiceRecord{}
 
 	// Receive events in background
-	bgctx, cancel := context.WithCancel(context.Background())
-	wait.Add(1)
-	go func(ctx context.Context) {
-		names := this.Subscribe(QUEUE_RECORD, 0)
-	FOR_LOOP:
-		for {
-			select {
-			case evt := <-names:
-				if evt_, ok := evt.(gopi.RPCEvent); ok {
-					record := evt_.Service()
-					if record.Name != "" && evt_.Type() == gopi.RPC_EVENT_SERVICE_RECORD {
-						if record.Service == service {
-							serviceRecords[record.Name] = record
-						}
-					}
-				}
-			case <-ctx.Done():
-				break FOR_LOOP
-			}
+	receive := this.listener.Subscribe(QUEUE_RECORD, 0, func(value interface{}) {
+		if evt, ok := value.(gopi.RPCEvent); ok == false || evt == nil {
+			// No nothing
+		} else if record := evt.Service(); record.Name == "" {
+			// No nothing
+		} else if evt.Type() != gopi.RPC_EVENT_SERVICE_RECORD {
+			// No nothing
+		} else if record.Service != service {
+			// No nothing
+		} else {
+			serviceRecords[record.Name] = record
 		}
-		this.Unsubscribe(names)
-		wait.Done()
-	}(bgctx)
+	})
 
 	// Perform the query and wait for cancellation
+	msg.SetQuestion(service+"."+this.listener.Zone(), dns.TypePTR)
+	msg.RecursionDesired = false
 	err := this.listener.QueryAll(ctx, msg, QUERY_REPEAT)
 
-	// Cancel background goroutine and wait until done
-	cancel()
-	wait.Wait()
+	// Wait until unsubscribe
+	this.listener.Unsubscribe(receive)
 
+	// If error wasn't deadline exceeded, then return error
 	if err != nil && errors.Is(err, context.DeadlineExceeded) == false {
 		// Error occurred other than context timeout
 		return nil, err
@@ -147,46 +130,32 @@ func (this *discovery) Lookup(ctx context.Context, service string) ([]gopi.RPCSe
 
 // Return list of service names
 func (this *discovery) EnumerateServices(ctx context.Context) ([]string, error) {
-	var wait sync.WaitGroup
-
-	// The message should be to enumerate services
 	msg := new(dns.Msg)
-	msg.SetQuestion(DISCOVERY_SERVICE_QUERY+"."+this.listener.Zone(), dns.TypePTR)
-	msg.RecursionDesired = false
-
-	// Set up map for service names
 	serviceNames := make(map[string]bool)
 
 	// Receive events in background
-	bgctx, cancel := context.WithCancel(context.Background())
-	wait.Add(1)
-	go func(ctx context.Context) {
-		names := this.Subscribe(QUEUE_NAME, 0)
-	FOR_LOOP:
-		for {
-			select {
-			case evt := <-names:
-				if evt_, ok := evt.(gopi.RPCEvent); ok {
-					record := evt_.Service()
-					if record.Name != "" && evt_.Type() == gopi.RPC_EVENT_SERVICE_NAME {
-						serviceNames[record.Name] = true
-					}
-				}
-			case <-ctx.Done():
-				break FOR_LOOP
-			}
+	fmt.Println("EnumerateServices LISTENER=", this.listener)
+	receive := this.listener.Subscribe(QUEUE_NAME, 0, func(value interface{}) {
+		if evt, ok := value.(gopi.RPCEvent); ok == false || evt == nil {
+			// No nothing
+		} else if record := evt.Service(); record.Name == "" {
+			// No nothing
+		} else if evt.Type() != gopi.RPC_EVENT_SERVICE_NAME {
+			// No nothing
+		} else {
+			serviceNames[record.Name] = true
 		}
-		this.Unsubscribe(names)
-		wait.Done()
-	}(bgctx)
+	})
 
 	// Perform the query and wait for cancellation
+	msg.SetQuestion(DISCOVERY_SERVICE_QUERY+"."+this.listener.Zone(), dns.TypePTR)
+	msg.RecursionDesired = false
 	err := this.listener.QueryAll(ctx, msg, QUERY_REPEAT)
 
-	// Cancel background goroutine and wait until done
-	cancel()
-	wait.Wait()
+	// Wait until unsubscribe
+	this.listener.Unsubscribe(receive)
 
+	// If error wasn't deadline exceeded, then return error
 	if err != nil && errors.Is(err, context.DeadlineExceeded) == false {
 		// Error occurred other than context timeout
 		return nil, err
@@ -208,30 +177,17 @@ func (this *discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 ////////////////////////////////////////////////////////////////////////////////
 // BACKGROUND PROCESSOR
 
-func (this *discovery) ProcessMessages(stop <-chan struct{}) {
-	defer this.WaitGroup.Done()
-
-	messages := this.listener.Subscribe(QUEUE_MESSAGES, 0)
-	go func() {
-		<-stop
-		this.listener.Unsubscribe(messages)
-	}()
-FOR_LOOP:
-	for {
-		select {
-		case msg := <-messages:
-			if msg_, ok := msg.(*dns.Msg); ok && msg != nil {
-				if len(msg_.Answer) > 0 {
-					this.ProcessAnswer(msg_)
-				}
-			} else {
-				break FOR_LOOP
-			}
-		}
+func (this *discovery) EventHandler(value interface{}) {
+	if msg, ok := value.(*dns.Msg); ok && msg == nil {
+		return
+	} else if len(msg.Answer) == 0 {
+		return
+	} else if err := this.ProcessAnswer(msg); err != nil {
+		this.Log.Error(err.(error))
 	}
 }
 
-func (this *discovery) ProcessAnswer(msg *dns.Msg) {
+func (this *discovery) ProcessAnswer(msg *dns.Msg) error {
 	service := NewService(this.listener.Zone())
 	sections := append(append(msg.Answer, msg.Ns...), msg.Extra...)
 	for _, answer := range sections {
@@ -248,17 +204,22 @@ func (this *discovery) ProcessAnswer(msg *dns.Msg) {
 			service.SetAAAA(rr.AAAA)
 		}
 	}
+
 	// Ignore any service without a name, or where it doesn't end with _udp or _tcp
 	if service.Name == "" {
-		return
+		return nil
 	}
 	if strings.HasSuffix(service.Service, "._tcp") == false && strings.HasSuffix(service.Service, "._udp") == false {
-		return
+		return nil
 	}
+
 	// Emit the event
 	if service.Service == DISCOVERY_SERVICE_QUERY {
-		this.Emit(QUEUE_NAME, NewEvent(this, gopi.RPC_EVENT_SERVICE_NAME, service.RPCServiceRecord, service.TTL))
+		this.listener.Emit(QUEUE_NAME, NewEvent(this, gopi.RPC_EVENT_SERVICE_NAME, service.RPCServiceRecord, service.TTL))
 	} else {
-		this.Emit(QUEUE_RECORD, NewEvent(this, gopi.RPC_EVENT_SERVICE_RECORD, service.RPCServiceRecord, service.TTL))
+		this.listener.Emit(QUEUE_RECORD, NewEvent(this, gopi.RPC_EVENT_SERVICE_RECORD, service.RPCServiceRecord, service.TTL))
 	}
+
+	// Success
+	return nil
 }

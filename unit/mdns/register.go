@@ -28,7 +28,7 @@ type Register struct {
 
 type register struct {
 	listener ListenerIface
-	stop     chan struct{}
+	stop     gopi.Channel
 	records  map[string]gopi.RPCServiceRecord
 	names    map[string]uint
 
@@ -55,23 +55,23 @@ func (config Register) New(log gopi.Logger) (gopi.Unit, error) {
 		return nil, err
 	} else {
 		this.listener = config.Listener
-		this.stop = make(chan struct{})
 		this.records = make(map[string]gopi.RPCServiceRecord)
 		this.names = make(map[string]uint)
 	}
 
-	// Start background processor
-	this.WaitGroup.Add(1)
-	go this.ProcessMessages(this.stop)
+	// Start background message processor
+	if this.stop = this.listener.Subscribe(QUEUE_MESSAGES, 0, this.EventHandler); this.stop == nil {
+		return nil, gopi.ErrInternalAppError
+	}
 
 	// Success
 	return this, nil
 }
 
 func (this *register) Close() error {
-	// Wait for process messages ends
-	close(this.stop)
-	this.Wait()
+
+	// Wait for EventHandler to end
+	this.listener.Unsubscribe(this.stop)
 
 	// Release resources
 	this.listener = nil
@@ -275,29 +275,13 @@ func (this *register) sendUnregister(record gopi.RPCServiceRecord) error {
 ////////////////////////////////////////////////////////////////////////////////
 // BACKGROUND PROCESSOR
 
-func (this *register) ProcessMessages(stop <-chan struct{}) {
-	defer this.WaitGroup.Done()
-
-	messages := this.listener.Subscribe(QUEUE_MESSAGES, 0)
-	go func() {
-		<-stop
-		this.listener.Unsubscribe(messages)
-	}()
-
-FOR_LOOP:
-	for {
-		select {
-		case msg := <-messages:
-			if msg_, ok := msg.(*dns.Msg); msg_ != nil && ok {
-				if len(msg_.Question) > 0 {
-					if err := this.ProcessQuestion(msg_); err != nil {
-						this.Log.Error(err.(error))
-					}
-				}
-			} else {
-				break FOR_LOOP
-			}
-		}
+func (this *register) EventHandler(value interface{}) {
+	if msg, ok := value.(*dns.Msg); ok && msg == nil {
+		return
+	} else if len(msg.Question) == 0 {
+		return
+	} else if err := this.ProcessQuestion(msg); err != nil {
+		this.Log.Error(err.(error))
 	}
 }
 

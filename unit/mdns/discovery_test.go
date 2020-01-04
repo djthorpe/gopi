@@ -9,6 +9,8 @@ package mdns_test
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -42,19 +44,19 @@ func Main_Test_Discovery_001(app gopi.App, _ []string) error {
 	}
 	app.Log().Debug(discovery)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	app.Log().Debug("Calling Enumerate Services with 1s timeout")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	if services, err := discovery.EnumerateServices(ctx); err != nil {
 		return err
 	} else {
-		app.Log().Debug("services=", services)
+		app.Log().Debug("Enumerate Services done, services=", services)
 	}
 
 	// Success
 	return nil
 }
 
-/*
 func Test_Discovery_002(t *testing.T) {
 	flags := []string{"-debug"}
 	if app, err := app.NewDebugTool(Main_Test_Discovery_002, flags, []string{"discovery"}); err != nil {
@@ -66,18 +68,34 @@ func Test_Discovery_002(t *testing.T) {
 
 func Main_Test_Discovery_002(app gopi.App, _ []string) error {
 	discovery := app.UnitInstance("discovery").(gopi.RPCServiceDiscovery)
-	if discovery == nil {
-		return gopi.ErrInternalAppError.WithPrefix("UnitInstance() failed")
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+
+	app.Log().Debug("Calling Enumerate Services with 1s timeout")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if services, err := discovery.EnumerateServices(ctx); err != nil {
+	if names, err := discovery.EnumerateServices(ctx); err != nil {
 		return err
 	} else {
-		app.Log().Debug("services=", services)
+		var wait sync.WaitGroup
+		for _, name := range names {
+			wait.Add(1)
+			go func(name string) {
+				defer wait.Done()
+				app.Log().Debug("Calling Lookup", name, "with 1s timeout")
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				if records, err := discovery.Lookup(ctx, name); err != nil {
+					app.Log().Error(err)
+				} else {
+					for _, record := range records {
+						fmt.Printf("%-20s %-60s %-20s:%d\n", record.Service, record.Name, record.Host, record.Port)
+					}
+				}
+			}(name)
+		}
+		wait.Wait()
+		app.Log().Debug("Lookup done")
 	}
 
 	// Success
 	return nil
 }
-*/

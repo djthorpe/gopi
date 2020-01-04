@@ -20,13 +20,18 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
+var (
+	Events = []gopi.EventHandler{
+		gopi.EventHandler{Name: "gopi.TimerEvent", Handler: TimerHandler},
+	}
+)
+
+func TimerHandler(_ context.Context, app gopi.App, evt gopi.Event) {
+	app.Log().Debug("handle event=", evt)
+}
+
 func Main(app gopi.App, args []string) error {
 	app.Log().Debug("timer=", app.Timer())
-
-	// Set up handlers
-	app.Bus().NewHandler("gopi.TimerEvent", func(_ context.Context, evt gopi.Event) {
-		app.Log().Debug("handle event=", evt)
-	})
 
 	// Schedule a ticker which fires every second
 	app.Timer().NewTicker(time.Second)
@@ -41,7 +46,7 @@ func Main(app gopi.App, args []string) error {
 }
 
 func main() {
-	if app, err := app.NewCommandLineTool(Main, "timer"); err != nil {
+	if app, err := app.NewCommandLineTool(Main, Events, "timer"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
 		os.Exit(app.Run())

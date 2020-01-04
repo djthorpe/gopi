@@ -10,10 +10,9 @@ package gopi_test
 import (
 	"testing"
 
-	"github.com/djthorpe/gopi/v2/base"
-
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
+	"github.com/djthorpe/gopi/v2/base"
 )
 
 type Config struct{}
@@ -43,4 +42,12 @@ func Test_Gopi_001(t *testing.T) {
 	} else {
 		t.Log(unit)
 	}
+}
+
+func Test_Gopi_002(t *testing.T) {
+	NewPublisher := func() gopi.Publisher {
+		return new(base.Publisher)
+	}
+	pubsub := NewPublisher()
+	t.Log(pubsub)
 }

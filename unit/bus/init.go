@@ -17,7 +17,9 @@ func init() {
 		Name: "gopi/bus",
 		Type: gopi.UNIT_BUS,
 		New: func(app gopi.App) (gopi.Unit, error) {
-			return gopi.New(Bus{}, app.Log().Clone("gopi/bus"))
+			return gopi.New(Bus{
+				App: app,
+			}, app.Log().Clone("gopi/bus"))
 		},
 	})
 }
