@@ -27,25 +27,24 @@ func Test_I2C_000(t *testing.T) {
 }
 
 func Test_I2C_001(t *testing.T) {
-	if app, err := app.NewDebugTool(Main_Test_I2C_001, []string{"-debug"}, []string{"platform", "i2c"}); err != nil {
+	if app, err := app.NewTestTool(t, Main_Test_I2C_001, []string{"-debug"}, "platform", "i2c"); err != nil {
 		t.Error(err)
 	} else if returnCode := app.Run(); returnCode != 0 {
 		t.Error("Unexpected return code", returnCode)
 	}
 }
 
-func Main_Test_I2C_001(app gopi.App, _ []string) error {
+func Main_Test_I2C_001(app gopi.App, t *testing.T) {
 	// Don't test unless on Linux
 	if platform := app.Platform(); platform.Type()&gopi.PLATFORM_LINUX == 0 {
-		app.Log().Debug("Skipping testing of I2C on", platform.Type())
-		return nil
-	}
-
-	i2c := app.UnitInstance("i2c").(gopi.I2C)
-	if i2c == nil {
-		return gopi.ErrInternalAppError.WithPrefix("UnitInstance() failed")
+		t.Log("Skipping testing of I2C on", platform.Type())
 	} else {
-		app.Log().Debug(i2c)
+		i2c := app.UnitInstance("i2c").(gopi.I2C)
+		if i2c == nil {
+			t.Fatal(gopi.ErrInternalAppError.WithPrefix("UnitInstance() failed"))
+		} else {
+			t.Log(i2c)
+		}
+
 	}
-	return nil
 }
