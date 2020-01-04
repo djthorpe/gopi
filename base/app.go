@@ -201,6 +201,14 @@ func (this *App) Display() gopi.Display {
 	}
 }
 
+func (this *App) I2C() gopi.I2C {
+	if i2c, ok := this.UnitInstance("i2c").(gopi.I2C); ok {
+		return i2c
+	} else {
+		return nil
+	}
+}
+
 func (this *App) UnitInstance(name string) gopi.Unit {
 	if units := this.UnitInstancesByName(name); len(units) == 0 {
 		return nil

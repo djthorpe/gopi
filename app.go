@@ -58,6 +58,7 @@ type App interface {
 	Bus() Bus                 // Return event bus unit
 	Platform() Platform       // Return hardware platform unit
 	Display() Display         // Return display
+	I2C() I2C                 // Return I2C interface
 }
 
 // Flags encapsulates a set of key/value pairs in several namespaces
