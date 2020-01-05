@@ -59,6 +59,7 @@ type App interface {
 	Platform() Platform       // Return hardware platform unit
 	Display() Display         // Return display
 	I2C() I2C                 // Return I2C interface
+	SPI() SPI                 // Return SPI interface
 }
 
 // Flags encapsulates a set of key/value pairs in several namespaces

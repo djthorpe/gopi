@@ -8,7 +8,6 @@
 package base_test
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 
@@ -102,17 +101,17 @@ func Test_Publisher_005(t *testing.T) {
 		wait.Add(1)
 		go func() {
 			value := <-c
-			fmt.Println("Receive", value)
+			t.Log("Receive", value)
 			wait.Done()
 			if value.(uint) != queue {
 				t.Error("Unexpected value received from channel")
 			}
 		}()
-		fmt.Println("Emit")
+		t.Log("Emit")
 		this.Emit(queue, queue)
-		fmt.Println("Wait")
+		t.Log("Wait")
 		wait.Wait()
-		fmt.Println("Done")
+		t.Log("Done")
 	}
 }
 
@@ -127,7 +126,7 @@ func Test_Publisher_006(t *testing.T) {
 	wait.Add(2)
 	go func() {
 		value := <-c1
-		fmt.Println("C1 Receive", value)
+		t.Log("C1 Receive", value)
 		wait.Done()
 		if value.(uint) != queue {
 			t.Error("C1 Unexpected value received from channel")
@@ -135,18 +134,18 @@ func Test_Publisher_006(t *testing.T) {
 	}()
 	go func() {
 		value := <-c2
-		fmt.Println("C2 Receive", value)
+		t.Log("C2 Receive", value)
 		wait.Done()
 		if value.(uint) != queue {
 			t.Error("C2 Unexpected value received from channel")
 		}
 	}()
 
-	fmt.Println("Emit")
+	t.Log("Emit")
 	this.Emit(queue, queue)
-	fmt.Println("Wait")
+	t.Log("Wait")
 	wait.Wait()
-	fmt.Println("Done")
+	t.Log("Done")
 }
 
 func Test_Publisher_007(t *testing.T) {
@@ -160,38 +159,38 @@ func Test_Publisher_007(t *testing.T) {
 		if value.(uint) == queue {
 			count1++
 		}
-		fmt.Println("RECEIVED1 = ", count1)
+		t.Log("RECEIVED1 = ", count1)
 	})
 
 	stop2 := this.Subscribe(queue, 0, func(value interface{}) {
 		if value.(uint) == queue {
 			count2++
 		}
-		fmt.Println("RECEIVED2 = ", count2)
+		t.Log("RECEIVED2 = ", count2)
 	})
 
-	fmt.Println("EMIT x 10")
+	t.Log("EMIT x 10")
 	for i := 0; i < 10; i++ {
-		this.Emit(queue, queue)
+		t.Log(queue, queue)
 	}
 
-	fmt.Println("CLOSE1")
+	t.Log("CLOSE1")
 	this.Unsubscribe(stop1)
 
-	fmt.Println("EMIT x 15")
+	t.Log("EMIT x 15")
 	for i := 0; i < 15; i++ {
 		this.Emit(queue, queue)
 	}
 
-	fmt.Println("CLOSE2")
+	t.Log("CLOSE2")
 	this.Unsubscribe(stop2)
 
-	fmt.Println("EMIT x 20")
+	t.Log("EMIT x 20")
 	for i := 0; i < 20; i++ {
 		this.Emit(queue, queue)
 	}
 
-	fmt.Println("CLOSE")
+	t.Log("CLOSE")
 	this.Close()
 
 	if count1 != 10 {

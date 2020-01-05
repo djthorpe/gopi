@@ -16,16 +16,17 @@ all:
 linux: TAGS = -tags linux
 linux: test install
 
+darwin: TAGS = -tags darwin
+darwin: test install
+
 rpi: TAGS = -tags rpi
 rpi: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
 rpi: test install
 
-darwin: TAGS = -tags darwin
-darwin: test install
-
 # Build rules
 test: 
-	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) -v ./...
+	go clean -testcache
+	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) -race ./...
 
 install:
 	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) install $(TAGS) ${GOFLAGS} ./cmd/...

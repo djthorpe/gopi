@@ -96,6 +96,9 @@ func (this *i2c) Close() error {
 
 // SetSlave sets current slave address
 func (this *i2c) SetSlave(slave uint8) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if err := linux.I2CSetSlave(this.dev.Fd(), slave); err != nil {
 		return err
 	} else {
@@ -111,7 +114,9 @@ func (this *i2c) GetSlave() uint8 {
 
 // DetectSlave returns true if a slave was detected at a particular address
 func (this *i2c) DetectSlave(slave uint8) (bool, error) {
+	this.Mutex.Lock()
 	detect, err := linux.I2CDetectSlave(this.dev.Fd(), slave, this.funcs)
+	defer this.Mutex.Unlock()
 	if err != nil {
 		return false, err
 	}
@@ -124,6 +129,9 @@ func (this *i2c) DetectSlave(slave uint8) (bool, error) {
 }
 
 func (this *i2c) ReadUint8(reg uint8) (uint8, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.slave == I2C_SLAVE_NONE {
 		return 0, gopi.ErrBadParameter.WithPrefix("slave")
 	} else {
@@ -132,6 +140,9 @@ func (this *i2c) ReadUint8(reg uint8) (uint8, error) {
 }
 
 func (this *i2c) ReadInt8(reg uint8) (int8, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.slave == I2C_SLAVE_NONE {
 		return 0, gopi.ErrBadParameter.WithPrefix("slave")
 	} else {
@@ -140,6 +151,9 @@ func (this *i2c) ReadInt8(reg uint8) (int8, error) {
 }
 
 func (this *i2c) ReadUint16(reg uint8) (uint16, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.slave == I2C_SLAVE_NONE {
 		return 0, gopi.ErrBadParameter.WithPrefix("slave")
 	} else {
@@ -148,6 +162,9 @@ func (this *i2c) ReadUint16(reg uint8) (uint16, error) {
 }
 
 func (this *i2c) ReadInt16(reg uint8) (int16, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.slave == I2C_SLAVE_NONE {
 		return 0, gopi.ErrBadParameter.WithPrefix("slave")
 	} else {
@@ -156,6 +173,9 @@ func (this *i2c) ReadInt16(reg uint8) (int16, error) {
 }
 
 func (this *i2c) ReadBlock(reg, length uint8) ([]byte, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.slave == I2C_SLAVE_NONE {
 		return nil, gopi.ErrBadParameter.WithPrefix("slave")
 	} else {
@@ -164,6 +184,9 @@ func (this *i2c) ReadBlock(reg, length uint8) ([]byte, error) {
 }
 
 func (this *i2c) WriteUint8(reg, value uint8) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.slave == I2C_SLAVE_NONE {
 		return gopi.ErrBadParameter.WithPrefix("slave")
 	} else {
@@ -172,6 +195,9 @@ func (this *i2c) WriteUint8(reg, value uint8) error {
 }
 
 func (this *i2c) WriteInt8(reg uint8, value int8) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.slave == I2C_SLAVE_NONE {
 		return gopi.ErrBadParameter.WithPrefix("slave")
 	} else {
@@ -180,6 +206,9 @@ func (this *i2c) WriteInt8(reg uint8, value int8) error {
 }
 
 func (this *i2c) WriteUint16(reg uint8, value uint16) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.slave == I2C_SLAVE_NONE {
 		return gopi.ErrBadParameter.WithPrefix("slave")
 	} else {
@@ -188,6 +217,9 @@ func (this *i2c) WriteUint16(reg uint8, value uint16) error {
 }
 
 func (this *i2c) WriteInt16(reg uint8, value int16) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.slave == I2C_SLAVE_NONE {
 		return gopi.ErrBadParameter.WithPrefix("slave")
 	} else {
