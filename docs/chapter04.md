@@ -5,12 +5,12 @@ including:
 
  * Getting information about your hardware, including graphical display;
  * Interacting with the General Purpose Input-Output (GPIO) interface;
- * The I2C interface;
+ * The I²C interface;
  * The SPI interface.
 
 All of these features are available on the Raspberry Pi but not necessarily on other platforms.
 
-## Information about your hardware
+## Hardware Information
 
 The Platform Unit returns some information about the platform your tool is running on.
 
@@ -219,7 +219,7 @@ your user has the correct permissions to access the device using the
 following command:
 
 ```bash
-bash% sudo usermod -a -G i2c ${USER}
+bash% sudo usermod -a -G spi ${USER}
 ```
 
 There's more information about the Raspberry Pi implementation [here](https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md).
