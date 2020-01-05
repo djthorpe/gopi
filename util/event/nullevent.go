@@ -3,7 +3,7 @@
 	(c) Copyright David Thorpe 2018
 	All Rights Reserved
 
-	Documentation http://djthorpe.github.io/gopi/
+	Documentation https://gopi.mutablelogic.com/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
