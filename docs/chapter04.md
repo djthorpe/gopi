@@ -10,7 +10,7 @@ including:
 
 All of these features are available on the Raspberry Pi but not necessarily on other platforms.
 
-## The Hardware Platform Unit
+## Information about your hardware
 
 The Platform Unit returns some information about the platform your tool is running on.
 
@@ -55,7 +55,7 @@ There are some platform differences with the information returned:
   * On Darwin and Linux, the number of displays is returned as zero as these platform displays are not yet supported.
 
 
-## The Display Unit
+## Displays
 
 The Display Unit returns some information about your display. When importing
 this unit into your tool, the command line flag `-display` can be used to choose
@@ -83,7 +83,7 @@ func Main(app gopi.App, args []string) error {
 Here is the interface for a display:
 
 ```go
-type Display interface {
+type gopi.Display interface {
     gopi.Unit
 
     DisplayId() uint 	// Return display number
@@ -93,19 +93,12 @@ type Display interface {
 }
 ```
 
-## The GPIO Unit
+## I²C Interface
 
-| Parameter        | Value               |
-| ---------------- | ------------------- |
-| Name             | `gopi/gpio/linux`   |
-| Or               | `gopi/gpio/rpi`     |
-| Interface        | `gopi.GPIO`         |
-| Type             | `gopi.UNIT_GPIO`    |
-| Import           | `github.com/djthorpe/gopi/v2/unit/gpio` |
-| Events           | `gopi.GPIOEvent`    |
-| Compatibility    | Linux, Raspberry Pi    |
+I²C is a serial protocol for two-wire interface to connect low-speed devices like sensors, A/D and D/A converters and other similar peripherals in embedded systems. It was invented by Philips and now it is used by almost all major IC manufacturers. For more information see [Wikipedia](https://en.wikipedia.org/wiki/I%C2%B2C).
 
-## The I2C Unit
+The I²C unit allows you to read and write data with daisy-chained peripherals, each of which should
+have a unique address.
 
 | Parameter        | Value               |
 | ---------------- | ------------------- |
@@ -116,7 +109,71 @@ type Display interface {
 | Compatibility    | Linux               |
 
 
-## The SPI Unit
+The unit adheres to the following interface:
+
+```go
+type gopi.I2C interface {
+	gopi.Unit
+
+	SetSlave(uint8) error
+	GetSlave() uint8
+	DetectSlave(uint8) (bool, error)
+
+	// Read 
+	ReadUint8(reg uint8) (uint8, error)
+	ReadInt8(reg uint8) (int8, error)
+	ReadUint16(reg uint8) (uint16, error)
+	ReadInt16(reg uint8) (int16, error)
+	ReadBlock(reg, length uint8) ([]byte, error)
+
+	// Write
+	WriteUint8(reg, value uint8) error
+	WriteInt8(reg uint8, value int8) error
+	WriteUint16(reg uint8, value uint16) error
+	WriteInt16(reg uint8, value int16) error
+}
+```
+
+You need to set a slave address when using the tool, which is a value between `0x00` and `0x7F`. You can use the `DetectSlave` method which
+returns `true` if a peripheral was found at a particular slave address. For example,
+
+```go
+func Main(app gopi.App, args []string) error {
+	i2c := app.I2C()
+	slave := app.Flags().GetUint("slave",gopi.FLAG_NS_DEFAULT)
+	if detected, err := i2c.DetectSlave(slave); detected == false {
+		return fmt.Errorf("No peripheral detected")
+	} else if err := this.i2c.SetSlave(slave); err != nil {
+		return err
+	} else if reg0, err := this.i2c.ReadInt16(0) {
+		fmt.Println("REG0=",reg0)		
+	}
+    // ...
+}
+```
+
+The unit adds an additional commmand line flag of `-i2c.bus` to
+select which interface to attach to. On the Raspberry Pi, you need to enable the interface using the `raspi-config` command and ensure
+your user has the correct permissions to access the device using the 
+following command:
+
+```bash
+bash% sudo usermod -a -G i2c ${USER}
+```
+
+There's more information about enabling it [here](https://www.electronicwings.com/raspberry-pi/raspberry-pi-i2c).
+
+There are some examples of using the I2C unit in the [sensors](github.com/djthorpe/sensors) repository
+including temperature, light and humidity measurement using
+I²C peripherals.
+
+## SPI Interface
+
+The Serial Peripheral Interface (SPI) is a synchronous serial communication interface for embedded systems. More information is
+available on [Wikipedia](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface).
+
+The SPI Unit allows you to read and write data, or do bi-directional
+transfers. In order to use the Unit, here are the parameters:
 
 | Parameter        | Value               |
 | ---------------- | ------------------- |
@@ -126,3 +183,54 @@ type Display interface {
 | Import           | `github.com/djthorpe/gopi/v2/unit/spi` |
 | Compatibility    | Linux               |
 
+
+The unit adheres to the following interface:
+
+```go
+
+// SPI implements the SPI interface for sensors, etc.
+type gopi.SPI interface {
+	gopi.Unit
+
+	Mode() gopi.SPIMode
+	MaxSpeedHz() uint32
+	BitsPerWord() uint8
+
+	SetMode(gopi.SPIMode) error
+	SetMaxSpeedHz(uint32) error
+	SetBitsPerWord(uint8) error
+
+	Read(len uint32) ([]byte, error)
+	Write(send []byte) error
+	Transfer(send []byte) ([]byte, error)
+}
+```
+
+The unit adds the flags `-spi.bus` and `-spi.slave` to the
+command-line flags in order to select the correct device.
+
+On the Raspberry Pi, you need to enable the interface using the `raspi-config` command and ensure
+your user has the correct permissions to access the device using the 
+following command:
+
+```bash
+bash% sudo usermod -a -G i2c ${USER}
+```
+
+There's more information about the Raspberry Pi implementation [here](https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md).
+
+## GPIO Interface
+
+_Documentation to be written_
+
+{% hint style="info" %}
+| Parameter        | Value               |
+| ---------------- | ------------------- |
+| Name             | `gopi/gpio/linux`   |
+| Or               | `gopi/gpio/rpi`     |
+| Interface        | `gopi.GPIO`         |
+| Type             | `gopi.UNIT_GPIO`    |
+| Import           | `github.com/djthorpe/gopi/v2/unit/gpio` |
+| Events           | `gopi.GPIOEvent`    |
+| Compatibility    | Linux, Raspberry Pi    |
+{% endhint %}
