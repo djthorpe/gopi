@@ -2,7 +2,7 @@
 	Go Language Raspberry Pi Interface
 	(c) Copyright David Thorpe 2016-2018
 	All Rights Reserved
-    Documentation http://djthorpe.github.io/gopi/
+    Documentation https://gopi.mutablelogic.com/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
@@ -101,9 +101,9 @@ const (
 	PARAM_NONE AppParam = iota
 	PARAM_TIMESTAMP
 	PARAM_EXECNAME
-	PARAM_SERVICE_NAME
 	PARAM_SERVICE_TYPE
 	PARAM_SERVICE_SUBTYPE
+	PARAM_SERVICE_FLAGS
 	PARAM_GOVERSION
 	PARAM_GOBUILDTIME
 	PARAM_GITTAG
@@ -415,9 +415,10 @@ func (this *AppInstance) Verbose() bool {
 	return this.verbose
 }
 
-// Service returns the current service name set from configuration
-func (this *AppInstance) Service() (string, string, string, error) {
-	var service, subtype, name string
+// Service returns the current service specification
+func (this *AppInstance) Service() (string, string, RPCFlag, error) {
+	var service, subtype string
+	var flags RPCFlag
 	if service_, exists := this.AppFlags.params[PARAM_SERVICE_TYPE]; exists {
 		service = fmt.Sprint(service_)
 	} else {
@@ -426,14 +427,14 @@ func (this *AppInstance) Service() (string, string, string, error) {
 	if subtype_, exists := this.AppFlags.params[PARAM_SERVICE_SUBTYPE]; exists {
 		subtype = fmt.Sprint(subtype_)
 	}
-	if name_, exists := this.AppFlags.params[PARAM_SERVICE_NAME]; exists {
-		name = fmt.Sprint(name_)
-	} else if hostname, err := os.Hostname(); err != nil {
-		return "", "", "", err
-	} else {
-		name = hostname
+	if flags_, exists := this.AppFlags.params[PARAM_SERVICE_FLAGS]; exists {
+		if flags_, ok := flags_.(RPCFlag); ok == false {
+			return "", "", 0, ErrBadParameter
+		} else {
+			flags = flags_
+		}
 	}
-	return service, subtype, name, nil
+	return service, subtype, flags, nil
 }
 
 // WaitForSignal blocks until a signal is caught
@@ -685,8 +686,6 @@ func (p AppParam) String() string {
 		return "PARAM_TIMESTAMP"
 	case PARAM_EXECNAME:
 		return "PARAM_EXECNAME"
-	case PARAM_SERVICE_NAME:
-		return "PARAM_SERVICE_NAME"
 	case PARAM_SERVICE_TYPE:
 		return "PARAM_SERVICE_TYPE"
 	case PARAM_SERVICE_SUBTYPE:

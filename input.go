@@ -2,7 +2,7 @@
 	Go Language Raspberry Pi Interface
 	(c) Copyright David Thorpe 2016-2017
 	All Rights Reserved
-	Documentation http://djthorpe.github.io/gopi/
+	Documentation https://gopi.mutablelogic.com/
 	For Licensing and Usage information, please see LICENSE.md
 */
 
