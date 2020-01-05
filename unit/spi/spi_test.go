@@ -13,6 +13,8 @@ import (
 	"testing"
 
 	// Frameworks
+	gopi "github.com/djthorpe/gopi/v2"
+	app "github.com/djthorpe/gopi/v2/app"
 
 	// Modules
 	_ "github.com/djthorpe/gopi/v2/unit/logger"

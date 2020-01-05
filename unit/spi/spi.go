@@ -8,12 +8,12 @@
 package spi
 
 import (
-	"github.com/djthorpe/gopi/v2/base"
-	// Frameworks
 	"os"
 	"sync"
 
+	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
+	base "github.com/djthorpe/gopi/v2/base"
 )
 
 type SPI struct {
@@ -54,4 +54,19 @@ func (config SPI) New(log gopi.Logger) (gopi.Unit, error) {
 		return nil, err
 	}
 	return this, nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION gopi.SPI
+
+func (this *spi) Mode() gopi.SPIMode {
+	return this.mode
+}
+
+func (this *spi) MaxSpeedHz() uint32 {
+	return this.speed_hz
+}
+
+func (this *spi) BitsPerWord() uint8 {
+	return this.bits_per_word
 }

@@ -10,23 +10,27 @@ GOLDFLAGS += -X $(GOPI).GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)" 
 
 all:
-	@echo "Synax: make linux|darwin|rpi"
+	@echo "Synax: make linux|darwin|rpi|test|clean"
 
 # Build for different platforms
 linux: TAGS = -tags linux
 linux: test install
 
 darwin: TAGS = -tags darwin
-darwin: test install
+darwin: testrace install
 
 rpi: TAGS = -tags rpi
 rpi: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
 rpi: test install
 
 # Build rules
-test: 
+testrace:
 	go clean -testcache
 	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) -race ./...
+
+test: 
+	go clean -testcache
+	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) ./...
 
 install:
 	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) install $(TAGS) ${GOFLAGS} ./cmd/...

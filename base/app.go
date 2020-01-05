@@ -162,59 +162,31 @@ func (this *App) Flags() gopi.Flags {
 // RETURN UNIT INSTANCES
 
 func (this *App) Log() gopi.Logger {
-	if logger, ok := this.UnitInstance("logger").(gopi.Logger); ok {
-		return logger
-	} else {
-		return nil
-	}
+	return this.UnitInstance("logger").(gopi.Logger)
 }
 
 func (this *App) Timer() gopi.Timer {
-	if timer, ok := this.UnitInstance("timer").(gopi.Timer); ok {
-		return timer
-	} else {
-		return nil
-	}
+	return this.UnitInstance("timer").(gopi.Timer)
 }
 
 func (this *App) Bus() gopi.Bus {
-	if bus, ok := this.UnitInstance("bus").(gopi.Bus); ok {
-		return bus
-	} else {
-		return nil
-	}
+	return this.UnitInstance("bus").(gopi.Bus)
 }
 
 func (this *App) Platform() gopi.Platform {
-	if platform, ok := this.UnitInstance("platform").(gopi.Platform); ok {
-		return platform
-	} else {
-		return nil
-	}
+	return this.UnitInstance("platform").(gopi.Platform)
 }
 
 func (this *App) Display() gopi.Display {
-	if display, ok := this.UnitInstance("display").(gopi.Display); ok {
-		return display
-	} else {
-		return nil
-	}
+	return this.UnitInstance("display").(gopi.Display)
 }
 
 func (this *App) I2C() gopi.I2C {
-	if i2c, ok := this.UnitInstance("i2c").(gopi.I2C); ok {
-		return i2c
-	} else {
-		return nil
-	}
+	return this.UnitInstance("i2c").(gopi.I2C)
 }
 
 func (this *App) SPI() gopi.SPI {
-	if spi, ok := this.UnitInstance("spi").(gopi.SPI); ok {
-		return spi
-	} else {
-		return nil
-	}
+	return this.UnitInstance("spi").(gopi.SPI)
 }
 
 func (this *App) UnitInstance(name string) gopi.Unit {
