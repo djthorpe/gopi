@@ -14,6 +14,7 @@ All of these features are available on the Raspberry Pi but not necessarily on o
 
 The Platform Unit returns some information about the platform your tool is running on.
 
+{% hint style="info" %}
 | Parameter        | Value                   |
 | ---------------- | ----------------------- |
 | Name             | `gopi/platform`         |
@@ -21,6 +22,7 @@ The Platform Unit returns some information about the platform your tool is runni
 | Type             | `gopi.UNIT_PLATFORM`    |
 | Import           | `github.com/djthorpe/gopi/v2/unit/platform` |
 | Compatibility    | Linux, Darwin, Raspberry Pi |
+{% endhint %}
 
 Here is the interface which the platform unit adheres to:
 
@@ -61,6 +63,7 @@ The Display Unit returns some information about your display. When importing
 this unit into your tool, the command line flag `-display` can be used to choose
 the display. An error will be returned when trying to use this unit on Linux or Darwin when the tool is run.
 
+{% hint style="info" %}
 | Parameter        | Value                   |
 | ---------------- | ----------------------- |
 | Name             | `gopi/display`         |
@@ -68,7 +71,7 @@ the display. An error will be returned when trying to use this unit on Linux or 
 | Type             | `gopi.UNIT_DISPLAY`    |
 | Import           | `github.com/djthorpe/gopi/v2/unit/display` |
 | Compatibility    | Raspberry Pi |
-
+{% endhint %}
 
 Here's an example of returning information about the display:
 
@@ -100,6 +103,7 @@ I²C is a serial protocol for two-wire interface to connect low-speed devices li
 The I²C unit allows you to read and write data with daisy-chained peripherals, each of which should
 have a unique address.
 
+{% hint style="info" %}
 | Parameter        | Value               |
 | ---------------- | ------------------- |
 | Name             | `gopi/i2c`   |
@@ -107,7 +111,7 @@ have a unique address.
 | Type             | `gopi.UNIT_I2C`    |
 | Import           | `github.com/djthorpe/gopi/v2/unit/i2c` |
 | Compatibility    | Linux               |
-
+{% endhint %}
 
 The unit adheres to the following interface:
 
@@ -175,6 +179,7 @@ available on [Wikipedia](https://en.wikipedia.org/wiki/Serial_Peripheral_Interfa
 The SPI Unit allows you to read and write data, or do bi-directional
 transfers. In order to use the Unit, here are the parameters:
 
+{% hint style="info" %}
 | Parameter        | Value               |
 | ---------------- | ------------------- |
 | Name             | `gopi/spi`   |
@@ -182,7 +187,7 @@ transfers. In order to use the Unit, here are the parameters:
 | Type             | `gopi.UNIT_SPI`    |
 | Import           | `github.com/djthorpe/gopi/v2/unit/spi` |
 | Compatibility    | Linux               |
-
+{% endhint %}
 
 The unit adheres to the following interface:
 
@@ -234,3 +239,4 @@ _Documentation to be written_
 | Events           | `gopi.GPIOEvent`    |
 | Compatibility    | Linux, Raspberry Pi    |
 {% endhint %}
+
