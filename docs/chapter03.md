@@ -22,11 +22,11 @@ Events may be emitted for example by:
 * A service becoming available on the network;
 * A ticker which fires at a regular interval.
 
-There are many other cases where events could fire. In this chapter, I will describe a tool which handles a ticker, firing at a regular interval.
+There are many other cases where events could fire. In this chapter, I will describe a tool which handles a ticker, firing events at a regular interval.
 
 ## The Timer Unit
 
-The **timer** can fire events at a regular interval or only once. Here are the parameters you'll need in order to use the timer:
+The **Timer Unit** can fire events at a regular interval or only once. Here are the parameters you'll need in order to use the timer:
 
 {% hint style="info" %}
 | Parameter | Value |
@@ -40,7 +40,7 @@ The **timer** can fire events at a regular interval or only once. Here are the p
 | Compatibility | Linux, Darwin |
 {% endhint %}
 
-For every unit you'll need some of this information in order to import and use it in your tools. Any unit can be referred to by `Name` or by `Type`. Often a unit may require you to import other units into your tool, these are called `Requires`. Some units will emit on or more events which can be referred to by their event name \(and which also adhere to an interface\). Finally, the `Compatibility` refers to whether the unit functions with Linux, Darwin or Raspberry Pi specifically. All units which are compatible with Linux are also compatible with the Raspberry Pi, but not vice-versa.
+For every unit you'll need some of this information in order to import and use it in your tools. Any unit can be referred to by **Name** or by **Type**. Often a unit may require you to import other units into your tool, these are called **Requires**. Some units will emit on or more events which can be referred to by their event name \(and which also adhere to an interface\). Finally, the **Compatibility** refers to whether the unit functions with Linux, Darwin or Raspberry Pi specifically. All units which are compatible with Linux are also compatible with the Raspberry Pi, but not vice-versa.
 
 The `gopi.Timer` interface is defined as follows:
 
@@ -71,11 +71,11 @@ func Main(app gopi.App, args []string) error {
 
 This will fire a `gopi.TimerEvent` once every second. But as nothing has been set up to handle the messages, you may just see some debugging output if you have used the `-debug` flag which indicates the events are not being handled.
 
-In fact, the timer emits the ticker events into a **message bus**, which is unsuprisingly yet another **unit**. You don't need to use the message bus directly, but you can simply use it by defining handlers when setting up your application.
+In fact, the timer emits the ticker events into a **message bus**, which is unsurprisingly yet another **unit**. You don't need to use the message bus directly, but you can simply use it by defining handlers when setting up your application.
 
 ## Setting up event handlers for your application
 
-An event handler is defined as follows:
+A `gopi.EventHandler` struct is defined as follows:
 
 ```go
 type gopi.EventHandler struct {
@@ -89,7 +89,7 @@ type gopi.EventHandler struct {
 The fields are:
 
 * The `Name` of the event;
-* The `Handler` function, which has the signature of `func(context,Context,gopi.App,gopi.Event)`;
+* The `Handler` function, which has the signature of `func(ctx context.Context, app gopi.App, event gopi.Event)`;
 * Optionally, a namespace for events, or `gopi.EVENT_NS_DEFAULT` otherwise;
 * Optionally, a deadline for the event handling, or zero otherwise.
 
@@ -131,13 +131,15 @@ func Main(app gopi.App, args []string) error {
 }
 ```
 
-The `NullEvent` is simply an event with no information. You can also create your own events which can be emitted to handlers as long as they adhere to the gopi.Event interface.
+The `gopi.NullEvent` is simply an event with no information. You can also create your own events which can be emitted to handlers as long as they adhere to the `gopi.Event` interface.
 
 Take extra caution when emitting events within handlers. It's easy to create a deadlock situation when you are both handling events of a particular type and also emitting them, resulting in a freeze or panic.
 
 ## Conclusion
 
-In the next section you'll see how units like GPIO emit events when the state changes on a pin \(from low to high, or vice-versa, for example\). In subsequent chapters \(yet to be written!\) events can be emitted from input devices, networks or other external stimulous.
+In the next section you'll see how units like GPIO emit events when the state changes on a pin \(from low to high, or vice-versa, for example\). In subsequent chapters events can be emitted from input devices, networks and other external stimulus.
 
-The **Message Bus** is mostly hidden as you respond to events through handlers. But it is implemented through goroutines and channels so using the go language to maximum extent. There are clearly still challenges around syncronization and deadlock to be careful of when developing your own tools and units.
+You can define event handlers by passing an array of `gopi.EventHandler` instances to the `app.NewCommandLineTool` method when constructing your application instance, and emit your own events using the `app.Emit` method. You can define custom events to emit as long as they adhere to the `gopi.Event` interface.
+
+A **Message Bus Unit** is mostly hidden as you respond to events through handlers. But it is implemented through goroutines and channels so using the go language to maximum extent. There are clearly still challenges around synchronisation and deadlock to be careful of when developing your own tools and units.
 
