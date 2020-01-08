@@ -27,8 +27,7 @@ freetype: TAGS = -tags freetype
 freetype: PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
 freetype:
 	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) ./sys/freetype/...
-
-
+	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) ./unit/fonts/freetype/...
 
 # Build rules
 testrace:
