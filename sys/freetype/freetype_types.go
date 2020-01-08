@@ -23,10 +23,11 @@ import "C"
 // TYPES
 
 type (
-	FT_Error    C.FT_Error
-	FT_Library  C.FT_Library
-	FT_Face     C.FT_Face
-	FT_Encoding C.FT_Encoding
+	FT_Error     C.FT_Error
+	FT_Library   C.FT_Library
+	FT_Face      C.FT_Face
+	FT_Encoding  C.FT_Encoding
+	FT_LoadFlags uint32
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -127,6 +128,28 @@ const (
 	FT_ERROR_Corrupted_Font_Glyphs         FT_Error = 0xBA
 	FT_ERROR_MIN                           FT_Error = FT_ERROR_Cannot_Open_Resource // Min and max error values
 	FT_ERROR_MAX                           FT_Error = FT_ERROR_Corrupted_Font_Glyphs
+)
+
+const (
+	FT_LOAD_DEFAULT                     FT_LoadFlags = 0
+	FT_LOAD_NO_SCALE                    FT_LoadFlags = (1 << 0)
+	FT_LOAD_NO_HINTING                  FT_LoadFlags = (1 << 1)
+	FT_LOAD_RENDER                      FT_LoadFlags = (1 << 2)
+	FT_LOAD_NO_BITMAP                   FT_LoadFlags = (1 << 3)
+	FT_LOAD_VERTICAL_LAYOUT             FT_LoadFlags = (1 << 4)
+	FT_LOAD_FORCE_AUTOHINT              FT_LoadFlags = (1 << 5)
+	FT_LOAD_CROP_BITMAP                 FT_LoadFlags = (1 << 6)
+	FT_LOAD_PEDANTIC                    FT_LoadFlags = (1 << 7)
+	FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH FT_LoadFlags = (1 << 9)
+	FT_LOAD_NO_RECURSE                  FT_LoadFlags = (1 << 10)
+	FT_LOAD_IGNORE_TRANSFORM            FT_LoadFlags = (1 << 11)
+	FT_LOAD_MONOCHROME                  FT_LoadFlags = (1 << 12)
+	FT_LOAD_LINEAR_DESIGN               FT_LoadFlags = (1 << 13)
+	FT_LOAD_NO_AUTOHINT                 FT_LoadFlags = (1 << 15)
+	/* Bits 16-19 are used by `FT_LOAD_TARGET_` */
+	FT_LOAD_COLOR               FT_LoadFlags = (1 << 20)
+	FT_LOAD_COMPUTE_METRICS     FT_LoadFlags = (1 << 21)
+	FT_LOAD_BITMAP_METRICS_ONLY FT_LoadFlags = (1 << 22)
 )
 
 var (

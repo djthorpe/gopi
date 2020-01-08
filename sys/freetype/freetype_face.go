@@ -81,3 +81,48 @@ func FT_FaceNumGlyphs(handle FT_Face) uint {
 func FT_FaceStyleFlags(handle FT_Face) gopi.FontFlags {
 	return gopi.FontFlags(handle.style_flags)
 }
+
+func FT_SetPixelSizes(handle FT_Face, size float32) error {
+	if err := FT_Error(C.FT_Set_Pixel_Sizes(handle, 0, C.FT_UInt(size))); err != FT_SUCCESS {
+		return err
+	} else {
+		return nil
+	}
+}
+
+func FT_SetCharSize(handle FT_Face, points float32, ppi uint) error {
+	if err := FT_Error(C.FT_Set_Char_Size(handle, 0, C.FT_F26Dot6(points*64.0), 0, C.FT_UInt(ppi))); err != FT_SUCCESS {
+		return err
+	} else {
+		return nil
+	}
+}
+
+// This method returns a bitmap for a rune. The returned values are a pointer
+// to the bitmap pixels
+func FT_Load_Glyph(handle FT_Face, value rune) (uintptr, error) {
+
+	// Get Glyph
+	glyph_index := C.FT_Get_Char_Index(handle, C.FT_ULong(value))
+	if glyph_index == 0 {
+		return 0, gopi.ErrBadParameter.WithPrefix("rune")
+	}
+
+	// Render Glyph
+	if err := FT_Error(C.FT_Load_Glyph(handle, glyph_index, C.FT_Int32(FT_LOAD_RENDER))); err != FT_SUCCESS {
+		return 0, err
+	} else {
+		return 0, nil
+	}
+	/*
+		// Compute relevant information
+		bitmap := this.handle.glyph.bitmap
+		pixel_mode := VGFontBitmapPixelMode(bitmap.pixel_mode)
+		size := khronos.EGLSize{Width: uint(bitmap.width), Height: uint(bitmap.rows)}
+		advance := khronos.EGLSize{Width: uint(this.handle.glyph.advance.x >> 6), Height: uint(this.handle.glyph.advance.y >> 6)}
+		stride := uint(bitmap.pitch)
+
+		// Success
+		return uintptr(unsafe.Pointer(bitmap.buffer)), pixel_mode, size, advance, stride, nil
+	*/
+}

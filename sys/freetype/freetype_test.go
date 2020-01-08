@@ -11,6 +11,8 @@ package freetype_test
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -50,6 +52,64 @@ func Test_Freetype_003(t *testing.T) {
 		t.Logf("version={%v,%v,%v}", major, minor, patch)
 		if err := ft.FT_Destroy(library); err != nil {
 			t.Error(err)
+		}
+	}
+}
+
+func Test_Freetype_004(t *testing.T) {
+	if library, err := ft.FT_Init(); err != nil {
+		t.Error(err)
+	} else {
+		defer ft.FT_Destroy(library)
+		if fontPath, err := os.Getwd(); err != nil {
+			t.Error(err)
+		} else {
+			fontPath = filepath.Join(fontPath, "..", "..", "etc", "fonts", "Damion", "Damion-Regular.ttf")
+			if _, err := os.Stat(fontPath); os.IsNotExist(err) {
+				t.Error(fontPath, err)
+			} else if _, err := ft.FT_NewFace(library, fontPath, 0); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+}
+
+func Test_Freetype_005(t *testing.T) {
+	if library, err := ft.FT_Init(); err != nil {
+		t.Error(err)
+	} else {
+		defer ft.FT_Destroy(library)
+		if fontPath, err := os.Getwd(); err != nil {
+			t.Error(err)
+		} else {
+			fontPath = filepath.Join(fontPath, "..", "..", "etc", "fonts", "Damion", "Damion-Regular.ttf")
+			if _, err := os.Stat(fontPath); os.IsNotExist(err) {
+				t.Error(fontPath, err)
+			} else if face, err := ft.FT_NewFace(library, fontPath, 0); err != nil {
+				t.Error(err)
+			} else if err := ft.FT_DoneFace(face); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+}
+
+func Test_Freetype_006(t *testing.T) {
+	if library, err := ft.FT_Init(); err != nil {
+		t.Error(err)
+	} else {
+		defer ft.FT_Destroy(library)
+		if fontPath, err := os.Getwd(); err != nil {
+			t.Error(err)
+		} else {
+			fontPath = filepath.Join(fontPath, "..", "..", "etc", "fonts", "Damion", "Damion-Regular.ttf")
+			if _, err := os.Stat(fontPath); os.IsNotExist(err) {
+				t.Error(fontPath, err)
+			} else if face, err := ft.FT_NewFace(library, fontPath, 0); err != nil {
+				t.Error(err)
+			} else if err := ft.FT_SelectCharmap(face, ft.FT_ENCODING_UNICODE); err != nil {
+				t.Error(err)
+			}
 		}
 	}
 }
