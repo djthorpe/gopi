@@ -10,6 +10,8 @@
 package freetype_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	// Frameworks
@@ -36,4 +38,16 @@ func Test_Freetype_001(t *testing.T) {
 func Main_Test_Freetype_000(app gopi.App, t *testing.T) {
 	fonts := app.Fonts()
 	t.Log(fonts)
+	if wd, err := os.Getwd(); err != nil {
+		t.Error(err)
+	} else {
+		fontPath := filepath.Join(wd, "..", "..", "..", "etc", "fonts", "Damion", "Damion-Regular.ttf")
+		if _, err := os.Stat(fontPath); os.IsNotExist(err) {
+			t.Error(err)
+		} else if face, err := fonts.OpenFace(fontPath); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(face)
+		}
+	}
 }
