@@ -58,8 +58,11 @@ type App interface {
 	Bus() Bus                 // Return event bus unit
 	Platform() Platform       // Return hardware platform unit
 	Display() Display         // Return display
+	Fonts() FontManager       // Return font manager
+	GPIO() GPIO               // Return GPIO interface
 	I2C() I2C                 // Return I2C interface
 	SPI() SPI                 // Return SPI interface
+	LIRC() LIRC               // Return LIRC interface
 }
 
 // Flags encapsulates a set of key/value pairs in several namespaces

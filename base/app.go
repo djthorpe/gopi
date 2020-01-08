@@ -181,12 +181,24 @@ func (this *App) Display() gopi.Display {
 	return this.UnitInstance("display").(gopi.Display)
 }
 
+func (this *App) Fonts() gopi.FontManager {
+	return this.UnitInstance("fonts").(gopi.FontManager)
+}
+
+func (this *App) GPIO() gopi.GPIO {
+	return this.UnitInstance("gpio").(gopi.GPIO)
+}
+
 func (this *App) I2C() gopi.I2C {
 	return this.UnitInstance("i2c").(gopi.I2C)
 }
 
 func (this *App) SPI() gopi.SPI {
 	return this.UnitInstance("spi").(gopi.SPI)
+}
+
+func (this *App) LIRC() gopi.LIRC {
+	return this.UnitInstance("lirc").(gopi.LIRC)
 }
 
 func (this *App) UnitInstance(name string) gopi.Unit {

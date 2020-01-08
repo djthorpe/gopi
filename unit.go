@@ -49,6 +49,7 @@ const (
 	UNIT_LIRC
 	UNIT_GPIO
 	UNIT_SPI
+	UNIT_FONT_MANAGER
 	UNIT_RPC_DISCOVERY
 	UNIT_RPC_REGISTER
 	UNIT_MAX = UNIT_PLATFORM
@@ -60,15 +61,16 @@ const (
 var (
 	unitMutex   sync.Mutex
 	unitNameMap = map[string]UnitType{
-		"logger":    UNIT_LOGGER,   // Logging
-		"timer":     UNIT_TIMER,    // Timer
-		"bus":       UNIT_BUS,      // Event Bus
-		"platform":  UNIT_PLATFORM, // Hardware Platform
-		"display":   UNIT_DISPLAY,  // Display
-		"i2c":       UNIT_I2C,
-		"lirc":      UNIT_LIRC,
-		"gpio":      UNIT_GPIO,
-		"spi":       UNIT_SPI,
+		"logger":    UNIT_LOGGER,        // Logging
+		"timer":     UNIT_TIMER,         // Timer
+		"bus":       UNIT_BUS,           // Event Bus
+		"platform":  UNIT_PLATFORM,      // Hardware Platform
+		"display":   UNIT_DISPLAY,       // Display
+		"gpio":      UNIT_GPIO,          // GPIO Interface
+		"i2c":       UNIT_I2C,           // I2C Interface
+		"spi":       UNIT_SPI,           // SPI Interface
+		"lirc":      UNIT_LIRC,          // Linux Infrared Remote Control
+		"fonts":     UNIT_FONT_MANAGER,  // Font Manager
 		"discovery": UNIT_RPC_DISCOVERY, // RPC Service Discovery
 		"register":  UNIT_RPC_REGISTER,  // RPC Service Registration
 	}
@@ -270,6 +272,20 @@ func (v UnitType) String() string {
 		return "UNIT_TIMER"
 	case UNIT_BUS:
 		return "UNIT_BUS"
+	case UNIT_PLATFORM:
+		return "UNIT_PLATFORM"
+	case UNIT_DISPLAY:
+		return "UNIT_DISPLAY"
+	case UNIT_I2C:
+		return "UNIT_I2C"
+	case UNIT_LIRC:
+		return "UNIT_LIRC"
+	case UNIT_GPIO:
+		return "UNIT_GPIO"
+	case UNIT_SPI:
+		return "UNIT_SPI"
+	case UNIT_FONT_MANAGER:
+		return "UNIT_FONT_MANAGER"
 	case UNIT_RPC_DISCOVERY:
 		return "UNIT_RPC_DISCOVERY"
 	case UNIT_RPC_REGISTER:

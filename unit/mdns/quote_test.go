@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	// Modules
-	util "github.com/djthorpe/gopi-rpc/sys/rpcutil"
+	mdns "github.com/djthorpe/gopi/v2/unit/mdns"
 )
 
 var (
