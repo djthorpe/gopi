@@ -12,6 +12,7 @@ package freetype
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 
 	// Frameworks
@@ -69,9 +70,6 @@ func (this *fontmanager) Init(config FontManager) error {
 }
 
 func (this *fontmanager) Close() error {
-	this.Lock()
-	defer this.Unlock()
-
 	for key, face := range this.faces {
 		if err := this.DestroyFace(face); err != nil {
 			return err
@@ -79,6 +77,9 @@ func (this *fontmanager) Close() error {
 			delete(this.faces, key)
 		}
 	}
+
+	this.Lock()
+	defer this.Unlock()
 
 	if this.library != ft.FT_Library(nil) {
 		if err := ft.FT_Destroy(this.library); err != nil {
@@ -138,8 +139,37 @@ func (this *fontmanager) OpenFaceAtIndex(path string, index uint) (gopi.FontFace
 // Open font faces at path, checking to see if individual files should
 // be opened through a callback function
 func (this *fontmanager) OpenFacesAtPath(path string, callback func(manager gopi.FontManager, path string, info os.FileInfo) bool) error {
-	return gopi.ErrNotImplemented
-
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if info == nil {
+			return nil
+		}
+		if callback(this, path, info) == false {
+			if info.IsDir() {
+				return filepath.SkipDir
+			} else {
+				return nil
+			}
+		}
+		if info.IsDir() {
+			return nil
+		}
+		// Open zero-indexed face
+		face, err := this.OpenFace(path)
+		if err != nil {
+			return err
+		}
+		// If there are more faces in the file, then load these too
+		if face.NumFaces() > uint(1) {
+			for i := uint(1); i < face.NumFaces(); i++ {
+				_, err := this.OpenFaceAtIndex(path, i)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	return err
 }
 
 // Destroy a font face
@@ -203,4 +233,3 @@ func (this *fontmanager) Faces(family string, flags gopi.FontFlags) []gopi.FontF
 	}
 	return faces
 }
-

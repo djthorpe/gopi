@@ -68,7 +68,12 @@ func (this *fontface) NumGlyphs() uint {
 
 // Return properties for face
 func (this *fontface) Flags() gopi.FontFlags {
-	return ft.FT_FaceStyleFlags(this.handle)
+	// If neither bold nor italic, set regular flag
+	if flags := ft.FT_FaceStyleFlags(this.handle); flags&gopi.FONT_FLAGS_STYLE_BOLDITALIC == 0 {
+		return gopi.FONT_FLAGS_STYLE_REGULAR
+	} else {
+		return flags
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

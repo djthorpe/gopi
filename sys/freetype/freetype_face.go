@@ -10,7 +10,6 @@
 package freetype
 
 import (
-	"fmt"
 	"unsafe"
 
 	// Frameworks
@@ -62,7 +61,6 @@ func FT_FaceFamily(handle FT_Face) string {
 }
 
 func FT_FaceStyle(handle FT_Face) string {
-	fmt.Println(handle.style_name)
 	return C.GoString(handle.style_name)
 }
 

@@ -7,7 +7,11 @@
 
 package gopi
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"strings"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
@@ -77,9 +81,44 @@ type FontFace interface {
 
 const (
 	FONT_FLAGS_NONE             FontFlags = 0x0000
-	FONT_FLAGS_STYLE_REGULAR    FontFlags = 0x0001
+	FONT_FLAGS_STYLE_ITALIC     FontFlags = 0x0001
 	FONT_FLAGS_STYLE_BOLD       FontFlags = 0x0002
-	FONT_FLAGS_STYLE_ITALIC     FontFlags = 0x0004
-	FONT_FLAGS_STYLE_BOLDITALIC FontFlags = 0x0006
+	FONT_FLAGS_STYLE_BOLDITALIC FontFlags = 0x0003
+	FONT_FLAGS_STYLE_REGULAR    FontFlags = 0x0004
 	FONT_FLAGS_STYLE_ANY        FontFlags = 0x0007
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (f FontFlags) String() string {
+	if f == FONT_FLAGS_NONE {
+		return f.StringFlag()
+	}
+	str := ""
+	for v := FONT_FLAGS_STYLE_ITALIC; v <= FONT_FLAGS_STYLE_REGULAR; v <<= 1 {
+		if f&v == v {
+			str += v.StringFlag() + "|"
+		}
+	}
+	return strings.TrimSuffix(str, "|")
+}
+
+func (f FontFlags) StringFlag() string {
+	switch f {
+	case FONT_FLAGS_NONE:
+		return "FONT_FLAGS_NONE"
+	case FONT_FLAGS_STYLE_REGULAR:
+		return "FONT_FLAGS_STYLE_REGULAR"
+	case FONT_FLAGS_STYLE_BOLD:
+		return "FONT_FLAGS_STYLE_BOLD"
+	case FONT_FLAGS_STYLE_ITALIC:
+		return "FONT_FLAGS_STYLE_ITALIC"
+	case FONT_FLAGS_STYLE_BOLDITALIC:
+		return "FONT_FLAGS_STYLE_BOLDITALIC"
+	case FONT_FLAGS_STYLE_ANY:
+		return "FONT_FLAGS_STYLE_ANY"
+	default:
+		return fmt.Sprintf("[?? Invalid FontFlags value %d]", int(f))
+	}
+}
