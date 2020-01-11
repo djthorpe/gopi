@@ -267,6 +267,61 @@ func DXDisplaySnapshot(display DXDisplayHandle, resource DXResource, transform D
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// RESOURCES
+
+func DX_ResourceCreate(image_type DX_ImageType, size DX_Size) (DX_Resource, error) {
+	var dummy C.uint32_t
+	if handle := DX_Resource(C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(image_type), C.uint32_t(size.W), C.uint32_t(size.H), (*C.uint32_t)(unsafe.Pointer(&dummy)))); handle == DX_NO_HANDLE {
+		return DX_NO_HANDLE, gopi.ErrBadParameter
+	} else {
+		return handle, nil
+	}
+}
+
+func DX_ResourceDelete(handle DX_Resource) error {
+	if C.vc_dispmanx_resource_delete(C.DISPMANX_RESOURCE_HANDLE_T(handle)) == DX_SUCCESS {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
+func DX_ResourceWriteData(handle DX_Resource, image_type DX_ImageType, src_pitch uint32, src uintptr, dest DX_Rect) error {
+	if C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), C.VC_IMAGE_TYPE_T(image_type), C.int(src_pitch), unsafe.Pointer(src), dest) == DX_SUCCESS {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
+func DX_ResourceReadData(handle DX_Resource, src DX_Rect, dest uintptr, dest_pitch uint32) error {
+	if C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), src, unsafe.Pointer(dest), C.uint32_t(dest_pitch)) == DX_SUCCESS {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// UPDATES
+
+func DX_UpdateStart(priority int32) (DX_Update, error) {
+	if handle := C.vc_dispmanx_update_start(C.int32_t(priority)); handle != DX_NO_HANDLE {
+		return DX_Update(handle), nil
+	} else {
+		return DX_NO_HANDLE, gopi.ErrBadParameter
+	}
+}
+
+func DX_UpdateSubmitSync(handle DX_Update) error {
+	if C.vc_dispmanx_update_submit_sync(C.DISPMANX_UPDATE_HANDLE_T(handle)) == DX_SUCCESS {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (h DXDisplayHandle) String() string {
