@@ -10,10 +10,11 @@
 package linux
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"syscall"
 	"unsafe"
-	"strings"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -59,10 +60,20 @@ import "C"
 // TYPES
 
 type (
+	LIRCMode    uint
 	LIRCFeature uint32
 )
 
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
 const (
+	LIRC_MODE_SEND LIRCMode = (1 << iota)
+	LIRC_MODE_RCV
+)
+
+const (
+	LIRC_DEV              = "/dev/lirc"
 	LIRC_MODE2SEND uint32 = 0
 	LIRC_MODE2REC  uint32 = 16
 )
@@ -88,8 +99,8 @@ const (
 	LIRC_CAN_GET_REC_RESOLUTION       LIRCFeature = 0x20000000
 	LIRC_CAN_SET_REC_TIMEOUT          LIRCFeature = 0x10000000
 	LIRC_CAN_SET_REC_FILTER           LIRCFeature = 0x08000000
-	LIRC_FEATURE_MIN                 LIRCFeature = 0x00000001
-	LIRC_FEATURE_MAX                 LIRCFeature = 0x80000000
+	LIRC_FEATURE_MIN                  LIRCFeature = 0x00000001
+	LIRC_FEATURE_MAX                  LIRCFeature = 0x80000000
 
 /*	LIRC_CAN_MEASURE_CARRIER          LIRCFeature = 0x02000000
 	LIRC_CAN_USE_WIDEBAND_RECEIVER    LIRCFeature = 0x04000000 */
@@ -119,6 +130,32 @@ var (
 	LIRC_SET_REC_CARRIER_RANGE    = uintptr(C._LIRC_SET_REC_CARRIER_RANGE())
 	LIRC_SET_WIDEBAND_RECEIVER    = uintptr(C._LIRC_SET_WIDEBAND_RECEIVER())
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// OPEN
+
+func LIRCDevice(bus uint) string {
+	return fmt.Sprintf("%v%v", LIRC_DEV, bus)
+}
+
+func LIRCOpenDevice(bus uint, mode LIRCMode) (*os.File, error) {
+	fmode := os.O_SYNC
+	switch {
+	case mode == (LIRC_MODE_SEND | LIRC_MODE_RCV):
+		fmode |= os.O_RDWR
+	case mode == LIRC_MODE_SEND:
+		fmode |= os.O_WRONLY
+	case mode == LIRC_MODE_RCV:
+		fmode |= os.O_RDONLY
+	default:
+		return nil, gopi.ErrBadParameter.WithPrefix("mode")
+	}
+	if file, err := os.OpenFile(LIRCDevice(bus), fmode, 0); err != nil {
+		return nil, err
+	} else {
+		return file, nil
+	}
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // IOCTL CALLS
@@ -269,7 +306,7 @@ func (f LIRCFeature) String() string {
 	if f == 0 {
 		return f.FlagString()
 	}
-	for v := LIRC_FEATURE_MIN; v <= LIRC_FEATURE_MAX; v <<= 1 {
+	for v := LIRC_FEATURE_MIN; v != 0; v <<= 1 {
 		if f&v == v {
 			str += "|" + v.FlagString()
 		}
@@ -289,8 +326,6 @@ func (f LIRCFeature) FlagString() string {
 		return "LIRC_CAN_SEND_MODE2"
 	case LIRC_CAN_SEND_LIRCCODE:
 		return "LIRC_CAN_SEND_LIRCCODE"
-	case LIRC_CAN_SEND_MASK:
-		return "LIRC_CAN_SEND_MASK"
 	case LIRC_CAN_SET_SEND_CARRIER:
 		return "LIRC_CAN_SET_SEND_CARRIER"
 	case LIRC_CAN_SET_SEND_DUTY_CYCLE:
@@ -305,8 +340,6 @@ func (f LIRCFeature) FlagString() string {
 		return "LIRC_CAN_REC_MODE2"
 	case LIRC_CAN_REC_LIRCCODE:
 		return "LIRC_CAN_REC_LIRCCODE"
-	case LIRC_CAN_REC_MASK:
-		return "LIRC_CAN_REC_MASK"
 	case LIRC_CAN_SET_REC_CARRIER:
 		return "LIRC_CAN_SET_REC_CARRIER"
 	case LIRC_CAN_SET_REC_DUTY_CYCLE:

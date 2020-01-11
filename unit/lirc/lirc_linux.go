@@ -49,5 +49,5 @@ const (
 // INIT
 
 func (this *lirc) Init(config LIRC) error {
-	return gopi.ErrNotImolemented
+	return gopi.ErrNotImplemented
 }
