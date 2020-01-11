@@ -38,7 +38,8 @@ type SurfaceManager interface {
 	Do(SurfaceCallback) error
 
 	// Create and destroy surfaces
-	CreateSurfaceWithBitmap(bitmap Bitmap, flags SurfaceFlags, opacity float32, layer uint16, origin Point, size Size) (Surface, error)
+	CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
+	CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 	DestroySurface(Surface) error
 
 	// Create and destroy bitmaps

@@ -84,3 +84,60 @@ func Main_Test_Surfaces_002(app gopi.App, t *testing.T) {
 		}
 	}
 }
+
+func Test_Surfaces_003(t *testing.T) {
+	if app, err := app.NewTestTool(t, Main_Test_Surfaces_003, []string{"-debug"}, "surfaces"); err != nil {
+		t.Error(err)
+	} else if returnCode := app.Run(); returnCode != 0 {
+		t.Error("Unexpected return code", returnCode)
+	}
+}
+
+func Main_Test_Surfaces_003(app gopi.App, t *testing.T) {
+	surfaces := app.Surfaces()
+	types := []gopi.SurfaceFlags{
+		gopi.SURFACE_FLAG_RGB565, gopi.SURFACE_FLAG_RGB888, gopi.SURFACE_FLAG_RGBA32,
+	}
+	for _, image_type := range types {
+		if err := surfaces.Do(func(gopi.SurfaceManager) error {
+			if bitmap, err := surfaces.CreateSnapshot(image_type); err != nil {
+				return err
+			} else if surface, err := surfaces.CreateSurfaceWithBitmap(bitmap, 0, 1.0, 0, gopi.ZeroPoint, gopi.ZeroSize); err != nil {
+				return err
+			} else {
+				t.Log(surface)
+				return nil
+			}
+		}); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+func Test_Surfaces_004(t *testing.T) {
+	if app, err := app.NewTestTool(t, Main_Test_Surfaces_004, []string{"-debug"}, "surfaces"); err != nil {
+		t.Error(err)
+	} else if returnCode := app.Run(); returnCode != 0 {
+		t.Error("Unexpected return code", returnCode)
+	}
+}
+
+func Main_Test_Surfaces_004(app gopi.App, t *testing.T) {
+	surfaces := app.Surfaces()
+	types := []gopi.SurfaceFlags{
+		gopi.SURFACE_FLAG_RGB565, gopi.SURFACE_FLAG_RGB888, gopi.SURFACE_FLAG_RGBA32,
+	}
+	size := gopi.Size{100, 100}
+	for _, image_type := range types {
+		if err := surfaces.Do(func(gopi.SurfaceManager) error {
+			if surface, err := surfaces.CreateSurface(gopi.SURFACE_FLAG_OPENVG|image_type, 1.0, 0, gopi.ZeroPoint, size); err != nil {
+				return err
+			} else {
+				t.Log(surface)
+				return nil
+			}
+		}); err != nil {
+			t.Error(err)
+		}
+	}
+}

@@ -39,6 +39,7 @@ const (
 	ErrSignalCaught                    // Signal caught
 	ErrUnexpectedResponse              // Unexpected Response
 	ErrDuplicateItem                   // Duplicate Item
+	ErrOutOfOrder                      // Out of order
 	ErrMax                = ErrDuplicateItem
 )
 
@@ -65,6 +66,8 @@ func (this Error) Error() string {
 		return "Unexpected response"
 	case ErrDuplicateItem:
 		return "Duplicate Item"
+	case ErrOutOfOrder:
+		return "Out of order"
 	default:
 		return "[?? Invalid Error value]"
 	}

@@ -10,8 +10,8 @@
 package egl
 
 import (
-	"unsafe"
 	"strings"
+	"unsafe"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -42,7 +42,6 @@ type (
 	EGLAPI             C.EGLint
 	EGLNativeWindow    uintptr
 )
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -115,8 +114,8 @@ const (
 	EGL_RENDERABLE_TYPE         EGLConfigAttrib = 0x3040
 	EGL_MATCH_NATIVE_PIXMAP     EGLConfigAttrib = 0x3041 // Pseudo-attribute (not queryable)
 	EGL_CONFORMANT              EGLConfigAttrib = 0x3042
-	EGL_COMFIG_ATTRIB_MIN                        = EGL_BUFFER_SIZE
-	EGL_COMFIG_ATTRIB_MAX                        = EGL_CONFORMANT
+	EGL_COMFIG_ATTRIB_MIN                       = EGL_BUFFER_SIZE
+	EGL_COMFIG_ATTRIB_MAX                       = EGL_CONFORMANT
 )
 
 const (
@@ -125,8 +124,8 @@ const (
 	EGL_RENDERABLE_FLAG_OPENVG     EGLRenderableFlag = 0x0002
 	EGL_RENDERABLE_FLAG_OPENGL_ES2 EGLRenderableFlag = 0x0004
 	EGL_RENDERABLE_FLAG_OPENGL     EGLRenderableFlag = 0x0008
-	EGL_RENDERABLE_FLAG_MIN                           = EGL_RENDERABLE_FLAG_OPENGL_ES
-	EGL_RENDERABLE_FLAG_MAX                           = EGL_RENDERABLE_FLAG_OPENGL
+	EGL_RENDERABLE_FLAG_MIN                          = EGL_RENDERABLE_FLAG_OPENGL_ES
+	EGL_RENDERABLE_FLAG_MAX                          = EGL_RENDERABLE_FLAG_OPENGL
 )
 
 const (
@@ -138,8 +137,8 @@ const (
 	EGL_SURFACETYPE_FLAG_VG_ALPHA_FORMAT_PRE     EGLSurfaceTypeFlag = 0x0040 /* EGL_SURFACE_TYPE mask bits */
 	EGL_SURFACETYPE_FLAG_MULTISAMPLE_RESOLVE_BOX EGLSurfaceTypeFlag = 0x0200 /* EGL_SURFACE_TYPE mask bits */
 	EGL_SURFACETYPE_FLAG_SWAP_BEHAVIOR_PRESERVED EGLSurfaceTypeFlag = 0x0400 /* EGL_SURFACE_TYPE mask bits */
-	EGL_SURFACETYPE_FLAG_MIN                                         = EGL_SURFACETYPE_FLAG_PBUFFER
-	EGL_SURFACETYPE_FLAG_MAX                                         = EGL_SURFACETYPE_FLAG_SWAP_BEHAVIOR_PRESERVED
+	EGL_SURFACETYPE_FLAG_MIN                                        = EGL_SURFACETYPE_FLAG_PBUFFER
+	EGL_SURFACETYPE_FLAG_MAX                                        = EGL_SURFACETYPE_FLAG_SWAP_BEHAVIOR_PRESERVED
 )
 
 const (
@@ -148,17 +147,27 @@ const (
 	EGL_API_OPENGL_ES EGLAPI = 0x30A0
 	EGL_API_OPENVG    EGLAPI = 0x30A1
 	EGL_API_OPENGL    EGLAPI = 0x30A2
-	EGL_API_MIN               = EGL_API_OPENGL_ES
-	EGL_API_MAX               = EGL_API_OPENGL
+	EGL_API_MIN              = EGL_API_OPENGL_ES
+	EGL_API_MAX              = EGL_API_OPENGL
 )
 
 var (
-EGLSurfaceTypeMap = map[string]gopi.SurfaceFlags{
-	"OpenGL":     gopi.SURFACE_FLAG_OPENGL,
-	"OpenGL_ES":  gopi.SURFACE_FLAG_OPENGL_ES,
-	"OpenGL_ES2": gopi.SURFACE_FLAG_OPENGL_ES2,
-	"OpenVG":     gopi.SURFACE_FLAG_OPENVG,
-}
+	EGLSurfaceTypeMap = map[string]gopi.SurfaceFlags{
+		"OpenGL":     gopi.SURFACE_FLAG_OPENGL,
+		"OpenGL_ES":  gopi.SURFACE_FLAG_OPENGL_ES,
+		"OpenGL_ES2": gopi.SURFACE_FLAG_OPENGL_ES2,
+		"OpenVG":     gopi.SURFACE_FLAG_OPENVG,
+	}
+	EGLAPIMap = map[gopi.SurfaceFlags]EGLAPI{
+		gopi.SURFACE_FLAG_OPENGL_ES: EGL_API_OPENGL_ES,
+		gopi.SURFACE_FLAG_OPENVG:    EGL_API_OPENVG,
+		gopi.SURFACE_FLAG_OPENGL:    EGL_API_OPENGL,
+	}
+	EGLRenderableMap = map[gopi.SurfaceFlags]EGLRenderableFlag{
+		gopi.SURFACE_FLAG_OPENGL:    EGL_RENDERABLE_FLAG_OPENGL,
+		gopi.SURFACE_FLAG_OPENGL_ES: EGL_RENDERABLE_FLAG_OPENGL_ES,
+		gopi.SURFACE_FLAG_OPENVG:    EGL_RENDERABLE_FLAG_OPENVG,
+	}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -174,7 +183,7 @@ func EGLGetError() error {
 
 func EGLInitialize(display EGLDisplay) (int, int, error) {
 	var major, minor C.EGLint
-	if C.eglInitialize(C.EGLDisplay(display), (*C.EGLint)(unsafe.Pointer(&major)), (*C.EGLint)(unsafe.Pointer(&minor))) != EGL_TRUE {		
+	if C.eglInitialize(C.EGLDisplay(display), (*C.EGLint)(unsafe.Pointer(&major)), (*C.EGLint)(unsafe.Pointer(&minor))) != EGL_TRUE {
 		return 0, 0, EGLGetError()
 	} else {
 		return int(major), int(minor), nil
@@ -196,7 +205,6 @@ func EGLGetDisplay(display uint) EGLDisplay {
 func EGLQueryString(display EGLDisplay, value EGLQuery) string {
 	return C.GoString(C.eglQueryString(C.EGLDisplay(display), C.EGLint(value)))
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // SURFACE CONFIGS
@@ -311,7 +319,6 @@ func EGLQueryAPI() (EGLAPI, error) {
 	}
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // CONTEXT
 
@@ -338,7 +345,6 @@ func EGLMakeCurrent(display EGLDisplay, draw, read EGLSurface, context EGLContex
 		return nil
 	}
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // SURFACE

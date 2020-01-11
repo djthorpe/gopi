@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unsafe"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -32,6 +33,7 @@ type manager struct {
 	handle       egl.EGLDisplay
 	major, minor int
 	bitmaps      map[rpi.DXResource]*bitmap
+	surfaces     []*surface
 	update       rpi.DXUpdate
 
 	base.Unit
@@ -59,6 +61,7 @@ func (this *manager) Init(config SurfaceManager) error {
 		this.major = major
 		this.minor = minor
 		this.bitmaps = make(map[rpi.DXResource]*bitmap)
+		this.surfaces = make([]*surface, 0, 4)
 	}
 
 	// Success
@@ -68,6 +71,18 @@ func (this *manager) Init(config SurfaceManager) error {
 func (this *manager) Close() error {
 	if this.handle == 0 {
 		return nil
+	}
+
+	// Free surfaces
+	if err := this.Do(func(gopi.SurfaceManager) error {
+		for _, surface := range this.surfaces {
+			if err := surface.Destroy(this.update); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	// Free bitmaps
@@ -88,6 +103,7 @@ func (this *manager) Close() error {
 	this.display = nil
 	this.handle = 0
 	this.bitmaps = nil
+	this.surfaces = nil
 
 	// Success
 	return this.Unit.Close()
@@ -143,32 +159,105 @@ func (this *manager) Types() []gopi.SurfaceFlags {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION gopi.SurfaceManager surface methods
+// SURFACE METHODS
 
-func (this *manager) CreateSurfaceWithBitmap(bitmap gopi.Bitmap, flags gopi.SurfaceFlags, opacity float32, layer uint16, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
-	flags = gopi.SURFACE_FLAG_BITMAP | bitmap.Type() | flags.Mod()
-	if opacity < 0.0 || opacity > 1.0 {
+func (this *manager) CreateSurfaceWithBitmap(bm gopi.Bitmap, flags gopi.SurfaceFlags, opacity float32, layer uint16, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
+	if layer == 0 {
+		layer = gopi.SURFACE_LAYER_DEFAULT
+	}
+	flags = gopi.SURFACE_FLAG_BITMAP | bm.Type() | flags.Mod()
+	if bitmap_, ok := bm.(*bitmap); ok == false || bitmap_ == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("bitmap")
+	} else if opacity < 0.0 || opacity > 1.0 {
 		return nil, gopi.ErrBadParameter.WithPrefix("opacity")
 	} else if layer < gopi.SURFACE_LAYER_DEFAULT || layer > gopi.SURFACE_LAYER_MAX {
 		return nil, gopi.ErrBadParameter.WithPrefix("layer")
-	} else if bitmap == nil {
-		return nil, gopi.ErrBadParameter.WithPrefix("bitmap")
-	} else if size = size_from_bitmap(bitmap, size); size == gopi.ZeroSize {
+	} else if size = size_from_bitmap(bm, size); size == gopi.ZeroSize {
 		return nil, gopi.ErrBadParameter.WithPrefix("size")
-	} else if native_surface, err := NewSurface(this.update, bitmap, flags, opacity, layer, origin, size); err != nil {
+	} else if native, err := NewNativeSurface(this.update, bitmap_, rpi_dx_display(this.display), flags, opacity, layer, origin, size); err != nil {
 		return nil, err
 	} else {
-		// Return the surface
-		s := &surface{
-			log:     this.log,
-			flags:   flags,
-			opacity: opacity,
-			layer:   layer,
-			native:  native_surface,
-			bitmap:  bitmap,
+		surface := NewSurface(flags, opacity, layer, native)
+		this.surfaces = append(this.surfaces, surface)
+		return surface, nil
+	}
+}
+
+func (this *manager) CreateSurface(flags gopi.SurfaceFlags, opacity float32, layer uint16, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
+	// api
+	api := flags.Type()
+
+	// Set layer to default
+	if layer == 0 {
+		layer = gopi.SURFACE_LAYER_DEFAULT
+	}
+
+	// if Bitmap, then create a bitmap
+	if api == gopi.SURFACE_FLAG_BITMAP {
+		if bitmap, err := this.CreateBitmap(flags, size); err != nil {
+			return nil, err
+		} else if surface, err := this.CreateSurfaceWithBitmap(bitmap, flags, opacity, layer, origin, size); err != nil {
+			return nil, err
+		} else {
+			return surface, nil
 		}
-		this.surfaces = append(this.surfaces, s)
-		return s, nil
+	}
+
+	// Return gopi.ErrNotImplemented
+	return nil,gopi.ErrNotImplemented
+
+	// Choose r,g,b,a bits per pixel
+	var r, g, b, a uint
+	switch flags.Config() {
+	case gopi.SURFACE_FLAG_RGB565:
+		r = 5
+		g = 6
+		b = 5
+		a = 0
+	case gopi.SURFACE_FLAG_RGBA32:
+		r = 8
+		g = 8
+		b = 8
+		a = 8
+	case gopi.SURFACE_FLAG_RGB888:
+		r = 8
+		g = 8
+		b = 8
+		a = 0
+	default:
+		return nil, gopi.ErrNotImplemented.WithPrefix("flags")
+	}
+
+	// Create EGL context
+	if api_, exists := egl.EGLAPIMap[api]; exists == false {
+		return nil, gopi.ErrBadParameter.WithPrefix("api")
+	} else if renderable_, exists := egl.EGLRenderableMap[api]; exists == false {
+		return nil, gopi.ErrBadParameter.WithPrefix("api")
+	} else if opacity < 0.0 || opacity > 1.0 {
+		return nil, gopi.ErrBadParameter.WithPrefix("opacity")
+	} else if layer < gopi.SURFACE_LAYER_DEFAULT || layer > gopi.SURFACE_LAYER_MAX {
+		return nil, gopi.ErrBadParameter.WithPrefix("layer")
+	} else if err := egl.EGLBindAPI(api_); err != nil {
+		return nil, err
+	} else if config, err := egl.EGLChooseConfig(this.handle, r, g, b, a, egl.EGL_SURFACETYPE_FLAG_WINDOW, renderable_); err != nil {
+		return nil, err
+	} else if native, err := NewNativeSurface(this.update, nil, rpi_dx_display(this.display), flags, opacity, layer, origin, size); err != nil {
+		return nil, err
+	} else if handle, err := egl.EGLCreateSurface(this.handle, config, egl_nativewindow(native)); err != nil {
+		native.Destroy(this.update)
+		return nil, err
+	} else if context, err := egl.EGLCreateContext(this.handle, config, nil); err != nil {
+		// TODO: Destroy EGL Window
+		native.Destroy(this.update)
+		return nil, err
+	} else if err := egl.EGLMakeCurrent(this.handle, handle, handle, context); err != nil {
+		// TODO: Destroy context, surface, window, ...
+		native.Destroy(this.update)
+		return nil, err
+	} else {
+		surface := NewSurface(flags, opacity, layer, native)
+		this.surfaces = append(this.surfaces, surface)
+		return surface, nil
 	}
 }
 
@@ -177,7 +266,7 @@ func (this *manager) DestroySurface(gopi.Surface) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION gopi.SurfaceManager update methods
+// UPDATE METHODS
 
 func (this *manager) Do(callback gopi.SurfaceCallback) error {
 	this.Mutex.Lock()
@@ -212,7 +301,7 @@ func (this *manager) Do(callback gopi.SurfaceCallback) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION gopi.SurfaceManager bitmap methods
+// BITMAP METHODS
 
 func (this *manager) CreateBitmap(flags gopi.SurfaceFlags, size gopi.Size) (gopi.Bitmap, error) {
 	flags = gopi.SURFACE_FLAG_BITMAP | flags.Config() | flags.Mod()
@@ -272,4 +361,16 @@ func opacity_from_float(opacity float32) uint8 {
 	}
 	// Opacity is between 0 (fully transparent) and 255 (fully opaque)
 	return uint8(opacity * float32(0xFF))
+}
+
+func size_from_bitmap(bitmap gopi.Bitmap, size gopi.Size) gopi.Size {
+	if size == gopi.ZeroSize {
+		return bitmap.Size()
+	} else {
+		return size
+	}
+}
+
+func egl_nativewindow(window *nativesurface) egl.EGLNativeWindow {
+	return egl.EGLNativeWindow(unsafe.Pointer(window))
 }
