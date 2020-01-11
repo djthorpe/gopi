@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	// Modules
+	// Units
 	mdns "github.com/djthorpe/gopi/v2/unit/mdns"
 )
 
@@ -42,7 +42,7 @@ func Test_Quote_001(t *testing.T) {
 			continue
 		}
 		t.Logf("Test %v: %v => %v", i, strconv.Quote(test.unquoted), strconv.Quote(test.quoted))
-		quoted := util.Quote(test.unquoted)
+		quoted := mdns.Quote(test.unquoted)
 		if quoted != test.quoted {
 			t.Errorf("Test %v: Expected %v but got %v", i, strconv.Quote(test.quoted), strconv.Quote(quoted))
 		}
@@ -51,7 +51,7 @@ func Test_Quote_001(t *testing.T) {
 func Test_Quote_002(t *testing.T) {
 	for i, test := range quote_tests {
 		t.Logf("Test %v: %v => %v", i, strconv.Quote(test.quoted), strconv.Quote(test.unquoted))
-		if unquoted, err := util.Unquote(test.quoted); test.err {
+		if unquoted, err := mdns.Unquote(test.quoted); test.err {
 			if err == nil {
 				t.Errorf("Test %v: Expected error condition but got none", i)
 			}

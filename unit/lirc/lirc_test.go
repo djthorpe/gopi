@@ -1,4 +1,4 @@
-// +build !darwin
+// +build linux
 
 /*
   Go Language Raspberry Pi Interface
