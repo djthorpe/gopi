@@ -19,9 +19,9 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func SetBitmap(mgr gopi.SurfaceManager, bitmap gopi.Bitmap) error {
+func SetBitmap(mgr gopi.SurfaceManager, bitmap gopi.Bitmap, origin gopi.Point) error {
 	return mgr.Do(func(gopi.SurfaceManager) error {
-		if surface, err := mgr.CreateSurfaceWithBitmap(bitmap, 0, 1.0, 0, gopi.ZeroPoint, gopi.ZeroSize); err != nil {
+		if surface, err := mgr.CreateSurfaceWithBitmap(bitmap, 0, 1.0, 0, origin, gopi.ZeroSize); err != nil {
 			return err
 		} else {
 			fmt.Println(surface)
@@ -38,7 +38,7 @@ func Main(app gopi.App, args []string) error {
 	// Put red bitmap in middle of screen
 	if bitmap, err := app.Surfaces().CreateBitmap(0, gopi.Size{100, 100}); err != nil {
 		return err
-	} else if err := SetBitmap(app.Surfaces(), bitmap); err != nil {
+	} else if err := SetBitmap(app.Surfaces(), bitmap, gopi.Point{100, 100}); err != nil {
 		return err
 	}
 
