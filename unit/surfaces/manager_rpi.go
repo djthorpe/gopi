@@ -178,6 +178,7 @@ func (this *manager) CreateSurfaceWithBitmap(bm gopi.Bitmap, flags gopi.SurfaceF
 		return nil, err
 	} else {
 		surface := NewSurface(flags, opacity, layer, native)
+		surface.bitmap = bm
 		this.surfaces = append(this.surfaces, surface)
 		return surface, nil
 	}

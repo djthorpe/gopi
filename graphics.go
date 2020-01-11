@@ -7,7 +7,10 @@
 
 package gopi
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
@@ -19,6 +22,11 @@ type (
 	// SurfaceCallback
 	SurfaceCallback func(SurfaceManager) error
 )
+
+// Color including opacity
+type Color struct {
+	R, G, B, A float32
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -58,12 +66,16 @@ type Surface interface {
 	Origin() Point
 	Opacity() float32
 	Layer() uint16
+	Bitmap() Bitmap
 }
 
 // Bitmap defines a rectangular bitmap which can be used by the GPU
 type Bitmap interface {
 	Type() SurfaceFlags
 	Size() Size
+
+	// Clear bitmap
+	ClearToColor(Color)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,19 +109,43 @@ const (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// GLOBALS
+
+// Standard Colors
+var (
+	ColorRed         = Color{1.0, 0.0, 0.0, 1.0}
+	ColorGreen       = Color{0.0, 1.0, 0.0, 1.0}
+	ColorBlue        = Color{0.0, 0.0, 1.0, 1.0}
+	ColorWhite       = Color{1.0, 1.0, 1.0, 1.0}
+	ColorBlack       = Color{0.0, 0.0, 0.0, 1.0}
+	ColorPurple      = Color{1.0, 0.0, 1.0, 1.0}
+	ColorCyan        = Color{0.0, 1.0, 1.0, 1.0}
+	ColorYellow      = Color{1.0, 1.0, 0.0, 1.0}
+	ColorDarkGrey    = Color{0.25, 0.25, 0.25, 1.0}
+	ColorLightGrey   = Color{0.75, 0.75, 0.75, 1.0}
+	ColorMidGrey     = Color{0.5, 0.5, 0.5, 1.0}
+	ColorTransparent = Color{}
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATIONS
 
-// Type() returns the type of the surface
+// RGBA32 returns uint32 values for color
+func (c Color) RGBA32() (r, g, b, a uint32) {
+	return uint32(c.R*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.G*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.B*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.A*float32(0xFFFF)) & uint32(0xFFFF)
+}
+
+// Type returns the type of the surface
 func (f SurfaceFlags) Type() SurfaceFlags {
 	return f & SURFACE_FLAG_TYPEMASK
 }
 
-// Config() returns the configuration of the surface
+// Config returns the configuration of the surface
 func (f SurfaceFlags) Config() SurfaceFlags {
 	return f & SURFACE_FLAG_CONFIGMASK
 }
 
-// Mod() returns surface modifiers
+// Mod returns surface modifiers
 func (f SurfaceFlags) Mod() SurfaceFlags {
 	return f & SURFACE_FLAG_MODMASK
 }
@@ -165,4 +201,8 @@ func (f SurfaceFlags) String() string {
 	parts += "|" + f.ConfigString()
 	parts += "|" + f.ModString()
 	return strings.Trim(parts, "|")
+}
+
+func (c Color) String() string {
+	return fmt.Sprintf("Color{ %.1f,%.1f,%.1f,%.1f }", c.R, c.G, c.B, c.A)
 }

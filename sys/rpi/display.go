@@ -14,6 +14,7 @@ import (
 	"unsafe"
 	"fmt"
 	"strings"
+	"reflect"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -75,6 +76,11 @@ type DXAlpha struct {
 	Flags   DXAlphaFlags
 	Opacity uint32
 	Mask    DXResource
+}
+
+type DXData struct {
+	buf uintptr
+	cap uint
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -217,6 +223,46 @@ const (
 	DX_ALPHA_FLAG_MIX                   DXAlphaFlags = 1 << 17
 	DX_ALPHA_FLAG__DISCARD_LOWER_LAYERS DXAlphaFlags = 1 << 18
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS: BYTE BUFFER
+
+func DXNewData(cap uint) *DXData {
+	if cap == 0 {
+		return nil
+	} else if buf := uintptr(C.malloc(C.uint(cap))); buf == 0 {
+		return nil
+	} else {
+		return &DXData{ buf, cap }
+	}
+}
+
+func (this *DXData) Free() {
+	C.free(unsafe.Pointer(this.buf))
+	this.buf = 0
+	this.cap = 0
+}
+
+func (this *DXData) Bytes() []byte {
+	var data []byte
+	if this.buf == 0 {
+		return nil
+	} else {
+		hdr := (*reflect.SliceHeader)(unsafe.Pointer(&data))
+		hdr.Data = this.buf
+		hdr.Len = int(this.cap)
+		hdr.Cap = hdr.Len
+		return data	
+	}
+}
+
+func (this *DXData) Ptr() uintptr {
+	return this.buf
+}
+
+func (this *DXData) Cap() uint {
+	return this.cap
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS: DISPLAYS

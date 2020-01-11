@@ -9,6 +9,7 @@ package surfaces_test
 
 import (
 	"testing"
+	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -140,4 +141,39 @@ func Main_Test_Surfaces_004(app gopi.App, t *testing.T) {
 			t.Error(err)
 		}
 	}
+}
+
+func Test_Surfaces_005(t *testing.T) {
+	if app, err := app.NewTestTool(t, Main_Test_Surfaces_005, []string{"-debug"}, "surfaces"); err != nil {
+		t.Error(err)
+	} else if returnCode := app.Run(); returnCode != 0 {
+		t.Error("Unexpected return code", returnCode)
+	}
+}
+
+func Main_Test_Surfaces_005(app gopi.App, t *testing.T) {
+	surfaces := app.Surfaces()
+	types := []gopi.SurfaceFlags{
+		gopi.SURFACE_FLAG_RGB565, gopi.SURFACE_FLAG_RGB888, gopi.SURFACE_FLAG_RGBA32,
+	}
+	colors := []gopi.Color{
+		gopi.ColorBlue, gopi.ColorCyan, gopi.ColorRed,
+	}
+	size := gopi.Size{100, 100}
+	origin := gopi.ZeroPoint
+	for i, image_type := range types {
+		if err := surfaces.Do(func(gopi.SurfaceManager) error {
+			if surface, err := surfaces.CreateSurface(gopi.SURFACE_FLAG_BITMAP|image_type, 1.0, 0, origin, size); err != nil {
+				return err
+			} else {
+				surface.Bitmap().ClearToColor(colors[i])
+			}
+			origin.X += size.W
+			origin.Y += size.H
+			return nil
+		}); err != nil {
+			t.Error(err)
+		}
+	}
+	time.Sleep(time.Second * 2)
 }

@@ -31,19 +31,20 @@ type surface struct {
 	opacity float32
 	layer   uint16
 	native  *nativesurface
+	bitmap  gopi.Bitmap
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // NEW AND DESTROY
 
-func NewSurface(flags gopi.SurfaceFlags,opacity float32,layer uint16,native *nativesurface) *surface {
-	return &surface{ flags,opacity,layer,native }
+func NewSurface(flags gopi.SurfaceFlags, opacity float32, layer uint16, native *nativesurface) *surface {
+	return &surface{flags, opacity, layer, native, nil}
 }
 
 func NewNativeSurface(update rpi.DXUpdate, bitmap *bitmap, display rpi.DXDisplayHandle, flags gopi.SurfaceFlags, opacity float32, layer uint16, origin gopi.Point, size gopi.Size) (*nativesurface, error) {
 	// Check update
 	if update == 0 {
-		return nil,gopi.ErrOutOfOrder.WithPrefix("update")
+		return nil, gopi.ErrOutOfOrder.WithPrefix("update")
 	}
 	// Set alpha
 	alpha := rpi.DXAlpha{
@@ -129,7 +130,6 @@ func (this *nativesurface) Destroy(update rpi.DXUpdate) error {
 	return nil
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Surface
 
@@ -151,6 +151,10 @@ func (this *surface) Opacity() float32 {
 
 func (this *surface) Layer() uint16 {
 	return this.layer
+}
+
+func (this *surface) Bitmap() gopi.Bitmap {
+	return this.bitmap
 }
 
 ////////////////////////////////////////////////////////////////////////////////
