@@ -23,11 +23,14 @@ import "C"
 // TYPES
 
 type (
-	FT_Error     C.FT_Error
-	FT_Library   C.FT_Library
-	FT_Face      C.FT_Face
-	FT_Encoding  C.FT_Encoding
-	FT_LoadFlags uint32
+	FT_Error      C.FT_Error
+	FT_Library    C.FT_Library
+	FT_Face       C.FT_Face
+	FT_Encoding   C.FT_Encoding
+	FT_Bitmap     C.FT_Bitmap
+	FT_LoadFlags  uint32
+	FT_PixelMode  uint32
+	FT_RenderMode uint32
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -150,6 +153,25 @@ const (
 	FT_LOAD_COLOR               FT_LoadFlags = (1 << 20)
 	FT_LOAD_COMPUTE_METRICS     FT_LoadFlags = (1 << 21)
 	FT_LOAD_BITMAP_METRICS_ONLY FT_LoadFlags = (1 << 22)
+)
+
+const (
+	FT_RENDER_MODE_NORMAL FT_RenderMode = iota
+	FT_RENDER_MODE_LIGHT
+	FT_RENDER_MODE_MONO
+	FT_RENDER_MODE_LCD
+	FT_RENDER_MODE_LCD_V
+)
+
+const (
+	FT_PIXEL_MODE_NONE  FT_PixelMode = iota
+	FT_PIXEL_MODE_MONO               // 1 bit per pixel
+	FT_PIXEL_MODE_GRAY               // 8 bits per pixel
+	FT_PIXEL_MODE_GRAY2              // 2 bits per pixel
+	FT_PIXEL_MODE_GRAY4              // 4 bits per pixel
+	FT_PIXEL_MODE_LCD                // 8 bits per pixel, horizontal LCD
+	FT_PIXEL_MODE_LCD_V              // 8 bits per pixel, vertical LCD
+	FT_PIXEL_MODE_BGRA               // 32 bits per pixel
 )
 
 var (
@@ -349,5 +371,28 @@ func (e FT_Error) Error() string {
 		return "FT_ERROR_Corrupted_Font_Glyphs"
 	default:
 		return "[?? Invalid FT_ERROR value]" // TODO: Add error codes
+	}
+}
+
+func (f FT_PixelMode) String() string {
+	switch f {
+	case FT_PIXEL_MODE_NONE:
+		return "FT_PIXEL_MODE_NONE"
+	case FT_PIXEL_MODE_MONO:
+		return "FT_PIXEL_MODE_MONO"
+	case FT_PIXEL_MODE_GRAY:
+		return "FT_PIXEL_MODE_GRAY"
+	case FT_PIXEL_MODE_GRAY2:
+		return "FT_PIXEL_MODE_GRAY2"
+	case FT_PIXEL_MODE_GRAY4:
+		return "FT_PIXEL_MODE_GRAY4"
+	case FT_PIXEL_MODE_LCD:
+		return "FT_PIXEL_MODE_LCD"
+	case FT_PIXEL_MODE_LCD_V:
+		return "FT_PIXEL_MODE_LCD_V"
+	case FT_PIXEL_MODE_BGRA:
+		return "FT_PIXEL_MODE_BGRA"
+	default:
+		return "[?? Invalid FT_PixelMode value]"
 	}
 }
