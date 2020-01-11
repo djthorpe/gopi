@@ -201,6 +201,10 @@ func (this *App) LIRC() gopi.LIRC {
 	return this.UnitInstance("lirc").(gopi.LIRC)
 }
 
+func (this *App) Surfaces() gopi.SurfaceManager {
+	return this.UnitInstance("surfaces").(gopi.SurfaceManager)
+}
+
 func (this *App) UnitInstance(name string) gopi.Unit {
 	if units := this.UnitInstancesByName(name); len(units) == 0 {
 		return nil

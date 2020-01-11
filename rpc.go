@@ -45,12 +45,18 @@ type RPCServiceDiscovery interface {
 
 	// Return list of service names
 	EnumerateServices(ctx context.Context) ([]string, error)
+
+	// Implements gopi.Unit
+	Unit
 }
 
 // RPCServiceRegister will register services
 type RPCServiceRegister interface {
 	// Register service record, and de-register when deadline is exceeded
 	Register(ctx context.Context, record RPCServiceRecord) error
+
+	// Implements gopi.Unit
+	Unit
 }
 
 type RPCEvent interface {
@@ -63,6 +69,7 @@ type RPCEvent interface {
 	// Time-to-live value for event
 	TTL() time.Duration
 
+	// Implements gopi.Event
 	Event
 }
 

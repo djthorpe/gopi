@@ -19,7 +19,7 @@ linux: test install
 darwin: TAGS = -tags darwin
 darwin: testrace install
 
-rpi: TAGS = -tags rpi
+rpi: TAGS = -tags rpi,egl
 rpi: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
 rpi: test install
 

@@ -50,6 +50,7 @@ const (
 	UNIT_GPIO
 	UNIT_SPI
 	UNIT_FONT_MANAGER
+	UNIT_SURFACE_MANAGER
 	UNIT_RPC_DISCOVERY
 	UNIT_RPC_REGISTER
 	UNIT_MAX = UNIT_PLATFORM
@@ -61,18 +62,19 @@ const (
 var (
 	unitMutex   sync.Mutex
 	unitNameMap = map[string]UnitType{
-		"logger":    UNIT_LOGGER,        // Logging
-		"timer":     UNIT_TIMER,         // Timer
-		"bus":       UNIT_BUS,           // Event Bus
-		"platform":  UNIT_PLATFORM,      // Hardware Platform
-		"display":   UNIT_DISPLAY,       // Display
-		"gpio":      UNIT_GPIO,          // GPIO Interface
-		"i2c":       UNIT_I2C,           // I2C Interface
-		"spi":       UNIT_SPI,           // SPI Interface
-		"lirc":      UNIT_LIRC,          // Linux Infrared Remote Control
-		"fonts":     UNIT_FONT_MANAGER,  // Font Manager
-		"discovery": UNIT_RPC_DISCOVERY, // RPC Service Discovery
-		"register":  UNIT_RPC_REGISTER,  // RPC Service Registration
+		"logger":    UNIT_LOGGER,          // Logging
+		"timer":     UNIT_TIMER,           // Timer
+		"bus":       UNIT_BUS,             // Event Bus
+		"platform":  UNIT_PLATFORM,        // Hardware Platform
+		"display":   UNIT_DISPLAY,         // Display
+		"gpio":      UNIT_GPIO,            // GPIO Interface
+		"i2c":       UNIT_I2C,             // I2C Interface
+		"spi":       UNIT_SPI,             // SPI Interface
+		"lirc":      UNIT_LIRC,            // Linux Infrared Remote Control
+		"fonts":     UNIT_FONT_MANAGER,    // Font Manager
+		"surfaces":  UNIT_SURFACE_MANAGER, // Surface Manager
+		"discovery": UNIT_RPC_DISCOVERY,   // RPC Service Discovery
+		"register":  UNIT_RPC_REGISTER,    // RPC Service Registration
 	}
 	unitByName map[string]*UnitConfig
 	unitByType map[UnitType]*UnitConfig
@@ -286,6 +288,8 @@ func (v UnitType) String() string {
 		return "UNIT_SPI"
 	case UNIT_FONT_MANAGER:
 		return "UNIT_FONT_MANAGER"
+	case UNIT_SURFACE_MANAGER:
+		return "UNIT_SURFACE_MANAGER"
 	case UNIT_RPC_DISCOVERY:
 		return "UNIT_RPC_DISCOVERY"
 	case UNIT_RPC_REGISTER:

@@ -13,6 +13,7 @@ import (
 	"os"
 	"syscall"
 	"unsafe"
+	"strings"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -87,8 +88,8 @@ const (
 	LIRC_CAN_GET_REC_RESOLUTION       LIRCFeature = 0x20000000
 	LIRC_CAN_SET_REC_TIMEOUT          LIRCFeature = 0x10000000
 	LIRC_CAN_SET_REC_FILTER           LIRCFeature = 0x08000000
-	LIRC_FEATURES_MIN                 LIRCFeature = 0x00000001
-	LIRC_FEATURES_MAX                 LIRCFeature = 0x80000000
+	LIRC_FEATURE_MIN                 LIRCFeature = 0x00000001
+	LIRC_FEATURE_MAX                 LIRCFeature = 0x80000000
 
 /*	LIRC_CAN_MEASURE_CARRIER          LIRCFeature = 0x02000000
 	LIRC_CAN_USE_WIDEBAND_RECEIVER    LIRCFeature = 0x04000000 */
@@ -237,7 +238,7 @@ func LIRCSetTransmitterMask(fd uintptr, value uint32) error {
 }
 
 func LIRCSetRcvTimeoutReports(fd uintptr, value bool) error {
-	value2 := bool2uint32(value)
+	value2 := lirc_bool2uint32(value)
 	if err := lirc_ioctl(fd, LIRC_SET_REC_TIMEOUT_REPORTS, unsafe.Pointer(&value2)); err != 0 {
 		return os.NewSyscallError("lirc_ioctl", err)
 	}
@@ -245,7 +246,7 @@ func LIRCSetRcvTimeoutReports(fd uintptr, value bool) error {
 }
 
 func LIRCSetMeasureCarrierMode(fd uintptr, value bool) error {
-	value2 := bool2uint32(value)
+	value2 := lirc_bool2uint32(value)
 	if err := lirc_ioctl(fd, LIRC_SET_MEASURE_CARRIER_MODE, unsafe.Pointer(&value2)); err != 0 {
 		return os.NewSyscallError("lirc_ioctl", err)
 	}
@@ -253,7 +254,7 @@ func LIRCSetMeasureCarrierMode(fd uintptr, value bool) error {
 }
 
 func LIRCSetWidebandReceiver(fd uintptr, value bool) error {
-	value2 := bool2uint32(value)
+	value2 := lirc_bool2uint32(value)
 	if err := lirc_ioctl(fd, LIRC_SET_WIDEBAND_RECEIVER, unsafe.Pointer(&value2)); err != 0 {
 		return os.NewSyscallError("lirc_ioctl", err)
 	}
@@ -278,7 +279,7 @@ func (f LIRCFeature) String() string {
 
 func (f LIRCFeature) FlagString() string {
 	switch f {
-	case LIRC_NONE:
+	case 0:
 		return "LIRC_NONE"
 	case LIRC_CAN_SEND_RAW:
 		return "LIRC_CAN_SEND_RAW"

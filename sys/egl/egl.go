@@ -12,6 +12,9 @@ package egl
 import (
 	"unsafe"
 	"strings"
+
+	// Frameworks
+	gopi "github.com/djthorpe/gopi/v2"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,6 +150,15 @@ const (
 	EGL_API_OPENGL    EGLAPI = 0x30A2
 	EGL_API_MIN               = EGL_API_OPENGL_ES
 	EGL_API_MAX               = EGL_API_OPENGL
+)
+
+var (
+EGLSurfaceTypeMap = map[string]gopi.SurfaceFlags{
+	"OpenGL":     gopi.SURFACE_FLAG_OPENGL,
+	"OpenGL_ES":  gopi.SURFACE_FLAG_OPENGL_ES,
+	"OpenGL_ES2": gopi.SURFACE_FLAG_OPENGL_ES2,
+	"OpenVG":     gopi.SURFACE_FLAG_OPENVG,
+}
 )
 
 ////////////////////////////////////////////////////////////////////////////////

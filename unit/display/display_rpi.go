@@ -20,6 +20,13 @@ import (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// INTERFACES
+
+type NativeDisplay interface {
+	Handle() rpi.DXDisplayHandle
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type display struct {
@@ -76,6 +83,11 @@ func (this *display) Close() error {
 // Return display number
 func (this *display) DisplayId() uint {
 	return this.id
+}
+
+// Returns native handle
+func (this *display) Handle() rpi.DXDisplayHandle {
+	return this.handle
 }
 
 // Return name of the display
