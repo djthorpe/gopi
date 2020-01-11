@@ -7,7 +7,7 @@
   For Licensing and Usage information, please see LICENSE.md
 */
 
-package spi_test
+package lirc_test
 
 import (
 	"testing"

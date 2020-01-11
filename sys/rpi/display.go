@@ -269,16 +269,16 @@ func DXDisplaySnapshot(display DXDisplayHandle, resource DXResource, transform D
 ////////////////////////////////////////////////////////////////////////////////
 // RESOURCES
 
-func DX_ResourceCreate(image_type DX_ImageType, size DX_Size) (DX_Resource, error) {
+func DXResourceCreate(image_type DXImageType, size DXSize) (DXResource, error) {
 	var dummy C.uint32_t
-	if handle := DX_Resource(C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(image_type), C.uint32_t(size.W), C.uint32_t(size.H), (*C.uint32_t)(unsafe.Pointer(&dummy)))); handle == DX_NO_HANDLE {
+	if handle := DXResource(C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(image_type), C.uint32_t(size.W), C.uint32_t(size.H), (*C.uint32_t)(unsafe.Pointer(&dummy)))); handle == DX_NO_HANDLE {
 		return DX_NO_HANDLE, gopi.ErrBadParameter
 	} else {
 		return handle, nil
 	}
 }
 
-func DX_ResourceDelete(handle DX_Resource) error {
+func DXResourceDelete(handle DXResource) error {
 	if C.vc_dispmanx_resource_delete(C.DISPMANX_RESOURCE_HANDLE_T(handle)) == DX_SUCCESS {
 		return nil
 	} else {
@@ -286,7 +286,7 @@ func DX_ResourceDelete(handle DX_Resource) error {
 	}
 }
 
-func DX_ResourceWriteData(handle DX_Resource, image_type DX_ImageType, src_pitch uint32, src uintptr, dest DX_Rect) error {
+func DXResourceWriteData(handle DXResource, image_type DXImageType, src_pitch uint32, src uintptr, dest DXRect) error {
 	if C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), C.VC_IMAGE_TYPE_T(image_type), C.int(src_pitch), unsafe.Pointer(src), dest) == DX_SUCCESS {
 		return nil
 	} else {
@@ -294,7 +294,7 @@ func DX_ResourceWriteData(handle DX_Resource, image_type DX_ImageType, src_pitch
 	}
 }
 
-func DX_ResourceReadData(handle DX_Resource, src DX_Rect, dest uintptr, dest_pitch uint32) error {
+func DXResourceReadData(handle DXResource, src DXRect, dest uintptr, dest_pitch uint32) error {
 	if C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), src, unsafe.Pointer(dest), C.uint32_t(dest_pitch)) == DX_SUCCESS {
 		return nil
 	} else {
@@ -305,19 +305,145 @@ func DX_ResourceReadData(handle DX_Resource, src DX_Rect, dest uintptr, dest_pit
 ////////////////////////////////////////////////////////////////////////////////
 // UPDATES
 
-func DX_UpdateStart(priority int32) (DX_Update, error) {
-	if handle := C.vc_dispmanx_update_start(C.int32_t(priority)); handle != DX_NO_HANDLE {
-		return DX_Update(handle), nil
+func DXUpdateStart(priority int32) (DXUpdate, error) {
+	if handle := C.vc_dispmanx_update_start(C.int32_t(priority)); handle != 0 {
+		return DXUpdate(handle), nil
 	} else {
-		return DX_NO_HANDLE, gopi.ErrBadParameter
+		return 0, gopi.ErrBadParameter
 	}
 }
 
-func DX_UpdateSubmitSync(handle DX_Update) error {
+func DXUpdateSubmitSync(handle DXUpdate) error {
 	if C.vc_dispmanx_update_submit_sync(C.DISPMANX_UPDATE_HANDLE_T(handle)) == DX_SUCCESS {
 		return nil
 	} else {
 		return gopi.ErrBadParameter
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ELEMENTS
+
+func DXElementAdd(update DXUpdate, display DXDisplayHandle, layer uint16, dest_rect DXRect, src_resource DXResource, src_size DXSize, protection DXProtection, alpha DXAlpha, clamp DXClamp, transform DXTransform) (DXElement, error) {
+	src_rect := DXNewRect(0, 0, uint32(src_size.W)<<16, uint32(src_size.H)<<16)
+	if handle := C.vc_dispmanx_element_add(
+		C.DISPMANX_UPDATE_HANDLE_T(update),
+		C.DISPMANX_DISPLAY_HANDLE_T(display),
+		C.int32_t(layer),
+		dest_rect,
+		C.DISPMANX_RESOURCE_HANDLE_T(src_resource),
+		src_rect,
+		C.DISPMANX_PROTECTION_T(protection),
+		(*C.VC_DISPMANX_ALPHA_T)(unsafe.Pointer(&alpha)),
+		(*C.DISPMANX_CLAMP_T)(unsafe.Pointer(&clamp)),
+		C.DISPMANX_TRANSFORM_T(transform)); handle != DX_NO_HANDLE {
+		return DXElement(handle), nil
+	} else {
+		return 0, gopi.ErrBadParameter
+	}
+}
+
+func DXElementRemove(update DXUpdate, element DXElement) error {
+	if C.vc_dispmanx_element_remove(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element)) == DX_SUCCESS {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
+func DXElementModified(update DXUpdate, element DXElement, rect DXRect) error {
+	if C.vc_dispmanx_element_modified(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element), rect) == DX_SUCCESS {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
+func DXElementChangeAttributes(update DXUpdate, element DXElement, flags DXChangeFlags, layer uint16, opacity uint8, dest_rect, src_rect DXRect, transform DXTransform) error {
+	if C.vc_dispmanx_element_change_attributes(
+		C.DISPMANX_UPDATE_HANDLE_T(update),
+		C.DISPMANX_ELEMENT_HANDLE_T(element),
+		C.uint32_t(flags),
+		C.int32_t(layer),
+		C.uint8_t(opacity),
+		dest_rect, src_rect, 0, C.DISPMANX_TRANSFORM_T(transform)) == DX_SUCCESS {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RECT
+
+func DXNewRect(x, y int32, w, h uint32) DXRect {
+	return DXRect(&C.VC_RECT_T{C.int32_t(x), C.int32_t(y), C.int32_t(w), C.int32_t(h)})
+}
+
+func DXRectSet(rect DXRect, x, y int32, w, h uint32) error {
+	if C.vc_dispmanx_rect_set(rect, C.uint32_t(x), C.uint32_t(y), C.uint32_t(w), C.uint32_t(h)) != DX_SUCCESS {
+		return gopi.ErrBadParameter
+	} else {
+		return nil
+	}
+}
+
+func DXRectSize(rect DXRect) DXSize {
+	if rect == nil {
+		return DXSize{}
+	} else {
+		return DXSize{uint32(rect.width), uint32(rect.height)}
+	}
+}
+
+func DXRectOrigin(rect DXRect) DXPoint {
+	if rect == nil {
+		return DXPoint{}
+	} else {
+		return DXPoint{int32(rect.x), int32(rect.y)}
+	}
+}
+
+func DXRectIntersection(a, b DXRect) DXRect {
+	// Check for incoming parameters
+	if a == nil || a.width == 0 || a.height == 0 {
+		return nil
+	}
+	if b == nil || b.width == 0 || b.height == 0 {
+		return nil
+	}
+	// Calculate bounds of intersecting rects
+	topleft := DXPoint{DXMaxInt32(int32(a.x), int32(b.x)), DXMaxInt32(int32(a.y), int32(b.y))}
+	bottomright := DXPoint{DXMinInt32(int32(a.x)+int32(a.width), int32(b.x)+int32(b.width)), DXMinInt32(int32(a.y)+int32(a.height), int32(b.y)+int32(b.height))}
+	// Return the rect or nil if there is no intersection
+	if topleft.X < bottomright.X && topleft.Y < bottomright.Y {
+		return DXNewRect(topleft.X, topleft.Y, uint32(bottomright.X-topleft.X), uint32(bottomright.Y-topleft.Y))
+	} else {
+		return nil
+	}
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// MISC
+
+func DXAlignUp(value, alignment uint32) uint32 {
+	return ((value - 1) & ^(alignment - 1)) + alignment
+}
+
+func DXMaxInt32(a, b int32) int32 {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func DXMinInt32(a, b int32) int32 {
+	if a < b {
+		return a
+	} else {
+		return b
 	}
 }
 
@@ -350,12 +476,21 @@ func (d DXDisplayId) String() string {
 }
 
 func (this DXDisplayModeInfo) String() string {
-	return fmt.Sprintf("DXDisplayModeInfo{ size=%v transform=%v input_format=%v }", this.Size, this.Transform, this.InputFormat)
+	return fmt.Sprintf("<DXDisplayModeInfo size=%v transform=%v input_format=%v>", this.Size, this.Transform, this.InputFormat)
 }
 
 func (size DXSize) String() string {
-	return fmt.Sprintf("DXSize{%v,%v}", size.W, size.H)
+	return fmt.Sprintf("DXSize<%v,%v>", size.W, size.H)
 }
+
+func DXRectString(r DXRect) string {
+	return fmt.Sprintf("DXRect<origin={%v,%v} size={%v,%v}>", r.x, r.y, r.width, r.height)
+}
+
+func (r DXResource) String() string {
+	return "<DXResource 0x" + fmt.Sprintf("%08X",uint32(r)) + ">"
+}
+
 
 func (t DXTransform) String() string {
 	switch t {
