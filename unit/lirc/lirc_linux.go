@@ -23,13 +23,16 @@ import (
 // TYPES
 
 type lirc struct {
-	devin               *os.File          // device in
-	devout              *os.File          // device out
-	features            linux.LIRCFeature // features
-	rcv_mode, send_mode gopi.LIRCMode     // modes
+	send, rcv lircdev
 
 	base.Unit
 	sync.Mutex
+}
+
+type lircdev struct {
+	dev      *os.File
+	features linux.LIRCFeature
+	mode     gopi.LIRCMode
 }
 
 ////////////////////////////////////////////////////////////////////////////////

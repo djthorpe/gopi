@@ -205,6 +205,10 @@ func (this *App) Surfaces() gopi.SurfaceManager {
 	return this.UnitInstance("surfaces").(gopi.SurfaceManager)
 }
 
+func (this *App) Input() gopi.InputManager {
+	return this.UnitInstance("input").(gopi.InputManager)
+}
+
 func (this *App) UnitInstance(name string) gopi.Unit {
 	if units := this.UnitInstancesByName(name); len(units) == 0 {
 		return nil

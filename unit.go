@@ -51,6 +51,7 @@ const (
 	UNIT_SPI
 	UNIT_FONT_MANAGER
 	UNIT_SURFACE_MANAGER
+	UNIT_INPUT_MANAGER
 	UNIT_RPC_DISCOVERY
 	UNIT_RPC_REGISTER
 	UNIT_MAX = UNIT_PLATFORM
@@ -73,6 +74,7 @@ var (
 		"lirc":      UNIT_LIRC,            // Linux Infrared Remote Control
 		"fonts":     UNIT_FONT_MANAGER,    // Font Manager
 		"surfaces":  UNIT_SURFACE_MANAGER, // Surface Manager
+		"input":     UNIT_INPUT_MANAGER,   // Input Manager
 		"discovery": UNIT_RPC_DISCOVERY,   // RPC Service Discovery
 		"register":  UNIT_RPC_REGISTER,    // RPC Service Registration
 	}
@@ -290,6 +292,8 @@ func (v UnitType) String() string {
 		return "UNIT_FONT_MANAGER"
 	case UNIT_SURFACE_MANAGER:
 		return "UNIT_SURFACE_MANAGER"
+	case UNIT_INPUT_MANAGER:
+		return "UNIT_INPUT_MANAGER"
 	case UNIT_RPC_DISCOVERY:
 		return "UNIT_RPC_DISCOVERY"
 	case UNIT_RPC_REGISTER:

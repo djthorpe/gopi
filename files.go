@@ -8,9 +8,36 @@
 package gopi
 
 ////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
+type (
+	// READ and WRITE flags
+	FilePollFlags uint
+
+	// FilePollFunc is the handler for file polling
+	FilePollFunc func(uintptr, FilePollFlags)
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 // FilePoll emits READ and WRITE events for files
 type FilePoll interface {
-	Watch(fd uintptr) error
+	// Watch for events and call handler with file descriptor
+	Watch(uintptr, FilePollFlags, FilePollFunc) error
+
+	// Unwatch stops watching for file events
+	Unwatch(uintptr) error
+
+	// Implements gopi.Unit
+	Unit
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	FILEPOLL_FLAG_NONE FilePollFlags = (1 << iota)
+	FILEPOLL_FLAG_READ
+	FILEPOLL_FLAG_WRITE
+)

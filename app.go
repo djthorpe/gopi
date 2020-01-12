@@ -59,6 +59,7 @@ type App interface {
 	Platform() Platform       // Return hardware platform unit
 	Display() Display         // Return display
 	Surfaces() SurfaceManager // Return surface manager
+	Input() InputManager      // Return input manager
 	Fonts() FontManager       // Return font manager
 	GPIO() GPIO               // Return GPIO interface
 	I2C() I2C                 // Return I2C interface
