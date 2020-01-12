@@ -1,4 +1,5 @@
-# SPI interface
+
+# SPI Interface
 
 The Serial Peripheral Interface \(SPI\) is a synchronous serial communication interface for embedded systems. More information is available on [Wikipedia](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface).
 
@@ -44,4 +45,3 @@ bash% sudo usermod -a -G spi ${USER}
 ```
 
 There's more information about the Raspberry Pi implementation [here](https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md).
-

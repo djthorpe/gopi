@@ -1,8 +1,9 @@
-# General Purpose IO
+# GPIO Interface
 
 _Documentation to be written_
 
 {% hint style="info" %}
+
 | Parameter | Value |
 | :--- | :--- |
 | Name | `gopi/gpio/linux` |
@@ -12,5 +13,5 @@ _Documentation to be written_
 | Import | `github.com/djthorpe/gopi/v2/unit/gpio` |
 | Events | `gopi.GPIOEvent` |
 | Compatibility | Linux, Raspberry Pi |
-{% endhint %}
 
+{% endhint %}

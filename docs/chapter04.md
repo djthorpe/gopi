@@ -65,5 +65,5 @@ bash% LDFLAGS=${LDFLAGS} -X ${GOPI}.GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M
 bash% go build -o helloworld -ldflags "${LDFLAGS}" ./cmd/helloworld/...
 ```
 
-
+Adding this information is entirely optional but recommended if you are distributing your application.
 

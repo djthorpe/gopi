@@ -1,12 +1,13 @@
 ---
-description: Obtaining information about your hardware platform.
+description: 'Obtaining information about your hardware platform.'
 ---
 
-# Platform Information
+# Hardware Information
 
 The **Platform Unit** returns some information about the platform your tool is running on.
 
 {% hint style="info" %}
+
 | Parameter | Value |
 | :--- | :--- |
 | Name | `gopi/platform` |
@@ -14,6 +15,7 @@ The **Platform Unit** returns some information about the platform your tool is r
 | Type | `gopi.UNIT_PLATFORM` |
 | Import | `github.com/djthorpe/gopi/v2/unit/platform` |
 | Compatibility | Linux, Darwin, Raspberry Pi |
+
 {% endhint %}
 
 Here is the interface which the platform unit adheres to:
