@@ -29,6 +29,48 @@ bash% make rpi
 
 This will test, compile and install your command. Without modification the `helloworld` command is installed.
 
+### Handling Errors
+
+The majority of unit methods return error conditions. The most common ones are defined as follows:
+
+* `gopi.ErrNotImplemented`  Called method or feature not implemented
+* `gopi.ErrBadParameter`   Parameter to called method was incorrect
+* `gopi.ErrNotFound` Expected object not found
+* `gopi.ErrInternalAppError` Internal application error
+* `gopi.ErrUnexpectedResponse` Unexpected response from method
+* `gopi.ErrDuplicateItem` Duplicate item found
+* `gopi.ErrOutOfOrder` Method call was out of order
+
+You should test for particular errors using the `errors.Is` method rather than an equality sign, as some errors are wrapped with additional information. For example,
+
+```go
+err := app.LIRC().SetMode(gopi.LIRC_MODE_MODE2)
+if errors.Is(err,gopi.ErrNotImplemented) {
+    // Mode not implemented by LIRC
+    // ...
+}
+```
+
+If you want to collect a number of errors into a set before returning, use the `gopi.CompoundError`
+
+```go
+err := gopi.NewCompoundError()
+err.Add(err1,err2)
+return err.ErrorOrSelf()
+```
+
+In this example, the `ErrorOrSelf` method will return `nil` if no error occurred \(both err1 and err2 in the above example were nil\), a single error \(where either err1 or err2 were not nil\) or the compound error \(where both err1 and err2 were errors\). In addition the `Is` method will return true if any error in the compound error set is found. For example,
+
+```
+err := gopi.NewCompoundError()
+
+// ...
+
+if err.Is(gopi.ErrNotImplemented) {
+  // ...
+}
+```
+
 ### Application Examples
 
 There are a number of example applications in the `cmd` folder which you can examine and run. The following sections describe how to install and run these examples. Ultimately you can compile them all through the use of the `make` command:
