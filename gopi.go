@@ -12,7 +12,7 @@ package gopi
 
 type (
 	// Channel is an arbitary communication channel
-	Channel chan struct{}
+	Channel uint
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,12 +35,10 @@ type Publisher interface {
 	// Emit sends values to be received by handlers
 	Emit(queue uint, value interface{})
 
-	// Subscribe and handle messages which are emitted. This method call returns
-	// when the receive loop has started as a goroutine, so is non-blocking.
-	Subscribe(queue uint, capacity int, callback func(value interface{})) Channel
+	// Subscribe and handle messages which are emitted
+	Subscribe(queue uint, callback func(value interface{})) Channel
 
-	// Unsubscribe from a channel. This method will return when the receive loop
-	// has completed
+	// Unsubscribe from a channel
 	Unsubscribe(Channel)
 }
 

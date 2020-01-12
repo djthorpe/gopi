@@ -52,11 +52,10 @@ func (config Discovery) New(log gopi.Logger) (gopi.Unit, error) {
 		return nil, err
 	} else {
 		this.listener = config.Listener
-		this.stop = make(chan struct{})
 	}
 
 	// Start background message processor
-	if this.stop = this.listener.Subscribe(QUEUE_MESSAGES, 0, this.EventHandler); this.stop == nil {
+	if this.stop = this.listener.Subscribe(QUEUE_MESSAGES, this.EventHandler); this.stop == 0 {
 		return nil, gopi.ErrInternalAppError
 	}
 
@@ -71,7 +70,6 @@ func (this *discovery) Close() error {
 
 	// Release resources
 	this.listener = nil
-	this.stop = nil
 
 	// Return success
 	return this.Unit.Close()
@@ -90,7 +88,7 @@ func (this *discovery) Lookup(ctx context.Context, service string) ([]gopi.RPCSe
 	serviceRecords := map[string]gopi.RPCServiceRecord{}
 
 	// Receive events in background
-	receive := this.listener.Subscribe(QUEUE_RECORD, 0, func(value interface{}) {
+	receive := this.listener.Subscribe(QUEUE_RECORD, func(value interface{}) {
 		if evt, ok := value.(gopi.RPCEvent); ok == false || evt == nil {
 			// No nothing
 		} else if record := evt.Service(); record.Name == "" {
@@ -135,7 +133,7 @@ func (this *discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 
 	// Receive events in background
 	fmt.Println("EnumerateServices LISTENER=", this.listener)
-	receive := this.listener.Subscribe(QUEUE_NAME, 0, func(value interface{}) {
+	receive := this.listener.Subscribe(QUEUE_NAME, func(value interface{}) {
 		if evt, ok := value.(gopi.RPCEvent); ok == false || evt == nil {
 			// No nothing
 		} else if record := evt.Service(); record.Name == "" {

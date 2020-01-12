@@ -17,154 +17,120 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
+type CallbackFunc func(value interface{})
+
 type Publisher struct {
-	q    map[uint][]chan interface{}
-	lock map[uint]*sync.Mutex
+	queues map[uint]*queue
+	token  gopi.Channel
 
 	sync.Mutex
-	sync.WaitGroup
+}
+
+type queue struct {
+	cb map[gopi.Channel]CallbackFunc
+
+	sync.Mutex
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *Publisher) Close() error {
+func (this *Publisher) Init(num uint) *queue {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	// Wait until done
-	this.WaitGroup.Wait()
-
-	// close all queues
-	for queue := range this.q {
-		this.close(queue)
+	if this.queues == nil {
+		this.queues = make(map[uint]*queue, 1)
 	}
-
-	// Release resources
-	this.q = nil
-	this.lock = nil
-
-	// Success
-	return nil
-}
-
-func (this *Publisher) close(queue uint) {
-	// Lock queue whilst closing
-	this.lock[queue].Lock()
-	defer this.lock[queue].Unlock()
-	// Close channels
-	for _, c := range this.q[queue] {
-		close(c)
-	}
-	// Set nil array for queue
-	this.q[queue] = nil
-}
-
-func (this *Publisher) Emit(queue uint, value interface{}) {
-	if chans := this.newChannels(queue); chans != nil {
-		// Lock queue whilst emitting
-		this.lock[queue].Lock()
-		defer this.lock[queue].Unlock()
-		// Emit values
-		for _, c := range chans {
-			c <- value
-		}
+	if q, exists := this.queues[num]; exists {
+		return q
+	} else if q = NewQueue(); q != nil {
+		this.queues[num] = q
+		return q
+	} else {
+		return nil
 	}
 }
 
-// Subscribe receives emitted messages until Unsubscribe is called
-func (this *Publisher) Subscribe(queue uint, capacity int, callback func(value interface{})) gopi.Channel {
-	stop, start := make(chan struct{}), make(chan struct{})
-	go func() {
-		this.WaitGroup.Add(1)
-		defer this.WaitGroup.Done()
+func (this *Publisher) Close() {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
 
-		// Subscribe and indicate the subscription has occured by closing the
-		// start channel
-		evt := this.SubscribeInt(queue, capacity)
-		close(start)
-		// If error occured with subscribing, end go routine immediately
-		if evt == nil {
-			return
+	if this.queues != nil {
+		for _, queue := range this.queues {
+			queue.Close()
 		}
-		// Background go routine continues until stop signal is received
-		go func() {
-			<-stop
-			this.UnsubscribeInt(evt)
-		}()
-		// Repeat accepting and handling events, and end when unsubscribe is called
-	FOR_LOOP:
-		for {
-			select {
-			case value := <-evt:
-				if value == nil {
-					break FOR_LOOP
-				} else {
-					callback(value)
-				}
-			}
-		}
-		// End end, close stop
-		close(stop)
-	}()
-	// In main function, block until the start is received
-	<-start
-	// Return the stop channel
-	return stop
+		this.queues = nil
+	}
 }
 
-// Unsubscribe waits until the receive loop has completed
-func (this *Publisher) Unsubscribe(stop gopi.Channel) {
-	stop <- struct{}{}
-	<-stop
+func (this *Publisher) Emit(num uint, value interface{}) {
+	if q, exists := this.queues[num]; exists {
+		q.Emit(value)
+	}
 }
 
-func (this *Publisher) Len(queue uint) int {
-	return len(this.newChannels(queue))
+func (this *Publisher) Subscribe(num uint, callback CallbackFunc) gopi.Channel {
+	if q := this.Init(num); q != nil && callback != nil {
+		return q.Add(callback, this.NextToken())
+	} else {
+		return 0
+	}
+}
+
+func (this *Publisher) Unsubscribe(token gopi.Channel) {
+	for _, q := range this.queues {
+		q.Remove(token)
+	}
+}
+
+func (this *Publisher) NextToken() gopi.Channel {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+	this.token = this.token + gopi.Channel(1)
+	return this.token
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
+// QUEUES
 
-func (this *Publisher) newChannels(queue uint) []chan interface{} {
-	if this.q == nil || this.lock == nil {
-		this.Mutex.Lock()
-		this.q = make(map[uint][]chan interface{})
-		this.lock = make(map[uint]*sync.Mutex)
-		this.Mutex.Unlock()
+func NewQueue() *queue {
+	this := &queue{
+		cb: make(map[gopi.Channel]CallbackFunc),
 	}
-	chans, exists := this.q[queue]
-	if exists == false {
-		this.Mutex.Lock()
-		this.q[queue] = make([]chan interface{}, 0, 1)
-		this.lock[queue] = &sync.Mutex{}
-		chans = this.q[queue]
-		this.Mutex.Unlock()
-	}
-	return chans
+	return this
 }
 
-func (this *Publisher) SubscribeInt(queue uint, capacity int) <-chan interface{} {
-	if chans := this.newChannels(queue); chans == nil {
-		return nil
-	} else {
-		new := make(chan interface{}, capacity)
-		this.q[queue] = append(chans, new)
-		return new
-	}
-}
+func (this *queue) Add(callback CallbackFunc, token gopi.Channel) gopi.Channel {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
 
-func (this *Publisher) UnsubscribeInt(c <-chan interface{}) bool {
-	for queue, chans := range this.q {
-		for i, other := range chans {
-			if other == c {
-				close(other)
-				this.lock[queue].Lock()
-				this.q[queue] = append(chans[:i], chans[i+1:]...)
-				this.lock[queue].Unlock()
-				return true
-			}
+	if callback != nil {
+		if _, exists := this.cb[token]; exists == false {
+			this.cb[token] = callback
+			return token
 		}
 	}
-	return false
+	return 0
+}
+
+func (this *queue) Remove(token gopi.Channel) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if _, exists := this.cb[token]; exists {
+		delete(this.cb, token)
+	}
+}
+
+func (this *queue) Emit(value interface{}) {
+	for _, cb := range this.cb {
+		if cb != nil {
+			cb(value)
+		}
+	}
+}
+
+func (this *queue) Close() {
+	this.cb = nil
 }

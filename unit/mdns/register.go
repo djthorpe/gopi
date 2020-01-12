@@ -60,7 +60,7 @@ func (config Register) New(log gopi.Logger) (gopi.Unit, error) {
 	}
 
 	// Start background message processor
-	if this.stop = this.listener.Subscribe(QUEUE_MESSAGES, 0, this.EventHandler); this.stop == nil {
+	if this.stop = this.listener.Subscribe(QUEUE_MESSAGES, this.EventHandler); this.stop == 0 {
 		return nil, gopi.ErrInternalAppError
 	}
 
@@ -75,7 +75,6 @@ func (this *register) Close() error {
 
 	// Release resources
 	this.listener = nil
-	this.stop = nil
 	this.records = nil
 	this.names = nil
 
