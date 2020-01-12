@@ -5,6 +5,7 @@
 * [Hello, World](chapter02.md)
 * [Event Handling](chapter03.md)
 * [Developing Applications](chapter04.md)
+* [Application Examples](chapter05.md)
 
 ## Hardware
 
