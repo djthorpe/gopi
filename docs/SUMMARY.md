@@ -10,7 +10,7 @@
 
 * [Introduction](chapter05.md)
 * [Platform Information](chapter06.md)
-* [Displays](chapter07.md)
+* [Displays](hardware/chapter07.md)
 * [General Purpose IO](chapter08.md)
 * [I²C interface](chapter09.md)
 * [SPI interface](chapter10.md)
@@ -18,21 +18,21 @@
 
 ## Networking
 
-* [Introduction](chapter12.md)
-* [Multicast DNS](chapter13.md)
+* [Introduction](networking/introduction.md)
+* [Multicast DNS](networking/multicast-dns.md)
 
 ## Input Devices
 
-* [The Input Manager](chapter14.md)
+* [The Input Manager](input-devices/the-input-manager.md)
 
 ## Surfaces and Bitmaps
 
-* [The Surface Manager](chapter14.md)
-* [Bitmaps](chapter14.md)
+* [The Surface Manager](surfaces-and-bitmaps/the-surface-manager.md)
+* [Bitmaps](surfaces-and-bitmaps/bitmaps.md)
 
 ## Fonts
 
-* [The Font Manager](chapter14.md)
+* [The Font Manager](fonts/the-font-manager.md)
 
 ## Upcoming Sections
 
