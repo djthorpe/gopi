@@ -23,13 +23,13 @@
 
 ## Input Devices
 
-* [The Input Manager](input/01-introduction.md)
+* [The Input Manager](input-devices/the-input-manager.md)
 
 ## Graphics
 
-* [The Surface Manager](graphics/01-introduction.md)
-* [Bitmaps](graphics/02-bitmaps.md)
-* [The Font Manager](graphics/03-fonts.md)
+* [The Surface Manager](graphics/the-surface-manager.md)
+* [Bitmaps](graphics/bitmaps.md)
+* [The Font Manager](graphics/the-font-manager.md)
 
 ## Upcoming Sections
 
