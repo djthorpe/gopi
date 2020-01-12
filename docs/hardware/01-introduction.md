@@ -2,7 +2,7 @@
 description: 'Interacting with your hardware platform, interfaces and peripherals.'
 ---
 
-# Hardware
+# Introduction
 
 In this section I describe how to interact with your hardware platform, including:
 

@@ -1,4 +1,4 @@
-
-# Infrared Remote Control
+# IR Remote Controls
 
 _Documentation to be written_
+
