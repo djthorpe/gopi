@@ -32,7 +32,7 @@ func SetBackground(mgr gopi.SurfaceManager) error {
 func SetBitmap(mgr gopi.SurfaceManager, bitmap gopi.Bitmap, origin gopi.Point) error {
 	return mgr.Do(func(gopi.SurfaceManager) error {
 		bitmap.ClearToColor(gopi.ColorRed)
-		if surface, err := mgr.CreateSurfaceWithBitmap(bitmap, 0, 1.0, 0, origin, gopi.ZeroSize); err != nil {
+		if _, err := mgr.CreateSurfaceWithBitmap(bitmap, 0, 1.0, 0, origin, gopi.ZeroSize); err != nil {
 			return err
 		} else {
 			return nil

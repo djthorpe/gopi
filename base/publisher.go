@@ -17,8 +17,6 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type CallbackFunc func(value interface{})
-
 type Publisher struct {
 	queues map[uint]*queue
 	token  gopi.Channel
@@ -27,7 +25,7 @@ type Publisher struct {
 }
 
 type queue struct {
-	cb map[gopi.Channel]CallbackFunc
+	cb map[gopi.Channel]func(value interface{})
 
 	sync.Mutex
 }
@@ -70,7 +68,7 @@ func (this *Publisher) Emit(num uint, value interface{}) {
 	}
 }
 
-func (this *Publisher) Subscribe(num uint, callback CallbackFunc) gopi.Channel {
+func (this *Publisher) Subscribe(num uint, callback func(value interface{})) gopi.Channel {
 	if q := this.Init(num); q != nil && callback != nil {
 		return q.Add(callback, this.NextToken())
 	} else {
@@ -96,12 +94,12 @@ func (this *Publisher) NextToken() gopi.Channel {
 
 func NewQueue() *queue {
 	this := &queue{
-		cb: make(map[gopi.Channel]CallbackFunc),
+		cb: make(map[gopi.Channel]func(value interface{})),
 	}
 	return this
 }
 
-func (this *queue) Add(callback CallbackFunc, token gopi.Channel) gopi.Channel {
+func (this *queue) Add(callback func(value interface{}), token gopi.Channel) gopi.Channel {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 

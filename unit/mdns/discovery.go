@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -84,11 +85,15 @@ func (this *discovery) String() string {
 
 // Lookup service instances by name
 func (this *discovery) Lookup(ctx context.Context, service string) ([]gopi.RPCServiceRecord, error) {
+	var lock sync.Mutex
+
 	msg := new(dns.Msg)
 	serviceRecords := map[string]gopi.RPCServiceRecord{}
 
 	// Receive events in background
 	receive := this.listener.Subscribe(QUEUE_RECORD, func(value interface{}) {
+		lock.Lock()
+		defer lock.Unlock()
 		if evt, ok := value.(gopi.RPCEvent); ok == false || evt == nil {
 			// No nothing
 		} else if record := evt.Service(); record.Name == "" {
