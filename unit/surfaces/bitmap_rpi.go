@@ -11,6 +11,8 @@ package surfaces
 
 import (
 	"fmt"
+	"image"
+	"image/color"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -130,6 +132,21 @@ func (this *bitmap) ClearToColor(c gopi.Color) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION Image
+
+func (this *bitmap) ColorModel() color.Model {
+	return this.dxtype
+}
+
+func (this *bitmap) Bounds() image.Rectangle {
+	return image.Rectangle{image.Point{0, 0}, image.Point{int(this.size.W) - 1, int(this.size.H) - 1}}
+}
+
+func (this *bitmap) At(x, y int) color.Color {
+	return gopi.ColorRed
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *bitmap) String() string {
@@ -141,7 +158,7 @@ func (this *bitmap) String() string {
 
 func color_to_bytes(c gopi.Color, t rpi.DXImageType) []byte {
 	// Returns color 0000 <= v <= FFFF
-	r, g, b, a := c.RGBA32()
+	r, g, b, a := c.RGBA()
 
 	// Convert to []byte
 	switch t {

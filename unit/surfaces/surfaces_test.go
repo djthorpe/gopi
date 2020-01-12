@@ -177,3 +177,26 @@ func Main_Test_Surfaces_005(app gopi.App, t *testing.T) {
 	}
 	time.Sleep(time.Second * 2)
 }
+
+func Test_Surfaces_006(t *testing.T) {
+	if app, err := app.NewTestTool(t, Main_Test_Surfaces_006, []string{"-debug"}, "surfaces"); err != nil {
+		t.Error(err)
+	} else if returnCode := app.Run(); returnCode != 0 {
+		t.Error("Unexpected return code", returnCode)
+	}
+}
+
+func Main_Test_Surfaces_006(app gopi.App, t *testing.T) {
+	surfaces := app.Surfaces()
+	if err := surfaces.Do(func(gopi.SurfaceManager) error {
+		if surface, err := surfaces.CreateBackground(gopi.SURFACE_FLAG_BITMAP|gopi.SURFACE_FLAG_RGBA32, 1.0); err != nil {
+			return err
+		} else {
+			surface.Bitmap().ClearToColor(gopi.ColorBlue)
+			return nil
+		}
+	}); err != nil {
+		t.Error(err)
+	}
+	time.Sleep(time.Second * 2)
+}

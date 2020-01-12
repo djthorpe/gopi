@@ -48,6 +48,7 @@ type SurfaceManager interface {
 	// Create and destroy surfaces
 	CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 	CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
+	CreateBackground(SurfaceFlags, float32) (Surface, error)
 	DestroySurface(Surface) error
 
 	// Create and destroy bitmaps
@@ -130,8 +131,8 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATIONS
 
-// RGBA32 returns uint32 values for color
-func (c Color) RGBA32() (r, g, b, a uint32) {
+// RGBA returns uint32 values for color
+func (c Color) RGBA() (r, g, b, a uint32) {
 	return uint32(c.R*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.G*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.B*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.A*float32(0xFFFF)) & uint32(0xFFFF)
 }
 

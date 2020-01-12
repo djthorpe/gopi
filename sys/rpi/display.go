@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"strings"
 	"reflect"
+	"image/color"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -467,6 +468,19 @@ func DXRectIntersection(a, b DXRect) DXRect {
 	} else {
 		return nil
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// COLOR MODEL
+
+func (model DXImageType) Convert(c color.Color) color.Color {
+	switch model {
+	case DX_IMAGE_TYPE_RGBA32:
+		// Convert from c to RGBA32
+	default:
+		panic(fmt.Sprint("Can't convert",model))
+	}
+	return gopi.ColorRed
 }
 
 
