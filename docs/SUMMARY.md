@@ -8,31 +8,28 @@
 
 ## Hardware
 
-* [Introduction](chapter05.md)
-* [Platform Information](chapter06.md)
-* [Displays](chapter07.md)
-* [General Purpose IO](chapter08.md)
-* [I²C interface](chapter09.md)
-* [SPI interface](chapter10.md)
-* [IR Remote Controls](chapter11.md)
+* [Introduction](hardware/01-introduction.md)
+* [Platform Information](hardware/02-platform.md)
+* [Displays](hardware/03-displays.md)
+* [General Purpose IO](hardware/04-gpio.md)
+* [I²C interface](hardware/05-i2c.md)
+* [SPI interface](hardware/06-spi.md)
+* [IR Remote Controls](hardware/07-lirc.md)
 
 ## Networking
 
-* [Introduction](chapter12.md)
-* [Multicast DNS](chapter13.md)
+* [Introduction](networking/01-introduction.md)
+* [Multicast DNS](networking/02-mdns.md)
 
 ## Input Devices
 
-* [The Input Manager](chapter14.md)
+* [The Input Manager](input/01-introduction.md)
 
-## Surfaces and Bitmaps
+## Graphics
 
-* [The Surface Manager](chapter14.md)
-* [Bitmaps](chapter14.md)
-
-## Fonts
-
-* [The Font Manager](chapter14.md)
+* [The Surface Manager](graphics/01-introduction.md)
+* [Bitmaps](graphics/02-bitmaps.md)
+* [The Font Manager](graphics/03-fonts.md)
 
 ## Upcoming Sections
 
