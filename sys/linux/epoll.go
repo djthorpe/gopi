@@ -61,7 +61,7 @@ func EpollClose(handle int) error {
 	}
 }
 
-func EpollAdd(handle, fd int, mode EpollMode) error {
+func EpollAdd(handle, fd uintptr, mode EpollMode) error {
 	event := new(EpollEvt)
 	event.Fd = int32(fd)
 	event.Events = uint32(mode)
@@ -72,7 +72,7 @@ func EpollAdd(handle, fd int, mode EpollMode) error {
 	}
 }
 
-func EpollDelete(handle, fd int, mode EpollMode) error {
+func EpollDelete(handle, fd uintptr, mode EpollMode) error {
 	if err := syscall.EpollCtl(handle, int(EPOLL_OP_DEL), fd, nil); err != nil {
 		return os.NewSyscallError("epoll_ctl", err)
 	} else {
