@@ -25,11 +25,6 @@
 
 * [The Input Manager](input/01-introduction.md)
 
-## Networking
-
-* [Introduction](networking/introduction.md)
-* [Multicast DNS](networking/multicast-dns.md)
-
 ## Graphics
 
 * [The Surface Manager](graphics/01-introduction.md)
