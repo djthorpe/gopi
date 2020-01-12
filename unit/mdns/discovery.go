@@ -133,12 +133,17 @@ func (this *discovery) Lookup(ctx context.Context, service string) ([]gopi.RPCSe
 
 // Return list of service names
 func (this *discovery) EnumerateServices(ctx context.Context) ([]string, error) {
+	var lock sync.Mutex
+
 	msg := new(dns.Msg)
 	serviceNames := make(map[string]bool)
 
 	// Receive events in background
 	fmt.Println("EnumerateServices LISTENER=", this.listener)
 	receive := this.listener.Subscribe(QUEUE_NAME, func(value interface{}) {
+		lock.Lock()
+		defer lock.Unlock()
+
 		if evt, ok := value.(gopi.RPCEvent); ok == false || evt == nil {
 			// No nothing
 		} else if record := evt.Service(); record.Name == "" {
