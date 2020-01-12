@@ -4,6 +4,8 @@ description: Starting application development.
 
 # Developing Applications
 
+### The Application Template
+
 In order to start developing your own application, you can take the following [template repository](https://github.com/djthorpe/gopi-app), which simply prints **Hello, World** on the screen:
 
 ```bash
@@ -71,7 +73,7 @@ if err.Is(gopi.ErrNotImplemented) {
 }
 ```
 
-### Application Examples
+### Examples
 
 There are a number of example applications in the `cmd` folder which you can examine and run. The following sections describe how to install and run these examples. Ultimately you can compile them all through the use of the `make` command:
 
