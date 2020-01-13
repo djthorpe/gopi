@@ -10,11 +10,8 @@
 package lirc
 
 import (
-	"encoding/binary"
 	"fmt"
-	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -34,12 +31,6 @@ type lirc struct {
 
 	base.Unit
 	sync.Mutex
-}
-
-type lircdev struct {
-	dev        *os.File
-	features   linux.LIRCFeature
-	send, recv bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -114,7 +105,7 @@ func (this *lirc) Init(config LIRC) error {
 		if device.recv {
 			if err := this.filepoll.Watch(device.Fd(), gopi.FILEPOLL_FLAG_READ, this.watch); err != nil {
 				return err
-			}	
+			}
 		}
 	}
 
@@ -133,7 +124,7 @@ func (this *lirc) Close() error {
 				return err
 			}
 		}
- 		if err := device.Close(); err != nil {
+		if err := device.Close(); err != nil {
 			return err
 		}
 	}
@@ -169,81 +160,3 @@ func (this *lirc) watch(fd uintptr, flags gopi.FilePollFlags) {
 		}
 	}
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// DEVICE METHODS
-
-func NewDevice(path string, features linux.LIRCFeature) (*lircdev, error) {
-	mode := linux.LIRCMode(0)
-	this := new(lircdev)
-
-	if features&linux.LIRC_CAN_REC_MASK > 0 {
-		mode |= linux.LIRC_MODE_RCV
-		this.recv = true
-	}
-	if features&linux.LIRC_CAN_SEND_MASK > 0 {
-		mode |= linux.LIRC_MODE_SEND
-		this.send = true
-	}
-	if mode == 0 {
-		return nil, fmt.Errorf("Device can neither send nor receive")
-	}
-	if fh, err := linux.LIRCOpenDevice(path, mode); err != nil {
-		return nil, err
-	} else {
-		this.features = features
-		this.dev = fh
-		return this, nil
-	}
-}
-
-func (this *lircdev) Close() error {
-	if this.dev != nil {
-		if err := this.dev.Close(); err != nil {
-			return err
-		}
-	}
-	// Release resources
-	this.dev = nil
-	// Return success
-	return nil
-}
-
-func (this *lircdev) String() string {
-	if this.dev == nil {
-		return "<lirc.device>"
-	} else {
-		return "<lirc.device" +
-			" name=" + strconv.Quote(this.dev.Name()) +
-			" features=" + fmt.Sprint(this.features) +
-			" recv=" + fmt.Sprint(this.recv) +
-			" send=" + fmt.Sprint(this.send) +
-			">"
-	}
-}
-
-func (this *lircdev) Fd() uintptr {
-	if this.dev != nil {
-		return this.dev.Fd()
-	} else {
-		return 0
-	}
-}
-
-func (this *lircdev) Name() string {
-	if this.dev != nil {
-		return this.dev.Name()
-	} else {
-		return ""
-	}
-}
-
-func (this *lircdev) Read(source gopi.Unit) (gopi.Event,error) {
-	var value uint32
-	if err := binary.Read(this.dev, binary.LittleEndian, &value); err != nil {
-		return nil, err
-	} else {
-		return NewEvent(source,value), nil
-	}
-}
-
