@@ -111,8 +111,10 @@ func (this *lirc) Init(config LIRC) error {
 	// TODO: We need to shutdown more gacefully if any watch files by unwatching
 	// all watches setup and also closing any device files open
 	for _, device := range this.devices {
-		if err := this.filepoll.Watch(device.Fd(), gopi.FILEPOLL_FLAG_READ, this.watch); err != nil {
-			return err
+		if device.recv {
+			if err := this.filepoll.Watch(device.Fd(), gopi.FILEPOLL_FLAG_READ, this.watch); err != nil {
+				return err
+			}	
 		}
 	}
 
@@ -124,11 +126,14 @@ func (this *lirc) Close() error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	// Stop watching each device
+	// Stop watching each device that receives
 	for _, device := range this.devices {
-		if err := this.filepoll.Unwatch(device.Fd()); err != nil {
-			return err
-		} else if err := device.Close(); err != nil {
+		if device.recv {
+			if err := this.filepoll.Unwatch(device.Fd()); err != nil {
+				return err
+			}
+		}
+ 		if err := device.Close(); err != nil {
 			return err
 		}
 	}
