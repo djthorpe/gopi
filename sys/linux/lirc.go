@@ -15,6 +15,9 @@ import (
 	"strings"
 	"syscall"
 	"unsafe"
+	"strconv"
+	"path/filepath"
+	"regexp"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -131,6 +134,10 @@ var (
 	LIRC_SET_WIDEBAND_RECEIVER    = uintptr(C._LIRC_SET_WIDEBAND_RECEIVER())
 )
 
+var (
+	reIdentifier = regexp.MustCompile("^([A-za-z]\\w+)$")
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN
 
@@ -138,7 +145,7 @@ func LIRCDevice(bus uint) string {
 	return fmt.Sprintf("%v%v", LIRC_DEV, bus)
 }
 
-func LIRCOpenDevice(bus uint, mode LIRCMode) (*os.File, error) {
+func LIRCOpenDevice(path string, mode LIRCMode) (*os.File, error) {
 	fmode := os.O_SYNC
 	switch {
 	case mode == (LIRC_MODE_SEND | LIRC_MODE_RCV):
@@ -150,7 +157,14 @@ func LIRCOpenDevice(bus uint, mode LIRCMode) (*os.File, error) {
 	default:
 		return nil, gopi.ErrBadParameter.WithPrefix("mode")
 	}
-	if file, err := os.OpenFile(LIRCDevice(bus), fmode, 0); err != nil {
+	// If path is a numnber use "LIRCDevice"
+	if bus,err := strconv.ParseUint(path,10,32); err == nil {
+		path = LIRCDevice(uint(bus))
+	} else if reIdentifier.MatchString(path) {
+		path = filepath.Clean(filepath.Join(LIRC_DEV,"..",path))
+	}
+	// Open file
+	if file, err := os.OpenFile(path, fmode, 0); err != nil {
 		return nil, err
 	} else {
 		return file, nil

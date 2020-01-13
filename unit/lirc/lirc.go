@@ -8,9 +8,7 @@
 package lirc
 
 import (
-
 	// Frameworks
-
 	gopi "github.com/djthorpe/gopi/v2"
 )
 
@@ -19,7 +17,13 @@ import (
 
 type LIRC struct {
 	// Input and Output Devices
-	DevIn, DevOut string
+	Dev string
+
+	// Message bus
+	Bus gopi.Bus
+
+	// Filepoll interface
+	Filepoll gopi.FilePoll
 }
 
 ////////////////////////////////////////////////////////////////////////////////

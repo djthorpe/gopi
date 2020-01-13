@@ -45,7 +45,7 @@ func Test_LIRC_003(t *testing.T) {
 	for bus := uint(0); bus < 10; bus++ {
 		if _, err := os.Stat(linux.LIRCDevice(bus)); os.IsNotExist(err) {
 			continue
-		} else if fh, err := linux.LIRCOpenDevice(bus, linux.LIRC_MODE_RCV|linux.LIRC_MODE_SEND); err != nil {
+		} else if fh, err := linux.LIRCOpenDevice(fmt.Sprint(bus), linux.LIRC_MODE_RCV|linux.LIRC_MODE_SEND); err != nil {
 			t.Error(err)
 		} else {
 			defer fh.Close()
