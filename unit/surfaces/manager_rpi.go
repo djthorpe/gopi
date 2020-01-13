@@ -167,7 +167,7 @@ func (this *manager) CreateSurfaceWithBitmap(bm gopi.Bitmap, flags gopi.SurfaceF
 	} else if layer < gopi.SURFACE_LAYER_DEFAULT || layer > gopi.SURFACE_LAYER_MAX {
 		return nil, gopi.ErrBadParameter.WithPrefix("layer")
 	}
-	return this.CreateSurfaceWithBitmapEx(bm,flags,opacity,layer,origin,size)
+	return this.CreateSurfaceWithBitmapEx(bm, flags, opacity, layer, origin, size)
 }
 
 func (this *manager) CreateSurfaceWithBitmapEx(bm gopi.Bitmap, flags gopi.SurfaceFlags, opacity float32, layer uint16, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
@@ -182,23 +182,23 @@ func (this *manager) CreateSurfaceWithBitmapEx(bm gopi.Bitmap, flags gopi.Surfac
 		return nil, err
 	} else {
 		surface := NewSurface(flags, opacity, layer, native)
-		surface.bitmap = bm
+		surface.bitmap = bitmap_
 		this.surfaces = append(this.surfaces, surface)
 		return surface, nil
 	}
 }
 
 func (this *manager) CreateBackground(flags gopi.SurfaceFlags, opacity float32) (gopi.Surface, error) {
-	// api
+	// api and size
 	api := flags.Type()
-	w,h := this.display.Size()
-	size := gopi.Size{ float32(w),float32(h) }
+	w, h := this.display.Size()
+	size := gopi.Size{float32(w), float32(h)}
 
 	// if Bitmap, then create a bitmap
 	if api == gopi.SURFACE_FLAG_BITMAP {
 		if bitmap, err := this.CreateBitmap(flags, size); err != nil {
 			return nil, err
-		} else if surface, err := this.CreateSurfaceWithBitmapEx(bitmap, flags, opacity, gopi.SURFACE_LAYER_BACKGROUND, gopi.ZeroPoint,gopi.ZeroSize); err != nil {
+		} else if surface, err := this.CreateSurfaceWithBitmapEx(bitmap, flags, opacity, gopi.SURFACE_LAYER_BACKGROUND, gopi.ZeroPoint, gopi.ZeroSize); err != nil {
 			return nil, err
 		} else {
 			return surface, nil
@@ -207,7 +207,7 @@ func (this *manager) CreateBackground(flags gopi.SurfaceFlags, opacity float32) 
 
 	// Return gopi.ErrNotImplemented
 	// TODO
-	return nil,gopi.ErrNotImplemented
+	return nil, gopi.ErrNotImplemented
 }
 
 func (this *manager) CreateSurface(flags gopi.SurfaceFlags, opacity float32, layer uint16, origin gopi.Point, size gopi.Size) (gopi.Surface, error) {
@@ -231,7 +231,7 @@ func (this *manager) CreateSurface(flags gopi.SurfaceFlags, opacity float32, lay
 	}
 
 	// Return gopi.ErrNotImplemented
-	return nil,gopi.ErrNotImplemented
+	return nil, gopi.ErrNotImplemented
 
 	// Choose r,g,b,a bits per pixel
 	var r, g, b, a uint
@@ -313,14 +313,28 @@ func (this *manager) Do(callback gopi.SurfaceCallback) error {
 		return err
 	} else {
 		this.update = update
+
 		defer func() {
+			fmt.Println("DXUpdateSubmitSync", update)
 			if rpi.DXUpdateSubmitSync(update); err != nil {
 				this.Log.Error(err)
 			}
 			this.update = 0
 		}()
+
 		if err := callback(this); err != nil {
 			return err
+		}
+
+		// Update modified bitmaps on surfaces
+		for _, surface := range this.surfaces {
+			if bm := surface.bitmap; bm != nil && bm.ModifiedRect() != nil {
+				fmt.Println("DXElementModified", update, surface)
+				if err := rpi.DXElementModified(update, surface.native.handle, nil); err != nil {
+					this.Log.Error(err)
+				}
+				bm.ClearModifiedRect()
+			}
 		}
 	}
 	// Return success

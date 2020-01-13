@@ -60,8 +60,13 @@ func NewCommandLineTool(main gopi.MainCommandFunc, handlers []gopi.EventHandler,
 
 func (this *command) Run() int {
 	args := testlessArguments(os.Args[1:])
-	if returnValue := this.App.Start(args); returnValue != 0 {
-		return returnValue
+	if err := this.App.Start(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) == false {
+			fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
+			return -1
+		} else {
+			return 0
+		}
 	}
 
 	// Defer closing of instances to exit

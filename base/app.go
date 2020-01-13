@@ -48,8 +48,7 @@ func (this *App) Init(name string, units []string) error {
 	if units_, err := gopi.UnitWithDependencies(units...); err != nil {
 		return err
 	} else {
-		// Call configuration for units - don't visit a unit more
-		// than once
+		// Call configuration for units - don't visit a unit more than once
 		unitmap := make(map[*gopi.UnitConfig]bool)
 		this.units = make([]*gopi.UnitConfig, 0, len(units_))
 		for _, unit := range units_ {
@@ -76,29 +75,43 @@ func (this *App) Init(name string, units []string) error {
 // IMPLEMENTATION gopi.App
 
 func (this *App) Run() int {
-	return this.Start([]string{})
+	if err := this.Start([]string{}); err != nil {
+		panic(err)
+	}
+	return 0
 }
 
-func (this *App) Start(args []string) int {
+func (this *App) Start(args []string) error {
+	var log gopi.Logger
+
 	if err := this.flags.Parse(args); errors.Is(err, gopi.ErrHelp) {
 		this.flags.Usage(os.Stderr)
-		return -1
+		return gopi.ErrHelp
 	} else if err != nil {
-		fmt.Fprintln(os.Stderr, this.flags.Name()+":", err)
-		return -1
+		return err
 	} else if this.flags.HasFlag("version", gopi.FLAG_NS_DEFAULT) && this.flags.GetBool("version", gopi.FLAG_NS_DEFAULT) {
 		this.flags.Version(os.Stderr)
-		return -1
+		return gopi.ErrHelp
 	}
+
 	// Create unit instances
 	for _, unit := range this.units {
 		if unit.New == nil {
 			continue
 		}
+		if log != nil {
+			log.Debug("New:", unit)
+		}
 		if instance, err := unit.New(this); err != nil {
-			fmt.Fprintln(os.Stderr, unit.Name+":", err)
-			return -1
+			return err
 		} else {
+			// `Set logging instance`
+			if unit.Type == gopi.UNIT_LOGGER && log == nil {
+				if log_, ok := instance.(gopi.Logger); ok {
+					log = log_
+				}
+			}
+			// Register instance
 			if instance != nil {
 				this.instanceByConfig[unit] = instance
 			}
@@ -106,15 +119,20 @@ func (this *App) Start(args []string) int {
 	}
 
 	// Success
-	return 0
+	return nil
 }
 
 func (this *App) Close() error {
+	log := this.Log()
+
 	// Close in reverse order
 	errs := &gopi.CompoundError{}
 	for i := range this.units {
 		unit := this.units[len(this.units)-i-1]
 		if instance, exists := this.instanceByConfig[unit]; exists {
+			if log != nil {
+				log.Debug("Close:", unit)
+			}
 			errs.Add(instance.Close())
 		}
 	}

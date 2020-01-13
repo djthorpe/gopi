@@ -52,8 +52,9 @@ func NewTestTool(t *testing.T, main gopi.MainTestFunc, args []string, units ...s
 }
 
 func (this *debug) Run() int {
-	if returnValue := this.App.Start(this.args); returnValue != 0 {
-		return returnValue
+	if err := this.App.Start(this.args); err != nil {
+		this.t.Error(err)
+		return -1
 	}
 
 	// Defer closing of instances to exit

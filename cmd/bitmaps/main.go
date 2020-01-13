@@ -21,9 +21,11 @@ import (
 
 func SetBackground(mgr gopi.SurfaceManager) error {
 	return mgr.Do(func(gopi.SurfaceManager) error {
-		if _, err := mgr.CreateBackground(gopi.SURFACE_FLAG_BITMAP, 1.0); err != nil {
+		if surface, err := mgr.CreateBackground(gopi.SURFACE_FLAG_BITMAP, 1.0); err != nil {
 			return err
 		} else {
+			surface.Bitmap().ClearToColor(gopi.ColorRed)
+			fmt.Println(surface)
 			return nil
 		}
 	})
@@ -55,6 +57,8 @@ func Main(app gopi.App, args []string) error {
 		return err
 	} else if err := SetBitmap(app.Surfaces(), bitmap, gopi.Point{100, 100}); err != nil {
 		return err
+	} else {
+		bitmap.ClearToColor(gopi.ColorGreen)
 	}
 
 	// Wait for key press

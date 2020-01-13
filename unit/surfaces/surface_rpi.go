@@ -31,7 +31,7 @@ type surface struct {
 	opacity float32
 	layer   uint16
 	native  *nativesurface
-	bitmap  gopi.Bitmap
+	bitmap  *bitmap
 }
 
 ////////////////////////////////////////////////////////////////////////////////

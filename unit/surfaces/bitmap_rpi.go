@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"sync"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -30,6 +31,9 @@ type bitmap struct {
 	dxtype          rpi.DXImageType
 	dxrow           *rpi.DXData
 	bytes_per_pixel uint32
+	dxmodified      rpi.DXRect
+
+	sync.Mutex
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -109,6 +113,14 @@ func (this *bitmap) Size() gopi.Size {
 	return gopi.Size{float32(this.size.W), float32(this.size.H)}
 }
 
+func (this *bitmap) ModifiedRect() rpi.DXRect {
+	return this.dxmodified
+}
+
+func (this *bitmap) ClearModifiedRect() {
+	this.dxmodified = nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CLEAR TO COLOR
 
@@ -129,6 +141,8 @@ func (this *bitmap) ClearToColor(c gopi.Color) {
 		// Offset pointer backwards - fudge!
 		ptr -= uintptr(this.stride)
 	}
+	// Set modified
+	this.dxmodified = rpi.DXNewRect(0, 0, uint32(this.size.W), uint32(this.size.H))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
