@@ -28,6 +28,7 @@ type lircdev struct {
 	features             linux.LIRCFeature
 	send, recv           bool
 	recv_mode, send_mode gopi.LIRCMode
+	recv_dutycycle,send_dutycycle uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +188,41 @@ func (this *lircdev) SendMode() gopi.LIRCMode {
 }
 
 func (this *lircdev) SetRcvMode(mode gopi.LIRCMode) error {
-	return gopi.ErrNotImplemented
+	if this.recv == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetRcvMode")
+	}
+	switch mode {
+	case gopi.LIRC_MODE_RAW:
+		if this.features&linux.LIRC_CAN_REC_RAW == 0 {
+			return gopi.ErrNotImplemented.WithPrefix("SetRcvMode")
+		}
+	case gopi.LIRC_MODE_PULSE:
+		if this.features&linux.LIRC_CAN_REC_RAW == 0 {
+			return gopi.ErrNotImplemented.WithPrefix("SetRcvMode")
+		}
+	case gopi.LIRC_MODE_MODE2:
+		if this.features&linux.LIRC_CAN_REC_MODE2 == 0 {
+			return gopi.ErrNotImplemented.WithPrefix("SetRcvMode")
+		}
+	case gopi.LIRC_MODE_LIRCCODE:
+		if this.features&linux.LIRC_CAN_REC_LIRCCODE == 0 {
+			return gopi.ErrNotImplemented.WithPrefix("SetRcvMode")
+		}
+	default:
+		return gopi.ErrNotImplemented.WithPrefix("SetRcvMode")
+	}
+	// Set mode
+	if err := linux.LIRCSetRcvMode(this.Fd(), mode); err != nil {
+		return err
+	} else if mode_, err := linux.LIRCRcvMode(this.Fd()); err != nil {
+		return err
+	} else if mode != mode_ {
+		return gopi.ErrUnexpectedResponse.WithPrefix("SetRcvMode")
+	} else {
+		this.recv_mode = mode
+	}
+	// Success
+	return nil
 }
 
 func (this *lircdev) SetSendMode(mode gopi.LIRCMode) error {
@@ -197,7 +232,7 @@ func (this *lircdev) SetSendMode(mode gopi.LIRCMode) error {
 	switch mode {
 	case gopi.LIRC_MODE_RAW:
 		if this.features&linux.LIRC_CAN_SEND_RAW == 0 {
-			return gopi.ErrNotImplemented
+			return gopi.ErrNotImplemented.WithPrefix("SetSendMode")
 		}
 	case gopi.LIRC_MODE_PULSE:
 		if this.features&linux.LIRC_CAN_SEND_PULSE == 0 {
@@ -227,3 +262,53 @@ func (this *lircdev) SetSendMode(mode gopi.LIRCMode) error {
 	// Success
 	return nil
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// SEND AND RECEIVE DUTY CYCLE
+
+func (this *lircdev) SendDutyCycle() uint32 {
+	return this.send_dutycycle
+}
+
+func (this *lircdev) RcvDutyCycle() uint32 {
+	return this.recv_dutycycle
+}
+
+func (this *lircdev) SetSendDutyCycle(value uint32) error {
+	if this.send == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetSendDutyCycle")
+	}
+	if this.features&linux.LIRC_CAN_SET_SEND_DUTY_CYCLE == 0 {
+		return gopi.ErrNotImplemented.WithPrefix("SetSendDutyCycle")
+	}
+	if value < 1 || value > 99 {
+		return gopi.ErrBadParameter.WithPrefix("SetSendDutyCycle")
+	}
+	if err := linux.LIRCSetSendDutyCycle(this.Fd(),value); err != nil {
+		return err
+	} else {
+		this.send_dutycycle = value
+	}
+	// Success
+	return nil
+}
+
+func (this *lircdev) SetRcvDutyCycle(value uint32) error {
+	if this.recv == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetRcvDutyCycle")
+	}
+	if this.features&linux.LIRC_CAN_SET_REC_DUTY_CYCLE == 0 {
+		return gopi.ErrNotImplemented.WithPrefix("SetRcvDutyCycle")
+	}
+	if value < 1 || value > 99 {
+		return gopi.ErrBadParameter.WithPrefix("SetRcvDutyCycle")
+	}
+	if err := linux.LIRCSetRcvDutyCycle(this.Fd(),value); err != nil {
+		return err
+	} else {
+		this.recv_dutycycle = value
+	}
+	// Success
+	return nil
+}
+

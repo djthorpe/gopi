@@ -10,6 +10,7 @@
 package lirc
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -109,6 +110,20 @@ func (this *lirc) Init(config LIRC) error {
 		}
 	}
 
+	// Set the duty cycle to default values
+	for _, device := range this.devices {
+		if device.recv {
+			if err := device.SetRcvDutyCycle(LIRC_DUTY_CYCLE); err != nil && errors.Is(err, gopi.ErrNotImplemented) == false {
+				return err
+			}
+		}
+		if device.send {
+			if err := device.SetSendDutyCycle(LIRC_DUTY_CYCLE); err != nil && errors.Is(err, gopi.ErrNotImplemented) == false {
+				return err
+			}
+		}
+	}
+
 	// Return success
 	return nil
 }
@@ -183,14 +198,14 @@ func (this *lirc) SendMode() gopi.LIRCMode {
 }
 
 func (this *lirc) SetRcvMode(mode gopi.LIRCMode) error {
-	set :=false
+	set := false
 
 	// Set mode for all recv devices
 	for _, device := range this.devices {
 		if device.recv == false {
 			continue
 		} else if err := device.SetRcvMode(mode); err != nil {
-			return fmt.Errorf("%s: %w",device.Name(),err)
+			return fmt.Errorf("%s: %w", device.Name(), err)
 		} else {
 			set = true
 		}
@@ -200,20 +215,20 @@ func (this *lirc) SetRcvMode(mode gopi.LIRCMode) error {
 	if set == false {
 		return gopi.ErrNotImplemented.WithPrefix("SetRcvMode")
 	}
-	
+
 	// Success
 	return nil
 }
 
 func (this *lirc) SetSendMode(mode gopi.LIRCMode) error {
-	set :=false
-	
+	set := false
+
 	// Set mode for all recv devices
 	for _, device := range this.devices {
 		if device.send == false {
 			continue
 		} else if err := device.SetSendMode(mode); err != nil {
-			return fmt.Errorf("%s: %w",device.Name(),err)
+			return fmt.Errorf("%s: %w", device.Name(), err)
 		} else {
 			set = true
 		}
@@ -226,6 +241,49 @@ func (this *lirc) SetSendMode(mode gopi.LIRCMode) error {
 
 	// Success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// SEND AND RECV DUTY CYCLE PARAMETERS
+
+func (this *lirc) RcvDutyCycle() uint32 {
+	value := uint32(0)
+
+	// Set mode for all recv devices
+	for _, device := range this.devices {
+		if device.recv == false {
+			continue
+		} else if value_ := device.RcvDutyCycle(); value_ == 0 {
+			continue
+		} else if value == 0 {
+			value = value_
+		} else if value != value_ {
+			return 0
+		}
+	}
+
+	// Return zero for unset or value between 1 and 99 otherwise
+	return value
+}
+
+func (this *lirc) SendDutyCycle() uint32 {
+	value := uint32(0)
+
+	// Set mode for all recv devices
+	for _, device := range this.devices {
+		if device.send == false {
+			continue
+		} else if value_ := device.SendDutyCycle(); value_ == 0 {
+			continue
+		} else if value == 0 {
+			value = value_
+		} else if value != value_ {
+			return 0
+		}
+	}
+
+	// Return zero for unset or value between 1 and 99 otherwise
+	return value
 }
 
 ////////////////////////////////////////////////////////////////////////////////

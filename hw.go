@@ -218,6 +218,7 @@ type LIRC interface {
 	SetSendMode(mode LIRCMode) error
 
 	// Receive parameters
+	RcvDutyCycle() uint32
 	GetRcvResolution() (uint32, error)
 	SetRcvTimeout(micros uint32) error
 	SetRcvTimeoutReports(enable bool) error
@@ -225,6 +226,7 @@ type LIRC interface {
 	SetRcvCarrierRangeHz(min uint32, max uint32) error
 
 	// Send parameters
+	SendDutyCycle() uint32
 	SetSendCarrierHz(value uint32) error
 	SetSendDutyCycle(value uint32) error
 
