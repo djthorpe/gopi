@@ -29,6 +29,7 @@ There are many other cases where events could fire. In this chapter, I will desc
 The **Timer Unit** can fire events at a regular interval or only once. Here are the parameters you'll need in order to use the timer:
 
 {% hint style="info" %}
+
 | Parameter | Value |
 | :--- | :--- |
 | Name | `gopi/timer` |
@@ -38,6 +39,7 @@ The **Timer Unit** can fire events at a regular interval or only once. Here are 
 | Import | `github.com/djthorpe/gopi/v2/unit/timer` |
 | Events | `gopi.TimerEvent` |
 | Compatibility | Linux, Darwin |
+
 {% endhint %}
 
 For every unit you'll need some of this information in order to import and use it in your tools. Any unit can be referred to by **Name** or by **Type**. Often a unit may require you to import other units into your tool, these are called **Requires**. Some units will emit on or more events which can be referred to by their event name \(and which also adhere to an interface\). Finally, the **Compatibility** refers to whether the unit functions with Linux, Darwin or Raspberry Pi specifically. All units which are compatible with Linux are also compatible with the Raspberry Pi, but not vice-versa.
