@@ -136,7 +136,7 @@ func (this *lircdev) Read(source gopi.Unit) (gopi.Event, error) {
 	if err := binary.Read(this.dev, binary.LittleEndian, &value); err != nil {
 		return nil, err
 	} else {
-		return NewEvent(source, value), nil
+		return NewEvent(source,this.recv_mode, value), nil
 	}
 }
 

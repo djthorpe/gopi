@@ -62,6 +62,15 @@ type Event interface {
 	Value() interface{} // Any value associated with the event
 }
 
+// LIRCEvent emitted on the event bus
+type LIRCEvent interface {
+	Type() LIRCType // Type of event
+	Mode() LIRCMode // Mode of receiving data
+
+	// Implements gopi.Event methods
+	Event
+}
+
 // EventHandler defines how an emitted event is handled in the application
 type EventHandler struct {
 	// The name of the event

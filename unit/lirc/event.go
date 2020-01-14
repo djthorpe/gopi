@@ -19,14 +19,15 @@ import (
 
 type lirc_event struct {
 	source gopi.Unit
+	mode   gopi.LIRCMode
 	value  uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.LIRCEvent
 
-func NewEvent(source gopi.Unit, value uint32) gopi.Event {
-	return &lirc_event{source, value}
+func NewEvent(source gopi.Unit, mode gopi.LIRCMode, value uint32) gopi.Event {
+	return &lirc_event{source, mode, value}
 }
 
 func (this *lirc_event) Name() string {
@@ -45,12 +46,17 @@ func (this *lirc_event) Type() gopi.LIRCType {
 	return gopi.LIRCType(this.value & 0xFF000000)
 }
 
+func (this *lirc_event) Mode() gopi.LIRCMode {
+	return this.mode
+}
+
 func (this *lirc_event) Value() interface{} {
 	return this.value & 0x00FFFFFF
 }
 
 func (this *lirc_event) String() string {
 	return "<lirc.event" +
+		" mode=" + fmt.Sprint(this.Mode()) +
 		" type=" + fmt.Sprint(this.Type()) +
 		" value=" + fmt.Sprint(this.Value()) +
 		">"
