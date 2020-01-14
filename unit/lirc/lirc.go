@@ -45,20 +45,6 @@ func (config LIRC) New(log gopi.Logger) (gopi.Unit, error) {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.LIRC
 
-func (this *lirc) RcvMode() gopi.LIRCMode {
-	return 0
-}
-func (this *lirc) SendMode() gopi.LIRCMode {
-	return 0
-}
-
-func (this *lirc) SetRcvMode(mode gopi.LIRCMode) error {
-	return gopi.ErrNotImplemented
-}
-func (this *lirc) SetSendMode(mode gopi.LIRCMode) error {
-	return gopi.ErrNotImplemented
-}
-
 func (this *lirc) GetRcvResolution() (uint32, error) {
 	return 0, gopi.ErrNotImplemented
 }

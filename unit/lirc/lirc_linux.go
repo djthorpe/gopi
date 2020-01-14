@@ -142,7 +142,90 @@ func (this *lirc) Close() error {
 // STRINGIFY
 
 func (this *lirc) String() string {
-	return "<lirc devices=" + fmt.Sprint(this.devices) + ">"
+	return "<lirc" +
+		" rcv_mode=" + fmt.Sprint(this.RcvMode()) +
+		" send_mode=" + fmt.Sprint(this.SendMode()) +
+		" devices=" + fmt.Sprint(this.devices) +
+		">"
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// SEND AND RECV MODE PARAMETERS
+
+func (this *lirc) RcvMode() gopi.LIRCMode {
+	mode := gopi.LIRC_MODE_NONE
+	// Ensure all recv devices have the same mode, or return gopi.LIRC_MODE_NONE
+	for _, device := range this.devices {
+		if device.recv == false {
+			continue
+		} else if mode == gopi.LIRC_MODE_NONE {
+			mode = device.RcvMode()
+		} else if mode != device.RcvMode() {
+			return gopi.LIRC_MODE_NONE
+		}
+	}
+	return mode
+}
+
+func (this *lirc) SendMode() gopi.LIRCMode {
+	mode := gopi.LIRC_MODE_NONE
+	// Ensure all send devices have the same mode, or return gopi.LIRC_MODE_NONE
+	for _, device := range this.devices {
+		if device.send == false {
+			continue
+		} else if mode == gopi.LIRC_MODE_NONE {
+			mode = device.SendMode()
+		} else if mode != device.SendMode() {
+			return gopi.LIRC_MODE_NONE
+		}
+	}
+	return mode
+}
+
+func (this *lirc) SetRcvMode(mode gopi.LIRCMode) error {
+	set :=false
+
+	// Set mode for all recv devices
+	for _, device := range this.devices {
+		if device.recv == false {
+			continue
+		} else if err := device.SetRcvMode(mode); err != nil {
+			return fmt.Errorf("%s: %w",device.Name(),err)
+		} else {
+			set = true
+		}
+	}
+
+	// No recv devices
+	if set == false {
+		return gopi.ErrNotImplemented.WithPrefix("SetRcvMode")
+	}
+	
+	// Success
+	return nil
+}
+
+func (this *lirc) SetSendMode(mode gopi.LIRCMode) error {
+	set :=false
+	
+	// Set mode for all recv devices
+	for _, device := range this.devices {
+		if device.send == false {
+			continue
+		} else if err := device.SetSendMode(mode); err != nil {
+			return fmt.Errorf("%s: %w",device.Name(),err)
+		} else {
+			set = true
+		}
+	}
+
+	// No send devices
+	if set == false {
+		return gopi.ErrNotImplemented.WithPrefix("SetSendMode")
+	}
+
+	// Success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
