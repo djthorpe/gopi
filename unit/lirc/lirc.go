@@ -45,30 +45,9 @@ func (config LIRC) New(log gopi.Logger) (gopi.Unit, error) {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.LIRC
 
-func (this *lirc) GetRcvResolution() (uint32, error) {
-	return 0, gopi.ErrNotImplemented
-}
-
-func (this *lirc) SetRcvTimeout(micros uint32) error {
-	return gopi.ErrNotImplemented
-}
-func (this *lirc) SetRcvTimeoutReports(enable bool) error {
-	return gopi.ErrNotImplemented
-}
-func (this *lirc) SetRcvCarrierHz(value uint32) error {
-	return gopi.ErrNotImplemented
-}
-func (this *lirc) SetRcvCarrierRangeHz(min uint32, max uint32) error {
-	return gopi.ErrNotImplemented
-}
-
 func (this *lirc) SetSendCarrierHz(value uint32) error {
 	return gopi.ErrNotImplemented
 }
 func (this *lirc) SetSendDutyCycle(value uint32) error {
-	return gopi.ErrNotImplemented
-}
-
-func (this *lirc) PulseSend(values []uint32) error {
 	return gopi.ErrNotImplemented
 }

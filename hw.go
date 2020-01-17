@@ -219,7 +219,9 @@ type LIRC interface {
 
 	// Receive parameters
 	RcvDutyCycle() uint32
-	GetRcvResolution() (uint32, error)
+	RcvResolutionMicros() uint32
+
+	// Receive parameters
 	SetRcvTimeout(micros uint32) error
 	SetRcvTimeoutReports(enable bool) error
 	SetRcvCarrierHz(value uint32) error

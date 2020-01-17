@@ -24,11 +24,11 @@ import (
 // TYPES
 
 type lircdev struct {
-	dev                  *os.File
-	features             linux.LIRCFeature
-	send, recv           bool
-	recv_mode, send_mode gopi.LIRCMode
-	recv_dutycycle,send_dutycycle uint32
+	dev                            *os.File
+	features                       linux.LIRCFeature
+	send, recv                     bool
+	recv_mode, send_mode           gopi.LIRCMode
+	recv_dutycycle, send_dutycycle uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +137,7 @@ func (this *lircdev) Read(source gopi.Unit) (gopi.Event, error) {
 	if err := binary.Read(this.dev, binary.LittleEndian, &value); err != nil {
 		return nil, err
 	} else {
-		return NewEvent(source,this.recv_mode, value), nil
+		return NewEvent(source, this.recv_mode, value), nil
 	}
 }
 
@@ -284,7 +284,7 @@ func (this *lircdev) SetSendDutyCycle(value uint32) error {
 	if value < 1 || value > 99 {
 		return gopi.ErrBadParameter.WithPrefix("SetSendDutyCycle")
 	}
-	if err := linux.LIRCSetSendDutyCycle(this.Fd(),value); err != nil {
+	if err := linux.LIRCSetSendDutyCycle(this.Fd(), value); err != nil {
 		return err
 	} else {
 		this.send_dutycycle = value
@@ -303,7 +303,7 @@ func (this *lircdev) SetRcvDutyCycle(value uint32) error {
 	if value < 1 || value > 99 {
 		return gopi.ErrBadParameter.WithPrefix("SetRcvDutyCycle")
 	}
-	if err := linux.LIRCSetRcvDutyCycle(this.Fd(),value); err != nil {
+	if err := linux.LIRCSetRcvDutyCycle(this.Fd(), value); err != nil {
 		return err
 	} else {
 		this.recv_dutycycle = value
@@ -312,3 +312,65 @@ func (this *lircdev) SetRcvDutyCycle(value uint32) error {
 	return nil
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// RECEIVE TIMEOUTS
+
+func (this *lircdev) SetRcvTimeout(micros uint32) error {
+	if this.recv == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetRcvTimeout")
+	}
+	if this.features&linux.LIRC_CAN_SET_REC_TIMEOUT == 0 {
+		return gopi.ErrNotImplemented.WithPrefix("SetRcvTimeout")
+	}
+	if min, max, err := linux.LIRCMinMaxTimeoutMicros(this.Fd()); err != nil {
+		return err
+	} else if micros != 0 && (micros < min || micros > max) {
+		return gopi.ErrBadParameter.WithPrefix("SetRcvTimeout")
+	}
+	if err := linux.LIRCSetRcvTimeoutMicros(this.Fd(), micros); err != nil {
+		return err
+	}
+	// Return success
+	return nil
+}
+
+func (this *lircdev) SetRcvTimeoutReports(enable bool) error {
+	if this.recv == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetRcvTimeoutReports")
+	}
+	if this.features&linux.LIRC_CAN_SET_REC_TIMEOUT == 0 {
+		return gopi.ErrNotImplemented.WithPrefix("SetRcvTimeoutReports")
+	}
+	if err := linux.LIRCSetRcvTimeoutReports(this.Fd(), enable); err != nil {
+		return err
+	}
+	// Return success
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RECEIVE CARRIER
+
+func (this *lircdev) SetRcvCarrierHz(value uint32) error {
+	return gopi.ErrNotImplemented
+}
+func (this *lircdev) SetRcvCarrierRangeHz(min uint32, max uint32) error {
+	return gopi.ErrNotImplemented
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RECEIVE RESOLUTION
+
+func (this *lircdev) RcvResolutionMicros() (uint32, error) {
+	if this.recv == false {
+		return 0, gopi.ErrOutOfOrder.WithPrefix("GetRcvResolutionMicros")
+	}
+	if this.features&linux.LIRC_CAN_GET_REC_RESOLUTION == 0 {
+		return 0, gopi.ErrNotImplemented.WithPrefix("GetRcvResolutionMicros")
+	}
+	if resolution, err := linux.LIRCRcvResolutionMicros(this.Fd()); err != nil {
+		return 0, err
+	} else {
+		return resolution, nil
+	}
+}

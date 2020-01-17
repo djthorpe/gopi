@@ -286,6 +286,35 @@ func (this *lirc) SendDutyCycle() uint32 {
 	return value
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// RECV RESOLUTION PARAMETERS
+
+func (this *lirc) RcvResolutionMicros() uint32 {
+	value := uint32(0)
+
+	// Return resolution if all devices match, returns 0
+	// if there isn't a single resolution
+	for _, device := range this.devices {
+		if device.recv == false {
+			continue
+		} else if value_, err := device.RcvResolutionMicros(); err != nil {
+			this.Log.Error(err)
+			return 0
+		} else if value_ == 0 {
+			continue
+		} else if value == 0 {
+			value = value_
+		} else if value != value_ {
+			return 0
+		}
+	}
+
+	// Return zero for unset or resolution in microseconds otherwise
+	return value
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
