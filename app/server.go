@@ -36,7 +36,7 @@ func NewServer(units ...string) (gopi.App, error) {
 	name := filepath.Base(os.Args[0])
 
 	// Append required units
-	units = append(units, "bus", "server")
+	units = append(units, "server")
 
 	// Check parameters
 	if err := this.App.Init(name, units); err != nil {
@@ -53,7 +53,7 @@ func (this *server) Run() int {
 			fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
 			return -1
 		} else {
-			return 0
+
 		}
 	}
 
@@ -63,6 +63,15 @@ func (this *server) Run() int {
 			fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
 		}
 	}()
+
+	// Start server and block until done
+	if server := this.UnitInstance("server").(gopi.RPCServer); server == nil {
+		fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", gopi.ErrInternalAppError.WithPrefix("server"))
+		return -1
+	} else if err := server.Start(); err != nil {
+		fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
+		return -1
+	}
 
 	// Success
 	return 0
