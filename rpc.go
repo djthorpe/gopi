@@ -90,6 +90,19 @@ type RPCService interface {
 	Unit
 }
 
+// RPCClientPool represents a pool of clients and connections to
+// remove services
+type RPCClientPool interface {
+	// Lookup service records by parameter - returns records
+	// which match either a service name up to max number of
+	// records (or zero for unlimited). Will wait for new records
+	// and block until cancelled
+	Lookup(ctx context.Context, addr string, max uint) ([]RPCServiceRecord, error)
+
+	// Implements gopi.Unit
+	Unit
+}
+
 // RPCEvent is emitted on service discovery and server events
 type RPCEvent interface {
 	// Type of event
