@@ -10,12 +10,13 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/user"
 
 	// Frameworks
 	app "github.com/djthorpe/gopi/v2/app"
 
 	// Units
+	_ "github.com/djthorpe/gopi/v2/unit/bus"
+	_ "github.com/djthorpe/gopi-rpc/v2/unit/grpc"
 	_ "github.com/djthorpe/gopi/v2/unit/logger"
 )
 
@@ -23,14 +24,9 @@ import (
 // BOOTSTRAP
 
 func main() {
-	if app, err := app.NewCommandLineTool(Main, nil); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	} else if user, err := user.Current(); err != nil {
+	if app, err := app.NewServer(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
-		// Register -name flag
-		app.Flags().FlagString("name", user.Name, "Name of user to print")
-
 		// Run and exit
 		os.Exit(app.Run())
 	}

@@ -11,11 +11,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/user"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
-	"github.com/djthorpe/gopi/v2/app"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -31,21 +29,4 @@ func Main(app gopi.App, args []string) error {
 
 	// Return success
 	return nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// BOOTSTRAP
-
-func main() {
-	if app, err := app.NewCommandLineTool(Main, nil); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	} else if user, err := user.Current(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	} else {
-		// Register -name flag
-		app.Flags().FlagString("name", user.Name, "Name of user to print")
-
-		// Run and exit
-		os.Exit(app.Run())
-	}
 }

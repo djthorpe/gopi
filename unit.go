@@ -54,6 +54,7 @@ const (
 	UNIT_INPUT_MANAGER
 	UNIT_RPC_DISCOVERY
 	UNIT_RPC_REGISTER
+	UNIT_RPC_SERVER
 	UNIT_RPC_SERVICE
 	UNIT_RPC_CLIENT
 	UNIT_MAX = UNIT_PLATFORM
@@ -79,6 +80,7 @@ var (
 		"input":     UNIT_INPUT_MANAGER,   // Input Manager
 		"discovery": UNIT_RPC_DISCOVERY,   // RPC Service Discovery
 		"register":  UNIT_RPC_REGISTER,    // RPC Service Registration
+		"server":    UNIT_RPC_SERVER,      // RPC Server
 	}
 	unitByName map[string]*UnitConfig
 	unitByType map[UnitType]*UnitConfig
@@ -300,6 +302,8 @@ func (v UnitType) String() string {
 		return "UNIT_RPC_DISCOVERY"
 	case UNIT_RPC_REGISTER:
 		return "UNIT_RPC_REGISTER"
+	case UNIT_RPC_SERVER:
+		return "UNIT_RPC_SERVER"
 	case UNIT_RPC_SERVICE:
 		return "UNIT_RPC_SERVICE"
 	case UNIT_RPC_CLIENT:
