@@ -54,6 +54,8 @@ const (
 	UNIT_INPUT_MANAGER
 	UNIT_RPC_DISCOVERY
 	UNIT_RPC_REGISTER
+	UNIT_RPC_SERVICE
+	UNIT_RPC_CLIENT
 	UNIT_MAX = UNIT_PLATFORM
 )
 
@@ -298,6 +300,10 @@ func (v UnitType) String() string {
 		return "UNIT_RPC_DISCOVERY"
 	case UNIT_RPC_REGISTER:
 		return "UNIT_RPC_REGISTER"
+	case UNIT_RPC_SERVICE:
+		return "UNIT_RPC_SERVICE"
+	case UNIT_RPC_CLIENT:
+		return "UNIT_RPC_CLIENT"
 	default:
 		return "[?? Invalid UnitType value]"
 	}
