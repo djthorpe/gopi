@@ -68,9 +68,13 @@ func (this *server) Run() int {
 	if server := this.UnitInstance("server").(gopi.RPCServer); server == nil {
 		fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", gopi.ErrInternalAppError.WithPrefix("server"))
 		return -1
-	} else if err := server.Start(); err != nil {
-		fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
-		return -1
+	} else {
+		fmt.Println("STARTING SERVER")
+		if err := server.Start(); err != nil {
+			fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
+			return -1
+		}
+		fmt.Println("STOPPING SERVER")
 	}
 
 	// Success
