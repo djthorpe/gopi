@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -23,13 +24,16 @@ import (
 // INTERFACES
 
 type server struct {
+	main gopi.MainCommandFunc
+
+	sync.WaitGroup
 	base.App
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // gopi.App implementation for command-line tool
 
-func NewServer(units ...string) (gopi.App, error) {
+func NewServer(main gopi.MainCommandFunc, units ...string) (gopi.App, error) {
 	this := new(server)
 
 	// Name of the server
@@ -41,6 +45,8 @@ func NewServer(units ...string) (gopi.App, error) {
 	// Check parameters
 	if err := this.App.Init(name, units); err != nil {
 		return nil, err
+	} else {
+		this.main = main
 	}
 
 	// Success
@@ -64,19 +70,46 @@ func (this *server) Run() int {
 		}
 	}()
 
+	if err := this.Bus().NewHandler(gopi.EventHandler{
+		Name:    "gopi.RPCEvent",
+		Handler: this.RPCEventHandler,
+		EventNS: gopi.EVENT_NS_DEFAULT,
+	}); err != nil {
+		fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
+		return -1
+	}
+
 	// Start server and block until done
 	if server := this.UnitInstance("server").(gopi.RPCServer); server == nil {
 		fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", gopi.ErrInternalAppError.WithPrefix("server"))
 		return -1
 	} else {
+		// Run main function in background
+		this.WaitGroup.Add(1)
+		go func() {
+			defer this.WaitGroup.Done()
+			if err := this.main(this, this.Flags().Args()); err != nil {
+				fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
+			}
+			// Stop server gracefully
+			server.Stop(false)
+		}()
+
 		fmt.Println("STARTING SERVER")
 		if err := server.Start(); err != nil {
 			fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
 			return -1
 		}
 		fmt.Println("STOPPING SERVER")
+
+		// Wait for main to end
+		this.WaitGroup.Wait()
 	}
 
 	// Success
 	return 0
+}
+
+func (this *server) RPCEventHandler(app gopi.App, evt gopi.Event) {
+	fmt.Println("handling event", evt)
 }
