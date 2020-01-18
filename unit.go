@@ -57,6 +57,7 @@ const (
 	UNIT_RPC_SERVER
 	UNIT_RPC_SERVICE
 	UNIT_RPC_CLIENT
+	UNIT_RPC_CLIENTPOOL
 	UNIT_MAX = UNIT_PLATFORM
 )
 
@@ -66,21 +67,22 @@ const (
 var (
 	unitMutex   sync.Mutex
 	unitNameMap = map[string]UnitType{
-		"logger":    UNIT_LOGGER,          // Logging
-		"timer":     UNIT_TIMER,           // Timer
-		"bus":       UNIT_BUS,             // Event Bus
-		"platform":  UNIT_PLATFORM,        // Hardware Platform
-		"display":   UNIT_DISPLAY,         // Display
-		"gpio":      UNIT_GPIO,            // GPIO Interface
-		"i2c":       UNIT_I2C,             // I2C Interface
-		"spi":       UNIT_SPI,             // SPI Interface
-		"lirc":      UNIT_LIRC,            // Linux Infrared Remote Control
-		"fonts":     UNIT_FONT_MANAGER,    // Font Manager
-		"surfaces":  UNIT_SURFACE_MANAGER, // Surface Manager
-		"input":     UNIT_INPUT_MANAGER,   // Input Manager
-		"discovery": UNIT_RPC_DISCOVERY,   // RPC Service Discovery
-		"register":  UNIT_RPC_REGISTER,    // RPC Service Registration
-		"server":    UNIT_RPC_SERVER,      // RPC Server
+		"logger":     UNIT_LOGGER,          // Logging
+		"timer":      UNIT_TIMER,           // Timer
+		"bus":        UNIT_BUS,             // Event Bus
+		"platform":   UNIT_PLATFORM,        // Hardware Platform
+		"display":    UNIT_DISPLAY,         // Display
+		"gpio":       UNIT_GPIO,            // GPIO Interface
+		"i2c":        UNIT_I2C,             // I2C Interface
+		"spi":        UNIT_SPI,             // SPI Interface
+		"lirc":       UNIT_LIRC,            // Linux Infrared Remote Control
+		"fonts":      UNIT_FONT_MANAGER,    // Font Manager
+		"surfaces":   UNIT_SURFACE_MANAGER, // Surface Manager
+		"input":      UNIT_INPUT_MANAGER,   // Input Manager
+		"discovery":  UNIT_RPC_DISCOVERY,   // RPC Service Discovery
+		"register":   UNIT_RPC_REGISTER,    // RPC Service Registration
+		"server":     UNIT_RPC_SERVER,      // RPC Server
+		"clientpool": UNIT_RPC_CLIENTPOOL,  // RPC Client Pool
 	}
 	unitByName map[string]*UnitConfig
 	unitByType map[UnitType]*UnitConfig
@@ -308,6 +310,8 @@ func (v UnitType) String() string {
 		return "UNIT_RPC_SERVICE"
 	case UNIT_RPC_CLIENT:
 		return "UNIT_RPC_CLIENT"
+	case UNIT_RPC_CLIENTPOOL:
+		return "UNIT_RPC_CLIENTPOOL"
 	default:
 		return "[?? Invalid UnitType value]"
 	}
