@@ -103,6 +103,26 @@ type RPCClientPool interface {
 	Unit
 }
 
+// RPCClientConn implements a single client connection for
+// communicating with an RPC server
+type RPCClientConn interface {
+	// Return address for connection, or nil if not connected
+	Addr() net.IP
+
+	// Return port for connection
+	Port() uint16
+
+	// Return service names supported by connection
+	Services() ([]string, error)
+
+	// Mutex locking to ensure one request at a time
+	Lock()
+	Unlock()
+
+	// Implements gopi.Unit
+	Unit
+}
+
 // RPCEvent is emitted on service discovery and server events
 type RPCEvent interface {
 	// Type of event
