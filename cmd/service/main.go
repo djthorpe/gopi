@@ -15,9 +15,9 @@ import (
 	app "github.com/djthorpe/gopi/v2/app"
 
 	// Units
+	_ "github.com/djthorpe/gopi-rpc/v2/unit/g"
 	_ "github.com/djthorpe/gopi/v2/unit/bus"
-	_ "github.com/djthorpe/gopi-rpc/v2/unit/grpc"
-	_ "github.com/djthorpe/gopi/v2/unit/logger"
+	_ "github.com/djthorpe/gopi/v2/unit/loggerrpc"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
