@@ -99,8 +99,11 @@ type RPCClientPool interface {
 	// and block until cancelled
 	Lookup(ctx context.Context, addr string, max uint) ([]RPCServiceRecord, error)
 
+	// Connect to service by service record
+	Connect(RPCServiceRecord, RPCFlag) (RPCClientConn, error)
+
 	// Connect to service by address and port
-	ConnectAddr(addr net.IP, port uint16) (RPCClientConn, error)
+	ConnectAddr(net.IP, uint16) (RPCClientConn, error)
 
 	// Disconnect from service
 	Disconnect(RPCClientConn) error
