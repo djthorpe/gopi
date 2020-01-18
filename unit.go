@@ -20,6 +20,7 @@ type (
 	UnitType   uint
 	ConfigFunc func(App) error
 	NewFunc    func(App) (Unit, error)
+	RunFunc    func(App, Unit) error
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -31,6 +32,7 @@ type UnitConfig struct {
 	Requires []string // Unit dependencies
 	Config   ConfigFunc
 	New      NewFunc
+	Run      RunFunc
 
 	edges *unitArray
 }
@@ -318,5 +320,5 @@ func (v UnitType) String() string {
 }
 
 func (u UnitConfig) String() string {
-	return fmt.Sprintf("<gopi.Unit name=%s type=%s requires=%s>", u.Name, u.Type, u.Requires)
+	return fmt.Sprintf("<gopi.Unit name=%s type=%s requires=%s>", strconv.Quote(u.Name), u.Type, u.Requires)
 }

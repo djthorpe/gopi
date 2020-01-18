@@ -118,6 +118,21 @@ func (this *App) Start(args []string) error {
 		}
 	}
 
+	// Call Unit run functions
+	for _, unit := range this.units {
+		if unit.Run == nil {
+			continue
+		}
+		if log != nil {
+			log.Debug("Run:", unit)
+		}
+		if instance, exists := this.instanceByConfig[unit]; exists {
+			if err := unit.Run(this, instance); err != nil {
+				return err
+			}
+		}
+	}
+
 	// Success
 	return nil
 }
