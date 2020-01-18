@@ -79,6 +79,17 @@ type RPCServer interface {
 	Unit
 }
 
+// RPCService is a driver which implements all the necessary
+// methods to handle remote calls
+type RPCService interface {
+	// CancelRequests is called by the server to gracefully end any
+	// on-going streaming requests, but before the service is shutdown
+	CancelRequests() error
+
+	// Implements gopi.Unit
+	Unit
+}
+
 // RPCEvent is emitted on service discovery and server events
 type RPCEvent interface {
 	// Type of event
