@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	// Frameworks
@@ -28,6 +29,8 @@ func EnumerateServices(app gopi.App) error {
 
 	if services, err := discovery.EnumerateServices(ctx); err != nil {
 		return err
+	} else if len(services) == 0 {
+		return gopi.ErrNotFound
 	} else {
 		table := tablewriter.NewWriter(os.Stdout)
 		for _, service := range services {
@@ -43,23 +46,38 @@ func EnumerateServices(app gopi.App) error {
 func LookupServices(app gopi.App, services []string) error {
 	discovery := app.UnitInstance("discovery").(gopi.RPCServiceDiscovery)
 	timeout := app.Flags().GetDuration("timeout", gopi.FLAG_NS_DEFAULT)
+	all := []gopi.RPCServiceRecord{}
 	for _, service := range services {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		if services, err := discovery.Lookup(ctx, service); err != nil {
 			return err
 		} else {
-			table := tablewriter.NewWriter(os.Stdout)
-			for _, service := range services {
-				table.Append([]string{
-					service.Name,
-					service.Service,
-					fmt.Sprintf("%s:%d", service.Host, service.Port),
-				})
-			}
-			table.Render()
+			all = append(all, services...)
 		}
 	}
+	if len(all) == 0 {
+		return gopi.ErrNotFound
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	for _, service := range all {
+		hostPort := fmt.Sprintf("%s:%d", service.Host, service.Port)
+		if service.Port == 0 {
+			hostPort = ""
+		}
+		addrs := ""
+		for _, addr := range service.Addrs {
+			addrs += addr.String() + " "
+		}
+		table.Append([]string{
+			service.Name,
+			service.Service,
+			hostPort,
+			strings.TrimSpace(addrs),
+		})
+	}
+	table.Render()
 
 	// Return success
 	return nil
