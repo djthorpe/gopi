@@ -12,11 +12,9 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
-	app "github.com/djthorpe/gopi/v2/app"
 	tablewriter "github.com/olekukonko/tablewriter"
 )
 
@@ -117,28 +115,28 @@ func RegisterServices(app gopi.App, services []string) error {
 	return nil
 }
 
+func Watch(app gopi.App) error {
+	watch := app.Flags().GetBool("watch", gopi.FLAG_NS_DEFAULT)
+	if watch {
+		fmt.Println("Press CTRL+C to exit")
+		app.WaitForSignal(context.Background(), os.Interrupt)
+	}
+	return nil
+}
+
 func Main(app gopi.App, args []string) error {
 	if len(args) == 0 {
-		return EnumerateServices(app)
+		if err := EnumerateServices(app); err != nil {
+			return err
+		} else if err := Watch(app); err != nil {
+			return err
+		}
 	} else if app.Flags().GetBool("register", gopi.FLAG_NS_DEFAULT) {
 		return RegisterServices(app, args)
 	} else {
 		return LookupServices(app, args)
 	}
-}
 
-////////////////////////////////////////////////////////////////////////////////
-// BOOTSTRAP
-
-func main() {
-	if app, err := app.NewCommandLineTool(Main, nil, "discovery", "register"); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	} else {
-		// Flags
-		app.Flags().FlagDuration("timeout", time.Second, "Timeout for discovery")
-		app.Flags().FlagBool("register", false, "Register service")
-
-		// Run and exit
-		os.Exit(app.Run())
-	}
+	// Success
+	return nil
 }

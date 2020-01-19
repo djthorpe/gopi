@@ -69,7 +69,7 @@ type listener struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (Listener) Name() string { return "gopi.mDNS.Listener" }
+func (Listener) Name() string { return "gopi/mdns/listener" }
 
 func (config Listener) FQDomain() string {
 	if config.Domain == "" {
@@ -167,9 +167,11 @@ func (this *listener) Close() error {
 
 func (this *listener) String() string {
 	if this.Closed {
-		return "<gopi.Listener closed=true>"
+		return "<" + this.Log.Name() + ">"
 	} else {
-		return "<gopi.Listener zone=" + strconv.Quote(this.domain) + ">"
+		return "<" + this.Log.Name() +
+			" zone=" + strconv.Quote(this.domain) +
+			">"
 	}
 }
 

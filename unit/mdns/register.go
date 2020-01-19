@@ -40,7 +40,7 @@ type register struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (Register) Name() string { return "gopi.mDNS.Register" }
+func (Register) Name() string { return "gopi/mdns/register" }
 
 func (config Register) New(log gopi.Logger) (gopi.Unit, error) {
 

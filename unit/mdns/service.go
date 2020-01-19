@@ -32,6 +32,7 @@ func NewService(zone string) *service {
 func (this *service) SetPTR(ptr *dns.PTR) {
 	this.Service = strings.TrimSuffix(ptr.Hdr.Name, "."+this.Zone)
 	this.Name = strings.TrimSuffix(ptr.Ptr, "."+this.Zone)
+
 	if this.Service != DISCOVERY_SERVICE_QUERY {
 		this.Name = strings.TrimSuffix(this.Name, "."+this.Service)
 	}

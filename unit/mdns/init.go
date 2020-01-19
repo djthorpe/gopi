@@ -19,8 +19,9 @@ import (
 
 func init() {
 
+	// gopi/mdns/listener
 	gopi.UnitRegister(gopi.UnitConfig{
-		Name: "gopi/mdns/listener",
+		Name: Listener{}.Name(),
 		Config: func(app gopi.App) error {
 			app.Flags().FlagString("mdns.domain", "local", "mDNS domain")
 			app.Flags().FlagString("mdns.iface", "", "mDNS network interface")
@@ -43,28 +44,47 @@ func init() {
 					Domain:    app.Flags().GetString("mdns.domain", gopi.FLAG_NS_DEFAULT),
 					Interface: iface,
 					Flags:     flags,
-				}, app.Log().Clone("gopi/mdns/listener"))
+				}, app.Log().Clone(Listener{}.Name()))
 			}
 		},
 	})
+
+	// gopi/mdns/discovery
 	gopi.UnitRegister(gopi.UnitConfig{
-		Name:     "gopi/mdns/discovery",
+		Name:     Discovery{}.Name(),
 		Type:     gopi.UNIT_RPC_DISCOVERY,
-		Requires: []string{"gopi/mdns/listener"},
+		Requires: []string{Listener{}.Name()},
 		New: func(app gopi.App) (gopi.Unit, error) {
 			return gopi.New(Discovery{
-				Listener: app.UnitInstance("gopi/mdns/listener").(ListenerIface),
-			}, app.Log().Clone("gopi/mdns/discovery"))
+				Listener: app.UnitInstance(Listener{}.Name()).(ListenerIface),
+			}, app.Log().Clone(Discovery{}.Name()))
 		},
 	})
+
+	// gopi/mdns/servicedb
 	gopi.UnitRegister(gopi.UnitConfig{
-		Name:     "gopi/mdns/register",
+		Name:     ServiceDB{}.Name(),
+		Type:     gopi.UNIT_RPC_DISCOVERY,
+		Pri:      1,
+		Requires: []string{Discovery{}.Name(), "bus"},
+		New: func(app gopi.App) (gopi.Unit, error) {
+			return gopi.New(ServiceDB{
+				Discovery: app.UnitInstance(Discovery{}.Name()).(gopi.RPCServiceDiscovery),
+				Listener:  app.UnitInstance(Listener{}.Name()).(ListenerIface),
+				Bus:       app.Bus(),
+			}, app.Log().Clone(ServiceDB{}.Name()))
+		},
+	})
+
+	// gopi/mdns/register
+	gopi.UnitRegister(gopi.UnitConfig{
+		Name:     Register{}.Name(),
 		Type:     gopi.UNIT_RPC_REGISTER,
-		Requires: []string{"gopi/mdns/listener"},
+		Requires: []string{Listener{}.Name()},
 		New: func(app gopi.App) (gopi.Unit, error) {
 			return gopi.New(Register{
-				Listener: app.UnitInstance("gopi/mdns/listener").(ListenerIface),
-			}, app.Log().Clone("gopi/mdns/register"))
+				Listener: app.UnitInstance(Listener{}.Name()).(ListenerIface),
+			}, app.Log().Clone(Register{}.Name()))
 		},
 	})
 }

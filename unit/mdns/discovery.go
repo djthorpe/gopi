@@ -38,7 +38,7 @@ type discovery struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (Discovery) Name() string { return "gopi.mDNS.Discovery" }
+func (Discovery) Name() string { return "gopi/mdns/discovery" }
 
 func (config Discovery) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(discovery)
@@ -77,7 +77,7 @@ func (this *discovery) Close() error {
 }
 
 func (this *discovery) String() string {
-	return fmt.Sprintf("<gopi.mDNS.Discovery %v>", this.listener)
+	return "<" + this.Log.Name() + " listener=" + fmt.Sprint(this.listener) + ">"
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -139,7 +139,6 @@ func (this *discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 	serviceNames := make(map[string]bool)
 
 	// Receive events in background
-	fmt.Println("EnumerateServices LISTENER=", this.listener)
 	receive := this.listener.Subscribe(QUEUE_NAME, func(value interface{}) {
 		lock.Lock()
 		defer lock.Unlock()
@@ -201,6 +200,9 @@ func (this *discovery) ProcessAnswer(msg *dns.Msg) error {
 	for _, answer := range sections {
 		switch rr := answer.(type) {
 		case *dns.PTR:
+			// If the service name is set, then eject it
+			this.FilterAnswer(service)
+			service = NewService(this.listener.Zone())
 			service.SetPTR(rr)
 		case *dns.SRV:
 			service.SetSRV(rr.Target, rr.Port, rr.Priority)
@@ -213,21 +215,22 @@ func (this *discovery) ProcessAnswer(msg *dns.Msg) error {
 		}
 	}
 
+	this.FilterAnswer(service)
+	return nil
+}
+
+func (this *discovery) FilterAnswer(service *service) {
 	// Ignore any service without a name, or where it doesn't end with _udp or _tcp
 	if service.Name == "" {
-		return nil
+		return
 	}
 	if strings.HasSuffix(service.Service, "._tcp") == false && strings.HasSuffix(service.Service, "._udp") == false {
-		return nil
+		return
 	}
-
 	// Emit the event
 	if service.Service == DISCOVERY_SERVICE_QUERY {
 		this.listener.Emit(QUEUE_NAME, NewEvent(this, gopi.RPC_EVENT_SERVICE_NAME, service.RPCServiceRecord, service.TTL))
 	} else {
 		this.listener.Emit(QUEUE_RECORD, NewEvent(this, gopi.RPC_EVENT_SERVICE_RECORD, service.RPCServiceRecord, service.TTL))
 	}
-
-	// Success
-	return nil
 }

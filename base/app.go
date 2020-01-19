@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sort"
 	"sync"
 
 	// Frameworks
@@ -261,12 +262,18 @@ func (this *App) UnitInstancesByName(name string) []gopi.Unit {
 		return nil
 	} else {
 		units := make([]gopi.Unit, 0, len(configs))
+		pri := make([]uint, 0, len(configs))
 		for _, config := range configs {
 			if instance, exists := this.instanceByConfig[config]; exists {
 				units = append(units, instance)
+				pri = append(pri, config.Pri)
 			}
 		}
-		// TODO: Sort units by some sort of priority field
+		// Sort units by priority field
+		sort.Slice(units, func(i, j int) bool {
+			return pri[i] > pri[j]
+		})
+		// Cache unit names
 		this.instancesByName[name] = units
 		return units
 	}

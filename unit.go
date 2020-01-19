@@ -30,6 +30,7 @@ type UnitConfig struct {
 	Name     string   // Unique name of the unit
 	Type     UnitType // Unit type
 	Requires []string // Unit dependencies
+	Pri      uint     // Priority when more than one unit of the same type
 	Config   ConfigFunc
 	New      NewFunc
 	Run      RunFunc
@@ -87,7 +88,7 @@ var (
 		"clientpool": UNIT_RPC_CLIENTPOOL,  // RPC Client Pool
 	}
 	unitByName map[string]*UnitConfig
-	unitByType map[UnitType]*UnitConfig
+	unitByType map[UnitType][]*UnitConfig
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,7 +98,7 @@ func UnitReset() {
 	unitMutex.Lock()
 	defer unitMutex.Unlock()
 	unitByName = make(map[string]*UnitConfig)
-	unitByType = make(map[UnitType]*UnitConfig)
+	unitByType = make(map[UnitType][]*UnitConfig)
 }
 
 func UnitRegister(unit UnitConfig) {
@@ -131,16 +132,16 @@ func UnitRegister(unit UnitConfig) {
 	// Register by type
 	if unit.Type != UNIT_NONE {
 		if _, exists := unitByType[unit.Type]; exists {
-			panic(fmt.Errorf("Duplicate Unit type registered: %v", unit))
+			unitByType[unit.Type] = append(unitByType[unit.Type], &unit)
 		} else {
-			unitByType[unit.Type] = &unit
+			unitByType[unit.Type] = []*UnitConfig{&unit}
 		}
 	}
 }
 
 func UnitsByType(unitType UnitType) []*UnitConfig {
-	if unit, ok := unitByType[unitType]; ok {
-		return []*UnitConfig{unit}
+	if units, ok := unitByType[unitType]; ok {
+		return units
 	} else {
 		return nil
 	}
