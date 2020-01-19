@@ -146,6 +146,24 @@ func (this *bitmap) ClearToColor(c gopi.Color) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// SET PIXEL
+
+func (this *bitmap) PaintPixel(c gopi.Color, p gopi.Point) error {
+	x, y := int32(p.X), int32(p.Y)
+	if x < 0 || x >= this.Size.X {
+		return gopi.ErrBadParameter.WithPrefix("X")
+	}
+	if y < 0 || y >= this.Size.Y {
+		return gopi.ErrBadParameter.WithPrefix("Y")
+	}
+	rect := rpi.DXNewRect(0, y, uint32(this.size.W), 1)
+	if err := rpi.DXResourceReadData(this.handle, rect, ptr, this.stride); err != nil {
+		return err
+	}
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION Image
 
 func (this *bitmap) ColorModel() color.Model {
