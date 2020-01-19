@@ -14,10 +14,10 @@ import (
 	"testing"
 
 	// Frameworks
-
-	// Units
 	gopi "github.com/djthorpe/gopi/v2"
 	app "github.com/djthorpe/gopi/v2/app"
+
+	// Units
 	_ "github.com/djthorpe/gopi/v2/unit/display"
 	_ "github.com/djthorpe/gopi/v2/unit/logger"
 	_ "github.com/djthorpe/gopi/v2/unit/platform"
@@ -42,10 +42,16 @@ func Main_Test_Bitmap_001(app gopi.App, t *testing.T) {
 		gopi.SURFACE_FLAG_RGB565, gopi.SURFACE_FLAG_RGB888, gopi.SURFACE_FLAG_RGBA32,
 	}
 	for _, imageType := range types {
+		fmt.Println("DOING", imageType)
 		if bitmap, err := surfaces.CreateBitmap(imageType, gopi.Size{100, 100}); err != nil {
 			t.Error(err)
 		} else {
-			fmt.Println(bitmap)
+			// Diagnol blue stripe
+			bitmap.ClearToColor(gopi.ColorRed)
+			for y := float32(0); y < bitmap.Size().H; y += 1.0 {
+				bitmap.PaintPixel(gopi.ColorBlue, gopi.Point{y, y})
+			}
 		}
+		fmt.Println("DONE", imageType)
 	}
 }

@@ -317,6 +317,7 @@ func DXDisplaySnapshot(display DXDisplayHandle, resource DXResource, transform D
 // RESOURCES
 
 func DXResourceCreate(image_type DXImageType, size DXSize) (DXResource, error) {
+	fmt.Println("DXResourceCreate",image_type,size)
 	var dummy C.uint32_t
 	if handle := DXResource(C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(image_type), C.uint32_t(size.W), C.uint32_t(size.H), (*C.uint32_t)(unsafe.Pointer(&dummy)))); handle == DX_NO_HANDLE {
 		return DX_NO_HANDLE, gopi.ErrBadParameter

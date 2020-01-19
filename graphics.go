@@ -77,6 +77,10 @@ type Bitmap interface {
 
 	// Clear bitmap
 	ClearToColor(Color)
+
+	// Paint a single pixel
+	PaintPixel(Color,Point)
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

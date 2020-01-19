@@ -84,6 +84,9 @@ func NewBitmap(flags gopi.SurfaceFlags, size gopi.Size) (*bitmap, error) {
 }
 
 func (this *bitmap) Destroy() error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.handle == 0 {
 		return nil
 	}
@@ -114,10 +117,16 @@ func (this *bitmap) Size() gopi.Size {
 }
 
 func (this *bitmap) ModifiedRect() rpi.DXRect {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	return this.dxmodified
 }
 
 func (this *bitmap) ClearModifiedRect() {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	this.dxmodified = nil
 }
 
@@ -125,6 +134,9 @@ func (this *bitmap) ClearModifiedRect() {
 // CLEAR TO COLOR
 
 func (this *bitmap) ClearToColor(c gopi.Color) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	// Create a strip of color
 	src := color_to_bytes(c, this.dxtype)
 	row := this.dxrow.Bytes()
@@ -148,19 +160,21 @@ func (this *bitmap) ClearToColor(c gopi.Color) {
 ////////////////////////////////////////////////////////////////////////////////
 // SET PIXEL
 
-func (this *bitmap) PaintPixel(c gopi.Color, p gopi.Point) error {
+func (this *bitmap) PaintPixel(c gopi.Color, p gopi.Point) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	x, y := int32(p.X), int32(p.Y)
-	if x < 0 || x >= this.Size.X {
-		return gopi.ErrBadParameter.WithPrefix("X")
+	if x < 0 || x >= int32(this.size.W) {
+		return
 	}
-	if y < 0 || y >= this.Size.Y {
-		return gopi.ErrBadParameter.WithPrefix("Y")
+	if y < 0 || y >= int32(this.size.H) {
+		return
 	}
-	rect := rpi.DXNewRect(0, y, uint32(this.size.W), 1)
-	if err := rpi.DXResourceReadData(this.handle, rect, ptr, this.stride); err != nil {
-		return err
-	}
-	return nil
+	rect := rpi.DXNewRect(0, 0, uint32(this.size.W), 1)
+	ptr := this.dxrow.Ptr()
+	ptr -= uintptr(uint32(y) * this.stride)
+	rpi.DXResourceReadData(this.handle, rect, ptr, this.stride)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
