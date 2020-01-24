@@ -18,8 +18,11 @@ func init() {
 	gopi.UnitRegister(gopi.UnitConfig{
 		Name: GPIO{}.Name(),
 		Type: gopi.UNIT_GPIO,
+		Requires: []string{ "platform" },
 		New: func(app gopi.App) (gopi.Unit, error) {
-			return gopi.New(GPIO{}, app.Log().Clone(GPIO{}.Name()))
+			return gopi.New(GPIO{
+				Platform: app.Platform(),
+			}, app.Log().Clone(GPIO{}.Name()))
 		},
 	})
 }
