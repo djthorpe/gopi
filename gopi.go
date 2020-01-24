@@ -55,6 +55,12 @@ type Logger interface {
 	// Error logs an error, and returns an error with the name prefixed
 	Error(error) error
 
+	// Warn outputs informational message with warning severity
+	Warn(args ...interface{})
+
+	// Info outputs informational message
+	Info(args ...interface{})
+
 	// Debug will log a debug message when debugging is on
 	Debug(args ...interface{})
 

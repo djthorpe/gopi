@@ -60,6 +60,18 @@ func (this *log) Error(err error) error {
 	return this.Logger.Error(err)
 }
 
+func (this *log) Warn(args ...interface{}) {
+	this.Lock()
+	defer this.Unlock()
+	this.Logger.Warn(args...)
+}
+
+func (this *log) Info(args ...interface{}) {
+	this.Lock()
+	defer this.Unlock()
+	this.Logger.Info(args...)
+}
+
 func (this *log) Debug(args ...interface{}) {
 	this.Lock()
 	defer this.Unlock()

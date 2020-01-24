@@ -57,9 +57,21 @@ func (this *Logger) Error(err error) error {
 	return err
 }
 
+func (this *Logger) Warn(args ...interface{}) {
+	if this.debug {
+		fmt.Fprintln(this.writer, append([]interface{}{"[WARN]"}, args...))
+	}
+}
+
+func (this *Logger) Info(args ...interface{}) {
+	if this.debug {
+		fmt.Fprintln(this.writer, append([]interface{}{"[INFO]"}, args...))
+	}
+}
+
 func (this *Logger) Debug(args ...interface{}) {
 	if this.debug {
-		fmt.Fprintln(this.writer, args...)
+		fmt.Fprintln(this.writer, append([]interface{}{"[DEBUG]"}, args...))
 	}
 }
 
