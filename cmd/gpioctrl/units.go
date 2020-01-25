@@ -17,10 +17,8 @@ import (
 	// Units
 	_ "github.com/djthorpe/gopi/v2/unit/files"
 	_ "github.com/djthorpe/gopi/v2/unit/gpio"
-	_ "github.com/djthorpe/gopi/v2/unit/gpio/gpiorpi"
 	_ "github.com/djthorpe/gopi/v2/unit/gpio/gpiosysfs"
 	_ "github.com/djthorpe/gopi/v2/unit/logger"
-	_ "github.com/djthorpe/gopi/v2/unit/platform"
 )
 
 func main() {
