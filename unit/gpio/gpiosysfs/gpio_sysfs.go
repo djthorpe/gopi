@@ -29,10 +29,9 @@ type GPIO struct {
 }
 
 type gpio struct {
-	filepoll gopi.FilePoll
-	watched  map[*os.File]gopi.GPIOPin
 	exported []gopi.GPIOPin
 
+	Watcher
 	base.Unit
 	sync.Mutex
 }
@@ -72,12 +71,6 @@ func (this *gpio) Init(config GPIO) error {
 	this.Lock()
 	defer this.Unlock()
 
-	if config.FilePoll == nil {
-		return gopi.ErrBadParameter.WithPrefix("FilePoll")
-	} else {
-		this.filepoll = config.FilePoll
-	}
-
 	// Check for export and unexport paths
 	if _, err := os.Stat(GPIO_EXPORT); os.IsNotExist(err) {
 		return err
@@ -87,7 +80,9 @@ func (this *gpio) Init(config GPIO) error {
 	}
 
 	// Create a map of watched pins
-	this.watched = make(map[*os.File]gopi.GPIOPin, 0)
+	if err := this.Watcher.Init(config); err != nil {
+		return nil
+	}
 
 	// Create an array of exported pins
 	if config.UnexportOnClose {
@@ -103,16 +98,12 @@ func (this *gpio) Close() error {
 	defer this.Unlock()
 
 	// Unwatch pins
-	errs := gopi.NewCompoundError()
-	for file, _ := range this.watched {
-		errs.Add(this.filepoll.Unwatch(file.Fd()))
-		errs.Add(file.Close())
-	}
-	if errs.ErrorOrSelf() != nil {
-		return errs.ErrorOrSelf()
+	if err := this.Watcher.Close(); err != nil {
+		return err
 	}
 
 	// Unexport pins
+	errs := gopi.NewCompoundError()
 	for _, pin := range this.exported {
 		if isExported(pin) {
 			errs.Add(unexportPin(pin))
@@ -124,8 +115,6 @@ func (this *gpio) Close() error {
 
 	// Release resources
 	this.exported = nil
-	this.watched = nil
-	this.filepoll = nil
 
 	// Return success
 	return this.Unit.Close()
@@ -141,13 +130,6 @@ func (this *gpio) String() string {
 	}
 	if this.exported != nil {
 		str += " exportedPins=" + fmt.Sprint(this.exported)
-	}
-	if len(this.watched) > 0 {
-		str += " watchedPins=["
-		for _, pin := range this.watched {
-			str += " " + fmt.Sprint(pin)
-		}
-		str = str + " ]"
 	}
 	return str + ">"
 }
@@ -324,56 +306,38 @@ func (this *gpio) Watch(logical gopi.GPIOPin, edge gopi.GPIOEdge) error {
 			this.Log.Warn(fmt.Errorf("Invalid direction for pin %v: %v", logical, direction))
 		}
 	}
-	/*
-		// Set rising, falling, both or none
-		edge_write := ""
-		switch edge {
-		case gopi.GPIO_EDGE_NONE:
-			if err := writeEdge(logical, "none"); err != nil {
-				return fmt.Errorf("Unable to write edge for %v: %w", pin, err)
-			} else if file, exists := this.watched[pin]; exists == false {
-				// IGNORE UNWATCHED PINS
-			} else if err := this.filepoll.Unwatch(file.Fd()); err != nil {
-				this.log.Error("%v: %v", pin, err)
-				file.Close()
-			} else if err := file.Close(); err != nil {
-				return err
-			} else {
-				// Remove from list of watched pins
-				delete(this.watched, pin)
-			}
-		case gopi.GPIO_EDGE_RISING:
-			edge_write = "rising"
-		case gopi.GPIO_EDGE_FALLING:
-			edge_write = "falling"
-		case gopi.GPIO_EDGE_BOTH:
-			edge_write = "both"
-		default:
-			return errors.New("Watch: Invalid edge value")
-		}
 
-		if edge_write != "" {
-			if err := writeEdge(pin, edge_write); err != nil {
-				this.log.Error("Watch: Unable to write edge for %v: %v", pin, err)
-				return err
-			} else if _, exists := this.watched[pin]; exists {
-				// IGNORE ALREADY WATCHED PINS
-			} else if file, err := watchValue(pin); err != nil {
-				this.log.Error("Watch: Unable to watch %v: %v", pin, err)
-				return err
-			} else if err := this.filepoll.Watch(file, filepoll.FILEPOLL_MODE_EDGE, func(handle *os.File, mode filepoll.FilePollMode) {
-				if err := this.handleEdge(handle, pin); err != nil {
-					this.log.Warn("Watch: %v: %v", pin, err)
-				}
-			}); err != nil {
-				this.log.Error("Watch: %v: %v", pin, err)
-				file.Close()
-				return err
-			} else {
-				this.watched[pin] = file
-			}
+	// Set rising, falling, both or none
+	edge_write := ""
+	switch edge {
+	case gopi.GPIO_EDGE_NONE:
+		if err := writeEdge(logical, "none"); err != nil {
+			return fmt.Errorf("Unable to write edge for %v: %w", logical, err)
+		} else if err := this.Watcher.Unwatch(logical); err != nil {
+			return err
 		}
-	*/
+	case gopi.GPIO_EDGE_RISING:
+		edge_write = "rising"
+	case gopi.GPIO_EDGE_FALLING:
+		edge_write = "falling"
+	case gopi.GPIO_EDGE_BOTH:
+		edge_write = "both"
+	default:
+		return gopi.ErrBadParameter.WithPrefix("Watch")
+	}
+
+	if err := writeEdge(logical, edge_write); err != nil {
+		return fmt.Errorf("Watch: Unable to write edge for %v: %w", logical, err)
+	}
+	if this.Watcher.Exists(logical) {
+		// IGNORE ALREADY WATCHED PINS
+		return nil
+	}
+	if file, err := watchValue(logical); err != nil {
+		return fmt.Errorf("Watch: Unable to watch %v: %w", logical, err)
+	} else if err := this.Watcher.Watch(logical,file); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -383,7 +347,7 @@ func (this *gpio) Watch(logical gopi.GPIOPin, edge gopi.GPIOEdge) error {
 
 func (this *gpio) exportPin(pin gopi.GPIOPin) error {
 	if isExported(pin) == false {
-		this.Log.Debug("Export Pin", pin)
+		this.Log.Debug("Exporting Pin", pin)
 		if err := exportPin(pin); err != nil {
 			return err
 		}

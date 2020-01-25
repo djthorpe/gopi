@@ -121,7 +121,6 @@ func Main_Test_GPIO_RPI_004(app gopi.App, t *testing.T) {
 	}
 }
 
-
 func Test_GPIO_RPI_005(t *testing.T) {
 	flags := []string{"-debug"}
 	if app, err := app.NewTestTool(t, Main_Test_GPIO_RPI_005, flags, "gpio"); err != nil {
