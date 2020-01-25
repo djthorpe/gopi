@@ -14,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -59,8 +58,7 @@ func NewCommandLineTool(main gopi.MainCommandFunc, handlers []gopi.EventHandler,
 }
 
 func (this *command) Run() int {
-	args := testlessArguments(os.Args[1:])
-	if err := this.App.Start(args); err != nil {
+	if err := this.App.Start(os.Args[1:]); err != nil {
 		if errors.Is(err, flag.ErrHelp) == false {
 			fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
 			return -1
@@ -100,18 +98,4 @@ func (this *command) Run() int {
 
 	// Success
 	return 0
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-
-func testlessArguments(input []string) []string {
-	output := make([]string, 0, len(input))
-	for _, arg := range input {
-		if strings.HasPrefix(arg, "-test.") {
-			continue
-		}
-		output = append(output, arg)
-	}
-	return output
 }

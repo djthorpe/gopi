@@ -47,6 +47,6 @@ func main() {
 	if app, err := app.NewCommandLineTool(Main, Events, "timer"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
-		os.Exit(app.Run())
+		app.Run()
 	}
 }

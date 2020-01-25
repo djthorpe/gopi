@@ -20,7 +20,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-type debug struct {
+type debugapp struct {
 	main gopi.MainTestFunc
 	t    *testing.T
 	args []string
@@ -31,7 +31,7 @@ type debug struct {
 // gopi.App implementation for debug tool
 
 func NewTestTool(t *testing.T, main gopi.MainTestFunc, args []string, units ...string) (gopi.App, error) {
-	this := new(debug)
+	this := new(debugapp)
 
 	// Name of test
 	name := t.Name()
@@ -51,7 +51,7 @@ func NewTestTool(t *testing.T, main gopi.MainTestFunc, args []string, units ...s
 	return this, nil
 }
 
-func (this *debug) Run() int {
+func (this *debugapp) Run() int {
 	if err := this.App.Start(this.args); err != nil {
 		this.t.Error(err)
 		return -1
