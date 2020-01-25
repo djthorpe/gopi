@@ -116,8 +116,6 @@ func (this *filepoll) Watch(fd uintptr, mode gopi.FilePollFlags, handler gopi.Fi
 	} else if err := linux.EpollAdd(this.handle, int(fd), flags); err != nil {
 		return err
 	} else {
-		this.stop[fd] = make(chan struct{})
-		this.WaitGroup.Add(1)
 		go this.watch(fd, handler)
 	}
 
@@ -135,7 +133,7 @@ func (this *filepoll) Unwatch(fd uintptr) error {
 		return gopi.ErrNotFound.WithPrefix("fd")
 	} else {
 		// Send stop
-		stop<- struct{}{}
+		stop <- struct{}{}
 		<-stop
 		delete(this.stop, fd)
 	}
@@ -148,16 +146,17 @@ func (this *filepoll) Unwatch(fd uintptr) error {
 // BACKGROUND METHODS
 
 func (this *filepoll) watch(fd uintptr, handler gopi.FilePollFunc) {
+	this.WaitGroup.Add(1)
 	defer this.WaitGroup.Done()
 
 	// Continue receiving epoll events until stop channel is closed
+	this.stop[fd] = make(chan struct{})
 	stop := this.stop[fd]
+	timer := time.NewTicker(this.timeout)
 FOR_LOOP:
 	for {
 		select {
-		case <-stop:
-			break FOR_LOOP
-		default:
+		case <-timer.C:
 			if evts, err := linux.EpollWait(this.handle, this.timeout, this.cap); err != nil {
 				this.Log.Error(err)
 			} else {
@@ -170,6 +169,9 @@ FOR_LOOP:
 					}
 				}
 			}
+		case <-stop:
+			timer.Stop()
+			break FOR_LOOP
 		}
 	}
 

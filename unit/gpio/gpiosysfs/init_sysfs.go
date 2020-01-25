@@ -20,7 +20,7 @@ func init() {
 		Type:     gopi.UNIT_GPIO,
 		Requires: []string{"gopi/filepoll"},
 		Config: func(app gopi.App) error {
-			app.Flags().FlagBool("gpio.unexport", true, "Unexport exported pins on exit")
+			app.Flags().FlagBool("gpio.unexport", false, "Unexport exported pins on exit")
 			return nil
 		},
 		New: func(app gopi.App) (gopi.Unit, error) {

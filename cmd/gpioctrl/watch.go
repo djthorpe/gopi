@@ -40,7 +40,9 @@ func WatchEdges(app gopi.App) error {
 		return nil
 	} else {
 		for _, logical := range edges {
-			gpio.Watch(logical, gopi.GPIO_EDGE_BOTH)
+			if err := gpio.Watch(logical, gopi.GPIO_EDGE_FALLING); err != nil {
+				return err
+			}
 		}
 	}
 

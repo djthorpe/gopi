@@ -302,7 +302,7 @@ func (this *gpio) Watch(logical gopi.GPIOPin, edge gopi.GPIOEdge) error {
 	if this.Log.IsDebug() {
 		if direction, err := direction(logical); err != nil {
 			this.Log.Warn(fmt.Errorf("Invalid direction for pin %v: %w", logical, err))
-		} else if direction != "out" {
+		} else if direction != "in" {
 			this.Log.Warn(fmt.Errorf("Invalid direction for pin %v: %v", logical, direction))
 		}
 	}
@@ -326,6 +326,7 @@ func (this *gpio) Watch(logical gopi.GPIOPin, edge gopi.GPIOEdge) error {
 		return gopi.ErrBadParameter.WithPrefix("Watch")
 	}
 
+	this.Log.Debug("writeEdge", logical, edge_write)
 	if err := writeEdge(logical, edge_write); err != nil {
 		return fmt.Errorf("Watch: Unable to write edge for %v: %w", logical, err)
 	}
@@ -335,7 +336,7 @@ func (this *gpio) Watch(logical gopi.GPIOPin, edge gopi.GPIOEdge) error {
 	}
 	if file, err := watchValue(logical); err != nil {
 		return fmt.Errorf("Watch: Unable to watch %v: %w", logical, err)
-	} else if err := this.Watcher.Watch(logical,file); err != nil {
+	} else if err := this.Watcher.Watch(logical, file, edge); err != nil {
 		return err
 	}
 
@@ -368,7 +369,7 @@ func filenameForPin(pin gopi.GPIOPin, filename string) string {
 }
 
 func writeFile(filename string, value string) error {
-	return ioutil.WriteFile(filename, []byte(value), 777)
+	return ioutil.WriteFile(filename, []byte(value),os.ModeDevice|os.ModeCharDevice)
 }
 
 func readFile(filename string) (string, error) {
@@ -393,17 +394,8 @@ func exportPin(pin gopi.GPIOPin) error {
 	if err := writeFile(GPIO_EXPORT, strconv.FormatUint(uint64(pin), 10)+"\n"); err != nil {
 		return err
 	}
-	// Update permissions on the pin
+	// Check for export success
 	if _, err := os.Stat(filenameForPin(pin, "")); os.IsNotExist(err) {
-		return err
-	}
-	if err := os.Chmod(filenameForPin(pin, "direction"), 0770); err != nil {
-		return err
-	}
-	if err := os.Chmod(filenameForPin(pin, "value"), 0770); err != nil {
-		return err
-	}
-	if err := os.Chmod(filenameForPin(pin, "edge"), 0770); err != nil {
 		return err
 	}
 	// Return success
@@ -411,6 +403,15 @@ func exportPin(pin gopi.GPIOPin) error {
 }
 
 func unexportPin(pin gopi.GPIOPin) error {
+	if isExported(pin) {
+		// Reset state
+		if err := writeEdge(pin,"none"); err != nil {
+			return err
+		}
+		if err := setDirection(pin,"in"); err != nil {
+			return err
+		}
+	}
 	return writeFile(GPIO_UNEXPORT, strconv.FormatUint(uint64(pin), 10)+"\n")
 }
 
@@ -451,5 +452,5 @@ func readEdge(pin gopi.GPIOPin) (string, error) {
 }
 
 func watchValue(pin gopi.GPIOPin) (*os.File, error) {
-	return os.OpenFile(filenameForPin(pin, "value"), os.O_RDONLY, 0)
+	return os.OpenFile(filenameForPin(pin, "value"), os.O_RDWR,0660)
 }

@@ -17,7 +17,9 @@ import (
 func Main(app gopi.App, args []string) error {
 
 	RenderTable(app)
-	WatchEdges(app)
+	if err := WatchEdges(app); err != nil {
+		return err
+	}
 
 	// Return success
 	return nil

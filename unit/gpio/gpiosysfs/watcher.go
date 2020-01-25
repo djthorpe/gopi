@@ -11,10 +11,7 @@ package gpiosysfs
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
-	"strings"
 	"sync"
 
 	// Frameworks
@@ -28,7 +25,7 @@ type Watcher struct {
 	filepoll gopi.FilePoll
 	pins     map[uintptr]Pin
 
-	sync.Mutex
+	sync.RWMutex
 }
 
 type Pin struct {
@@ -72,19 +69,21 @@ func (this *Watcher) Close() error {
 }
 
 func (this *Watcher) Exists(logical gopi.GPIOPin) bool {
-	this.Lock()
-	defer this.Unlock()
+	this.RLock()
+	defer this.RUnlock()
 
 	return this.fileForPin(logical) != nil
 }
 
-func (this *Watcher) Watch(logical gopi.GPIOPin, file *os.File) error {
+func (this *Watcher) Watch(logical gopi.GPIOPin, file *os.File, edge gopi.GPIOEdge) error {
 	this.Lock()
 	defer this.Unlock()
 
 	if this.fileForPin(logical) != nil {
 		return gopi.ErrDuplicateItem.WithPrefix("Watch")
 	} else if err := this.filepoll.Watch(file.Fd(), gopi.FILEPOLL_FLAG_READ, func(handle uintptr, _ gopi.FilePollFlags) {
+		this.RLock()
+		defer this.RUnlock()
 		if pin, exists := this.pins[handle]; exists {
 			this.handleEdge(pin)
 		}
@@ -94,7 +93,7 @@ func (this *Watcher) Watch(logical gopi.GPIOPin, file *os.File) error {
 	} else if _, exists := this.pins[file.Fd()]; exists {
 		return gopi.ErrInternalAppError.WithPrefix("Watch")
 	} else {
-		this.pins[file.Fd()] = Pin{gopi.GPIO_EDGE_NONE, file, logical}
+		this.pins[file.Fd()] = Pin{edge, file, logical}
 	}
 	// Return success
 	return nil
@@ -130,25 +129,37 @@ func (this *Watcher) fileForPin(logical gopi.GPIOPin) *os.File {
 }
 
 func (this *Watcher) handleEdge(pin Pin) error {
-	this.Lock()
-	defer this.Unlock()
-
-	if _, err := pin.file.Seek(0, io.SeekStart); err != nil {
-		return err
-	} else if buf, err := ioutil.ReadAll(pin.file); err != nil {
+	readBuffer := make([]byte, 1)
+	pin.file.Seek(0, 0)
+	if _, err := pin.file.Read(readBuffer); err != nil {
 		return err
 	} else {
-		value := strings.TrimSpace(string(buf))
-		fmt.Println(pin, value)
-		/*
+		fmt.Println(readBuffer[0])
+	}
+	/*
+			state := int(readBuffer[0] & 1)
+		}
+		if err != nil {
+			return -1, err
+		}
+		return state, nil
+
+		if _, err := pin.file.Seek(0, io.SeekStart); err != nil {
+			return err
+		} else if buf, err := pin.file.Read(pin.file); err != nil {
+			return err
+		} else {
+			value := strings.TrimSpace(string(buf))
+			fmt.Println(value)
 			switch value {
 			case "0":
-				this.Emit(pin, gopi.GPIO_EDGE_FALLING)
+				fmt.Println(pin.pin, pin.edge, gopi.GPIO_EDGE_FALLING)
 			case "1":
-				this.Emit(pin, gopi.GPIO_EDGE_RISING)
-			default:
-				this.Emit(pin, gopi.GPIO_EDGE_NONE)
-			}*/
-		return nil
-	}
+				fmt.Println(pin.pin, pin.edge, gopi.GPIO_EDGE_RISING)
+			}
+		}
+	*/
+
+	// Return success
+	return nil
 }
