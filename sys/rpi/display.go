@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"strings"
 	"reflect"
-	"image/color"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -317,7 +316,6 @@ func DXDisplaySnapshot(display DXDisplayHandle, resource DXResource, transform D
 // RESOURCES
 
 func DXResourceCreate(image_type DXImageType, size DXSize) (DXResource, error) {
-	fmt.Println("DXResourceCreate",image_type,size)
 	var dummy C.uint32_t
 	if handle := DXResource(C.vc_dispmanx_resource_create(C.VC_IMAGE_TYPE_T(image_type), C.uint32_t(size.W), C.uint32_t(size.H), (*C.uint32_t)(unsafe.Pointer(&dummy)))); handle == DX_NO_HANDLE {
 		return DX_NO_HANDLE, gopi.ErrBadParameter
@@ -436,6 +434,24 @@ func DXRectSet(rect DXRect, x, y int32, w, h uint32) error {
 	}
 }
 
+func DXRectFromPoints(p0,p1 DXPoint) DXRect {
+	origin := p0
+	size := DXSize{}
+	if p0.X > p1.X {
+		origin.X = p1.X
+		size.W = uint32(p0.X) - uint32(p1.X) + 1
+	} else {
+		size.W = uint32(p1.X) - uint32(p0.X) + 1
+	}
+	if p0.Y > p1.Y {
+		origin.Y = p1.Y
+		size.H = uint32(p0.Y) - uint32(p1.Y) + 1
+	} else {
+		size.H = uint32(p1.Y) - uint32(p0.Y) + 1
+	}
+	return DXNewRect(origin.X,origin.Y,size.W,size.H)
+}
+
 func DXRectSize(rect DXRect) DXSize {
 	if rect == nil {
 		return DXSize{}
@@ -452,13 +468,23 @@ func DXRectOrigin(rect DXRect) DXPoint {
 	}
 }
 
+func DXRectContainsPoint(rect DXRect,point DXPoint) bool {
+	if point.X < int32(rect.x) || point.X >= int32(rect.x) + int32(rect.width) {
+		return false
+	} else if point.Y < int32(rect.y) || point.Y >= int32(rect.y) + int32(rect.height) {
+		return false
+	} else {
+		return true
+	}
+}
+
 func DXRectIntersection(a, b DXRect) DXRect {
 	// Check for incoming parameters
 	if a == nil || a.width == 0 || a.height == 0 {
-		return nil
+		return b
 	}
 	if b == nil || b.width == 0 || b.height == 0 {
-		return nil
+		return a
 	}
 	// Calculate bounds of intersecting rects
 	topleft := DXPoint{DXMaxInt32(int32(a.x), int32(b.x)), DXMaxInt32(int32(a.y), int32(b.y))}
@@ -471,19 +497,36 @@ func DXRectIntersection(a, b DXRect) DXRect {
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// COLOR MODEL
-
-func (model DXImageType) Convert(c color.Color) color.Color {
-	switch model {
-	case DX_IMAGE_TYPE_RGBA32:
-		// Convert from c to RGBA32
-	default:
-		panic(fmt.Sprint("Can't convert",model))
+func DXRectUnion(a, b DXRect) DXRect {
+	// Check for incoming parameters
+	if a == nil || a.width == 0 || a.height == 0 {
+		return b
 	}
-	return gopi.ColorRed
+	if b == nil || b.width == 0 || b.height == 0 {
+		return a
+	}
+	// Calculate bounds of union rects
+	topleft := DXPoint{DXMinInt32(int32(a.x), int32(b.x)), DXMinInt32(int32(a.y), int32(b.y))}
+	bottomright := DXPoint{DXMaxInt32(int32(a.x)+int32(a.width), int32(b.x)+int32(b.width)), DXMaxInt32(int32(a.y)+int32(a.height), int32(b.y)+int32(b.height))}
+	// Return the rect
+	if topleft.X < bottomright.X && topleft.Y < bottomright.Y {
+		return DXNewRect(topleft.X, topleft.Y, uint32(bottomright.X-topleft.X), uint32(bottomright.Y-topleft.Y))
+	} else {
+		return nil
+	}
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// POINT
+
+func (p DXPoint) Add(q DXPoint) DXPoint {
+	return DXPoint{ p.X + q.X, p.Y + q.Y }
+}
+
+func (p DXPoint) Equals(q DXPoint) bool {
+	return p.X == q.X && p.Y == q.Y
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // MISC
@@ -545,7 +588,11 @@ func (size DXSize) String() string {
 }
 
 func DXRectString(r DXRect) string {
-	return fmt.Sprintf("DXRect<origin={%v,%v} size={%v,%v}>", r.x, r.y, r.width, r.height)
+	if r == nil {
+		return "DXRect<nil>"
+	} else {
+		return fmt.Sprintf("DXRect<origin={%v,%v} size={%v,%v}>", r.x, r.y, r.width, r.height)
+	}
 }
 
 func (r DXResource) String() string {

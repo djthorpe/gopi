@@ -19,46 +19,9 @@ import (
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func SetBackground(mgr gopi.SurfaceManager) error {
-	return mgr.Do(func(gopi.SurfaceManager) error {
-		if surface, err := mgr.CreateBackground(gopi.SURFACE_FLAG_BITMAP, 1.0); err != nil {
-			return err
-		} else {
-			surface.Bitmap().ClearToColor(gopi.ColorRed)
-			fmt.Println(surface)
-			return nil
-		}
-	})
-}
-
-func SetBitmap(mgr gopi.SurfaceManager, bitmap gopi.Bitmap, origin gopi.Point) error {
-	return mgr.Do(func(gopi.SurfaceManager) error {
-		bitmap.ClearToColor(gopi.ColorRed)
-		if _, err := mgr.CreateSurfaceWithBitmap(bitmap, 0, 1.0, 0, origin, gopi.ZeroSize); err != nil {
-			return err
-		} else {
-			return nil
-		}
-	})
-}
-
 func Main(app gopi.App, args []string) error {
 	if len(args) > 0 {
 		return gopi.ErrHelp
-	}
-
-	// Set Background
-	if err := SetBackground(app.Surfaces()); err != nil {
-		return err
-	}
-
-	// Put red bitmap on screen
-	if bitmap, err := app.Surfaces().CreateBitmap(0, gopi.Size{100, 100}); err != nil {
-		return err
-	} else if err := SetBitmap(app.Surfaces(), bitmap, gopi.Point{100, 100}); err != nil {
-		return err
-	} else {
-		bitmap.ClearToColor(gopi.ColorGreen)
 	}
 
 	// Wait for key press
@@ -72,7 +35,7 @@ func Main(app gopi.App, args []string) error {
 // BOOTSTRAP
 
 func main() {
-	if app, err := app.NewCommandLineTool(Main, nil, "surfaces"); err != nil {
+	if app, err := app.NewCommandLineTool(Main, nil); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
 		// Run and exit
