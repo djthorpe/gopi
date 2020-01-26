@@ -21,6 +21,9 @@ import (
 	ft "github.com/djthorpe/gopi/v2/sys/freetype"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
 type FontManager struct {
 }
 

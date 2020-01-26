@@ -14,6 +14,9 @@ import (
 	gopi "github.com/djthorpe/gopi/v2"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+// INIT
+
 func init() {
 	gopi.UnitRegister(gopi.UnitConfig{
 		Name: "gopi/fonts/freetype",

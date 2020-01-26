@@ -11,11 +11,13 @@ package dispmanx
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
 	rpi "github.com/djthorpe/gopi/v2/sys/rpi"
+	"github.com/djthorpe/gopi/v2/unit/fonts"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -161,6 +163,13 @@ func (this *bitmap) PaintLine(c color.Color, p0 rpi.DXPoint, p1 rpi.DXPoint) {
 ////////////////////////////////////////////////////////////////////////////////
 // PAINT RUNE
 
-func (this *bitmap) PaintRune(c color.Color, face gopi.FontFace) {
-
+func (this *bitmap) PaintRune(c color.Color, ch rune, face gopi.FontFace) {
+	if face_, ok := face.(fonts.Face); ok == false || face_ == nil {
+		// Invalid face
+		return
+	}
+	if bitmap, err := face_.BitmapForRunePixels(ch, 128)(image.Image, error); err != nil {
+		// Error
+		return
+	}
 }

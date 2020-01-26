@@ -93,14 +93,20 @@ func FT_BitmapPixelsForRow(handle FT_Bitmap,y uint) []uint32 {
 
 	// Iterate along row
 	shift := uint(0)
+	mode := FT_PixelMode(handle.pixel_mode)
 	for x := uint(0); x < uint(handle.width); x++ {
-		if FT_PixelMode(handle.pixel_mode) == FT_PIXEL_MODE_BGRA {
+		if mode == FT_PIXEL_MODE_BGRA {
 			data := (*uint32)(unsafe.Pointer(ptr))
 			pixels[x] = (*data) // Elements in B,G,R,A order
 		} else {
 			offset := uintptr(bits_per_pixel * x >> 3)
 			data := (*byte)(unsafe.Pointer(ptr+offset))
-			pixels[x] = uint32((*data >> (7 - shift)) & mask)
+			if shift == 0 {
+				pixels[x] = uint32(*data & mask)
+			} else {
+				pixels[x] = uint32((*data >> (7 - shift)) & mask)
+			}
+			// TODO fmt.Println("mode",FT_PixelMode(handle.pixel_mode),"offset",offset,"shift",shift,"pixel[",x,"]=",pixels[x],"mask",mask)
 			shift = (shift + bits_per_pixel) % 8
 		}
 	}
@@ -110,17 +116,17 @@ func FT_BitmapPixelsForRow(handle FT_Bitmap,y uint) []uint32 {
 func FT_BitmapBitsPerPixel(handle FT_Bitmap) uint {
 	switch FT_PixelMode(handle.pixel_mode) {
 	case FT_PIXEL_MODE_MONO:
-		return 1 // 8 pixels per byte
+		return 1 // 8 pixels per byte, mask = 0x01
 	case FT_PIXEL_MODE_GRAY:
-		return 8 // 1 pixel per byte
+		return 8 // 1 pixel per byte, mask = 0xFF
 	case FT_PIXEL_MODE_GRAY2:
-		return 2 // 4 pixels per byte
+		return 2 // 4 pixels per byte, mask = 0x03
 	case FT_PIXEL_MODE_GRAY4:
-		return 4 // 2 pixels per byte
+		return 4 // 2 pixels per byte, mask = 0x0F
 	case FT_PIXEL_MODE_LCD, FT_PIXEL_MODE_LCD_V:
-		return 8 // 1 pixel per byte
+		return 8 // 1 pixel per byte, mask = 0xFF
 	case FT_PIXEL_MODE_BGRA:
-		return 32 // 4 bytes per pixel
+		return 32 // 4 bytes per pixel, no mask
 	default:
 		return 0
 	}

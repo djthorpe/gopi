@@ -80,7 +80,7 @@ func FT_FaceStyleFlags(handle FT_Face) gopi.FontFlags {
 	return gopi.FontFlags(handle.style_flags)
 }
 
-func FT_SetPixelSizes(handle FT_Face, size float32) error {
+func FT_SetPixelSizes(handle FT_Face, size uint) error {
 	if err := FT_Error(C.FT_Set_Pixel_Sizes(handle, 0, C.FT_UInt(size))); err != FT_SUCCESS {
 		return err
 	} else {

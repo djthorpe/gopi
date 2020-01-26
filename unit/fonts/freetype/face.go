@@ -11,6 +11,7 @@ package freetype
 
 import (
 	"fmt"
+	"image"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -91,4 +92,43 @@ func (this *fontface) String() string {
 			" num_glyphs=" + fmt.Sprint(this.NumGlyphs()) +
 			">"
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RUNE BITMAPS
+	
+// Return a bitmap for a rune at pixel size
+func (this *fontface) BitmapForRunePixels(ch rune,pixels uint) (image.Image, error) {
+	// Set charset as UTF-8
+	if err := ft.FT_SelectCharmap(this.handle, ft.FT_ENCODING_UNICODE); err != nil {
+		return nil, err
+	}
+	// Set pixel size
+	if err := ft.FT_SetPixelSizes(this.handle, pixels); err != nil {
+		return nil, err
+	}
+	// Load glyph
+	if bitmap, x, y, err := ft.FT_Load_Glyph(this.handle,ch, ft.FT_RENDER_MODE_NORMAL); err != nil {
+		return nil, err
+	} else {
+		return NewBitmap(bitmap, x, y)
+	}
+}
+
+// Return a bitmap for a rune at pixel size (with pixels per inch)
+func (this *fontface) BitmapForRunePoints(ch rune,points float32,ppi uint) (image.Image, error) {
+	// Set charset as UTF-8
+	if err := ft.FT_SelectCharmap(this.handle, ft.FT_ENCODING_UNICODE); err != nil {
+		return nil, err
+	}
+	// Set point size
+	if err := ft.FT_SetCharSize(this.handle, points,ppi); err != nil {
+		return nil, err
+	}
+	// Load glyph
+	if bitmap, x, y, err := ft.FT_Load_Glyph(this.handle,ch, ft.FT_RENDER_MODE_NORMAL); err != nil {
+		return nil, err
+	} else {
+		return NewBitmap(bitmap, x, y)
+	}	
 }

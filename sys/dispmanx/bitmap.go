@@ -123,12 +123,10 @@ func (this *bitmap) Size() rpi.DXSize {
 	return rpi.DXRectSize(this.bounds)
 }
 
-
 func (this *bitmap) Centre() rpi.DXPoint {
-	size := rpi.DXRectSize(this.bounds)	
-	return rpi.DXPoint{int32(size.W >> 1),int32(size.H >> 1)}
+	size := rpi.DXRectSize(this.bounds)
+	return rpi.DXPoint{int32(size.W >> 1), int32(size.H >> 1)}
 }
-
 
 func (this *bitmap) NorthWest() rpi.DXPoint {
 	return rpi.DXRectOrigin(this.bounds)
@@ -137,19 +135,19 @@ func (this *bitmap) NorthWest() rpi.DXPoint {
 func (this *bitmap) SouthEast() rpi.DXPoint {
 	origin := rpi.DXRectOrigin(this.bounds)
 	size := rpi.DXRectSize(this.bounds)
-	return origin.Add(rpi.DXPoint{ int32(size.W)-1,int32(size.H)-1 })
+	return origin.Add(rpi.DXPoint{int32(size.W) - 1, int32(size.H) - 1})
 }
 
 func (this *bitmap) SouthWest() rpi.DXPoint {
 	origin := rpi.DXRectOrigin(this.bounds)
 	size := rpi.DXRectSize(this.bounds)
-	return origin.Add(rpi.DXPoint{ 0,int32(size.H)-1 })
+	return origin.Add(rpi.DXPoint{0, int32(size.H) - 1})
 }
 
 func (this *bitmap) NorthEast() rpi.DXPoint {
 	origin := rpi.DXRectOrigin(this.bounds)
 	size := rpi.DXRectSize(this.bounds)
-	return origin.Add(rpi.DXPoint{ int32(size.W)-1,0 })
+	return origin.Add(rpi.DXPoint{int32(size.W) - 1, 0})
 }
 
 // Retain increments the counter and returns the resource handle
@@ -258,9 +256,8 @@ func (this *bitmap) String() string {
 
 func (this *bitmap) setDirty(rect rpi.DXRect) {
 	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
-
 	this.dirty = nil
+	this.Mutex.Unlock()
 	this.addDirty(rect)
 }
 
@@ -268,17 +265,17 @@ func (this *bitmap) addDirty(rect rpi.DXRect) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	fmt.Println("-> dirty=>",rpi.DXRectString(this.dirty)," add=>",rpi.DXRectString(rect))
+	fmt.Println("-> dirty=>", rpi.DXRectString(this.dirty), " add=>", rpi.DXRectString(rect))
 	if this.dirty == nil || rect == nil {
 		this.dirty = rect
-	} else  {
+	} else {
 		this.dirty = rpi.DXRectUnion(this.dirty, rect)
 	}
 	// Clip to bitmap size
 	if this.dirty != nil {
-		this.dirty = rpi.DXRectIntersection(this.bounds,this.dirty)
+		this.dirty = rpi.DXRectIntersection(this.bounds, this.dirty)
 	}
-	fmt.Println("<- dirty=>",rpi.DXRectString(this.dirty))
+	fmt.Println("<- dirty=>", rpi.DXRectString(this.dirty))
 }
 
 ////////////////////////////////////////////////////////////////////////////////

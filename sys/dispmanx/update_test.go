@@ -233,13 +233,13 @@ func Test_Update_008(t *testing.T) {
 		defer update.Close()
 		defer rpi.DXDisplayClose(display)
 
-		bm, err := update.NewBitmap(bitmap.IMAGE_TYPE_RGB565, 400, 400)
+		bm, err := update.NewBitmap(bitmap.IMAGE_TYPE_RGBA32, 300, 300)
 		if err != nil {
 			t.Error(err)
 		}
 
-		// Clear to black
-		bm.ClearToColor(color.Black)
+		// Clear to transparent
+		bm.ClearToColor(color.Transparent)
 
 		// Place element
 		if err := update.Do(0, func() error {
@@ -254,7 +254,7 @@ func Test_Update_008(t *testing.T) {
 		// Add circles
 		for r := uint32(10); r < uint32(200); r += 10 {
 			if err := update.Do(0, func() error {
-				bm.PaintCircle(color.RGBA{0xFF, 0, 0, 0}, bm.Centre(), r)
+				bm.PaintCircle(color.RGBA{0xFF, 0, 0, 0xFF}, bm.Centre(), r)
 				return nil
 			}); err != nil {
 				t.Error(err)
@@ -263,6 +263,5 @@ func Test_Update_008(t *testing.T) {
 		}
 
 		time.Sleep(2 * time.Second)
-
 	}
 }
