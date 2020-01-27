@@ -32,7 +32,6 @@ func (this *Unit) Close() error {
 	if this.Closed {
 		return gopi.ErrInternalAppError.WithPrefix("Close called twice")
 	} else {
-		this.Log = nil
 		this.Closed = true
 		return nil
 	}

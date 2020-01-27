@@ -43,6 +43,9 @@ type Element interface {
 	SetOpacity(rpi.DXUpdate, float32) error
 	SetBitmap(rpi.DXUpdate, bitmap.Bitmap) error
 
+	// Remove element
+	RemoveElement(rpi.DXUpdate) error
+
 	// Implements Unit
 	gopi.Unit
 }

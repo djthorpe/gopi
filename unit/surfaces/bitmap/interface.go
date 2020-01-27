@@ -19,6 +19,11 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACE
 
+type Config struct {
+	Size gopi.Size
+	Mode gopi.SurfaceFlags
+}
+
 type Bitmap interface {
 	// dispmanx properties
 	DXSize() rpi.DXSize

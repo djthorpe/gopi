@@ -37,7 +37,7 @@ type element struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (Config) Name() string { return "gopi/element" }
+func (Config) Name() string { return "gopi/surfaces/element" }
 
 func (config Config) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(element)
@@ -164,32 +164,6 @@ func (this *element) Close() error {
 
 ////////////////////////////////////////////////////////////////////////////////
 // CHANGE ELEMENT PROPERTIES
-
-/*
-DX_CHANGE_FLAG_LAYER     DXChangeFlags = (1 << 0)
-	DX_CHANGE_FLAG_OPACITY   DXChangeFlags = (1 << 1)
-	 DXChangeFlags = (1 << 2)
-	DX_CHANGE_FLAG_SRC_RECT  DXChangeFlags = (1 << 3)
-	DX_CHANGE_FLAG_MASK      DXChangeFlags = (1 << 4)
-	DX_CHANGE_FLAG_TRANSFORM DXChangeFlags = (1 << 5)
-*/
-
-/*
-
-func DXElementChangeAttributes(update DXUpdate, element DXElement, flags DXChangeFlags, layer uint16, opacity uint8, dest_rect, src_rect DXRect, transform DXTransform) error {
-	if C.vc_dispmanx_element_change_attributes(
-		C.DISPMANX_UPDATE_HANDLE_T(update),
-		C.DISPMANX_ELEMENT_HANDLE_T(element),
-		C.uint32_t(flags),
-		C.int32_t(layer),
-		C.uint8_t(opacity),
-		dest_rect, src_rect, 0, C.DISPMANX_TRANSFORM_T(transform)) == DX_SUCCESS {
-		return nil
-	} else {
-		return gopi.ErrBadParameter
-	}
-}
-*/
 
 func (this *element) SetSize(update rpi.DXUpdate, size gopi.Size) error {
 	this.Mutex.Lock()

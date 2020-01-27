@@ -22,11 +22,6 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Config struct {
-	Size gopi.Size
-	Mode gopi.SurfaceFlags
-}
-
 type bitmap struct {
 	mode      gopi.SurfaceFlags
 	dxmode    rpi.DXImageType
@@ -46,7 +41,7 @@ type bitmap struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (Config) Name() string { return "gopi/bitmap" }
+func (Config) Name() string { return "gopi/surfaces/bitmap" }
 
 func (config Config) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(bitmap)
@@ -172,6 +167,9 @@ func (this *bitmap) DXRect() rpi.DXRect {
 
 // Bytes returns the bitmap as bytes with bytes per row
 func (this *bitmap) Bytes() ([]byte, uint32) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if err := this.Data.Read(this.handle,0,uint(this.size.H),this.stride); err != nil {
 		return nil, 0
 	} else {
@@ -206,14 +204,25 @@ func (this *bitmap) SouthEast() gopi.Point {
 // RETAIN AND RELEASE
 
 func (this *bitmap) Retain() {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	this.Log.Debug("<" + Config{}.Name() + " handle=" + fmt.Sprint(this.handle) + "> RETAIN")
 	this.RetainCount.Inc()
 }
 
 func (this *bitmap) Release() bool {
-	release := this.RetainCount.Dec()
-	this.Log.Debug("<" + Config{}.Name() + " handle=" + fmt.Sprint(this.handle) + "> RELEASE " + fmt.Sprint(release))
-	return release
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if this.handle == rpi.DX_NO_HANDLE {
+		this.Log.Warn("Should not call Release on closed bitmap")
+		return false
+	} else {
+		release := this.RetainCount.Dec()
+		this.Log.Debug("<" + Config{}.Name() + " handle=" + fmt.Sprint(this.handle) + "> RELEASE " + fmt.Sprint(release))
+		return release	
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
