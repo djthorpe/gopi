@@ -79,8 +79,7 @@ type Bitmap interface {
 	ClearToColor(Color)
 
 	// Paint a single pixel
-	PaintPixel(Color,Point)
-
+	PaintPixel(Color, Point)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -202,9 +201,13 @@ func (f SurfaceFlags) ModString() string {
 
 func (f SurfaceFlags) String() string {
 	parts := ""
-	parts += "|" + f.TypeString()
+	if f.Type() != SURFACE_FLAG_NONE {
+		parts += "|" + f.TypeString()
+	}
 	parts += "|" + f.ConfigString()
-	parts += "|" + f.ModString()
+	if f.Mod() != SURFACE_FLAG_NONE {
+		parts += "|" + f.ModString()
+	}
 	return strings.Trim(parts, "|")
 }
 
