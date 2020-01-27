@@ -80,6 +80,7 @@ type DXAlpha struct {
 
 type DXData struct {
 	buf uintptr
+	len uint
 	cap uint
 }
 
@@ -227,31 +228,51 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS: BYTE BUFFER
 
-func DXNewData(cap uint) *DXData {
-	if cap == 0 {
+func DXNewData(size uint) *DXData {
+	// Align to 4-byte boundaries
+	capacity := uint(DXAlignUp(uint32(size),4))
+	if size == 0 || capacity == 0 {
 		return nil
-	} else if buf := uintptr(C.malloc(C.uint(cap))); buf == 0 {
+	} else if buf := uintptr(C.malloc(C.uint(capacity))); buf == 0 {
 		return nil
 	} else {
-		return &DXData{ buf, cap }
+		return &DXData{ buf, size, capacity }
 	}
 }
 
 func (this *DXData) Free() {
 	C.free(unsafe.Pointer(this.buf))
 	this.buf = 0
+	this.len = 0
 	this.cap = 0
 }
 
-func (this *DXData) Bytes() []byte {
+func (this *DXData) Bytes(size uint) []byte {
 	var data []byte
+	if size > this.cap {
+		size = this.cap
+	}
 	if this.buf == 0 {
 		return nil
 	} else {
 		hdr := (*reflect.SliceHeader)(unsafe.Pointer(&data))
 		hdr.Data = this.buf
-		hdr.Len = int(this.cap)
-		hdr.Cap = hdr.Len
+		hdr.Len = int(size)
+		hdr.Cap = int(this.cap)
+		return data	
+	}
+}
+
+
+func (this *DXData) Uint32() []uint32 {
+	var data []uint32
+	if this.buf == 0 {
+		return nil
+	} else {
+		hdr := (*reflect.SliceHeader)(unsafe.Pointer(&data))
+		hdr.Data = this.buf
+		hdr.Len = int(this.cap >> 2)
+		hdr.Cap = int(this.cap >> 2)
 		return data	
 	}
 }
@@ -262,6 +283,10 @@ func (this *DXData) Ptr() uintptr {
 
 func (this *DXData) Cap() uint {
 	return this.cap
+}
+
+func (this *DXData) Len() uint {
+	return this.len
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -413,6 +438,14 @@ func DXElementChangeAttributes(update DXUpdate, element DXElement, flags DXChang
 		C.int32_t(layer),
 		C.uint8_t(opacity),
 		dest_rect, src_rect, 0, C.DISPMANX_TRANSFORM_T(transform)) == DX_SUCCESS {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
+func DXElementChangeSource(update DXUpdate, element DXElement,resource DXResource) error {
+	if C.vc_dispmanx_element_change_source(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element),C.DISPMANX_RESOURCE_HANDLE_T(resource)) == DX_SUCCESS {
 		return nil
 	} else {
 		return gopi.ErrBadParameter
