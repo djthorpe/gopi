@@ -25,10 +25,12 @@ import (
 // TYPES
 
 type manager struct {
-	display rpi.DXDisplayHandle
-	bitmap  map[bitmap.Bitmap]bool
-	element map[element.Element]bool
+	display        rpi.DXDisplayHandle
+	bitmap         map[bitmap.Bitmap]bool
+	element        map[element.Element]bool
+	updatePriority int32
 
+	Update
 	sync.Mutex
 	base.Unit
 }
@@ -92,6 +94,9 @@ func (this *manager) Close() error {
 // BITMAPS
 
 func (this *manager) NewBitmap(size gopi.Size, mode gopi.SurfaceFlags) (bitmap.Bitmap, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if bm, err := gopi.New(bitmap.Config{size, mode}, this.Log.Clone(bitmap.Config{}.Name())); err != nil {
 		return nil, err
 	} else {
@@ -103,12 +108,15 @@ func (this *manager) NewBitmap(size gopi.Size, mode gopi.SurfaceFlags) (bitmap.B
 }
 
 func (this *manager) ReleaseBitmap(bm bitmap.Bitmap) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if bm == nil {
 		return gopi.ErrBadParameter.WithPrefix("bitmap")
-	} else if _,exists := this.bitmap[bm]; exists == false {
+	} else if _, exists := this.bitmap[bm]; exists == false {
 		return gopi.ErrNotFound.WithPrefix("bitmap")
 	} else {
-		delete(this.bitmap,bm)
+		delete(this.bitmap, bm)
 		if bm.Release() {
 			return bm.Close()
 		} else {
@@ -117,22 +125,84 @@ func (this *manager) ReleaseBitmap(bm bitmap.Bitmap) error {
 	}
 }
 
-func (this *manager) AddElementWithSize(origin gopi.Point,size gopi.Size,layer uint16,opacity float32,flags) (element.Element, error) {
-	// TODO
-	
-	if em, err := gopi.New(element.Config{
+func (this *manager) AddElementWithSize(origin gopi.Point, size gopi.Size, layer uint16, opacity float32, flags gopi.SurfaceFlags) (element.Element, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if update := this.Update.Update(); update == rpi.DX_NO_HANDLE {
+		return nil, gopi.ErrOutOfOrder.WithPrefix("AddElementWithSize")
+	} else if em, err := gopi.New(element.Config{
 		Origin:  origin,
-		Flags:   flags,
+		Size:    size,
+		Layer:   layer,
 		Opacity: opacity,
+		Flags:   flags,
 		Update:  update,
 		Display: this.display,
-	}, nil); err != nil {
+	}, this.Log.Clone(element.Config{}.Name())); err != nil {
 		return nil, err
 	} else {
-		return em.(element.Element), nil
+		em_ := em.(element.Element)
+		this.element[em_] = true
+		return em_, nil
 	}
 }
 
+func (this *manager) AddElementWithBitmap(origin gopi.Point, bm bitmap.Bitmap, layer uint16, opacity float32, flags gopi.SurfaceFlags) (element.Element, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if bm == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("bitmap")
+	}
+	if update := this.Update.Update(); update == rpi.DX_NO_HANDLE {
+		return nil, gopi.ErrOutOfOrder.WithPrefix("AddElementWithBitmap")
+	} else if em, err := gopi.New(element.Config{
+		Origin:  origin,
+		Bitmap:  bm,
+		Layer:   layer,
+		Opacity: opacity,
+		Flags:   flags,
+		Update:  update,
+		Display: this.display,
+	}, this.Log.Clone(element.Config{}.Name())); err != nil {
+		return nil, err
+	} else {
+		em_ := em.(element.Element)
+		this.element[em_] = true
+		return em_, nil
+	}
+}
+
+func (this *manager) RemoveElement(em element.Element) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if _, exists := this.element[em]; exists == false {
+		return gopi.ErrNotFound.WithPrefix("bitmap")
+	} else if update := this.Update.Update(); update == rpi.DX_NO_HANDLE {
+		return gopi.ErrOutOfOrder.WithPrefix("RemoveElement")
+	} else {
+		delete(this.element, em)
+		if err := em.RemoveElement(update); err != nil {
+			return err
+		} else if err := em.Close(); err != nil {
+			return err
+		}
+	}
+
+	// Success
+	return nil
+}
+
+// Perform AddElement, RemoveElement operations within Do
+func (this *manager) Do(cb func() error) error {
+	if err := this.Update.Start(this.updatePriority); err != nil {
+		return err
+	}
+	defer this.Update.Submit()
+	return cb()
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY

@@ -29,21 +29,17 @@ type Manager interface {
 	// Release a bitmap
 	ReleaseBitmap(bitmap.Bitmap) error
 
-	// Create a new element with a size
-	AddElementWithSize(gopi.Point, gopi.Size, uint16, float32) (element.Element, error)
+	// Create an element with a size
+	AddElementWithSize(gopi.Point, gopi.Size, uint16, float32, gopi.SurfaceFlags) (element.Element, error)
 
-	/*
+	// Create an element with a pre-existing bitmap
+	AddElementWithBitmap(gopi.Point, bitmap.Bitmap, uint16, float32, gopi.SurfaceFlags) (element.Element, error)
 
+	// Remove an element
+	RemoveElement(element.Element) error
 
-		// Create a new element with a bitmap
-		AddElementWithBitmap(gopi.Point, bitmap.Bitmap, uint16, float32) (element.Element, error)
-
-		// Remove an element
-		RemoveElement(element.Element) error
-
-		// Perform AddElement, RemoveElement and bitmap operations within Do
-		Do(func() error) error
-	*/
+	// Perform AddElement, RemoveElement operations within Do
+	Do(func() error) error
 
 	// Implements Unit
 	gopi.Unit

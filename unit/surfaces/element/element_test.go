@@ -392,30 +392,30 @@ func UpdateEnd(t *testing.T, handle rpi.DXUpdate, sleep time.Duration) {
 ////////////////////////////////////////////////////////////////////////////////
 // LOGGER
 
-type logger struct{ testing.T }
+type logger struct{ t *testing.T }
 
 func NewLogger(t *testing.T) gopi.Logger {
-	return &logger{*t}
+	return &logger{t}
 }
 
 func (this *logger) Clone(string) gopi.Logger {
 	return this
 }
 func (this *logger) Name() string {
-	return this.T.Name()
+	return this.t.Name()
 }
 func (this *logger) Error(err error) error {
-	this.T.Error(err)
+	this.t.Error(err)
 	return err
 }
 func (this *logger) Warn(args ...interface{}) {
-	this.T.Log(args...)
+	this.t.Log(args...)
 }
 func (this *logger) Info(args ...interface{}) {
-	this.T.Log(args...)
+	this.t.Log(args...)
 }
 func (this *logger) Debug(args ...interface{}) {
-	this.T.Log(args...)
+	this.t.Log(args...)
 }
 func (this *logger) IsDebug() bool {
 	return true

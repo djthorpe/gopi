@@ -12,11 +12,14 @@ package manager_test
 import (
 	"errors"
 	"fmt"
+	"image/color"
 	"testing"
+	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
 	rpi "github.com/djthorpe/gopi/v2/sys/rpi"
+	element "github.com/djthorpe/gopi/v2/unit/surfaces/element"
 	manager "github.com/djthorpe/gopi/v2/unit/surfaces/manager"
 )
 
@@ -83,33 +86,95 @@ func Test_Manager_002(t *testing.T) {
 	}
 }
 
+func Test_Manager_003(t *testing.T) {
+	mm, err := gopi.New(manager.Config{Display}, NewLogger(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bm1, err := mm.(manager.Manager).NewBitmap(gopi.Size{1, 1}, 0); err != nil {
+		t.Error(err)
+	} else if err := mm.(manager.Manager).ReleaseBitmap(bm1); err != nil {
+		t.Error(err)
+	} else if err := mm.(manager.Manager).ReleaseBitmap(bm1); errors.Is(err, gopi.ErrNotFound) == false {
+		t.Error("Unexpected error", err)
+	}
+
+	if err := mm.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_Manager_004(t *testing.T) {
+	if mm_, err := gopi.New(manager.Config{Display}, NewLogger(t)); err != nil {
+		t.Fatal(err)
+	} else if mm, ok := mm_.(manager.Manager); ok {
+		defer mm.Close()
+		if err := mm.Do(func() error {
+			return nil
+		}); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+func Test_Manager_005(t *testing.T) {
+	if mm_, err := gopi.New(manager.Config{Display}, NewLogger(t)); err != nil {
+		t.Fatal(err)
+	} else if mm, ok := mm_.(manager.Manager); ok {
+		defer mm.Close()
+		var surface element.Element
+		if err := mm.Do(func() error {
+			if surface, err = mm.AddElementWithSize(gopi.ZeroPoint, gopi.Size{300, 300}, 0, 1.0, 0); err != nil {
+				return err
+			} else {
+				surface.Bitmap().ClearToColor(color.Gray{80})
+			}
+			// Return success
+			return nil
+		}); err != nil {
+			t.Error(err)
+		}
+
+		// Hold image on screen
+		time.Sleep(time.Second * 4)
+
+		// Remove image
+		if err := mm.Do(func() error {
+			return mm.RemoveElement(surface)
+		}); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // LOGGER
 
-type logger struct{ testing.T }
+type logger struct{ t *testing.T }
 
 func NewLogger(t *testing.T) gopi.Logger {
-	return &logger{*t}
+	return &logger{t}
 }
 
 func (this *logger) Clone(string) gopi.Logger {
 	return this
 }
 func (this *logger) Name() string {
-	return this.T.Name()
+	return this.t.Name()
 }
 func (this *logger) Error(err error) error {
-	this.T.Error(err)
+	this.t.Error(err)
 	return err
 }
 func (this *logger) Warn(args ...interface{}) {
-	this.T.Log(args...)
+	this.t.Log(args...)
 }
 func (this *logger) Info(args ...interface{}) {
-	this.T.Log(args...)
+	this.t.Log(args...)
 }
 func (this *logger) Debug(args ...interface{}) {
-	this.T.Log(args...)
+	this.t.Log(args...)
 }
 func (this *logger) IsDebug() bool {
 	return true
