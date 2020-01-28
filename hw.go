@@ -17,7 +17,7 @@ import (
 // TYPES
 
 type (
-	PlatformType uint
+	PlatformType uint32
 
 	// GPIOPin is the logical GPIO pin
 	GPIOPin uint8
@@ -243,12 +243,21 @@ type LIRC interface {
 // CONSTANTS
 
 const (
-	PLATFORM_NONE   PlatformType = 0
+	PLATFORM_NONE PlatformType = 0
+	// OS
 	PLATFORM_DARWIN PlatformType = (1 << iota) >> 1
 	PLATFORM_RPI
 	PLATFORM_LINUX
+	// CPU
+	PLATFORM_X86_32
+	PLATFORM_X86_64
+	PLATFORM_BCM2835_ARM6
+	PLATFORM_BCM2836_ARM7
+	PLATFORM_BCM2837_ARM8
+	PLATFORM_BCM2838_ARM8
+	// MIN AND MAX
 	PLATFORM_MIN = PLATFORM_DARWIN
-	PLATFORM_MAX = PLATFORM_LINUX
+	PLATFORM_MAX = PLATFORM_BCM2838_ARM8
 )
 
 const (
@@ -340,6 +349,18 @@ func (p PlatformType) FlagString() string {
 		return "PLATFORM_RPI"
 	case PLATFORM_LINUX:
 		return "PLATFORM_LINUX"
+	case PLATFORM_X86_32:
+		return "PLATFORM_X86_32"
+	case PLATFORM_X86_64:
+		return "PLATFORM_X86_64"
+	case PLATFORM_BCM2835_ARM6:
+		return "PLATFORM_BCM2835_ARM6"
+	case PLATFORM_BCM2836_ARM7:
+		return "PLATFORM_BCM2836_ARM7"
+	case PLATFORM_BCM2837_ARM8:
+		return "PLATFORM_BCM2837_ARM8"
+	case PLATFORM_BCM2838_ARM8:
+		return "PLATFORM_BCM2838_ARM8"
 	default:
 		return "[?? Invalid PlatformType value]"
 	}
