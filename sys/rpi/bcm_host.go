@@ -11,12 +11,12 @@
 package rpi
 
 import (
-	"unsafe"	
 	"fmt"
-	"sync"
 	"regexp"
-	"strings"
 	"strconv"
+	"strings"
+	"sync"
+	"unsafe"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -39,7 +39,7 @@ import "C"
 // CONSTANTS
 
 const (
-	GENCMD_BUF_SIZE     = 1024
+	GENCMD_BUF_SIZE = 1024
 )
 
 // OTP (One Time Programmable) memory constants
@@ -59,9 +59,9 @@ const (
 // GLOBAL VARIABLES
 
 var (
-	gencmdBuffer = make([]byte, GENCMD_BUF_SIZE)
-	bcmHostOnce sync.Once
-	vcGenCmdOnce sync.Once
+	gencmdBuffer    = make([]byte, GENCMD_BUF_SIZE)
+	bcmHostOnce     sync.Once
+	vcGenCmdOnce    sync.Once
 	vcGenCmdService int
 )
 
@@ -85,7 +85,7 @@ func BCMHostInit() error {
 	return nil
 }
 
-func BCMHostTerminate(){
+func BCMHostTerminate() {
 	C.bcm_host_deinit()
 }
 
@@ -121,8 +121,8 @@ func VCGencmdTerminate() {
 func VCGeneralCommand(command string) (string, error) {
 	ccommand := C.CString(command)
 	defer C.free(unsafe.Pointer(ccommand))
-	ptr := (*C.char)(&gencmdBuffer[0])	
-	if ret := C.vc_gencmd_wrap(ptr,C.int(GENCMD_BUF_SIZE),ccommand); ret != 0 {
+	ptr := (*C.char)(&gencmdBuffer[0])
+	if ret := C.vc_gencmd_wrap(ptr, C.int(GENCMD_BUF_SIZE), ccommand); ret != 0 {
 		return "", gopi.ErrUnexpectedResponse.WithPrefix(fmt.Sprint(ret))
 	} else {
 		return C.GoString(ptr), nil

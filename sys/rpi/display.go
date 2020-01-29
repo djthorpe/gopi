@@ -11,10 +11,10 @@
 package rpi
 
 import (
-	"unsafe"
 	"fmt"
-	"strings"
 	"reflect"
+	"strings"
+	"unsafe"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -33,7 +33,7 @@ import "C"
 // TYPES
 
 type (
-	DXDisplayId uint16
+	DXDisplayId     uint16
 	DXDisplayHandle C.DISPMANX_DISPLAY_HANDLE_T
 	DXInputFormat   C.uint32_t
 	DXTransform     C.int
@@ -124,8 +124,8 @@ const (
 	DX_CHANGE_FLAG_SRC_RECT  DXChangeFlags = (1 << 3)
 	DX_CHANGE_FLAG_MASK      DXChangeFlags = (1 << 4)
 	DX_CHANGE_FLAG_TRANSFORM DXChangeFlags = (1 << 5)
-	DX_CHANGE_FLAG_MIN                      = DX_CHANGE_FLAG_LAYER
-	DX_CHANGE_FLAG_MAX                      = DX_CHANGE_FLAG_TRANSFORM
+	DX_CHANGE_FLAG_MIN                     = DX_CHANGE_FLAG_LAYER
+	DX_CHANGE_FLAG_MAX                     = DX_CHANGE_FLAG_TRANSFORM
 )
 
 const (
@@ -230,13 +230,13 @@ const (
 
 func DXNewData(size uint) *DXData {
 	// Align to 4-byte boundaries
-	capacity := uint(DXAlignUp(uint32(size),4))
+	capacity := uint(DXAlignUp(uint32(size), 4))
 	if size == 0 || capacity == 0 {
 		return nil
 	} else if buf := uintptr(C.malloc(C.uint(capacity))); buf == 0 {
 		return nil
 	} else {
-		return &DXData{ buf, size, capacity }
+		return &DXData{buf, size, capacity}
 	}
 }
 
@@ -259,10 +259,9 @@ func (this *DXData) Bytes(size uint) []byte {
 		hdr.Data = this.buf
 		hdr.Len = int(size)
 		hdr.Cap = int(this.cap)
-		return data	
+		return data
 	}
 }
-
 
 func (this *DXData) Uint32() []uint32 {
 	var data []uint32
@@ -273,7 +272,7 @@ func (this *DXData) Uint32() []uint32 {
 		hdr.Data = this.buf
 		hdr.Len = int(this.cap >> 2)
 		hdr.Cap = int(this.cap >> 2)
-		return data	
+		return data
 	}
 }
 
@@ -444,8 +443,8 @@ func DXElementChangeAttributes(update DXUpdate, element DXElement, flags DXChang
 	}
 }
 
-func DXElementChangeSource(update DXUpdate, element DXElement,resource DXResource) error {
-	if C.vc_dispmanx_element_change_source(C.DISPMANX_UPDATE_HANDLE_T(update),C.DISPMANX_ELEMENT_HANDLE_T(element),C.DISPMANX_RESOURCE_HANDLE_T(resource)) == DX_SUCCESS {
+func DXElementChangeSource(update DXUpdate, element DXElement, resource DXResource) error {
+	if C.vc_dispmanx_element_change_source(C.DISPMANX_UPDATE_HANDLE_T(update), C.DISPMANX_ELEMENT_HANDLE_T(element), C.DISPMANX_RESOURCE_HANDLE_T(resource)) == DX_SUCCESS {
 		return nil
 	} else {
 		return gopi.ErrBadParameter
@@ -467,7 +466,7 @@ func DXRectSet(rect DXRect, x, y int32, w, h uint32) error {
 	}
 }
 
-func DXRectFromPoints(p0,p1 DXPoint) DXRect {
+func DXRectFromPoints(p0, p1 DXPoint) DXRect {
 	origin := p0
 	size := DXSize{}
 	if p0.X > p1.X {
@@ -482,7 +481,7 @@ func DXRectFromPoints(p0,p1 DXPoint) DXRect {
 	} else {
 		size.H = uint32(p1.Y) - uint32(p0.Y) + 1
 	}
-	return DXNewRect(origin.X,origin.Y,size.W,size.H)
+	return DXNewRect(origin.X, origin.Y, size.W, size.H)
 }
 
 func DXRectSize(rect DXRect) DXSize {
@@ -501,10 +500,10 @@ func DXRectOrigin(rect DXRect) DXPoint {
 	}
 }
 
-func DXRectContainsPoint(rect DXRect,point DXPoint) bool {
-	if point.X < int32(rect.x) || point.X >= int32(rect.x) + int32(rect.width) {
+func DXRectContainsPoint(rect DXRect, point DXPoint) bool {
+	if point.X < int32(rect.x) || point.X >= int32(rect.x)+int32(rect.width) {
 		return false
-	} else if point.Y < int32(rect.y) || point.Y >= int32(rect.y) + int32(rect.height) {
+	} else if point.Y < int32(rect.y) || point.Y >= int32(rect.y)+int32(rect.height) {
 		return false
 	} else {
 		return true
@@ -549,12 +548,11 @@ func DXRectUnion(a, b DXRect) DXRect {
 	}
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // POINT
 
 func (p DXPoint) Add(q DXPoint) DXPoint {
-	return DXPoint{ p.X + q.X, p.Y + q.Y }
+	return DXPoint{p.X + q.X, p.Y + q.Y}
 }
 
 func (p DXPoint) Equals(q DXPoint) bool {
@@ -629,9 +627,8 @@ func DXRectString(r DXRect) string {
 }
 
 func (r DXResource) String() string {
-	return "<DXResource 0x" + fmt.Sprintf("%08X",uint32(r)) + ">"
+	return "<DXResource 0x" + fmt.Sprintf("%08X", uint32(r)) + ">"
 }
-
 
 func (t DXTransform) String() string {
 	switch t {
