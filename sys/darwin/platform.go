@@ -10,11 +10,11 @@
 package darwin
 
 import (
-	"unsafe"
-	"syscall"
 	"bytes"
 	"encoding/binary"
+	"syscall"
 	"time"
+	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,6 +55,25 @@ import "C"
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
+
+// Returns CPU from sysctl
+func CPUType() uint64 {
+	var cputype uint64
+	if err := sysctlbyname("hw.cputype", &cputype); err != nil {
+		return 0
+	} else {
+		return cputype
+	}
+}
+
+func CPU64Bit() bool {
+	var capable uint64
+	if err := sysctlbyname("hw.cpu64bit_capable", &capable); err != nil {
+		return false
+	} else {
+		return capable != 0
+	}
+}
 
 // SerialNumber returns the serial number of the hardware, if available
 func SerialNumber() string {

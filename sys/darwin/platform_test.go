@@ -55,3 +55,16 @@ func Test_Platform_004(t *testing.T) {
 		t.Log("product", product)
 	}
 }
+
+func Test_Platform_005(t *testing.T) {
+	if cputype := darwin.CPUType(); cputype == 0 {
+		t.Error("Unexpected response from CPUType")
+	} else {
+		t.Log("cputype", cputype)
+	}
+}
+
+func Test_Platform_006(t *testing.T) {
+	cpu64 := darwin.CPU64Bit()
+	t.Log("cpu64", cpu64)
+}
