@@ -31,18 +31,22 @@ func (this *platform) Init() error {
 
 func (this *platform) Type() gopi.PlatformType {
 	platform := gopi.PLATFORM_RPI | gopi.PLATFORM_LINUX
-	productinfo := rpi.NewProductInfo(product)
-	switch productinfo.Processor {
-	case rpi.RPI_PROCESSOR_BCM2835:
-		productinfo |= gopi.PLATFORM_BCM2835_ARM6
-	case rpi.RPI_PROCESSOR_BCM2836:
-		productinfo |= gopi.PLATFORM_BCM2836_ARM7
-	case rpi.RPI_PROCESSOR_BCM2837:
-		productinfo |= gopi.PLATFORM_BCM2837_ARM8
-	case rpi.RPI_PROCESSOR_BCM2838:
-		productinfo |= gopi.PLATFORM_BCM2838_ARM8
+	if _, product, err := rpi.VCGetSerialProduct(); err != nil {
+		return platform
+	} else {
+		productinfo := rpi.NewProductInfo(product)
+		switch productinfo.Processor {
+		case rpi.RPI_PROCESSOR_BCM2835:
+			platform |= gopi.PLATFORM_BCM2835_ARM6
+		case rpi.RPI_PROCESSOR_BCM2836:
+			platform |= gopi.PLATFORM_BCM2836_ARM7
+		case rpi.RPI_PROCESSOR_BCM2837:
+			platform |= gopi.PLATFORM_BCM2837_ARM8
+		case rpi.RPI_PROCESSOR_BCM2838:
+			platform |= gopi.PLATFORM_BCM2838_ARM8
+		}
+		return platform
 	}
-	return platform
 }
 
 // Return serial number
