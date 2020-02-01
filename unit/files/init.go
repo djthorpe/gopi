@@ -14,9 +14,18 @@ import (
 
 func init() {
 	gopi.UnitRegister(gopi.UnitConfig{
-		Name: "gopi/filepoll",
+		Name: FilePoll{}.Name(),
 		New: func(app gopi.App) (gopi.Unit, error) {
-			return gopi.New(FilePoll{}, app.Log().Clone("gopi/filepoll"))
+			return gopi.New(FilePoll{}, app.Log().Clone(FilePoll{}.Name()))
+		},
+	})
+	gopi.UnitRegister(gopi.UnitConfig{
+		Name:     FSEvents{}.Name(),
+		Requires: []string{FilePoll{}.Name()},
+		New: func(app gopi.App) (gopi.Unit, error) {
+			return gopi.New(FSEvents{
+				FilePoll: app.UnitInstance(FilePoll{}.Name()).(gopi.FilePoll),
+			}, app.Log().Clone(FSEvents{}.Name()))
 		},
 	})
 }

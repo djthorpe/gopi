@@ -59,8 +59,9 @@ func (this *debugapp) Run() int {
 
 	// Defer closing of instances to exit
 	defer func() {
+		name := this.App.Flags().Name()
 		if err := this.App.Close(); err != nil {
-			fmt.Fprintln(os.Stderr, this.App.Flags().Name()+":", err)
+			fmt.Fprintln(os.Stderr, name+":", err)
 		}
 	}()
 

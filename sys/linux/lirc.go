@@ -12,12 +12,12 @@ package linux
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"unsafe"
-	"strconv"
-	"path/filepath"
-	"regexp"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -158,10 +158,10 @@ func LIRCOpenDevice(path string, mode LIRCMode) (*os.File, error) {
 		return nil, gopi.ErrBadParameter.WithPrefix("mode")
 	}
 	// If path is a numnber use "LIRCDevice"
-	if bus,err := strconv.ParseUint(path,10,32); err == nil {
+	if bus, err := strconv.ParseUint(path, 10, 32); err == nil {
 		path = LIRCDevice(uint(bus))
 	} else if reIdentifier.MatchString(path) {
-		path = filepath.Clean(filepath.Join(LIRC_DEV,"..",path))
+		path = filepath.Clean(filepath.Join(LIRC_DEV, "..", path))
 	}
 	// Open file
 	if file, err := os.OpenFile(path, fmode, 0); err != nil {

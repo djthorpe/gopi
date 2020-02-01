@@ -49,47 +49,47 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func EpollCreate() (int, error) {
+func EpollCreate() (uintptr, error) {
 	if fd, err := syscall.EpollCreate1(syscall.EPOLL_CLOEXEC); err != nil {
 		return 0, os.NewSyscallError("EpollCreate1", err)
 	} else {
-		return fd, nil
+		return uintptr(fd), nil
 	}
 }
 
-func EpollClose(handle int) error {
-	if err := syscall.Close(handle); err != nil {
+func EpollClose(handle uintptr) error {
+	if err := syscall.Close(int(handle)); err != nil {
 		return os.NewSyscallError("Close", err)
 	} else {
 		return nil
 	}
 }
 
-func EpollAdd(handle, fd int, mode EpollMode) error {
+func EpollAdd(handle, fd uintptr, mode EpollMode) error {
 	event := new(EpollEvt)
 	event.Fd = int32(fd)
 	event.Events = uint32(mode)
-	if err := syscall.EpollCtl(handle, int(EPOLL_OP_ADD), fd, (*syscall.EpollEvent)(event)); err != nil {
+	if err := syscall.EpollCtl(int(handle), int(EPOLL_OP_ADD), int(fd), (*syscall.EpollEvent)(event)); err != nil {
 		return os.NewSyscallError("EpollAdd epoll_ctl", err)
 	} else {
 		return nil
 	}
 }
 
-func EpollDelete(handle, fd int) error {
-	if err := syscall.EpollCtl(handle, int(EPOLL_OP_DEL), fd, nil); err != nil {
+func EpollDelete(handle, fd uintptr) error {
+	if err := syscall.EpollCtl(int(handle), int(EPOLL_OP_DEL),int(fd), nil); err != nil {
 		return os.NewSyscallError("EpollDelete epoll_ctl", err)
 	} else {
 		return nil
 	}
 }
 
-func EpollWait(handle int, timeout time.Duration, cap uint) ([]EpollEvt, error) {
+func EpollWait(handle uintptr, timeout time.Duration, cap uint) ([]EpollEvt, error) {
 	if cap == 0 {
 		return nil, gopi.ErrBadParameter.WithPrefix("cap")
 	}
 	events := make([]syscall.EpollEvent, cap)
-	if n, err := syscall.EpollWait(handle, events[:], int(timeout.Milliseconds())); err == syscall.EAGAIN || err == syscall.EINTR {
+	if n, err := syscall.EpollWait(int(handle), events[:], int(timeout.Milliseconds())); err == syscall.EAGAIN || err == syscall.EINTR {
 		return nil, nil
 	} else if err != nil {
 		return nil, os.NewSyscallError("epoll_wait", err)

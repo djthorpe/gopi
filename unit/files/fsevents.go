@@ -12,16 +12,17 @@ import (
 	gopi "github.com/djthorpe/gopi/v2"
 )
 
-type FilePoll struct {
+type FSEvents struct {
+	FilePoll gopi.FilePoll
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (FilePoll) Name() string { return "gopi/filepoll" }
+func (FSEvents) Name() string { return "gopi/fsevents" }
 
-func (config FilePoll) New(log gopi.Logger) (gopi.Unit, error) {
-	this := new(filepoll)
+func (config FSEvents) New(log gopi.Logger) (gopi.Unit, error) {
+	this := new(fsevents)
 	if err := this.Unit.Init(log); err != nil {
 		return nil, err
 	}

@@ -21,7 +21,7 @@ import (
 )
 
 type filepoll struct {
-	handle  int
+	handle  uintptr
 	timeout time.Duration
 	cap     uint
 	stop    map[uintptr]chan struct{}
@@ -113,10 +113,12 @@ func (this *filepoll) Watch(fd uintptr, mode gopi.FilePollFlags, handler gopi.Fi
 		return gopi.ErrBadParameter.WithPrefix("fd")
 	} else if _, exists := this.stop[fd]; exists {
 		return gopi.ErrDuplicateItem.WithPrefix("fd")
-	} else if err := linux.EpollAdd(this.handle, int(fd), flags); err != nil {
+	} else if err := linux.EpollAdd(this.handle, fd, flags); err != nil {
 		return err
 	} else {
-		go this.watch(fd, handler)
+		this.stop[fd] = make(chan struct{})
+		this.WaitGroup.Add(1)
+		go this.watch(fd, handler,this.stop[fd])
 	}
 
 	// Success
@@ -145,13 +147,10 @@ func (this *filepoll) Unwatch(fd uintptr) error {
 ////////////////////////////////////////////////////////////////////////////////
 // BACKGROUND METHODS
 
-func (this *filepoll) watch(fd uintptr, handler gopi.FilePollFunc) {
-	this.WaitGroup.Add(1)
+func (this *filepoll) watch(fd uintptr, handler gopi.FilePollFunc,stop chan struct{}) {
 	defer this.WaitGroup.Done()
 
 	// Continue receiving epoll events until stop channel is closed
-	this.stop[fd] = make(chan struct{})
-	stop := this.stop[fd]
 	timer := time.NewTicker(this.timeout)
 FOR_LOOP:
 	for {
@@ -176,7 +175,7 @@ FOR_LOOP:
 	}
 
 	// Delete the watcher
-	if err := linux.EpollDelete(this.handle, int(fd)); err != nil {
+	if err := linux.EpollDelete(this.handle, fd); err != nil {
 		this.Log.Error(err)
 	}
 

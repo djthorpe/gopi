@@ -16,7 +16,7 @@ import (
 	"unsafe"
 
 	// Frameworks
-	"github.com/djthorpe/gopi/v2"	
+	"github.com/djthorpe/gopi/v2"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -216,16 +216,16 @@ func ev_ioctl(fd uintptr, name uintptr, data unsafe.Pointer) error {
 func (e EVEvent) String() string {
 	if e.Type == EV_KEY {
 		return "<ev_event" +
-		" type=" + fmt.Sprint(e.Type) +
-		" code=" + fmt.Sprint(gopi.KeyCode(e.Code)) +
-		" value=" + fmt.Sprintf("%08X", e.Value) +
-		">"
+			" type=" + fmt.Sprint(e.Type) +
+			" code=" + fmt.Sprint(gopi.KeyCode(e.Code)) +
+			" value=" + fmt.Sprintf("%08X", e.Value) +
+			">"
 	} else {
 		return "<ev_event" +
-		" type=" + fmt.Sprint(e.Type) +
-		" code=" + fmt.Sprint(e.Code) +
-		" value=" + fmt.Sprintf("%08X", e.Value) +
-		">"
+			" type=" + fmt.Sprint(e.Type) +
+			" code=" + fmt.Sprint(e.Code) +
+			" value=" + fmt.Sprintf("%08X", e.Value) +
+			">"
 	}
 }
 
