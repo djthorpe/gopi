@@ -10,7 +10,6 @@
 package files_test
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -52,19 +51,24 @@ func Main_Test_FSEvents_002(app gopi.App, t *testing.T) {
 	fsevents := app.UnitInstance("gopi/fsevents").(gopi.FSEvents)
 	dir := os.TempDir()
 
-	if fh, err := fsevents.Watch(dir, 0, func(flags gopi.FSEventFlags) {
-		fmt.Println("flags=", flags)
+	if fh, err := fsevents.Watch(dir, 0, func(watch uint32, evt gopi.FSEvent) {
+		t.Log("watch=", watch, "evt=", evt)
 	}); err != nil {
 		t.Error(err)
 	} else {
 		// Wait for things to settle
 		time.Sleep(time.Second)
-		// Create temporary folder and then remove it
-		if tmpdir, err := ioutil.TempDir("", "fsevents"); err != nil {
-			t.Error(err)
-		} else if err := os.Remove(tmpdir); err != nil {
-			t.Error(err)
+		for i := 0; i < 100; i++ {
+			// Create temporary folder and then remove it
+			if tmpdir, err := ioutil.TempDir("", "fsevents"); err != nil {
+				t.Error(err)
+			} else if err := os.Remove(tmpdir); err != nil {
+				t.Error(err)
+			} else {
+				t.Log("Created and removed", tmpdir)
+			}
 		}
+		// Unwatch
 		if err := fsevents.Unwatch(fh); err != nil {
 			t.Error(err)
 		}

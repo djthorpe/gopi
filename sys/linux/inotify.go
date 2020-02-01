@@ -125,8 +125,8 @@ func InotifyRead(fd uintptr) (*InotifyEvt, error) {
 ////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
 
-func (this InotifyEvt) Watch() uintptr {
-	return uintptr(this.InotifyEvent.Wd)
+func (this InotifyEvt) Watch() uint32 {
+	return uint32(this.InotifyEvent.Wd)
 }
 
 func (this InotifyEvt) Mask() InotifyMask {

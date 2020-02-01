@@ -36,7 +36,7 @@ type filepoll struct {
 
 const (
 	EPOLL_DEFAULT_CAPCITY = 10
-	EPOLL_DEFAULT_TIMEOUT = 100 * time.Millisecond
+	EPOLL_DEFAULT_TIMEOUT = 20 * time.Millisecond
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,11 +160,13 @@ FOR_LOOP:
 				this.Log.Error(err)
 			} else {
 				for _, evt := range evts {
-					if evt.Flags()&linux.EPOLL_MODE_READ == linux.EPOLL_MODE_READ {
-						handler(uintptr(evt.Fd), gopi.FILEPOLL_FLAG_READ)
-					}
-					if evt.Flags()&linux.EPOLL_MODE_WRITE == linux.EPOLL_MODE_WRITE {
-						handler(uintptr(evt.Fd), gopi.FILEPOLL_FLAG_WRITE)
+					flags := maskToFlags(evt.Flags())
+					if flags != gopi.FILEPOLL_FLAG_NONE {
+						go func() {
+							this.WaitGroup.Add(1)
+							defer this.WaitGroup.Done()
+							handler(uintptr(evt.Fd),flags)
+						}()
 					}
 				}
 			}
@@ -181,4 +183,15 @@ FOR_LOOP:
 
 	// Close stop
 	close(stop)
+}
+
+func maskToFlags(mask linux.EpollMode) gopi.FilePollFlags {
+	flags := gopi.FILEPOLL_FLAG_NONE
+	if mask&linux.EPOLL_MODE_READ == linux.EPOLL_MODE_READ {
+		flags |= gopi.FILEPOLL_FLAG_READ
+	}
+	if mask&linux.EPOLL_MODE_WRITE == linux.EPOLL_MODE_WRITE {
+		flags |= gopi.FILEPOLL_FLAG_WRITE
+	}
+	return flags
 }

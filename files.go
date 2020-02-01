@@ -23,7 +23,7 @@ type (
 	FilePollFunc func(uintptr, FilePollFlags)
 
 	// FSEventFunc is the handler for filesystem events
-	FSEventFunc func(FSEventFlags)
+	FSEventFunc func(uint32, FSEvent)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,6 +51,26 @@ type FSEvents interface {
 
 	// Implements gopi.Unit
 	Unit
+}
+
+type FSEvent interface {
+	// Root path being watched
+	Root() string
+
+	// Path the event is concerned with, under the root path
+	Path() string
+
+	// Whether the event concerns a folder
+	IsFolder() bool
+
+	// The event flags
+	Flags() FSEventFlags
+
+	// The unique inode number for the event path, or zero
+	Inode() uint64
+
+	// Implements gopi.Event
+	Event
 }
 
 ////////////////////////////////////////////////////////////////////////////////
