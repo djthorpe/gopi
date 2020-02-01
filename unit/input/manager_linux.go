@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,10 +77,48 @@ func (this *inputmanager) Close() error {
 	return this.Unit.Close()
 }
 
-func (this *inputmanager) OpenDevice(bus uint, exclusive bool) (gopi.InputDevice, error) {
+////////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION gopi.InputManager
+
+func (this *inputmanager) OpenDevicesByNameType(name string, flags gopi.InputDeviceType, exclusive bool) ([]gopi.InputDevice, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
+	// Obtain all devices
+	if deviceIds, err := linux.EVDevices(); err != nil {
+		return nil, err
+	} else {
+		// Cycle through devices, ignoring ones which don't match
+		devices := make([]gopi.InputDevice, 0, len(deviceIds))
+		for _, deviceId := range deviceIds {
+			if device := this.deviceById(deviceId); device != nil {
+				if device.matches(name, flags) {
+					devices = append(devices, device)
+				}
+			} else if device, err := NewDevice(deviceId, false); err == nil {
+				matches := device.matches(name, flags)
+				device.Close()
+				if matches == false {
+					continue
+				}
+				if device, err := this.OpenDeviceEx(deviceId, exclusive); err != nil {
+					return nil, err
+				} else {
+					devices = append(devices, device)
+				}
+			}
+		}
+		return devices, nil
+	}
+}
+
+func (this *inputmanager) OpenDevice(bus uint, exclusive bool) (gopi.InputDevice, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+	return this.OpenDeviceEx(bus, exclusive)
+}
+
+func (this *inputmanager) OpenDeviceEx(bus uint, exclusive bool) (gopi.InputDevice, error) {
 	if device, err := NewDevice(bus, exclusive); err != nil {
 		return nil, err
 	} else if err := this.filepoll.Watch(device.dev.Fd(), gopi.FILEPOLL_FLAG_READ, this.watch); err != nil {
@@ -120,6 +159,16 @@ func (this *inputmanager) CloseDevice(d gopi.InputDevice) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
+
+func (this *inputmanager) deviceById(id uint) *device {
+	for _, device := range this.devices {
+		if device.bus == id {
+			return device
+		}
+	}
+	// Not found, return nil
+	return nil
+}
 
 func (this *inputmanager) watch(fd uintptr, flags gopi.FilePollFlags) {
 	device := this.devices[fd]
@@ -170,7 +219,7 @@ func NewDevice(bus uint, exclusive bool) (*device, error) {
 		return &device{
 			dev:       dev,
 			bus:       bus,
-			name:      name,
+			name:      strings.TrimSpace(name),
 			cap:       cap,
 			exclusive: exclusive,
 		}, nil
@@ -234,6 +283,23 @@ func (this *device) String() string {
 			" capabilities=" + fmt.Sprint(this.cap) +
 			">"
 	}
+}
+
+func (this *device) matches(name string, flags gopi.InputDeviceType) bool {
+	if this.dev == nil {
+		return false
+	}
+	if name == "" && (flags == gopi.INPUT_TYPE_ANY || flags == gopi.INPUT_TYPE_NONE) {
+		return true
+	}
+	if name == this.name && (flags == gopi.INPUT_TYPE_ANY || flags == gopi.INPUT_TYPE_NONE) {
+		return true
+	}
+	if name == "" && (flags&this.Type() > 0) {
+		return true
+	}
+	// No match
+	return false
 }
 
 ////////////////////////////////////////////////////////////////////////////////

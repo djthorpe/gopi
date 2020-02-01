@@ -14,7 +14,6 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
-	app "github.com/djthorpe/gopi/v2/app"
 	tablewriter "github.com/olekukonko/tablewriter"
 )
 
@@ -50,16 +49,4 @@ func Main(app gopi.App, args []string) error {
 
 	// Return success
 	return nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// BOOTSTRAP
-
-func main() {
-	if app, err := app.NewCommandLineTool(Main, nil, "platform"); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	} else {
-		// Run and exit
-		os.Exit(app.Run())
-	}
 }

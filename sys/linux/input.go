@@ -14,6 +14,9 @@ import (
 	"os"
 	"syscall"
 	"unsafe"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -61,6 +64,7 @@ type EVEvent struct {
 const (
 	MAX_IOCTL_SIZE_BYTES = 256
 	EV_DEV               = "/dev/input/event"
+	EV_PATH_WILDCARD     = "/sys/class/input/event"
 )
 
 // Event types
@@ -106,6 +110,20 @@ var (
 
 ////////////////////////////////////////////////////////////////////////////////
 // OPEN
+
+func EVDevices() ([]uint, error) {
+	if files, err := filepath.Glob(EV_PATH_WILDCARD + "*"); err != nil {
+		return nil, err
+	} else {
+		devices := make([]uint,0,len(files))
+		for _, file := range files {
+			if bus,err := strconv.ParseUint(strings.TrimPrefix(file,EV_PATH_WILDCARD),10,32); err == nil {
+				devices = append(devices,uint(bus))
+			}
+		}
+		return devices, nil
+	}
+}
 
 func EVDevice(bus uint) string {
 	return fmt.Sprintf("%v%v", EV_DEV, bus)

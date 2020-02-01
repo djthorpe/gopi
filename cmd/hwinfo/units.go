@@ -11,3 +11,15 @@ import (
 	_ "github.com/djthorpe/gopi/v2/unit/logger"
 	_ "github.com/djthorpe/gopi/v2/unit/platform"
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// BOOTSTRAP
+
+func main() {
+	if app, err := app.NewCommandLineTool(Main, nil, "platform"); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	} else {
+		// Run and exit
+		os.Exit(app.Run())
+	}
+}

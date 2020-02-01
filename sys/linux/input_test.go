@@ -58,3 +58,11 @@ func Test_Input_002(t *testing.T) {
 		}
 	}
 }
+
+func Test_Input_003(t *testing.T) {
+	if bus, err := linux.EVDevices(); err != nil {
+		t.Error(err)
+	} else {
+		t.Log(bus)
+	}
+}

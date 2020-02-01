@@ -219,34 +219,3 @@ func inotifyMaskToFlags(mask linux.InotifyMask) (gopi.FSEventFlags, bool) {
 	}
 	return flags, (mask & linux.IN_ISDIR) == linux.IN_ISDIR
 }
-
-/*
-func (this *epoller) Watch(t *testing.T, stop <-chan struct{}) {
-	defer this.WaitGroup.Done()
-FOR_LOOP:
-	for {
-		select {
-		case <-stop:
-			break FOR_LOOP
-		default:
-			if evts, err := linux.EpollWait(this.fd, time.Millisecond*100, 10); err != nil {
-				t.Error(err)
-			} else {
-				for _, evt := range evts {
-					if uintptr(evt.Fd) == this.inotify && evt.Flags() == linux.EPOLL_MODE_READ {
-						this.ReadNotify(t, this.inotify)
-					}
-				}
-			}
-		}
-	}
-}
-
-func (this *epoller) ReadNotify(t *testing.T, fd uintptr) {
-	if evt, err := linux.InotifyRead(fd); err != nil {
-		t.Error(err)
-	} else {
-		t.Log(evt)
-	}
-}
-*/

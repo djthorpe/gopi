@@ -41,7 +41,10 @@ const (
 // InputManager manages all input devices
 type InputManager interface {
 
-	// Open an input device
+	// Open Devices by name and/or type and return a list of opened devices
+	OpenDevicesByNameType(name string, flags InputDeviceType, exclusive bool) ([]InputDevice, error)
+
+	// Open an input device, and 'grab' exclusively
 	OpenDevice(bus uint, exclusive bool) (InputDevice, error)
 
 	// Close an input device
