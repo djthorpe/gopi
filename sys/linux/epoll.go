@@ -89,7 +89,12 @@ func EpollWait(handle uintptr, timeout time.Duration, cap uint) ([]EpollEvt, err
 		return nil, gopi.ErrBadParameter.WithPrefix("cap")
 	}
 	events := make([]syscall.EpollEvent, cap)
-	if n, err := syscall.EpollWait(int(handle), events[:], int(timeout.Milliseconds())); err == syscall.EAGAIN || err == syscall.EINTR {
+	ms := int(timeout.Milliseconds())
+	// Block if time is zero
+	if ms == 0 {
+		ms = -1
+	}
+	if n, err := syscall.EpollWait(int(handle), events[:],ms ); err == syscall.EAGAIN || err == syscall.EINTR {
 		return nil, nil
 	} else if err != nil {
 		return nil, os.NewSyscallError("epoll_wait", err)

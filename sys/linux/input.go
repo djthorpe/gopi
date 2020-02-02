@@ -236,7 +236,7 @@ func (e EVEvent) String() string {
 		return "<ev_event" +
 			" type=" + fmt.Sprint(e.Type) +
 			" code=" + fmt.Sprint(gopi.KeyCode(e.Code)) +
-			" value=" + fmt.Sprintf("%08X", e.Value) +
+			" value=" + fmt.Sprint(gopi.KeyAction(e.Value)) +
 			">"
 	} else {
 		return "<ev_event" +

@@ -12,7 +12,6 @@ package files
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -22,10 +21,11 @@ import (
 
 type filepoll struct {
 	handle  uintptr
-	timeout time.Duration
 	cap     uint
-	stop    map[uintptr]chan struct{}
+	stop    chan struct{}
+	handler map[uintptr]gopi.FilePollFunc
 
+	Pipe
 	base.Unit
 	sync.Mutex
 	sync.WaitGroup
@@ -35,8 +35,7 @@ type filepoll struct {
 // CONSTANTS
 
 const (
-	EPOLL_DEFAULT_CAPCITY = 10
-	EPOLL_DEFAULT_TIMEOUT = 20 * time.Millisecond
+	EPOLL_DEFAULT_CAP = 10
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,24 +49,44 @@ func (this *filepoll) Init(config FilePoll) error {
 		return err
 	} else {
 		this.handle = handle
-		this.stop = make(map[uintptr]chan struct{})
-		this.cap = EPOLL_DEFAULT_CAPCITY
-		this.timeout = EPOLL_DEFAULT_TIMEOUT
+		this.stop = make(chan struct{})
+		this.cap = EPOLL_DEFAULT_CAP
+		this.handler = make(map[uintptr]gopi.FilePollFunc)
 	}
+
+	// Initialize pipe
+	if err := this.Pipe.Init(); err != nil {
+		linux.EpollClose(this.handle)
+		return err
+	} else if err := linux.EpollAdd(this.handle,this.Pipe.ReadFd(),linux.EPOLL_MODE_READ); err != nil {
+		linux.EpollClose(this.handle)
+		return err
+	} 
+
+	// Watch for events in background
+	go this.watch(this.stop)
 
 	// Return success
 	return nil
 }
 
-func (this *filepoll) Close() error {
+func (this *filepoll) Close() error {	
 	// Unwatch all events
-	for k := range this.stop {
-		if err := this.Unwatch(k); err != nil {
+	for fd := range this.handler {
+		if err := this.Unwatch(fd); err != nil {
 			return err
 		}
 	}
 
-	// Wait for all gooutines to end
+	// Indicate end to goroutine
+	close(this.stop)
+
+	// Wake up go routine
+	if err := this.Pipe.Wake(); err != nil {
+		return err
+	}
+
+	// Wait for gooutine to end
 	this.WaitGroup.Wait()
 
 	// Close polling
@@ -77,7 +96,13 @@ func (this *filepoll) Close() error {
 		}
 	}
 
+	// Close pipes
+	if err := this.Pipe.Close(); err != nil {
+		return err
+	}
+
 	// Release resources
+	this.handler = nil
 	this.handle = 0
 	this.stop = nil
 
@@ -95,6 +120,9 @@ func (this *filepoll) String() string {
 	}
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// WATCH AND UNWATCH
+
 func (this *filepoll) Watch(fd uintptr, mode gopi.FilePollFlags, handler gopi.FilePollFunc) error {
 	this.Lock()
 	defer this.Unlock()
@@ -111,14 +139,12 @@ func (this *filepoll) Watch(fd uintptr, mode gopi.FilePollFlags, handler gopi.Fi
 	// Add watcher and start background goroutine
 	if fd == 0 {
 		return gopi.ErrBadParameter.WithPrefix("fd")
-	} else if _, exists := this.stop[fd]; exists {
+	} else if _, exists := this.handler[fd]; exists {
 		return gopi.ErrDuplicateItem.WithPrefix("fd")
 	} else if err := linux.EpollAdd(this.handle, fd, flags); err != nil {
 		return err
 	} else {
-		this.stop[fd] = make(chan struct{})
-		this.WaitGroup.Add(1)
-		go this.watch(fd, handler,this.stop[fd])
+		this.handler[fd] = handler
 	}
 
 	// Success
@@ -131,13 +157,12 @@ func (this *filepoll) Unwatch(fd uintptr) error {
 
 	if fd == 0 {
 		return gopi.ErrBadParameter.WithPrefix("fd")
-	} else if stop, exists := this.stop[fd]; exists == false {
+	} else if _, exists := this.handler[fd]; exists == false {
 		return gopi.ErrNotFound.WithPrefix("fd")
+	} else if err := linux.EpollDelete(this.handle,fd); err != nil {
+		return err
 	} else {
-		// Send stop
-		stop <- struct{}{}
-		<-stop
-		delete(this.stop, fd)
+		delete(this.handler,fd)
 	}
 
 	// Success
@@ -145,44 +170,41 @@ func (this *filepoll) Unwatch(fd uintptr) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// BACKGROUND METHODS
+// PRIVATE METHODS
 
-func (this *filepoll) watch(fd uintptr, handler gopi.FilePollFunc,stop chan struct{}) {
+func (this *filepoll) watch(stop <-chan struct{}) {
+	this.WaitGroup.Add(1)
 	defer this.WaitGroup.Done()
 
-	// Continue receiving epoll events until stop channel is closed
-	timer := time.NewTicker(this.timeout)
 FOR_LOOP:
 	for {
 		select {
-		case <-timer.C:
-			if evts, err := linux.EpollWait(this.handle, this.timeout, this.cap); err != nil {
+		case <-stop:
+			break FOR_LOOP
+		default:
+			if evts, err := linux.EpollWait(this.handle,0, this.cap); err != nil {
 				this.Log.Error(err)
 			} else {
 				for _, evt := range evts {
-					flags := maskToFlags(evt.Flags())
-					if flags != gopi.FILEPOLL_FLAG_NONE {
-						go func() {
-							this.WaitGroup.Add(1)
-							defer this.WaitGroup.Done()
-							handler(uintptr(evt.Fd),flags)
-						}()
-					}
+					this.call(uintptr(evt.Fd),maskToFlags(evt.Flags()))
 				}
 			}
-		case <-stop:
-			timer.Stop()
-			break FOR_LOOP
 		}
 	}
+}
 
-	// Delete the watcher
-	if err := linux.EpollDelete(this.handle, fd); err != nil {
-		this.Log.Error(err)
+func (this *filepoll) call(fd uintptr,flags gopi.FilePollFlags) {
+	this.Lock()
+	defer this.Unlock()
+	if fd == this.Pipe.ReadFd() && flags == gopi.FILEPOLL_FLAG_READ {
+		if err := this.Pipe.Clear(); err != nil {
+			this.Log.Error(err)
+		}
+	} else if handler,exists := this.handler[fd]; exists {
+		handler(fd,flags)
+	} else {
+		this.Log.Warn("Filepoll: Unable to handle fd=",fd," flags=",flags)
 	}
-
-	// Close stop
-	close(stop)
 }
 
 func maskToFlags(mask linux.EpollMode) gopi.FilePollFlags {
@@ -195,3 +217,4 @@ func maskToFlags(mask linux.EpollMode) gopi.FilePollFlags {
 	}
 	return flags
 }
+
