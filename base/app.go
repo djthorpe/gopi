@@ -170,6 +170,7 @@ func (this *App) WaitForSignal(ctx context.Context, signals ...os.Signal) error 
 	signal.Notify(sigchan, signals...)
 	select {
 	case s := <-sigchan:
+		signal.Reset(signals...)		
 		return gopi.ErrSignalCaught.WithPrefix(s.String())
 	case <-ctx.Done():
 		return ctx.Err()

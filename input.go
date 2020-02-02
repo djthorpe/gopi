@@ -7,7 +7,9 @@
 
 package gopi
 
-import "strings"
+import (
+	"strings"
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
@@ -24,6 +26,9 @@ type (
 
 	// Key State
 	KeyState uint16
+
+	// Type of input event
+	InputEventType uint16
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,6 +50,7 @@ const (
 	KEYACTION_KEY_UP KeyAction = iota
 	KEYACTION_KEY_DOWN
 	KEYACTION_KEY_REPEAT
+	KEYACTION_NONE
 )
 
 // Key state
@@ -69,6 +75,19 @@ const (
 	KEYSTATE_MASK KeyState = 0x0CFF // Bitmask
 	KEYSTATE_MIN  KeyState = KEYSTATE_SCROLLLOCK
 	KEYSTATE_MAX  KeyState = KEYSTATE_CTRL // Maximum
+)
+
+// Input events
+const (
+	INPUT_EVENT_NONE          InputEventType = 0x0000
+	INPUT_EVENT_KEYPRESS      InputEventType = 0x0001
+	INPUT_EVENT_KEYRELEASE    InputEventType = 0x0002
+	INPUT_EVENT_KEYREPEAT     InputEventType = 0x0003
+	INPUT_EVENT_ABSPOSITION   InputEventType = 0x0004
+	INPUT_EVENT_RELPOSITION   InputEventType = 0x0005
+	INPUT_EVENT_TOUCHPRESS    InputEventType = 0x0006
+	INPUT_EVENT_TOUCHRELEASE  InputEventType = 0x0007
+	INPUT_EVENT_TOUCHPOSITION InputEventType = 0x0008
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -116,6 +135,32 @@ type InputDevice interface {
 
 	// Matches returns true if a device has specific capabilities or name
 	Matches(name string, flags InputDeviceType) bool
+}
+
+type InputEvent interface {
+	// Return device which is emitting the event
+	Device() InputDevice
+
+	// Type of event
+	Type() InputEventType
+
+	// KeyCode returned when a key press event
+	KeyCode() KeyCode
+
+	// KeyState returned when a key press event
+	KeyState() KeyState
+
+	// ScanCode returned when a key press event
+	ScanCode() uint32
+
+	// Abs returns absolute input position
+	Abs() Point
+
+	// Rel returns relative input position
+	Rel() Point
+
+	// Implements gopi.Event
+	Event
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -194,5 +239,30 @@ func (s KeyState) StringFlag() string {
 		return "KEYSTATE_RIGHTCTRL"
 	default:
 		return "[?? Invalid KeyState value]"
+	}
+}
+
+func (e InputEventType) String() string {
+	switch e {
+	case INPUT_EVENT_NONE:
+		return "INPUT_EVENT_NONE"
+	case INPUT_EVENT_KEYPRESS:
+		return "INPUT_EVENT_KEYPRESS"
+	case INPUT_EVENT_KEYRELEASE:
+		return "INPUT_EVENT_KEYRELEASE"
+	case INPUT_EVENT_KEYREPEAT:
+		return "INPUT_EVENT_KEYREPEAT"
+	case INPUT_EVENT_ABSPOSITION:
+		return "INPUT_EVENT_ABSPOSITION"
+	case INPUT_EVENT_RELPOSITION:
+		return "INPUT_EVENT_RELPOSITION"
+	case INPUT_EVENT_TOUCHPRESS:
+		return "INPUT_EVENT_TOUCHPRESS"
+	case INPUT_EVENT_TOUCHRELEASE:
+		return "INPUT_EVENT_TOUCHRELEASE"
+	case INPUT_EVENT_TOUCHPOSITION:
+		return "INPUT_EVENT_TOUCHPOSITION"
+	default:
+		return "[?? Invalid InputEventType value]"
 	}
 }

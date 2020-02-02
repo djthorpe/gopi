@@ -10,12 +10,12 @@
 package input
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-	"encoding/binary"
 	"time"
 
 	// Frameworks
@@ -30,6 +30,7 @@ import (
 type Device struct {
 	Id        uint
 	Exclusive bool
+	Bus       gopi.Bus
 }
 
 type device struct {
@@ -39,6 +40,7 @@ type device struct {
 	cap        []linux.EVType
 	exclusive  bool
 	deviceType gopi.InputDeviceType
+	bus        gopi.Bus
 
 	// Key state
 	keyCode   gopi.KeyCode
@@ -76,17 +78,23 @@ func (config Device) New(log gopi.Logger) (gopi.Unit, error) {
 // INIT gopi.InputDevice
 
 func (this *device) Init(config Device) error {
+	if config.Bus == nil {
+		return gopi.ErrBadParameter.WithPrefix("bus")
+	} else {
+		this.bus = config.Bus
+	}
+
 	if dev, err := linux.EVOpenDevice(config.Id); err != nil {
 		return err
 	} else {
 		this.id = config.Id
-		this.dev = dev			
+		this.dev = dev
 	}
-	
+
 	if name, err := linux.EVGetName(this.dev.Fd()); err != nil {
 		this.dev.Close()
 		this.dev = nil
-		return  err
+		return err
 	} else {
 		this.name = strings.TrimSpace(name)
 	}
@@ -137,6 +145,8 @@ func (this *device) Close() error {
 
 	// Release resources
 	this.dev = nil
+	this.cap = nil
+	this.bus = nil
 
 	// Success
 	return this.Unit.Close()
@@ -150,8 +160,8 @@ func (this *device) String() string {
 		return "<gopi.inputdevice>"
 	} else {
 		return "<gopi.inputdevice id=" + fmt.Sprint(this.id) +
-		" fd=" + fmt.Sprint(this.Fd())  +
-		" name=" + strconv.Quote(this.name) +
+			" fd=" + fmt.Sprint(this.Fd()) +
+			" name=" + strconv.Quote(this.name) +
 			" type=" + fmt.Sprint(this.Type()) +
 			" capabilities=" + fmt.Sprint(this.cap) +
 			">"
@@ -176,7 +186,6 @@ func (this *device) Fd() uintptr {
 		return this.dev.Fd()
 	}
 }
-
 
 func (this *device) State() gopi.KeyState {
 	if this.dev == nil {
@@ -247,33 +256,34 @@ func (this *device) Matches(name string, flags gopi.InputDeviceType) bool {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *device) read(source gopi.Unit) {
+func (this *device) read(source gopi.InputManager) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
 	var evt linux.EVEvent
 	if err := binary.Read(this.dev, binary.LittleEndian, &evt); err != nil {
 		this.Log.Error(err)
-	} else {
-		this.Log.Debug(evt)
+		return
 	}
-}
-
-/*	
-		switch evt.Type {
-		case linux.EV_KEY:
-			evDecodeKey(evt, device)
-		case linux.EV_SYN:
-			evDecodeSyn(evt, device)
-		case linux.EV_ABS:
-		case linux.EV_REL:
-			evDecodeRel(evt, device)
-		case linux.EV_MSC:
-			evDecodeMisc(evt, device)
+	this.Log.Debug(evt)
+	this.keyAction = gopi.KEYACTION_NONE
+	switch evt.Type {
+	case linux.EV_KEY:
+		evDecodeKey(evt, this)
+	case linux.EV_REL:
+		evDecodeRel(evt, this)
+	case linux.EV_ABS:
+		evDecodeAbs(evt, this)
+	case linux.EV_MSC:
+		evDecodeMisc(evt, this)
+	case linux.EV_SYN:
+		if evt := evDecodeSyn(evt, this); evt != nil {
+			evt.device = this
+			evt.source = source
+			this.bus.Emit(evt)
 		}
 	}
-*/
-
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
@@ -352,13 +362,17 @@ func evDecodeKey(evt linux.EVEvent, device *device) {
 func evDecodeAbs(evt linux.EVEvent, device *device) {
 	switch evt.Code {
 	case linux.EV_CODE_X:
+		device.last.X = device.position.X
 		device.position.X = float32(int32(evt.Value))
 	case linux.EV_CODE_Y:
+		device.last.Y = device.position.Y
 		device.position.Y = float32(int32(evt.Value))
 	case linux.EV_CODE_SLOT:
 		device.slot = evt.Value
+	case linux.EV_CODE_SLOT_ID,linux.EV_CODE_SLOT_X,linux.EV_CODE_SLOT_Y:
+		device.Log.Debug("Ignoring multi-touch event:",evt)
 	default:
-		fmt.Println("Ignoring", evt)
+		device.Log.Debug("Ignoring event:",evt)
 	}
 }
 
@@ -378,19 +392,26 @@ func evDecodeMisc(evt linux.EVEvent, device *device) {
 	}
 }
 
-func evDecodeSyn(evt linux.EVEvent, device *device) {
+func evDecodeSyn(evt linux.EVEvent, device *device) *event {
 	ts := time.Duration(evt.Second)*time.Second + time.Duration(evt.Microsecond)*time.Microsecond
 	switch {
 	case device.rel.Equals(gopi.ZeroPoint) == false:
+		device.last = device.position
 		device.position.X += device.rel.X
 		device.position.Y += device.rel.Y
-		// Emit RELATIVE POSITION
-		fmt.Printf("<gopi.InputEvent rel=%v abs=%v ts=%v>\n", device.rel, device.position, ts)
-	case device.keyCode != gopi.KEYCODE_NONE:
-		// Emit KEY EVENT
-		fmt.Printf("<gopi.InputEvent action=%v code=%v state=%v scan_code=0x%08X ts=%v>\n", device.keyAction, device.keyCode, device.keyState, device.scanCode, ts)
+		evt := NewRelPositionEvent(device.rel, device.position, ts)
+		device.rel = gopi.ZeroPoint
+		return evt
+	case device.position.Equals(device.last) == false:
+		evt := NewAbsPositionEvent(device.position, device.keyCode, ts)
+		device.rel = gopi.ZeroPoint
+		device.keyCode = gopi.KEYCODE_NONE
+		return evt
+	case device.keyAction == gopi.KEYACTION_KEY_DOWN || device.keyAction == gopi.KEYACTION_KEY_UP || device.keyAction == gopi.KEYACTION_KEY_REPEAT:
+		evt := NewKeyEvent(device.keyAction, device.keyCode, device.keyState, device.scanCode, ts)
+		device.keyAction = gopi.KEYACTION_NONE
+		return evt
+	default:
+		return nil
 	}
-	// Reset key action and rel position
-	device.keyCode = gopi.KEYCODE_NONE
-	device.rel = gopi.ZeroPoint
 }

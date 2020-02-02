@@ -17,12 +17,13 @@ import (
 
 type InputManager struct {
 	FilePoll gopi.FilePoll
+	Bus      gopi.Bus
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (InputManager) Name() string { return "gopi.InputManager" }
+func (InputManager) Name() string { return "gopi/input" }
 
 func (config InputManager) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(inputmanager)

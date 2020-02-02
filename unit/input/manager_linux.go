@@ -23,6 +23,7 @@ import (
 
 type inputmanager struct {
 	filepoll gopi.FilePoll
+	bus      gopi.Bus
 	devices  map[uintptr]gopi.InputDevice
 
 	base.Unit
@@ -34,11 +35,14 @@ type inputmanager struct {
 
 func (this *inputmanager) Init(config InputManager) error {
 
-	if config.FilePoll == nil {
+	if config.Bus == nil {
+		return gopi.ErrBadParameter.WithPrefix("bus")
+	} else if config.FilePoll == nil {
 		return gopi.ErrBadParameter.WithPrefix("filepoll")
 	} else {
 		this.devices = make(map[uintptr]gopi.InputDevice)
 		this.filepoll = config.FilePoll
+		this.bus = config.Bus
 	}
 
 	// Success
@@ -81,7 +85,7 @@ func (this *inputmanager) OpenDevicesByNameType(name string, flags gopi.InputDev
 				if device.Matches(name, flags) {
 					devices = append(devices, device)
 				}
-			} else if device, err := gopi.New(Device{ deviceId, false },this.Log.Clone(Device{}.Name())); err != nil {
+			} else if device, err := gopi.New(Device{deviceId, false, this.bus}, this.Log.Clone(Device{}.Name())); err != nil {
 				this.Log.Warn(err)
 			} else if matches := device.(gopi.InputDevice).Matches(name, flags); matches {
 				device.Close()
@@ -106,8 +110,8 @@ func (this *inputmanager) OpenDevice(id uint, exclusive bool) (gopi.InputDevice,
 
 func (this *inputmanager) openDeviceEx(id uint, exclusive bool) (gopi.InputDevice, error) {
 	if device := this.deviceById(id); device != nil {
-		return nil,gopi.ErrBadParameter.WithPrefix("id")
-	} else if device_, err := gopi.New(Device{ id, exclusive },this.Log.Clone(Device{}.Name())); err != nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("id")
+	} else if device_, err := gopi.New(Device{id, exclusive, this.bus}, this.Log.Clone(Device{}.Name())); err != nil {
 		return nil, err
 	} else if device, ok := device_.(gopi.InputDevice); ok == false {
 		return nil, gopi.ErrInternalAppError
@@ -135,7 +139,7 @@ func (this *inputmanager) closeDeviceEx(device gopi.InputDevice) error {
 		return err
 	} else {
 		err := device.(gopi.Unit).Close()
-		delete(this.devices,device.Fd())
+		delete(this.devices, device.Fd())
 		return err
 	}
 }
@@ -154,8 +158,8 @@ func (this *inputmanager) deviceById(id uint) gopi.InputDevice {
 }
 
 func (this *inputmanager) watch(fd uintptr, flags gopi.FilePollFlags) {
-	if device_,exists := this.devices[fd]; exists == false {
-		return 
+	if device_, exists := this.devices[fd]; exists == false {
+		return
 	} else if flags&gopi.FILEPOLL_FLAG_READ == gopi.FILEPOLL_FLAG_READ {
 		device_.(*device).read(this)
 	}

@@ -12,19 +12,27 @@ import (
 	"os"
 
 	// Frameworks
+	gopi "github.com/djthorpe/gopi/v2"
 	"github.com/djthorpe/gopi/v2/app"
 
 	// Units
+	_ "github.com/djthorpe/gopi/v2/unit/bus"
 	_ "github.com/djthorpe/gopi/v2/unit/files"
 	_ "github.com/djthorpe/gopi/v2/unit/input"
 	_ "github.com/djthorpe/gopi/v2/unit/logger"
+)
+
+var (
+	Events = []gopi.EventHandler{
+		gopi.EventHandler{Name: "gopi.InputEvent", Handler: EventHandler},
+	}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // BOOTSTRAP
 
 func main() {
-	if app, err := app.NewCommandLineTool(Main, nil, "input"); err != nil {
+	if app, err := app.NewCommandLineTool(Main, Events, "input"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
 		// Set flags
