@@ -180,3 +180,10 @@ func (this *bitmap) PaintCircle(c color.Color, p gopi.Point, r uint32) {
 		}
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// RUNE
+
+func (this *bitmap) PaintRune(c color.Color, p gopi.Point, r rune) {
+
+}

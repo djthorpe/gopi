@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
@@ -42,18 +41,7 @@ type device struct {
 	deviceType gopi.InputDeviceType
 	bus        gopi.Bus
 
-	// Key state
-	keyCode   gopi.KeyCode
-	scanCode  uint32
-	keyAction gopi.KeyAction
-	keyState  gopi.KeyState
-
-	// Position state
-	rel      gopi.Point
-	position gopi.Point
-	last     gopi.Point
-	slot     uint32
-
+	State
 	base.Unit
 	sync.Mutex
 }
@@ -116,6 +104,9 @@ func (this *device) Init(config Device) error {
 			this.exclusive = config.Exclusive
 		}
 	}
+
+	// Reset state
+	this.State.Reset()
 
 	// Return success
 	return nil
@@ -191,7 +182,7 @@ func (this *device) State() gopi.KeyState {
 	if this.dev == nil {
 		return gopi.KEYSTATE_NONE
 	} else {
-		return this.keyState
+		return this.State.KeyState()
 	}
 }
 
@@ -223,14 +214,11 @@ func (this *device) Type() gopi.InputDeviceType {
 }
 
 func (this *device) Position() gopi.Point {
-	return this.position
+	return this.State.Position()
 }
 
 func (this *device) SetPosition(point gopi.Point) {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
-
-	this.position = point
+	this.State.SetPosition(point)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -265,23 +253,11 @@ func (this *device) read(source gopi.InputManager) {
 		this.Log.Error(err)
 		return
 	}
-	this.Log.Debug(evt)
-	this.keyAction = gopi.KEYACTION_NONE
-	switch evt.Type {
-	case linux.EV_KEY:
-		evDecodeKey(evt, this)
-	case linux.EV_REL:
-		evDecodeRel(evt, this)
-	case linux.EV_ABS:
-		evDecodeAbs(evt, this)
-	case linux.EV_MSC:
-		evDecodeMisc(evt, this)
-	case linux.EV_SYN:
-		if evt := evDecodeSyn(evt, this); evt != nil {
-			evt.device = this
-			evt.source = source
-			this.bus.Emit(evt)
-		}
+
+	if evt := this.State.Decode(evt); evt != nil {
+		evt.device = this
+		evt.source = source
+		this.bus.Emit(evt)
 	}
 }
 
@@ -302,116 +278,4 @@ func evSupportsEventType(cap []linux.EVType, req ...linux.EVType) bool {
 		}
 	}
 	return true
-}
-
-func evDecodeKey(evt linux.EVEvent, device *device) {
-	// Interpret key code and key action (up, down and repeat)
-	code, action := gopi.KeyCode(evt.Code), gopi.KeyAction(evt.Value)
-
-	// Alter key state if a modified key was pressed and also
-	// handle sticky state keys CAPS, NUM and SCROLL locks
-	state := gopi.KEYSTATE_NONE
-	switch code {
-	case gopi.KEYCODE_CAPSLOCK:
-		if action == gopi.KEYACTION_KEY_DOWN {
-			device.keyState ^= gopi.KEYSTATE_CAPSLOCK
-			// TODO: Change LED's
-		}
-	case gopi.KEYCODE_NUMLOCK:
-		if action == gopi.KEYACTION_KEY_DOWN {
-			device.keyState ^= gopi.KEYSTATE_NUMLOCK
-			// TODO: Change LED's
-		}
-	case gopi.KEYCODE_SCROLLLOCK:
-		if action == gopi.KEYACTION_KEY_DOWN {
-			device.keyState ^= gopi.KEYSTATE_SCROLLLOCK
-			// TODO: Change LED's
-		}
-	case gopi.KEYCODE_LEFTSHIFT:
-		state = gopi.KEYSTATE_LEFTSHIFT
-	case gopi.KEYCODE_RIGHTSHIFT:
-		state = gopi.KEYSTATE_RIGHTSHIFT
-	case gopi.KEYCODE_LEFTCTRL:
-		state = gopi.KEYSTATE_LEFTCTRL
-	case gopi.KEYCODE_RIGHTCTRL:
-		state = gopi.KEYSTATE_RIGHTCTRL
-	case gopi.KEYCODE_LEFTALT:
-		state = gopi.KEYSTATE_LEFTALT
-	case gopi.KEYCODE_RIGHTALT:
-		state = gopi.KEYSTATE_RIGHTALT
-	case gopi.KEYCODE_LEFTMETA:
-		state = gopi.KEYSTATE_LEFTMETA
-	case gopi.KEYCODE_RIGHTMETA:
-		state = gopi.KEYSTATE_RIGHTMETA
-	}
-
-	// Set device code and action
-	device.keyCode = code
-	device.keyAction = action
-
-	// Set device state from key action
-	if state != gopi.KEYSTATE_NONE {
-		if action == gopi.KEYACTION_KEY_DOWN || action == gopi.KEYACTION_KEY_REPEAT {
-			device.keyState |= state
-		} else if action == gopi.KEYACTION_KEY_UP {
-			device.keyState ^= state
-		}
-	}
-}
-
-func evDecodeAbs(evt linux.EVEvent, device *device) {
-	switch evt.Code {
-	case linux.EV_CODE_X:
-		device.last.X = device.position.X
-		device.position.X = float32(int32(evt.Value))
-	case linux.EV_CODE_Y:
-		device.last.Y = device.position.Y
-		device.position.Y = float32(int32(evt.Value))
-	case linux.EV_CODE_SLOT:
-		device.slot = evt.Value
-	case linux.EV_CODE_SLOT_ID,linux.EV_CODE_SLOT_X,linux.EV_CODE_SLOT_Y:
-		device.Log.Debug("Ignoring multi-touch event:",evt)
-	default:
-		device.Log.Debug("Ignoring event:",evt)
-	}
-}
-
-func evDecodeRel(evt linux.EVEvent, device *device) {
-	switch evt.Code {
-	case linux.EV_CODE_X:
-		device.rel.X = float32(int32(evt.Value))
-	case linux.EV_CODE_Y:
-		device.rel.Y = float32(int32(evt.Value))
-	}
-}
-
-func evDecodeMisc(evt linux.EVEvent, device *device) {
-	switch evt.Code {
-	case linux.EV_CODE_SCANCODE:
-		device.scanCode = evt.Value
-	}
-}
-
-func evDecodeSyn(evt linux.EVEvent, device *device) *event {
-	ts := time.Duration(evt.Second)*time.Second + time.Duration(evt.Microsecond)*time.Microsecond
-	switch {
-	case device.rel.Equals(gopi.ZeroPoint) == false:
-		device.last = device.position
-		device.position.X += device.rel.X
-		device.position.Y += device.rel.Y
-		evt := NewRelPositionEvent(device.rel, device.position, ts)
-		device.rel = gopi.ZeroPoint
-		return evt
-	case device.position.Equals(device.last) == false:
-		evt := NewAbsPositionEvent(device.position, device.keyCode, ts)
-		device.rel = gopi.ZeroPoint
-		device.keyCode = gopi.KEYCODE_NONE
-		return evt
-	case device.keyAction == gopi.KEYACTION_KEY_DOWN || device.keyAction == gopi.KEYACTION_KEY_UP || device.keyAction == gopi.KEYACTION_KEY_REPEAT:
-		evt := NewKeyEvent(device.keyAction, device.keyCode, device.keyState, device.scanCode, ts)
-		device.keyAction = gopi.KEYACTION_NONE
-		return evt
-	default:
-		return nil
-	}
 }

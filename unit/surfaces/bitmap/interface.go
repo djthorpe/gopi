@@ -53,6 +53,9 @@ type Bitmap interface {
 	// PaintLine paints a line
 	PaintLine(color.Color, gopi.Point, gopi.Point)
 
+	// Paint a rune with a particular font face and at a pixel size
+	PaintRunePx(color.Color,gopi.Point,rune,face gopi.FontFace,float32)
+
 	// Retain and release
 	Retain()
 	Release() bool
