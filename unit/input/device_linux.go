@@ -107,6 +107,7 @@ func (this *device) Init(config Device) error {
 
 	// Reset state
 	this.State.Reset()
+	this.State.log = this.Log
 
 	// Return success
 	return nil
@@ -178,7 +179,7 @@ func (this *device) Fd() uintptr {
 	}
 }
 
-func (this *device) State() gopi.KeyState {
+func (this *device) KeyState() gopi.KeyState {
 	if this.dev == nil {
 		return gopi.KEYSTATE_NONE
 	} else {

@@ -19,10 +19,10 @@ import (
 // TYPES
 
 type event struct {
-	source   gopi.InputManager
-	device   gopi.InputDevice
-	event    gopi.InputEventType
-	ts       time.Duration
+	source gopi.InputManager
+	device gopi.InputDevice
+	event  gopi.InputEventType
+	ts     time.Duration
 
 	rel      gopi.Point
 	position gopi.Point
@@ -44,7 +44,7 @@ func NewRelPositionEvent(rel gopi.Point, position gopi.Point, ts time.Duration) 
 	}
 }
 
-func NewAbsPositionEvent(position gopi.Point,code gopi.KeyCode, ts time.Duration) *event {
+func NewAbsPositionEvent(position gopi.Point, code gopi.KeyCode, ts time.Duration) *event {
 	return &event{
 		event:    gopi.INPUT_EVENT_ABSPOSITION,
 		rel:      gopi.ZeroPoint,
@@ -93,7 +93,7 @@ func (this *event) Value() interface{} {
 	return nil
 }
 
-func (this *event) Device() gopi.InputDevice {	
+func (this *event) Device() gopi.InputDevice {
 	return this.device
 }
 
@@ -113,16 +113,15 @@ func (this *event) ScanCode() uint32 {
 	return this.scancode
 }
 
-	// Abs returns absolute input position
-	func (this *event) 	Abs() gopi.Point {
-		return this.position
-	}
+// Abs returns absolute input position
+func (this *event) Abs() gopi.Point {
+	return this.position
+}
 
-	// Rel returns relative input position
-	func (this *event) 	Rel() gopi.Point {
-		return this.rel
-	}
-
+// Rel returns relative input position
+func (this *event) Rel() gopi.Point {
+	return this.rel
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY

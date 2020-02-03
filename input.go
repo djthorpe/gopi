@@ -123,8 +123,8 @@ type InputDevice interface {
 	// Type returns the type of input device
 	Type() InputDeviceType
 
-	// State indicates keyboard state when a modififer key is pressed or locked
-	State() KeyState
+	// KeyState indicates keyboard state when a modififer key is pressed or locked
+	KeyState() KeyState
 
 	// Position returns the absolute position for the device
 	// (if mouse, joystick or touchscreen)

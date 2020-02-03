@@ -10,14 +10,18 @@
 package input
 
 import (
+	"time"
+
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
+	linux "github.com/djthorpe/gopi/v2/sys/linux"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type State struct {
+	log gopi.Logger
 
 	// Key state
 	keyCode   gopi.KeyCode
@@ -63,19 +67,22 @@ func (this *State) SetPosition(pt gopi.Point) {
 // DECODE EVEvent and emit events
 
 func (this *State) Decode(evt linux.EVEvent) *event {
+	if this.log != nil {
+		this.log.Debug(evt)
+	}
 
 	switch evt.Type {
 	case linux.EV_KEY:
-		evDecodeKey(evt, this)
+		this.DecodeKey(evt)
 	case linux.EV_REL:
-		evDecodeRel(evt, this)
+		this.DecodeRel(evt)
 	case linux.EV_ABS:
-		evDecodeAbs(evt, this)
+		this.DecodeAbs(evt)
 	case linux.EV_MSC:
-		evDecodeMsc(evt, this)
+		this.DecodeMsc(evt)
 	case linux.EV_SYN:
-		if evt := evDecodeSyn(evt, this); evt != nil {
-			return evt
+		if inputevt := this.DecodeSyn(evt); inputevt != nil {
+			return inputevt
 		}
 	}
 
@@ -147,9 +154,13 @@ func (this *State) DecodeAbs(evt linux.EVEvent) {
 	case linux.EV_CODE_SLOT:
 		this.slot = evt.Value
 	case linux.EV_CODE_SLOT_ID, linux.EV_CODE_SLOT_X, linux.EV_CODE_SLOT_Y:
-		this.Log.Debug("Ignoring multi-touch event:", evt)
+		if this.log != nil {
+			this.log.Debug("Ignoring multi-touch event:", evt)
+		}
 	default:
-		this.Log.Debug("Ignoring event:", evt)
+		if this.log != nil {
+			this.log.Debug("Ignoring event:", evt)
+		}
 	}
 }
 
@@ -169,15 +180,19 @@ func (this *State) DecodeMsc(evt linux.EVEvent) {
 	}
 }
 
-func (this *State) DecodeSyn(evt linux.EVEvent) {
+func (this *State) DecodeSyn(evt linux.EVEvent) *event {
 	ts := time.Duration(evt.Second)*time.Second + time.Duration(evt.Microsecond)*time.Microsecond
 	switch {
+	case this.keyAction == gopi.KEYACTION_KEY_DOWN || this.keyAction == gopi.KEYACTION_KEY_UP || this.keyAction == gopi.KEYACTION_KEY_REPEAT:
+		evt := NewKeyEvent(this.keyAction, this.keyCode, this.keyState, this.scanCode, ts)
+		this.keyAction = gopi.KEYACTION_NONE
+		return evt
 	case this.rel.Equals(gopi.ZeroPoint) == false:
 		this.position.X += this.rel.X
 		this.position.Y += this.rel.Y
-		return NewRelPositionEvent(this.rel, this.position, ts)
-	case this.keyAction == gopi.KEYACTION_KEY_DOWN || this.keyAction == gopi.KEYACTION_KEY_UP || this.keyAction == gopi.KEYACTION_KEY_REPEAT:
-		return NewKeyEvent(this.keyAction, this.keyCode, this.keyState, this.scanCode, ts)
+		evt := NewRelPositionEvent(this.rel, this.position, ts)
+		this.position = gopi.ZeroPoint
+		return evt
 	default:
 		return nil
 	}
