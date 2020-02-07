@@ -105,6 +105,16 @@ type Flags interface {
 	SetFloat64(string, FlagNS, float64)
 }
 
+// DebugApp is an application with additional context
+type DebugApp interface {
+
+	// Testing
+	T() *testing.T
+
+	// Implements App
+	App
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 

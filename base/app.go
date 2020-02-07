@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/signal"
 	"sort"
-	"sync"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -25,8 +24,6 @@ import (
 // INTERFACES
 
 type App struct {
-	sync.Mutex
-
 	flags            gopi.Flags
 	units            []*gopi.UnitConfig
 	instanceByConfig map[*gopi.UnitConfig]gopi.Unit
@@ -44,8 +41,18 @@ func (this *App) Init(name string, units []string) error {
 		this.flags = flags
 	}
 
+	// If no logger then prepend one
+	prependLogger := true
+	for _, unit := range units {
+		if config := gopi.UnitsByName(unit); len(config) > 0 && config[0].Type == gopi.UNIT_LOGGER {
+			prependLogger = false
+		}
+	}
+	if prependLogger {
+		units = append([]string{"logger"}, units...)
+	}
+
 	// Get units and dependendies
-	units = append([]string{"logger"}, units...)
 	if units_, err := gopi.UnitWithDependencies(units...); err != nil {
 		return err
 	} else {
@@ -76,13 +83,13 @@ func (this *App) Init(name string, units []string) error {
 // IMPLEMENTATION gopi.App
 
 func (this *App) Run() int {
-	if err := this.Start([]string{}); err != nil {
+	if err := this.Start(this, []string{}); err != nil {
 		panic(err)
 	}
 	return 0
 }
 
-func (this *App) Start(args []string) error {
+func (this *App) Start(app gopi.App, args []string) error {
 	var log gopi.Logger
 
 	if err := this.flags.Parse(args); errors.Is(err, gopi.ErrHelp) {
@@ -95,6 +102,8 @@ func (this *App) Start(args []string) error {
 		return gopi.ErrHelp
 	}
 
+	fmt.Println(this)
+
 	// Create unit instances
 	for _, unit := range this.units {
 		if unit.New == nil {
@@ -103,10 +112,10 @@ func (this *App) Start(args []string) error {
 		if log != nil {
 			log.Debug("New:", unit)
 		}
-		if instance, err := unit.New(this); err != nil {
+		if instance, err := unit.New(app); err != nil {
 			return err
 		} else {
-			// `Set logging instance`
+			// Set logging instance
 			if unit.Type == gopi.UNIT_LOGGER && log == nil {
 				if log_, ok := instance.(gopi.Logger); ok {
 					log = log_
@@ -128,7 +137,7 @@ func (this *App) Start(args []string) error {
 			log.Debug("Run:", unit)
 		}
 		if instance, exists := this.instanceByConfig[unit]; exists {
-			if err := unit.Run(this, instance); err != nil {
+			if err := unit.Run(app, instance); err != nil {
 				return err
 			}
 		}
