@@ -15,6 +15,9 @@ import (
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
 	base "github.com/djthorpe/gopi/v2/base"
+
+	// Units
+	_ "github.com/djthorpe/gopi/v2/unit/logger"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -28,9 +31,9 @@ type debugapp struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// gopi.App implementation for debug tool
+// IMPLEMENTATION gopi.DebugApp
 
-func NewTestTool(t *testing.T, main gopi.MainTestFunc, args []string, units ...string) (gopi.App, error) {
+func NewTestTool(t *testing.T, main gopi.MainTestFunc, args []string, units ...string) (gopi.DebugApp, error) {
 	this := new(debugapp)
 
 	// Name of test
@@ -39,7 +42,7 @@ func NewTestTool(t *testing.T, main gopi.MainTestFunc, args []string, units ...s
 	// Check parameters
 	if main == nil {
 		return nil, gopi.ErrBadParameter.WithPrefix("main")
-	} else if err := this.App.Init(name, units); err != nil {
+	} else if err := this.App.Init(name, append([]string{"gopi/testlogger"}, units...)); err != nil {
 		return nil, err
 	} else {
 		this.main = main
@@ -52,15 +55,15 @@ func NewTestTool(t *testing.T, main gopi.MainTestFunc, args []string, units ...s
 }
 
 func (this *debugapp) Run() int {
-	if err := this.App.Start(this.args); err != nil {
+	if err := this.Start(this, this.args); err != nil {
 		this.t.Error(err)
 		return -1
 	}
 
 	// Defer closing of instances to exit
 	defer func() {
-		name := this.App.Flags().Name()
-		if err := this.App.Close(); err != nil {
+		name := this.Flags().Name()
+		if err := this.Close(); err != nil {
 			fmt.Fprintln(os.Stderr, name+":", err)
 		}
 	}()
@@ -71,4 +74,8 @@ func (this *debugapp) Run() int {
 
 	// Always return 0
 	return 0
+}
+
+func (this *debugapp) T() *testing.T {
+	return this.t
 }

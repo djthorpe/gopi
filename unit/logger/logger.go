@@ -35,7 +35,7 @@ type log struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (Log) Name() string { return "gopi.Logger" }
+func (Log) Name() string { return "gopi/logger" }
 
 func (config Log) New(gopi.Logger) (gopi.Unit, error) {
 	this := new(log)
