@@ -87,7 +87,7 @@ func Main_Test_Manager_002(app gopi.App, t *testing.T) {
 }
 
 /////////////////////////////////////////////////////////////////////
-// Create background with new bitmap and paint a circle
+// Create background with new bitmap and paint a cross
 
 func Test_Manager_003(t *testing.T) {
 	if app, err := app.NewTestTool(t, Main_Test_Manager_003, nil, "surfaces"); err != nil {
@@ -102,8 +102,14 @@ func Main_Test_Manager_003(app gopi.App, t *testing.T) {
 		if surface, err := app.Surfaces().CreateBackground(0, 1.0); err != nil {
 			t.Error(err)
 		} else {
+			w, h := app.Display().Size()
+			nw := gopi.Point{0, 0}
+			ne := gopi.Point{float32(w), 0}
+			sw := gopi.Point{0, float32(h)}
+			se := gopi.Point{float32(w), float32(h)}
 			surface.Bitmap().ClearToColor(gopi.ColorBlue)
-			surface.Bitmap().Line(gopi.ColorWhite, gopi.ZeroPoint, gopi.Point{100, 100})
+			surface.Bitmap().Line(gopi.ColorWhite, nw, se)
+			surface.Bitmap().Line(gopi.ColorWhite, ne, sw)
 		}
 		return nil
 	})

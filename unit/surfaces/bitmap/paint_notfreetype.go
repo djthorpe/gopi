@@ -19,6 +19,6 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // RUNE
 
-func (this *bitmap) PaintRune(color.Color, gopi.Point, rune, gopi.FontFace, gopi.FontSize) {
-	this.Log.Error(gopi.ErrNotImplemented.WithPrefix("PaintRune"))
+func (this *bitmap) Rune(color.Color, gopi.Point, rune, gopi.FontFace, gopi.FontSize) {
+	this.Log.Error(gopi.ErrNotImplemented.WithPrefix("Rune"))
 }

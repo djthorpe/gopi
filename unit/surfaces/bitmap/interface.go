@@ -45,16 +45,16 @@ type Bitmap interface {
 	ClearToColor(color.Color)
 
 	// Paint a pixel
-	PaintPixel(color.Color, gopi.Point)
+	Pixel(color.Color, gopi.Point)
 
 	// PaintCircle paints an outlined circle with origin and radius
-	PaintCircle(color.Color, gopi.Point, uint32)
+	CircleOutline(color.Color, gopi.Point, float32)
 
 	// PaintLine paints a line
-	PaintLine(color.Color, gopi.Point, gopi.Point)
+	Line(color.Color, gopi.Point, gopi.Point)
 
 	// Paint a rune with a particular font face
-	PaintRune(color.Color, gopi.Point, rune, gopi.FontFace, gopi.FontSize)
+	Rune(color.Color, gopi.Point, rune, gopi.FontFace, gopi.FontSize)
 
 	// Retain and release
 	Retain()

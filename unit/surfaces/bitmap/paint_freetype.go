@@ -19,8 +19,8 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // RUNE
 
-func (this *bitmap) PaintRune(color.Color, gopi.Point, rune, gopi.FontFace, gopi.FontSize) {
-	if image, err := face.BitmapForRunePixels(ch, pixels); err != nil {
+func (this *bitmap) Rune(c color.Color, origin gopi.Point, ch rune, face gopi.FontFace, size gopi.FontSize) {
+	if image, err := face.BitmapForRunePixels(ch, 32); err != nil {
 		this.Log.Error(err)
 	} else {
 		fmt.Println(image)

@@ -74,14 +74,17 @@ type Bitmap interface {
 	// Clear bitmap
 	ClearToColor(color.Color)
 
+	// Set Pixel
+	Pixel(color.Color, Point)
+
 	// Draw line
 	Line(color.Color, Point, Point)
 
 	// Outline circle with centre and radius
 	CircleOutline(color.Color, Point, float32)
 
-	// Set pixel
-	Pixel(color.Color, Point)
+	// Paint a rune
+	Rune(color.Color, Point, rune, FontFace, FontSize)
 
 	// Implements image.Image and draw.Image
 	draw.Image
