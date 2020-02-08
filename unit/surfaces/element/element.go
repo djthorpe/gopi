@@ -25,10 +25,13 @@ import (
 // TYPES
 
 type element struct {
-	handle rpi.DXElement
-	origin rpi.DXPoint
-	size   rpi.DXSize
-	bitmap bitmap.Bitmap
+	handle  rpi.DXElement
+	origin  rpi.DXPoint
+	size    rpi.DXSize
+	layer   uint16
+	opacity float32
+	bitmap  bitmap.Bitmap
+	mode    gopi.SurfaceFlags
 
 	sync.Mutex
 	base.Unit
@@ -87,9 +90,11 @@ func (this *element) Init(config Config) error {
 			return err
 		} else {
 			this.bitmap = bm.(bitmap.Bitmap)
+			this.mode = config.Flags
 		}
 	} else {
 		this.bitmap = config.Bitmap
+		this.mode = config.Flags
 	}
 
 	// Retain bitmap
@@ -118,6 +123,8 @@ func (this *element) Init(config Config) error {
 		return err
 	} else {
 		this.handle = handle
+		this.layer = config.Layer
+		this.opacity = config.Opacity
 	}
 
 	// Success
@@ -144,6 +151,11 @@ func (this *element) RemoveElement(update rpi.DXUpdate) error {
 
 	// Release resources
 	this.handle = 0
+	this.layer = 0
+	this.opacity = 0
+	this.origin = rpi.DXPoint{0, 0}
+	this.size = rpi.DXSize{0, 0}
+	this.mode = 0
 
 	// Return success
 	return nil
@@ -237,6 +249,8 @@ func (this *element) SetLayer(update rpi.DXUpdate, layer uint16) error {
 	// Do change
 	if err := rpi.DXElementChangeAttributes(update, this.handle, rpi.DX_CHANGE_FLAG_LAYER, layer, 0, nil, nil, 0); err != nil {
 		return err
+	} else {
+		this.layer = layer
 	}
 
 	// Success
@@ -261,6 +275,8 @@ func (this *element) SetOpacity(update rpi.DXUpdate, opacity float32) error {
 	// Do change
 	if err := rpi.DXElementChangeAttributes(update, this.handle, rpi.DX_CHANGE_FLAG_OPACITY, 0, opacity_from_float(opacity), nil, nil, 0); err != nil {
 		return err
+	} else {
+		this.opacity = opacity
 	}
 
 	// Success
@@ -338,8 +354,11 @@ func (this *element) String() string {
 	} else {
 		return "<" + Config{}.Name() +
 			" handle=" + fmt.Sprint(this.handle) +
+			" type=" + fmt.Sprint(this.mode) +
 			" origin=" + fmt.Sprint(this.origin) +
 			" size=" + fmt.Sprint(this.size) +
+			" layer=" + fmt.Sprint(this.layer) +
+			" opacity=" + fmt.Sprint(this.opacity) +
 			" bitmap=" + fmt.Sprint(this.bitmap) +
 			">"
 	}
@@ -356,6 +375,18 @@ func (this *element) Origin() gopi.Point {
 	return gopi.Point{float32(this.origin.X), float32(this.origin.Y)}
 }
 
-func (this *element) Bitmap() bitmap.Bitmap {
+func (this *element) Bitmap() gopi.Bitmap {
 	return this.bitmap
+}
+
+func (this *element) Layer() uint16 {
+	return this.layer
+}
+
+func (this *element) Opacity() float32 {
+	return this.opacity
+}
+
+func (this *element) Type() gopi.SurfaceFlags {
+	return this.mode
 }

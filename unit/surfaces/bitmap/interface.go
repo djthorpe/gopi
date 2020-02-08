@@ -30,8 +30,8 @@ type Bitmap interface {
 	DXRect() rpi.DXRect
 	DXHandle() rpi.DXResource
 
-	// Return image mode
-	Mode() gopi.SurfaceFlags
+	// Return image type
+	Type() gopi.SurfaceFlags
 
 	// Return bounds
 	Origin() gopi.Point
@@ -45,7 +45,7 @@ type Bitmap interface {
 	ClearToColor(color.Color)
 
 	// Paint a pixel
-	PaintPixel(c color.Color, p gopi.Point)
+	PaintPixel(color.Color, gopi.Point)
 
 	// PaintCircle paints an outlined circle with origin and radius
 	PaintCircle(color.Color, gopi.Point, uint32)
@@ -53,8 +53,8 @@ type Bitmap interface {
 	// PaintLine paints a line
 	PaintLine(color.Color, gopi.Point, gopi.Point)
 
-	// Paint a rune with a particular font face and at a pixel size
-	PaintRunePx(color.Color,gopi.Point,rune,face gopi.FontFace,float32)
+	// Paint a rune with a particular font face
+	PaintRune(color.Color, gopi.Point, rune, gopi.FontFace, gopi.FontSize)
 
 	// Retain and release
 	Retain()

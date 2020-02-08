@@ -8,7 +8,8 @@
 package gopi
 
 import (
-	"fmt"
+	"image/color"
+	"image/draw"
 	"strings"
 )
 
@@ -20,13 +21,8 @@ type (
 	SurfaceFlags uint16
 
 	// SurfaceCallback
-	SurfaceCallback func(SurfaceManager) error
+	SurfaceCallback func() error
 )
-
-// Color including opacity
-type Color struct {
-	R, G, B, A float32
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -76,10 +72,19 @@ type Bitmap interface {
 	Size() Size
 
 	// Clear bitmap
-	ClearToColor(Color)
+	ClearToColor(color.Color)
 
-	// Paint a single pixel
-	PaintPixel(Color, Point)
+	// Draw line
+	Line(color.Color, Point, Point)
+
+	// Outline circle with centre and radius
+	CircleOutline(color.Color, Point, float32)
+
+	// Set pixel
+	Pixel(color.Color, Point)
+
+	// Implements image.Image and draw.Image
+	draw.Image
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -117,27 +122,22 @@ const (
 
 // Standard Colors
 var (
-	ColorRed         = Color{1.0, 0.0, 0.0, 1.0}
-	ColorGreen       = Color{0.0, 1.0, 0.0, 1.0}
-	ColorBlue        = Color{0.0, 0.0, 1.0, 1.0}
-	ColorWhite       = Color{1.0, 1.0, 1.0, 1.0}
-	ColorBlack       = Color{0.0, 0.0, 0.0, 1.0}
-	ColorPurple      = Color{1.0, 0.0, 1.0, 1.0}
-	ColorCyan        = Color{0.0, 1.0, 1.0, 1.0}
-	ColorYellow      = Color{1.0, 1.0, 0.0, 1.0}
-	ColorDarkGrey    = Color{0.25, 0.25, 0.25, 1.0}
-	ColorLightGrey   = Color{0.75, 0.75, 0.75, 1.0}
-	ColorMidGrey     = Color{0.5, 0.5, 0.5, 1.0}
-	ColorTransparent = Color{}
+	ColorRed         = color.RGBA{0xFF, 0x00, 0x00, 0xFF}
+	ColorGreen       = color.RGBA{0x00, 0xFF, 0x00, 0xFF}
+	ColorBlue        = color.RGBA{0x00, 0x00, 0xFF, 0xFF}
+	ColorWhite       = color.White
+	ColorBlack       = color.Black
+	ColorPurple      = color.RGBA{0xFF, 0x00, 0xFF, 0xFF}
+	ColorCyan        = color.RGBA{0x00, 0xFF, 0xFF, 0xFF}
+	ColorYellow      = color.RGBA{0xFF, 0xFF, 0x00, 0xFF}
+	ColorDarkGrey    = color.RGBA{0x40, 0x40, 0x40, 0xFF}
+	ColorLightGrey   = color.RGBA{0xBF, 0xBF, 0xBF, 0xFF}
+	ColorMidGrey     = color.RGBA{0x80, 0x80, 0x80, 0xFF}
+	ColorTransparent = color.Transparent
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATIONS
-
-// RGBA returns uint32 values for color
-func (c Color) RGBA() (r, g, b, a uint32) {
-	return uint32(c.R*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.G*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.B*float32(0xFFFF)) & uint32(0xFFFF), uint32(c.A*float32(0xFFFF)) & uint32(0xFFFF)
-}
 
 // Type returns the type of the surface
 func (f SurfaceFlags) Type() SurfaceFlags {
@@ -209,8 +209,4 @@ func (f SurfaceFlags) String() string {
 		parts += "|" + f.ModString()
 	}
 	return strings.Trim(parts, "|")
-}
-
-func (c Color) String() string {
-	return fmt.Sprintf("Color{ %.1f,%.1f,%.1f,%.1f }", c.R, c.G, c.B, c.A)
 }

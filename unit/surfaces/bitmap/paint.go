@@ -55,7 +55,7 @@ func (this *bitmap) ClearToColor(c color.Color) {
 ////////////////////////////////////////////////////////////////////////////////
 // PAINT PIXEL
 
-func (this *bitmap) PaintPixel(c color.Color, p gopi.Point) {
+func (this *bitmap) Pixel(c color.Color, p gopi.Point) {
 	// Check some parameters
 	if this.handle == rpi.DX_NO_HANDLE {
 		return
@@ -103,7 +103,7 @@ func (this *bitmap) paintPixel(c color.Color, p rpi.DXPoint) {
 // PAINT LINE
 // REF: https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#Go
 
-func (this *bitmap) PaintLine(c color.Color, from gopi.Point, to gopi.Point) {
+func (this *bitmap) Line(c color.Color, from gopi.Point, to gopi.Point) {
 	p0 := rpi.DXPoint{int32(from.X), int32(from.Y)}
 	p1 := rpi.DXPoint{int32(to.X), int32(to.Y)}
 	// Add dirty area before we start
@@ -149,12 +149,16 @@ func (this *bitmap) PaintLine(c color.Color, from gopi.Point, to gopi.Point) {
 // CIRCLE OUTLINE
 // REF: https://rosettacode.org/wiki/Bitmap/Midpoint_circle_algorithm#Go
 
-func (this *bitmap) PaintCircle(c color.Color, p gopi.Point, r uint32) {
+func (this *bitmap) CircleOutline(c color.Color, p gopi.Point, r float32) {
 	centre := rpi.DXPoint{int32(p.X), int32(p.Y)}
+	// Positive radius
+	if r < 0.0 {
+		r = -r
+	}
 	// Add dirty area
-	this.addDirty(rpi.DXNewRect(centre.X-int32(r), centre.Y-int32(r), r*2, r*2))
+	this.addDirty(rpi.DXNewRect(centre.X-int32(r), centre.Y-int32(r), uint32(r)*2, uint32(r)*2))
 	// Deal with r==0
-	if r == 0 {
+	if r == 0.0 {
 		this.paintPixel(c, centre)
 		return
 	}
@@ -179,11 +183,4 @@ func (this *bitmap) PaintCircle(c color.Color, p gopi.Point, r uint32) {
 			break
 		}
 	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// RUNE
-
-func (this *bitmap) PaintRune(c color.Color, p gopi.Point, r rune) {
-
 }

@@ -17,6 +17,8 @@ import (
 	linux "github.com/djthorpe/gopi/v2/sys/linux"
 )
 
+type Implementation struct{}
+
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Platform
 

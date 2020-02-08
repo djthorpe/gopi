@@ -29,12 +29,13 @@ type Config struct {
 }
 
 type Element interface {
-	// Return bounds
+	// Return element properties
 	Origin() gopi.Point
 	Size() gopi.Size
-
-	// Return bitmap
-	Bitmap() bitmap.Bitmap
+	Layer() uint16
+	Opacity() float32
+	Bitmap() gopi.Bitmap
+	Type() gopi.SurfaceFlags
 
 	// Set element properties
 	SetOrigin(rpi.DXUpdate, gopi.Point) error

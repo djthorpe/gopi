@@ -17,7 +17,16 @@ import (
 // TYPES
 
 // Font flags
-type FontFlags uint16
+type (
+	FontFlags uint16
+
+	FontSizeUnit uint
+
+	FontSize struct {
+		Size float32
+		Unit FontSizeUnit
+	}
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -86,6 +95,11 @@ const (
 	FONT_FLAGS_STYLE_BOLDITALIC FontFlags = 0x0003
 	FONT_FLAGS_STYLE_REGULAR    FontFlags = 0x0004
 	FONT_FLAGS_STYLE_ANY        FontFlags = 0x0007
+)
+
+const (
+	FONT_SIZE_PIXELS FontSizeUnit = iota
+	FONT_SIZE_POINTS
 )
 
 ////////////////////////////////////////////////////////////////////////////////

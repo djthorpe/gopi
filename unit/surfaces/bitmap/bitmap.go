@@ -30,7 +30,7 @@ type bitmap struct {
 	pixelSize uint32
 	stride    uint32
 	handle    rpi.DXResource
-	dirty 	rpi.DXRect
+	dirty     rpi.DXRect
 
 	Data
 	RetainCount
@@ -83,7 +83,7 @@ func (this *bitmap) Init(config Config) error {
 
 	// Set stride and bounds
 	this.stride = rpi.DXAlignUp(size.W*this.pixelSize, 16)
-	this.bounds = rpi.DXNewRect(0,0,uint32(config.Size.W), uint32(config.Size.H))
+	this.bounds = rpi.DXNewRect(0, 0, uint32(config.Size.W), uint32(config.Size.H))
 	this.dirty = nil
 
 	// Create the resource
@@ -144,7 +144,7 @@ func (this *bitmap) DXHandle() rpi.DXResource {
 	return this.handle
 }
 
-func (this *bitmap) Mode() gopi.SurfaceFlags {
+func (this *bitmap) Type() gopi.SurfaceFlags {
 	return this.mode
 }
 
@@ -170,7 +170,7 @@ func (this *bitmap) Bytes() ([]byte, uint32) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	if err := this.Data.Read(this.handle,0,uint(this.size.H),this.stride); err != nil {
+	if err := this.Data.Read(this.handle, 0, uint(this.size.H), this.stride); err != nil {
 		return nil, 0
 	} else {
 		return this.Data.Bytes(), this.stride
@@ -185,19 +185,19 @@ func (this *bitmap) Centre() gopi.Point {
 }
 
 func (this *bitmap) NorthWest() gopi.Point {
-	return gopi.Point{0,0}
+	return gopi.Point{0, 0}
 }
 
 func (this *bitmap) SouthWest() gopi.Point {
-	return gopi.Point{0,float32(this.size.H-1)}
+	return gopi.Point{0, float32(this.size.H - 1)}
 }
 
 func (this *bitmap) NorthEast() gopi.Point {
-	return gopi.Point{float32(this.size.W-1),0}
+	return gopi.Point{float32(this.size.W - 1), 0}
 }
 
 func (this *bitmap) SouthEast() gopi.Point {
-	return gopi.Point{float32(this.size.W-1),float32(this.size.H-1)}
+	return gopi.Point{float32(this.size.W - 1), float32(this.size.H - 1)}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -221,7 +221,7 @@ func (this *bitmap) Release() bool {
 	} else {
 		release := this.RetainCount.Dec()
 		this.Log.Debug("<" + Config{}.Name() + " handle=" + fmt.Sprint(this.handle) + "> RELEASE " + fmt.Sprint(release))
-		return release	
+		return release
 	}
 }
 

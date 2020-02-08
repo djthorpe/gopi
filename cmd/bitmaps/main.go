@@ -24,7 +24,11 @@ func Main(app gopi.App, args []string) error {
 		return gopi.ErrHelp
 	}
 
+	surfaces := app.Surfaces()
+	fmt.Println(surfaces)
+
 	// Wait for key press
+	app.Log().Info("Press CTRL+C to close")
 	app.WaitForSignal(context.Background(), os.Interrupt)
 
 	// Return success
@@ -35,7 +39,7 @@ func Main(app gopi.App, args []string) error {
 // BOOTSTRAP
 
 func main() {
-	if app, err := app.NewCommandLineTool(Main, nil); err != nil {
+	if app, err := app.NewCommandLineTool(Main, nil, "surfaces"); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {
 		// Run and exit

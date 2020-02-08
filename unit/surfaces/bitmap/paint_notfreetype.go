@@ -1,4 +1,4 @@
-// +build rpi,freetype
+// +build rpi,!freetype
 
 /*
   Go Language Raspberry Pi Interface
@@ -20,9 +20,5 @@ import (
 // RUNE
 
 func (this *bitmap) PaintRune(color.Color, gopi.Point, rune, gopi.FontFace, gopi.FontSize) {
-	if image, err := face.BitmapForRunePixels(ch, pixels); err != nil {
-		this.Log.Error(err)
-	} else {
-		fmt.Println(image)
-	}
+	this.Log.Error(gopi.ErrNotImplemented.WithPrefix("PaintRune"))
 }
