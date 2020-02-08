@@ -66,3 +66,42 @@ func Test_Input_003(t *testing.T) {
 		t.Log(bus)
 	}
 }
+
+func Test_Input_004(t *testing.T) {
+	if bus, err := linux.EVDevices(); err != nil {
+		t.Error(err)
+	} else {
+		for _, bus := range bus {
+			if dev, err := linux.EVOpenDevice(bus); err != nil {
+				t.Error(err)
+			} else {
+				defer dev.Close()
+				if events, err := linux.EVGetSupportedEventTypes(dev.Fd()); err != nil {
+					t.Error(err)
+				} else if EVSupports(events, linux.EV_LED) {
+					name, _ := linux.EVGetName(dev.Fd())
+					if _, err := linux.EVGetLEDState(dev.Fd()); err != nil {
+						t.Error(name, err)
+					} else if err := linux.EVSetLEDState(dev.Fd(), linux.EV_LED_CAPSL, true); err != nil {
+						t.Error(name, err)
+					} else if state, err := linux.EVGetLEDState(dev.Fd()); err != nil {
+						t.Error(name, err)
+					} else if err := linux.EVSetLEDState(dev.Fd(), linux.EV_LED_CAPSL, false); err != nil {
+						t.Error(name, err)
+					} else {
+						t.Log(name, state)
+					}
+				}
+			}
+		}
+	}
+}
+
+func EVSupports(evtypes []linux.EVType, evtype linux.EVType) bool {
+	for _, evtype_ := range evtypes {
+		if evtype == evtype_ {
+			return true
+		}
+	}
+	return false
+}

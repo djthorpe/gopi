@@ -10,13 +10,14 @@
 package linux
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
-	"syscall"
-	"unsafe"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
+	"unsafe"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -45,8 +46,9 @@ import "C"
 // TYPES
 
 type (
-	EVType    uint16
-	EVKeyCode uint16
+	EVType     uint16
+	EVKeyCode  uint16
+	EVLEDState uint8
 )
 
 type EVEvent struct {
@@ -95,6 +97,22 @@ const (
 	EV_CODE_SLOT_ID  EVKeyCode = 0x0039 // Unique ID for multi touch position
 )
 
+// LED Constants
+const (
+	EV_LED_NUML     EVLEDState = 0x00
+	EV_LED_CAPSL    EVLEDState = 0x01
+	EV_LED_SCROLLL  EVLEDState = 0x02
+	EV_LED_COMPOSE  EVLEDState = 0x03
+	EV_LED_KANA     EVLEDState = 0x04
+	EV_LED_SLEEP    EVLEDState = 0x05
+	EV_LED_SUSPEND  EVLEDState = 0x06
+	EV_LED_MUTE     EVLEDState = 0x07
+	EV_LED_MISC     EVLEDState = 0x08
+	EV_LED_MAIL     EVLEDState = 0x09
+	EV_LED_CHARGING EVLEDState = 0x0A
+	EV_LED_MAX      EVLEDState = 0x0F
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
 
@@ -115,10 +133,10 @@ func EVDevices() ([]uint, error) {
 	if files, err := filepath.Glob(EV_PATH_WILDCARD + "*"); err != nil {
 		return nil, err
 	} else {
-		devices := make([]uint,0,len(files))
+		devices := make([]uint, 0, len(files))
 		for _, file := range files {
-			if bus,err := strconv.ParseUint(strings.TrimPrefix(file,EV_PATH_WILDCARD),10,32); err == nil {
-				devices = append(devices,uint(bus))
+			if bus, err := strconv.ParseUint(strings.TrimPrefix(file, EV_PATH_WILDCARD), 10, 32); err == nil {
+				devices = append(devices, uint(bus))
 			}
 		}
 		return devices, nil
@@ -130,7 +148,7 @@ func EVDevice(bus uint) string {
 }
 
 func EVOpenDevice(bus uint) (*os.File, error) {
-	if file, err := os.OpenFile(EVDevice(bus), os.O_SYNC|os.O_RDONLY, 0); err != nil {
+	if file, err := os.OpenFile(EVDevice(bus), os.O_SYNC|os.O_RDWR, 0); err != nil {
 		return nil, err
 	} else {
 		return file, nil
@@ -215,6 +233,49 @@ func EVSetGrabState(fd uintptr, state bool) error {
 	return nil
 }
 
+// EVGetLEDState gets LED states as an array of LED's which are on
+func EVGetLEDState(fd uintptr) ([]EVLEDState, error) {
+	evbits := new([MAX_IOCTL_SIZE_BYTES]byte)
+	if err := ev_ioctl(fd, EVIOCGLED, unsafe.Pointer(evbits)); err != nil {
+		return nil, err
+	}
+	// Shift bits to get the state of each LED value
+	states := make([]EVLEDState, 0, EV_LED_MAX)
+FOR_LOOP:
+	for i := 0; i < len(evbits); i++ {
+		evbyte := evbits[i]
+		for j := 0; j < 8; j++ {
+			state := EVLEDState(i<<3 + j)
+			switch {
+			case state >= EV_LED_MAX:
+				break FOR_LOOP
+			case evbyte&0x01 != 0x00:
+				states = append(states, state)
+			}
+			evbyte >>= 1
+		}
+	}
+	return states, nil
+}
+
+// EVSetLEDState sets a single LED state
+func EVSetLEDState(fd uintptr, led EVLEDState, state bool) error {
+	file := os.NewFile(fd, "EVSetLEDState")
+	if state {
+		return binary.Write(file, binary.LittleEndian, EVEvent{
+			Type:  EV_LED,
+			Code:  EVKeyCode(led),
+			Value: 1,
+		})
+	} else {
+		return binary.Write(file, binary.LittleEndian, EVEvent{
+			Type:  EV_LED,
+			Code:  EVKeyCode(led),
+			Value: 0,
+		})
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
@@ -296,5 +357,34 @@ func (v EVKeyCode) String() string {
 		return "EV_CODE_SLOT_ID"
 	default:
 		return "[?? Invalid EVKeyCode value]"
+	}
+}
+
+func (s EVLEDState) String() string {
+	switch s {
+	case EV_LED_NUML:
+		return "EV_LED_NUML"
+	case EV_LED_CAPSL:
+		return "EV_LED_CAPSL"
+	case EV_LED_SCROLLL:
+		return "EV_LED_SCROLLL"
+	case EV_LED_COMPOSE:
+		return "EV_LED_COMPOSE"
+	case EV_LED_KANA:
+		return "EV_LED_KANA"
+	case EV_LED_SLEEP:
+		return "EV_LED_SLEEP"
+	case EV_LED_SUSPEND:
+		return "EV_LED_SUSPEND"
+	case EV_LED_MUTE:
+		return "EV_LED_MUTE"
+	case EV_LED_MISC:
+		return "EV_LED_MISC"
+	case EV_LED_MAIL:
+		return "EV_LED_MAIL"
+	case EV_LED_CHARGING:
+		return "EV_LED_CHARGING"
+	default:
+		return "[?? Invalid EVLEDState value]"
 	}
 }

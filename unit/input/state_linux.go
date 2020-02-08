@@ -39,13 +39,25 @@ type State struct {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *State) Reset() {
+func (this *State) Reset(ledstate []linux.EVLEDState) {
 	this.keyCode = gopi.KEYCODE_NONE
 	this.scanCode = 0
 	this.keyAction = gopi.KEYACTION_NONE
 	this.keyState = gopi.KEYSTATE_NONE
 	this.rel = gopi.ZeroPoint
 	this.slot = 0xFFFFFFFF
+
+	// Set state based on LED's (for NUM, SCROLL AND CAPS)
+	for _, led := range ledstate {
+		switch led {
+		case linux.EV_LED_NUML:
+			this.keyState |= gopi.KEYSTATE_NUMLOCK
+		case linux.EV_LED_CAPSL:
+			this.keyState |= gopi.KEYSTATE_CAPSLOCK
+		case linux.EV_LED_SCROLLL:
+			this.keyState |= gopi.KEYSTATE_SCROLLLOCK
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

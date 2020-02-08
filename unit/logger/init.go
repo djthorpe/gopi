@@ -38,7 +38,6 @@ func init() {
 		Name: TestLogger{}.Name(),
 		Type: gopi.UNIT_LOGGER,
 		New: func(app gopi.App) (gopi.Unit, error) {
-			_ = app.(gopi.DebugApp)
 			if testapp, ok := app.(gopi.DebugApp); ok {
 				return gopi.New(TestLogger{
 					Unit: app.Flags().Name(),

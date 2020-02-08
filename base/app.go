@@ -102,10 +102,9 @@ func (this *App) Start(app gopi.App, args []string) error {
 		return gopi.ErrHelp
 	}
 
-	fmt.Println(this)
-
 	// Create unit instances
 	for _, unit := range this.units {
+		fmt.Println("unit=", unit)
 		if unit.New == nil {
 			continue
 		}
@@ -179,7 +178,7 @@ func (this *App) WaitForSignal(ctx context.Context, signals ...os.Signal) error 
 	signal.Notify(sigchan, signals...)
 	select {
 	case s := <-sigchan:
-		signal.Reset(signals...)		
+		signal.Reset(signals...)
 		return gopi.ErrSignalCaught.WithPrefix(s.String())
 	case <-ctx.Done():
 		return ctx.Err()

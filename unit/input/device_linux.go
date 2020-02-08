@@ -37,6 +37,7 @@ type device struct {
 	dev        *os.File
 	name       string
 	cap        []linux.EVType
+	capled     bool
 	exclusive  bool
 	deviceType gopi.InputDeviceType
 	bus        gopi.Bus
@@ -106,7 +107,21 @@ func (this *device) Init(config Device) error {
 	}
 
 	// Reset state
-	this.State.Reset()
+	this.State.Reset(nil)
+
+	// Obtain the LED state
+	if evSupportsEventType(this.cap, linux.EV_LED) {
+		this.capled = true
+		if leds, err := linux.EVGetLEDState(this.dev.Fd()); err != nil {
+			this.dev.Close()
+			this.dev = nil
+			return err
+		} else {
+			this.State.Reset(leds)
+		}
+	}
+
+	// Set logging for state
 	this.State.log = this.Log
 
 	// Return success
@@ -255,10 +270,18 @@ func (this *device) read(source gopi.InputManager) {
 		return
 	}
 
+	keystate := this.KeyState()
 	if evt := this.State.Decode(evt); evt != nil {
 		evt.device = this
 		evt.source = source
 		this.bus.Emit(evt)
+	}
+	if this.capled {
+		if keystate != this.KeyState() {
+			linux.EVSetLEDState(this.Fd(), linux.EV_LED_CAPSL, this.KeyState()&gopi.KEYSTATE_CAPSLOCK == gopi.KEYSTATE_CAPSLOCK)
+			linux.EVSetLEDState(this.Fd(), linux.EV_LED_NUML, this.KeyState()&gopi.KEYSTATE_NUMLOCK == gopi.KEYSTATE_NUMLOCK)
+			linux.EVSetLEDState(this.Fd(), linux.EV_LED_SCROLLL, this.KeyState()&gopi.KEYSTATE_SCROLLLOCK == gopi.KEYSTATE_SCROLLLOCK)
+		}
 	}
 }
 

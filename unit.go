@@ -9,6 +9,7 @@ package gopi
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 )
@@ -182,7 +183,7 @@ func UnitWithDependencies(unitNames ...string) ([]*UnitConfig, error) {
 		} else if units := UnitsByName(name); len(units) == 0 {
 			return nil, ErrBadParameter.WithPrefix(fmt.Sprintf("Unit not registered with name: %v", strconv.Quote(name)))
 		} else {
-			for _, unit := range units {
+			for _, unit := range UnitsByPri(units) {
 				if err := resolveUnitDependencies(unit, unresolved, resolved); err != nil {
 					return nil, err
 				}
@@ -191,6 +192,25 @@ func UnitWithDependencies(unitNames ...string) ([]*UnitConfig, error) {
 	}
 	// Success
 	return resolved.arr, nil
+}
+
+// UnitsByPri returns all units if all 'Pri' fields are set to zero, or
+// will return the highest numbered 'Pri' unit otherwise
+func UnitsByPri(units []*UnitConfig) []*UnitConfig {
+	if len(units) == 0 || len(units) == 1 {
+		return units
+	} else {
+		// Sort units by priority field
+		sort.Slice(units, func(i, j int) bool {
+			return units[i].Pri > units[j].Pri
+		})
+		// Return first if Pri field is greater than zero
+		if units[0].Pri > 0 {
+			return units[0:1]
+		} else {
+			return units
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
