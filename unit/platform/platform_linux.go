@@ -39,6 +39,11 @@ func (this *platform) NumberOfDisplays() uint {
 	return 0
 }
 
+// Return attached displays
+func (this *platform) AttachedDisplays() []uint {
+	return nil
+}
+
 // Return product
 func (this *platform) Product() string {
 	return "linux"

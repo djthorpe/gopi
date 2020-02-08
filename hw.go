@@ -67,6 +67,9 @@ type Platform interface {
 	// NumberOfDisplays returns the number of possible displays for this host
 	NumberOfDisplays() uint
 
+	// AttachedDisplays returns array of displays which are actually attached
+	AttachedDisplays() []uint
+
 	// Implements gopi.Unit
 	Unit
 }

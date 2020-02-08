@@ -12,9 +12,9 @@ package rpi
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unsafe"
-	"strconv"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,7 +56,7 @@ const (
 	TV_STATE_HDMI_UNPLUGGED         TVDisplayStateFlag = (1 << iota) // HDMI cable is detached
 	TV_STATE_HDMI_ATTACHED                                           // HDMI cable is attached but not powered on
 	TV_STATE_HDMI_DVI                                                // HDMI is on but in DVI mode (no audio)
-	TV_STATE_HDMI_HDMI                                               //HDMI is on and HDMI mode is active
+	TV_STATE_HDMI_HDMI                                               // HDMI is on and HDMI mode is active
 	TV_STATE_HDMI_HDCP_UNAUTH                                        // HDCP authentication is broken (e.g. Ri mismatched) or not active
 	TV_STATE_HDMI_HDCP_AUTH                                          // HDCP is active
 	TV_STATE_HDMI_HDCP_KEY_DOWNLOAD                                  // HDCP key download successful/fail
@@ -129,7 +129,7 @@ func VCHI_TVGetDisplayState(display DXDisplayId) (TVDisplayState, error) {
 }
 
 func VCHI_TVHDMIPowerOnPreferred(display DXDisplayId) error {
-	if err := C.vc_tv_hdmi_power_on_preferred_id(C.uint32_t(display));  err != 0 {
+	if err := C.vc_tv_hdmi_power_on_preferred_id(C.uint32_t(display)); err != 0 {
 		return ErrDeviceError
 	} else {
 		return nil
@@ -140,8 +140,8 @@ func VCHI_TVHDMIPowerOn(display DXDisplayId, width, height, framerate uint32, in
 	interlaced_ := C.HDMI_INTERLACED_T(C.HDMI_NONINTERLACED)
 	if interlaced {
 		interlaced_ = C.HDMI_INTERLACED_T(C.HDMI_INTERLACED)
-	}	
-	if err := C.vc_tv_hdmi_power_on_best_id(C.uint32_t(display),C.uint32_t(width),C.uint32_t(height),C.uint32_t(framerate),interlaced_,C.HDMI_MODE_MATCH_RESOLUTION);  err != 0 {
+	}
+	if err := C.vc_tv_hdmi_power_on_best_id(C.uint32_t(display), C.uint32_t(width), C.uint32_t(height), C.uint32_t(framerate), interlaced_, C.HDMI_MODE_MATCH_RESOLUTION); err != 0 {
 		return ErrDeviceError
 	} else {
 		return nil
@@ -159,19 +159,19 @@ func VCHI_TVSDPowerOn(display DXDisplayId) error {
 */
 
 func VCHI_TVPowerOff(display DXDisplayId) error {
-	if err := C.vc_tv_power_off_id(C.uint32_t(display));  err != 0 {
+	if err := C.vc_tv_power_off_id(C.uint32_t(display)); err != 0 {
 		return ErrDeviceError
 	} else {
 		return nil
 	}
 }
 
-func VCHI_TVGetDisplayInfo(display DXDisplayId) (TVDisplayInfo,error) {
+func VCHI_TVGetDisplayInfo(display DXDisplayId) (TVDisplayInfo, error) {
 	var info TVDisplayInfo
-	if err := C.vc_tv_get_device_id_id(C.uint32_t(display),(*C.TV_DEVICE_ID_T)(unsafe.Pointer(&info))); err != 0 {
-		return info,ErrDeviceError
+	if err := C.vc_tv_get_device_id_id(C.uint32_t(display), (*C.TV_DEVICE_ID_T)(unsafe.Pointer(&info))); err != 0 {
+		return info, ErrDeviceError
 	} else {
-		return info,nil
+		return info, nil
 	}
 }
 
@@ -187,7 +187,6 @@ func (this TVDisplayInfo) Product() string {
 	ptr := C.TV_DEVICE_ID_T(this).monitor_name
 	return C.GoString(&ptr[0])
 }
-
 
 func (this TVDisplayInfo) Serial() uint32 {
 	return uint32(C.TV_DEVICE_ID_T(this).serial_num)

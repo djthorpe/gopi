@@ -104,7 +104,6 @@ func (this *App) Start(app gopi.App, args []string) error {
 
 	// Create unit instances
 	for _, unit := range this.units {
-		fmt.Println("unit=", unit)
 		if unit.New == nil {
 			continue
 		}

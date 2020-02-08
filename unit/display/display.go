@@ -25,7 +25,7 @@ type Display struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (Display) Name() string { return "gopi.Display" }
+func (Display) Name() string { return "gopi/display" }
 
 func (config Display) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(display)

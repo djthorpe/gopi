@@ -17,16 +17,36 @@ import (
 	rpi "github.com/djthorpe/gopi/v2/sys/rpi"
 )
 
+type Implementation struct {
+	instance rpi.VCHIInstance
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Platform
 
 func (this *platform) Init() error {
-	// Initialise
+	// Initialise TV Service
+	if this.instance = rpi.VCHI_Init(); this.instance == nil {
+		return gopi.ErrInternalAppError
+	} else if _, err := rpi.VCHI_TVInit(this.instance); err != nil {
+		return err
+	}
+
+	// Initialise BCMHost
 	if err := rpi.BCMHostInit(); err != nil {
 		return err
-	} else {
-		return nil
 	}
+
+	// Return success
+	return nil
+}
+
+func (this *platform) Close() error {
+	// Stop TV Service
+	if err := rpi.VCHI_TVStop(this.instance); err != nil {
+		return err
+	}
+	return this.Unit.Close()
 }
 
 func (this *platform) Type() gopi.PlatformType {
@@ -73,4 +93,17 @@ func (this *platform) Product() string {
 // Return number of displays
 func (this *platform) NumberOfDisplays() uint {
 	return uint(rpi.DXNumberOfDisplays())
+}
+
+// Return attached displays
+func (this *platform) AttachedDisplays() []uint {
+	if displays, err := rpi.VCHI_TVGetAttachedDevices(); err != nil {
+		return nil
+	} else {
+		displays_ := make([]uint, len(displays))
+		for i, display := range displays {
+			displays_[i] = uint(display)
+		}
+		return displays_
+	}
 }

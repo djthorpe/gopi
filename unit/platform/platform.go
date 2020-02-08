@@ -21,6 +21,8 @@ import (
 type Platform struct{}
 
 type platform struct {
+	Implementation
+
 	base.Unit
 	sync.Mutex
 }
@@ -28,7 +30,7 @@ type platform struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.Unit
 
-func (Platform) Name() string { return "gopi.Platform" }
+func (Platform) Name() string { return "gopi/platform" }
 
 func (config Platform) New(log gopi.Logger) (gopi.Unit, error) {
 	this := new(platform)

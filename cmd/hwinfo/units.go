@@ -8,6 +8,13 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
+	// Frameworks
+	app "github.com/djthorpe/gopi/v2/app"
+
+	// Units
 	_ "github.com/djthorpe/gopi/v2/unit/logger"
 	_ "github.com/djthorpe/gopi/v2/unit/platform"
 )

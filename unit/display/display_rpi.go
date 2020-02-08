@@ -34,6 +34,7 @@ type display struct {
 	platform gopi.Platform
 	handle   rpi.DXDisplayHandle
 	modeinfo rpi.DXDisplayModeInfo
+	tvinfo   rpi.TVDisplayInfo
 
 	base.Unit
 }
@@ -50,14 +51,20 @@ func (this *display) String() string {
 }
 
 func (this *display) Init(config Display) error {
-	if handle, err := rpi.DXDisplayOpen(rpi.DXDisplayId(this.id)); err != nil {
+	if handle, err := rpi.DXDisplayOpen(rpi.DXDisplayId(config.Id)); err != nil {
 		return err
 	} else if modeinfo, err := rpi.DXDisplayGetInfo(handle); err != nil {
 		rpi.DXDisplayClose(handle)
 		return err
+	} else if tvinfo, err := rpi.VCHI_TVGetDisplayInfo(rpi.DXDisplayId(config.Id)); err != nil {
+		rpi.DXDisplayClose(handle)
+		return err
 	} else {
+		this.id = config.Id
 		this.handle = handle
 		this.modeinfo = modeinfo
+		this.tvinfo = tvinfo
+		this.platform = config.Platform
 	}
 	// Success
 	return nil
@@ -72,6 +79,7 @@ func (this *display) Close() error {
 
 	// Release resources
 	this.handle = 0
+	this.platform = nil
 
 	// Return success
 	return this.Unit.Close()
@@ -92,7 +100,11 @@ func (this *display) Handle() rpi.DXDisplayHandle {
 
 // Return name of the display
 func (this *display) Name() string {
-	return fmt.Sprint(rpi.DXDisplayId(this.id))
+	if this.tvinfo.Product() != "" {
+		return this.tvinfo.Product()
+	} else {
+		return fmt.Sprint(rpi.DXDisplayId(this.id))
+	}
 }
 
 // Return display size for nominated display number, or (0,0) if display does not exist

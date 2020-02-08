@@ -14,7 +14,7 @@ import (
 
 func init() {
 	gopi.UnitRegister(gopi.UnitConfig{
-		Name:     "gopi/display",
+		Name:     Display{}.Name(),
 		Type:     gopi.UNIT_DISPLAY,
 		Requires: []string{"platform"},
 		Config: func(app gopi.App) error {
@@ -25,7 +25,7 @@ func init() {
 			return gopi.New(Display{
 				Id:       app.Flags().GetUint("display", gopi.FLAG_NS_DEFAULT),
 				Platform: app.Platform(),
-			}, app.Log().Clone("gopi/display"))
+			}, app.Log().Clone(Display{}.Name()))
 		},
 	})
 }
