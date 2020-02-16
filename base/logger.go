@@ -53,20 +53,16 @@ func (this *Logger) Error(err error) error {
 	if this.name != "" {
 		err = fmt.Errorf("%s: %w", this.name, err)
 	}
-	fmt.Fprintln(this.writer, err)
+	fmt.Fprintln(this.writer, "[ERROR]", err)
 	return err
 }
 
 func (this *Logger) Warn(args ...interface{}) {
-	if this.debug {
-		fmt.Fprintln(this.writer, append([]interface{}{"[WARN]"}, args...)...)
-	}
+	fmt.Fprintln(this.writer, append([]interface{}{"[WARN]"}, args...)...)
 }
 
 func (this *Logger) Info(args ...interface{}) {
-	if this.debug {
-		fmt.Fprintln(this.writer, append([]interface{}{"[INFO]"}, args...)...)
-	}
+	fmt.Fprintln(this.writer, append([]interface{}{"[INFO]"}, args...)...)
 }
 
 func (this *Logger) Debug(args ...interface{}) {
