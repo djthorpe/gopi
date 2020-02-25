@@ -83,9 +83,8 @@ func init() {
 		Requires: []string{Discovery{}.Name(), "bus"},
 		New: func(app gopi.App) (gopi.Unit, error) {
 			return gopi.New(ServiceDB2{
-				Discovery: app.UnitInstance(Discovery{}.Name()).(gopi.RPCServiceDiscovery),
-				Listener:  app.UnitInstance(Listener{}.Name()).(ListenerIface),
-				Bus:       app.Bus(),
+				Listener: app.UnitInstance(Listener{}.Name()).(ListenerIface),
+				Bus:      app.Bus(),
 			}, app.Log().Clone(ServiceDB2{}.Name()))
 		},
 	})

@@ -20,7 +20,7 @@ const (
 	DISCOVERY_SERVICE_QUERY = "_services._dns-sd._udp"
 	MDNS_DEFAULT_DOMAIN     = "local."
 	MDNS_DEFAULT_TTL        = 120
-	DISCOVERY_LOOKUP_DELTA  = 30 * time.Second
+	DISCOVERY_LOOKUP_DELTA  = 5 * time.Second
 
 	QUERY_REPEAT   = 2   // Number of times to repeat a message
 	DELTA_QUERY_MS = 500 // Maximum time to wait between repeats

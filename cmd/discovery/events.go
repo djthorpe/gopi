@@ -25,7 +25,12 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // EVENTS
 
-func EventHandler(_ context.Context, _ gopi.App, evt gopi.Event) {
+func EventHandler(_ context.Context, app gopi.App, evt gopi.Event) {
+	// Don't display if not watching
+	if watch := app.Flags().GetBool("watch", gopi.FLAG_NS_DEFAULT); watch == false {
+		return
+	}
+
 	WriteHeader.Do(func() {
 		fmt.Printf(WriteFormat, "TYPE", "NAME", "SERVICE", "HOST")
 		fmt.Printf(WriteFormat,

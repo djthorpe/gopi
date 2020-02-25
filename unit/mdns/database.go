@@ -58,46 +58,45 @@ func (this *Database) Close() {
 ////////////////////////////////////////////////////////////////////////////////
 // REGISTER METHODS
 
-func (this *Database) RegisterRecord(r gopi.RPCEvent) {
+func (this *Database) RegisterRecord(r *event) gopi.RPCEvent {
 	srv := r.Service()
 	if key := keyForService(srv); key == "" {
 		// Ignore if invalid key
-		return
 	} else if r.TTL() == 0 {
 		if exists := this.DeleteRecord(key); exists {
-			fmt.Println("del r=", key)
+			// TODO: if there are no other records with this name, then delete
+			// the name
+			r.type_ = gopi.RPC_EVENT_SERVICE_REMOVED
+			return r
 		}
-		// TODO: if there are no other records with this name, then delete
-		// the name
-		/*
-			if exists := this.ExistsName(srv.Service); exists == false {
-				if exists := this.DeleteName(srv.Service); exists {
-					fmt.Println("del name=", srv.Service)
-				}
-			}
-		*/
 	} else if exists, modified := this.SetRecord(key, srv, time.Now().Add(r.TTL())); exists == false {
 		// Add the name
 		if exists := this.SetName(srv.Service, time.Now().Add(r.TTL())); exists == false {
 			fmt.Println("add name=", srv.Service)
 		}
-		fmt.Println("add r=", key)
-		// TODO: emit record
+		r.type_ = gopi.RPC_EVENT_SERVICE_ADDED
+		return r
 	} else if modified {
-		fmt.Println("updated r=", key)
-		// TODO: emit record
+		r.type_ = gopi.RPC_EVENT_SERVICE_UPDATED
+		return r
 	}
+
+	// Return nil - no event emitted
+	return nil
 }
 
-func (this *Database) RegisterName(r gopi.RPCEvent) {
+func (this *Database) RegisterName(r *event) gopi.RPCEvent {
 	srv := r.Service()
 	if r.TTL() == 0 {
 		if exists := this.DeleteName(srv.Name); exists {
 			fmt.Println("del name=", srv.Name)
 		}
 	} else if exists := this.SetName(srv.Name, time.Now().Add(r.TTL())); exists == false {
-		fmt.Println("add name=", srv.Name)
+		return r
 	}
+
+	// Return nil - no event emitted
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -199,6 +198,21 @@ func (this *Database) DeleteRecord(key string) bool {
 	} else {
 		return false
 	}
+}
+
+// Return all unexpired records that match a service
+func (this *Database) Records(srv string) []gopi.RPCServiceRecord {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	records := make([]gopi.RPCServiceRecord, 0, len(this.records))
+	for _, r := range this.records {
+		if srv == "" || srv == r.srv.Service {
+			if time.Now().After(r.expiry) == false {
+				records = append(records, r.srv)
+			}
+		}
+	}
+	return records
 }
 
 ////////////////////////////////////////////////////////////////////////////////
