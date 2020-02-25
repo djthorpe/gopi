@@ -19,6 +19,8 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
+// Database represents the current state of mDNS, service names
+// and records
 type Database struct {
 	// Map of names with expiry time
 	names map[string]time.Time
@@ -62,24 +64,37 @@ func (this *Database) RegisterRecord(r gopi.RPCEvent) {
 		// Ignore if invalid key
 		return
 	} else if r.TTL() == 0 {
-		// TODO also delete name if there are no records with the name
 		if exists := this.DeleteRecord(key); exists {
 			fmt.Println("del r=", key)
 		}
-	} else if exists := this.SetRecord(key, srv, time.Now().Add(r.TTL())); exists == false {
-		// TODO: add name as well
+		// TODO: if there are no other records with this name, then delete
+		// the name
+		/*
+			if exists := this.ExistsName(srv.Service); exists == false {
+				if exists := this.DeleteName(srv.Service); exists {
+					fmt.Println("del name=", srv.Service)
+				}
+			}
+		*/
+	} else if exists, modified := this.SetRecord(key, srv, time.Now().Add(r.TTL())); exists == false {
+		// Add the name
+		if exists := this.SetName(srv.Service, time.Now().Add(r.TTL())); exists == false {
+			fmt.Println("add name=", srv.Service)
+		}
 		fmt.Println("add r=", key)
 		// TODO: emit record
-	} else {
-		// TODO: compare old record to new record and emit if any part has changed
-		fmt.Println("update r=", key)
+	} else if modified {
+		fmt.Println("updated r=", key)
+		// TODO: emit record
 	}
 }
 
 func (this *Database) RegisterName(r gopi.RPCEvent) {
 	srv := r.Service()
 	if r.TTL() == 0 {
-		this.DeleteName(srv.Name)
+		if exists := this.DeleteName(srv.Name); exists {
+			fmt.Println("del name=", srv.Name)
+		}
 	} else if exists := this.SetName(srv.Name, time.Now().Add(r.TTL())); exists == false {
 		fmt.Println("add name=", srv.Name)
 	}
@@ -120,6 +135,19 @@ func (this *Database) DeleteName(name string) bool {
 	}
 }
 
+// ExistsName returns true if name exists and isn't expired
+func (this *Database) ExistsName(name string) bool {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	if expiry, exists := this.names[name]; exists == false {
+		return false
+	} else if time.Now().After(expiry) {
+		return false
+	} else {
+		return true
+	}
+}
+
 // Return all unexpired names
 func (this *Database) Names() []string {
 	this.RWMutex.RLock()
@@ -137,7 +165,7 @@ func (this *Database) Names() []string {
 // ADD AND REMOVE SERVICE RECORDS
 
 // SetRecord and return true if the record previously existed
-func (this *Database) SetRecord(key string, srv gopi.RPCServiceRecord, expires time.Time) bool {
+func (this *Database) SetRecord(key string, srv gopi.RPCServiceRecord, expires time.Time) (bool, bool) {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
@@ -149,11 +177,16 @@ func (this *Database) SetRecord(key string, srv gopi.RPCServiceRecord, expires t
 		exists = false
 	}
 
-	// Set new expiry
+	modified := false
+	if exists && serviceEquals(record.srv, srv) == false {
+		modified = true
+	}
+
+	// Set new record and expiry
 	this.records[key] = Record{srv, expires}
 
 	// Return exists
-	return exists
+	return exists, modified
 }
 
 // DeleteRecord and return true if the name previously existed
@@ -177,4 +210,41 @@ func keyForService(record gopi.RPCServiceRecord) string {
 	} else {
 		return Quote(record.Name) + "." + record.Service
 	}
+}
+
+func serviceEquals(a, b gopi.RPCServiceRecord) bool {
+	if a.Name != b.Name {
+		return false
+	}
+	if a.Service != b.Service {
+		return false
+	}
+	if a.Host != b.Host {
+		return false
+	}
+	if a.Port != b.Port {
+		return false
+	}
+	if len(a.Txt) != len(b.Txt) {
+		return false
+	}
+	for i, txt := range a.Txt {
+		if txt != b.Txt[i] {
+			return false
+		}
+	}
+	if len(a.Addrs) != len(b.Addrs) {
+		return false
+	}
+	addrs := make(map[string]bool, len(a.Addrs))
+	for _, addr := range a.Addrs {
+		addrs[addr.String()] = true
+	}
+	for _, addr := range b.Addrs {
+		if _, exists := addrs[addr.String()]; exists == false {
+			return false
+		}
+	}
+	// Everything matches
+	return true
 }
