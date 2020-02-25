@@ -76,6 +76,20 @@ func init() {
 		},
 	})
 
+	// gopi/mdns/servicedb2
+	gopi.UnitRegister(gopi.UnitConfig{
+		Name:     ServiceDB2{}.Name(),
+		Type:     gopi.UNIT_RPC_DISCOVERY,
+		Requires: []string{Discovery{}.Name(), "bus"},
+		New: func(app gopi.App) (gopi.Unit, error) {
+			return gopi.New(ServiceDB2{
+				Discovery: app.UnitInstance(Discovery{}.Name()).(gopi.RPCServiceDiscovery),
+				Listener:  app.UnitInstance(Listener{}.Name()).(ListenerIface),
+				Bus:       app.Bus(),
+			}, app.Log().Clone(ServiceDB2{}.Name()))
+		},
+	})
+
 	// gopi/mdns/register
 	gopi.UnitRegister(gopi.UnitConfig{
 		Name:     Register{}.Name(),

@@ -29,7 +29,7 @@ var (
 	Events = []gopi.EventHandler{
 		gopi.EventHandler{Name: "gopi.RPCEvent", Handler: EventHandler},
 	}
-	Units = []string{"gopi/mdns/discovery", "register"}
+	Units = []string{"gopi/mdns/servicedb2", "register"}
 )
 
 ////////////////////////////////////////////////////////////////////////////////
