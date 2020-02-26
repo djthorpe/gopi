@@ -8,43 +8,37 @@
 package mdns
 
 import (
-	// Frameworks
 	"context"
+	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
+	// Frameworks
 	gopi "github.com/djthorpe/gopi/v2"
 	base "github.com/djthorpe/gopi/v2/base"
+	dns "github.com/miekg/dns"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type ServiceDB struct {
-	Discovery gopi.RPCServiceDiscovery
-	Listener  ListenerIface
-	Bus       gopi.Bus
+	Listener ListenerIface
+	Bus      gopi.Bus
 }
 
 type servicedb struct {
-	discovery  gopi.RPCServiceDiscovery
-	listener   ListenerIface
-	bus        gopi.Bus
-	services   map[string]map[string]instance
-	queue      []string
-	stopName   gopi.Channel
-	stopRecord gopi.Channel
-	stopLookup chan struct{}
+	listener               ListenerIface
+	bus                    gopi.Bus
+	records, names, errors gopi.Channel
+	stop                   chan struct{}
+	lookup                 map[string]bool
 
+	Database
 	base.Unit
-	sync.RWMutex
 	sync.WaitGroup
-}
-
-type instance struct {
-	service gopi.RPCServiceRecord
-	expires time.Time
-	ttl     time.Duration
+	sync.Mutex // mutex for lookup
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -67,21 +61,12 @@ func (config ServiceDB) New(log gopi.Logger) (gopi.Unit, error) {
 }
 
 func (this *servicedb) Init(config ServiceDB) error {
-
-	// Check Discovery
-	if config.Discovery == nil {
-		return gopi.ErrBadParameter.WithPrefix("Discovery")
-	} else {
-		this.discovery = config.Discovery
-	}
-
 	// Check Listener
 	if config.Listener == nil {
 		return gopi.ErrBadParameter.WithPrefix("Listener")
 	} else {
 		this.listener = config.Listener
 	}
-
 	// Check Bus
 	if config.Bus == nil {
 		return gopi.ErrBadParameter.WithPrefix("Bus")
@@ -89,45 +74,73 @@ func (this *servicedb) Init(config ServiceDB) error {
 		this.bus = config.Bus
 	}
 
-	// Empty service array
-	this.services = make(map[string]map[string]instance)
-	this.queue = make([]string, 0, 10)
+	// Init database
+	this.Database.Init()
 
-	// Start background message processor
-	if this.stopName = this.listener.Subscribe(QUEUE_NAME, this.EventHandler); this.stopName == 0 {
-		return gopi.ErrInternalAppError
-	}
-	if this.stopRecord = this.listener.Subscribe(QUEUE_RECORD, this.EventHandler); this.stopRecord == 0 {
-		this.listener.Unsubscribe(this.stopName)
-		return gopi.ErrInternalAppError
-	}
+	// Initiate lookup
+	this.stop = make(chan struct{})
+	this.lookup = make(map[string]bool)
+	go this.backgroundTask(this.stop)
 
-	// Background lookup
-	this.stopLookup = make(chan struct{})
-	this.WaitGroup.Add(1)
-	go this.LookupHandler(this.stopLookup)
+	// Subscribe to records
+	this.records = this.listener.Subscribe(QUEUE_RECORD, func(value interface{}) {
+		if r, ok := value.(*event); ok {
+			if evt := this.Database.RegisterRecord(r); evt != nil {
+				this.bus.Emit(evt)
+			}
+		}
+	})
+
+	// Subscribe to names
+	this.names = this.listener.Subscribe(QUEUE_NAME, func(value interface{}) {
+		if r, ok := value.(*event); ok {
+			if evt := this.Database.RegisterName(r); evt != nil {
+				if evt.Type() == gopi.RPC_EVENT_SERVICE_NAME {
+					this.addLookup(evt.Service().Name)
+				}
+			}
+		}
+	})
+
+	// Subscribe to errors
+	this.errors = this.listener.Subscribe(QUEUE_ERRORS, func(value interface{}) {
+		if err, ok := value.(error); ok {
+			this.Log.Error(err)
+		}
+	})
 
 	// Return success
 	return nil
 }
 
 func (this *servicedb) Close() error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
 
-	// Wait for lookup to end
-	close(this.stopLookup)
+	// Stop background task and wait until exit
+	close(this.stop)
 	this.WaitGroup.Wait()
 
-	// Wait for EventHandler to end
-	this.listener.Unsubscribe(this.stopName)
-	this.listener.Unsubscribe(this.stopRecord)
+	// Unsubscribe from listener queues
+	if this.records != 0 {
+		this.listener.Unsubscribe(this.records)
+	}
+	if this.names != 0 {
+		this.listener.Unsubscribe(this.names)
+	}
+	if this.errors != 0 {
+		this.listener.Unsubscribe(this.errors)
+	}
+
+	// Close database
+	this.Database.Close()
 
 	// Release resources
-	this.stopName = 0
-	this.stopRecord = 0
+	this.lookup = nil
+	this.records = 0
+	this.names = 0
+	this.errors = 0
 	this.listener = nil
-	this.services = nil
-	this.queue = nil
-	this.discovery = nil
 	this.bus = nil
 
 	// Return success
@@ -141,235 +154,89 @@ func (this *servicedb) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION gopi.RPCServiceDiscovery
 
-// Lookup service instances by name
+// Return service instances by name
 func (this *servicedb) Lookup(ctx context.Context, service string) ([]gopi.RPCServiceRecord, error) {
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
-	if len(this.services) == 0 {
-		return this.discovery.Lookup(ctx, service)
-	} else if instances, exists := this.services[service]; exists == false {
-		return this.discovery.Lookup(ctx, service)
+	// Perform the query
+	msg := new(dns.Msg)
+	msg.SetQuestion(service+"."+this.listener.Zone(), dns.TypePTR)
+	msg.RecursionDesired = false
+	if err := this.listener.QueryAll(ctx, msg, QUERY_REPEAT); err != nil && err != context.DeadlineExceeded {
+		return nil, err
 	} else {
-		records := make([]gopi.RPCServiceRecord, 0, len(instances))
-		for _, instance := range instances {
-			if instance.expires.After(time.Now()) {
-				records = append(records, instance.service)
-			}
-		}
-		return records, nil
+		return this.Database.Records(service), nil
 	}
 }
 
 // Return list of service names
 func (this *servicedb) EnumerateServices(ctx context.Context) ([]string, error) {
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
-	return this.discovery.EnumerateServices(ctx)
-	/*
-		if len(this.services) == 0 {
-			return this.discovery.EnumerateServices(ctx)
-		} else {
-			services := make([]string, 0, len(this.services))
-			for key := range this.services {
-				services = append(services, key)
-			}
-			return services, nil
-		}*/
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// BACKGROUND PROCESSOR
-
-func (this *servicedb) EventHandler(value interface{}) {
-	if evt, ok := value.(gopi.RPCEvent); ok == false || evt == nil {
-		// No nothing
-	} else if record := evt.Service(); record.Name == "" {
-		// No nothing
-	} else if evt.Type() == gopi.RPC_EVENT_SERVICE_NAME && evt.Service().Name != "" {
-		this.AddServiceName(evt.Service().Name)
-	} else if evt.Type() == gopi.RPC_EVENT_SERVICE_RECORD && evt.Service().Name != "" {
-		this.AddServiceName(evt.Service().Service)
-		this.AddServiceInstance(evt.Service(), evt.TTL())
+	// Perform the query
+	msg := new(dns.Msg)
+	msg.SetQuestion(DISCOVERY_SERVICE_QUERY+"."+this.listener.Zone(), dns.TypePTR)
+	msg.RecursionDesired = false
+	if err := this.listener.QueryAll(ctx, msg, QUERY_REPEAT); err != nil && err != context.DeadlineExceeded {
+		return nil, err
+	} else {
+		return this.Database.Names(), nil
 	}
 }
 
-func (this *servicedb) LookupHandler(<-chan struct{}) {
-	lookupTimer := time.NewTimer(2 * time.Second)
-	expireTimer := time.NewTimer(DISCOVERY_LOOKUP_DELTA * 2)
+////////////////////////////////////////////////////////////////////////////////
+// BACKGROUND TASKS
+
+// addLookup adds a name to the list of names to lookup service records for
+func (this *servicedb) addLookup(name string) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+	this.lookup[name] = true
+}
+
+// popLookup removes an entry from the list of names
+func (this *servicedb) popLookup() string {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+	if len(this.lookup) > 0 {
+		idx := rand.Int() % len(this.lookup)
+		for name := range this.lookup {
+			if idx == 0 {
+				delete(this.lookup, name)
+				return name
+			} else {
+				idx--
+			}
+		}
+	}
+
+	// Nothing to pop
+	return ""
+}
+
+func (this *servicedb) backgroundTask(stop <-chan struct{}) {
+	this.WaitGroup.Add(1)
+	defer this.WaitGroup.Done()
+	lookup := time.NewTicker(DISCOVERY_LOOKUP_DELTA)
+	ctx, cancel := context.WithTimeout(context.Background(), DISCOVERY_LOOKUP_DELTA)
 FOR_LOOP:
 	for {
 		select {
-		case <-lookupTimer.C:
-			if name := this.popServiceName(); name != "" {
-				this.lookupServices(name)
+		case <-lookup.C:
+			if service := this.popLookup(); service != "" {
+				if err := this.backgroundLookup(ctx, service); err != nil && err != context.DeadlineExceeded {
+					this.Log.Error(fmt.Errorf("backgroundTask: %w", err))
+				}
+				ctx, cancel = context.WithTimeout(context.Background(), DISCOVERY_LOOKUP_DELTA)
 			}
-			lookupTimer.Reset(DISCOVERY_LOOKUP_DELTA)
-		case <-expireTimer.C:
-			this.expireInstances()
-			expireTimer.Reset(DISCOVERY_LOOKUP_DELTA)
-		case <-this.stopLookup:
-			lookupTimer.Stop()
-			expireTimer.Stop()
+		case <-stop:
+			cancel()
+			lookup.Stop()
 			break FOR_LOOP
 		}
 	}
-	this.WaitGroup.Done()
 }
 
-func (this *servicedb) AddServiceName(name string) {
-	if this.shouldServiceName(name) {
-		this.addServiceName(name)
-	}
-}
-
-func (this *servicedb) AddServiceInstance(service gopi.RPCServiceRecord, ttl time.Duration) {
-	name, key := nameKeyForService(service)
-	if ttl > 0 {
-		this.addServiceInstance(name, key, instance{service, time.Now().Add(ttl), ttl})
-	} else {
-		this.removeServiceInstanceForKey(name, key, gopi.RPC_EVENT_SERVICE_REMOVED)
-	}
-}
-
-func (this *servicedb) addServiceInstance(name, key string, value instance) {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	// Create the map of service names
-	if _, exists := this.services[name]; exists == false {
-		this.services[name] = make(map[string]instance, 1)
-	}
-
-	// If an instance already exists then update
-	if instance_, exists := this.services[name][key]; exists {
-		this.services[name][key] = value
-		if serviceEquals(instance_.service, value.service) == false {
-			this.bus.Emit(NewEvent(this, gopi.RPC_EVENT_SERVICE_UPDATED, value.service, value.ttl))
-		}
-	} else {
-		this.bus.Emit(NewEvent(this, gopi.RPC_EVENT_SERVICE_ADDED, value.service, value.ttl))
-		this.services[name][key] = value
-	}
-}
-
-func (this *servicedb) removeServiceInstanceForKey(name, key string, eventType gopi.RPCEventType) {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	// Check for name already existing
-	if _, exists := this.services[name]; exists == false {
-		return
-	}
-	// Remove by key
-	if instance, exists := this.services[name][key]; exists == false {
-		return
-	} else {
-		// Remove the record
-		delete(this.services[name], key)
-
-		// Remove service
-		if len(this.services[name]) == 0 {
-			delete(this.services, name)
-		}
-
-		// Emit the event
-		this.bus.Emit(NewEvent(this, eventType, instance.service, 0))
-	}
-}
-
-// Expire instances
-func (this *servicedb) expireInstances() {
-	for {
-		if name, key := this.instanceToExpire(); name != "" && key != "" {
-			this.removeServiceInstanceForKey(name, key, gopi.RPC_EVENT_SERVICE_EXPIRED)
-		} else {
-			return
-		}
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-
-// Return first service name in the queue or empty string
-func (this *servicedb) popServiceName() string {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-	if len(this.queue) == 0 {
-		return ""
-	} else {
-		name := this.queue[0]
-		this.queue = this.queue[1:]
-		return name
-	}
-}
-
-// Lookup services
-func (this *servicedb) lookupServices(name string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	// No need to actually record the records here
-	if _, err := this.discovery.Lookup(ctx, name); err != nil {
-		return err
-	} else {
-		return nil
-	}
-}
-
-// Return an instance which needs to be expired
-func (this *servicedb) instanceToExpire() (string, string) {
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
-	for name, instances := range this.services {
-		for key, instance := range instances {
-			if instance.expires.Before(time.Now()) {
-				return name, key
-			}
-		}
-	}
-
-	return "", ""
-}
-
-func (this *servicedb) addServiceName(name string) {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-	this.queue = append(this.queue, name)
-}
-
-func (this *servicedb) shouldServiceName(name string) bool {
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
-	// Ignore if service name is already registered
-	if _, exists := this.services[name]; exists {
-		return false
-	}
-	// Ignore if already in the queue
-	if inStringSlice(name, this.queue) {
-		return false
-	}
-	// Append to the end of the queue
-	return true
-}
-
-func nameKeyForService(record gopi.RPCServiceRecord) (string, string) {
-	if record.Name == "" {
-		return "", ""
-	} else {
-		return record.Service, Quote(record.Name) + "." + record.Service
-	}
-}
-
-func inStringSlice(value string, slice []string) bool {
-	for _, elem := range slice {
-		if elem == value {
-			return true
-		}
-	}
-	return false
+func (this *servicedb) backgroundLookup(ctx context.Context, service string) error {
+	// Perform the query and wait for cancellation
+	msg := new(dns.Msg)
+	msg.SetQuestion(service+"."+this.listener.Zone(), dns.TypePTR)
+	msg.RecursionDesired = false
+	return this.listener.QueryAll(ctx, msg, QUERY_REPEAT)
 }

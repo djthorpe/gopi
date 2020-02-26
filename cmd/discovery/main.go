@@ -57,7 +57,7 @@ func LookupServices(app gopi.App, services []string) error {
 		}
 	}
 	if len(all) == 0 {
-		return gopi.ErrNotFound
+		return gopi.ErrNotFound.WithPrefix(strings.Join(services, ","))
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
