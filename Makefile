@@ -30,6 +30,9 @@ freetype:
 	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) ./unit/fonts/freetype/...
 	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) install $(TAGS) ${GOFLAGS} ./cmd/fonts/...
 
+mdns:
+	$(GO) install ${GOFLAGS} ./cmd/mdns/...
+
 # Build rules
 testrace:
 	$(GO) clean -testcache
