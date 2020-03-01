@@ -73,6 +73,9 @@ func (this *register) Close() error {
 	// Wait for EventHandler to end
 	this.listener.Unsubscribe(this.stop)
 
+	// Wait for register
+	this.WaitGroup.Wait()
+
 	// Release resources
 	this.listener = nil
 	this.records = nil
