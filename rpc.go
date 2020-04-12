@@ -132,6 +132,14 @@ type RPCClientConn interface {
 	Unit
 }
 
+type RPCClientStub interface {
+	// Return the connection associated with the client
+	Conn() RPCClientConn
+
+	// Implements gopi.Unit
+	Unit
+}
+
 // RPCEvent is emitted on service discovery and server events
 type RPCEvent interface {
 	// Type of event

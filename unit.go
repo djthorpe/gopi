@@ -22,19 +22,21 @@ type (
 	ConfigFunc func(App) error
 	NewFunc    func(App) (Unit, error)
 	RunFunc    func(App, Unit) error
+	StubFunc   func(RPCClientConn) (RPCClientStub, error)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 type UnitConfig struct {
-	Name     string   // Unique name of the unit
-	Type     UnitType // Unit type
-	Requires []string // Unit dependencies
-	Pri      uint     // Priority when more than one unit of the same type
-	Config   ConfigFunc
-	New      NewFunc
-	Run      RunFunc
+	Name     string     // Unique name of the unit
+	Type     UnitType   // Unit type
+	Requires []string   // Unit dependencies
+	Pri      uint       // Priority when more than one unit of the same type
+	Config   ConfigFunc // ConfigFunc is called to add configuration to the app
+	New      NewFunc    // NewFunc is called to create a unit instance
+	Run      RunFunc    // RunFunc is called once all unit instances have been created
+	Stub     StubFunc   // StubFunc is called on RPC Clients to create a client stub
 
 	edges *unitArray
 }
