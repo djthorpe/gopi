@@ -111,8 +111,8 @@ type RPCClientPool interface {
 	// Disconnect from service
 	Disconnect(RPCClientConn) error
 
-	// Create a client stub given a client name
-	CreateStub(RPCClientConn, string) (RPCClientStub, error)
+	// Create a client stub for a connection given a service name
+	CreateStub(string, RPCClientConn) RPCClientStub
 
 	// Implements gopi.Unit
 	Unit
