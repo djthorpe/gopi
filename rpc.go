@@ -105,6 +105,9 @@ type RPCClientPool interface {
 	// Connect to service by address and port
 	ConnectAddr(net.IP, uint16) (RPCClientConn, error)
 
+	// Connect to service by unix socket
+	ConnectFifo(string) (RPCClientConn, error)
+
 	// Disconnect from service
 	Disconnect(RPCClientConn) error
 
