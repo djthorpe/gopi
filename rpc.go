@@ -118,11 +118,8 @@ type RPCClientPool interface {
 // RPCClientConn implements a single client connection for
 // communicating with an RPC server
 type RPCClientConn interface {
-	// Return address for connection, or nil if not connected
-	Addr() net.IP
-
-	// Return port for connection
-	Port() uint16
+	// Return connection information, or nil if not connected
+	Addr() string
 
 	// Return service names supported by connection
 	Services() ([]string, error)
