@@ -42,6 +42,20 @@ type Publisher interface {
 	Unsubscribe(Channel)
 }
 
+// Publisher/Subscriber interface for arbitary messages
+type PubSub interface {
+	Unit
+
+	// Emit sends values to be received by handlers
+	Emit(value interface{})
+
+	// Subscribe and handle messages which are emitted
+	Subscribe() <-chan interface{}
+
+	// Unsubscribe from a channel
+	Unsubscribe(<-chan interface{})
+}
+
 // Abstract logging interface
 type Logger interface {
 	Unit
