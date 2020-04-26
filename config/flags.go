@@ -75,8 +75,9 @@ func (this *flagset) Parse(args []string) error {
 	this.flags.SetOutput(devnull)
 	defer devnull.Close()
 
-	// set version
+	// set version and service flags
 	this.setVersionFlags()
+	this.setServiceFlags()
 
 	// parse flags
 	if err := this.flags.Parse(args); err == flag.ErrHelp {

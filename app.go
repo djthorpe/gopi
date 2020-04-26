@@ -121,6 +121,7 @@ type DebugApp interface {
 const (
 	FLAG_NS_DEFAULT FlagNS = iota
 	FLAG_NS_VERSION
+	FLAG_NS_SERVICE
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -132,6 +133,8 @@ func (v FlagNS) String() string {
 		return "FLAG_NS_DEFAULT"
 	case FLAG_NS_VERSION:
 		return "FLAG_NS_VERSION"
+	case FLAG_NS_SERVICE:
+		return "FLAG_NS_SERVICE"
 	default:
 		return "[?? Invalid FlagNS value]"
 	}
