@@ -10,6 +10,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v2"
@@ -20,6 +21,10 @@ import (
 
 func (this *flagset) setServiceFlags() {
 	if hostname, err := os.Hostname(); err == nil {
+		if strings.HasSuffix(hostname, ".") == false {
+			// Make it fully qualified
+			hostname += "."
+		}
 		this.SetString("host", gopi.FLAG_NS_SERVICE, hostname)
 	}
 	if executable, err := os.Executable(); err == nil {
