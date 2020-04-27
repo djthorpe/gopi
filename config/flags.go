@@ -138,6 +138,15 @@ func (this *flagset) HasFlag(name string, ns gopi.FlagNS) bool {
 	}
 }
 
+// Visit calls the function for each set flag in the namespace
+func (this *flagset) Visit(ns gopi.FlagNS, callback func(name string, value interface{})) {
+	if flags, exists := this.flagMap[ns]; exists {
+		for k, v := range flags {
+			callback(k, v.Value.(flag.Getter).Get())
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

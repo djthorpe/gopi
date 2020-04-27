@@ -120,7 +120,7 @@ func Test_Config_005(t *testing.T) {
 }
 
 func Test_Config_006(t *testing.T) {
-	flags := config.NewFlags("Test_Config_005")
+	flags := config.NewFlags("Test_Config_006")
 	flags.FlagInt("test", -1234, "Test Flag")
 	flags.FlagUint("test2", 1234, "Test2 Flag")
 	flags.FlagFloat64("test3", 12.34, "Test3 Flag")
@@ -149,4 +149,22 @@ func Test_Config_006(t *testing.T) {
 	if flags.GetDuration("test4", gopi.FLAG_NS_DEFAULT) != 1234*time.Second {
 		t.Error("Unexpected return value from GetDuration()")
 	}
+}
+
+func Test_Config_007(t *testing.T) {
+	flags := config.NewFlags("Test_Config_007")
+	flags.FlagInt("test", -1234, "Test Flag")
+	flags.FlagUint("test2", 1234, "Test2 Flag")
+	flags.FlagFloat64("test3", 12.34, "Test3 Flag")
+	flags.FlagDuration("test4", 1234*time.Second, "Test4 Flag")
+
+	if err := flags.Parse([]string{"-test", "45"}); err != nil {
+		t.Error("Unexpected return value from Parse()", err)
+	}
+	if flags.Parsed() != true {
+		t.Error("Unexpected return value from Parsed()")
+	}
+	flags.Visit(gopi.FLAG_NS_DEFAULT, func(name string, value interface{}) {
+		t.Log(name, value)
+	})
 }

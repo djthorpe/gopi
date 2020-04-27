@@ -70,11 +70,12 @@ type App interface {
 // Flags encapsulates a set of key/value pairs in several namespaces
 // with parsing of command-line flags in the default namespace
 type Flags interface {
-	Name() string                // Return name of tool
-	Parse([]string) error        // Parse command-line flags
-	Parsed() bool                // Returns true if Parsed() has been called
-	Args() []string              // Return command-line arguments
-	HasFlag(string, FlagNS) bool // HasFlag returns true if a flag exists
+	Name() string                                       // Return name of tool
+	Parse([]string) error                               // Parse command-line flags
+	Parsed() bool                                       // Returns true if Parsed() has been called
+	Args() []string                                     // Return command-line arguments
+	HasFlag(string, FlagNS) bool                        // HasFlag returns true if a flag exists
+	Visit(FlagNS, func(name string, value interface{})) // Visit all flags in a namespace
 
 	Usage(io.Writer)   // Write out usage for the application
 	Version(io.Writer) // Write out version for the application

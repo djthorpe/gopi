@@ -8,10 +8,10 @@
 package config
 
 import (
-	// Frameworks
 	"os"
 	"path/filepath"
 
+	// Frameworks
 	"github.com/djthorpe/gopi/v2"
 )
 
