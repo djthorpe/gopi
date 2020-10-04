@@ -1,5 +1,3 @@
-// +build darwin
-
 package platform
 
 import (
@@ -14,6 +12,7 @@ import (
 
 type Platform struct {
 	gopi.Unit
+	*Implementation // Implementation-specific members
 }
 
 ////////////////////////////////////////////////////////////////////////////////

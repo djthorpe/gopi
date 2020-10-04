@@ -1,18 +1,10 @@
 // +build rpi
 // +build !darwin
 
-/*
-  Go Language Raspberry Pi Interface
-  (c) Copyright David Thorpe 2016-2020
-  All Rights Reserved
-  For Licensing and Usage information, please see LICENSE.md
-*/
-
 package rpi
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"unsafe"
 )
@@ -73,10 +65,6 @@ const (
 	TV_STATE_MAX                                       = TV_STATE_LCD_ATTACHED_DEFAULT
 	TV_STATE_NONE                   TVDisplayStateFlag = 0
 )
-
-/*
-vc_tv_get_device_id_id
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -193,11 +181,17 @@ func (this TVDisplayInfo) Serial() uint32 {
 }
 
 func (this TVDisplayInfo) String() string {
-	return "<TVDisplayInfo" +
-		" vendor=" + strconv.Quote(this.Vendor()) +
-		" product=" + strconv.Quote(this.Product()) +
-		" serial=" + fmt.Sprint(this.Serial) +
-		">"
+	str := "<TVDisplayInfo"
+	if v := this.Vendor(); v != "" {
+		str += fmt.Sprintf(" vendor=%q", v)
+	}
+	if p := this.Product(); p != "" {
+		str += fmt.Sprintf(" product=%q", p)
+	}
+	if sn := this.Serial(); sn != 0 {
+		str += fmt.Sprintf(" serial=0x%08X", sn)
+	}
+	return str + ">"
 }
 
 ////////////////////////////////////////////////////////////////////////////////

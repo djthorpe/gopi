@@ -16,6 +16,7 @@ const (
 	ErrNotImplemented
 	ErrUnexpectedResponse
 	ErrHelp
+	ErrInternalAppError
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -33,6 +34,8 @@ func (e Error) Error() string {
 		return "Help Requested"
 	case ErrUnexpectedResponse:
 		return "Unexpected Response"
+	case ErrInternalAppError:
+		return "Internal Application Error"
 	default:
 		return "[?? Invalid Error]"
 	}
