@@ -14,6 +14,7 @@ const (
 	ErrNone Error = iota
 	ErrBadParameter
 	ErrNotImplemented
+	ErrUnexpectedResponse
 	ErrHelp
 )
 
@@ -30,6 +31,8 @@ func (e Error) Error() string {
 		return "Not Implemented"
 	case ErrHelp:
 		return "Help Requested"
+	case ErrUnexpectedResponse:
+		return "Unexpected Response"
 	default:
 		return "[?? Invalid Error]"
 	}
