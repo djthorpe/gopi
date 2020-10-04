@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"strconv"
 
 	"github.com/djthorpe/gopi/v3"
@@ -46,6 +47,21 @@ func (this *config) Parse() error {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// DEFINE FLAGS
+
+func (this *config) FlagString(name, value, usage string) *string {
+	return this.FlagSet.String(name, value, usage)
+}
+
+func (this *config) FlagBool(name string, value bool, usage string) *bool {
+	return this.FlagSet.Bool(name, value, usage)
+}
+
+func (this *config) FlagUint(name string, value uint, usage string) *uint {
+	return this.FlagSet.Uint(name, value, usage)
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // GET PROPERTIES
 
 func (this *config) GetString(name string) string {
@@ -66,9 +82,19 @@ func (this *config) GetBool(name string) bool {
 	}
 }
 
+func (this *config) GetUint(name string) uint {
+	if flag := this.FlagSet.Lookup(name); flag == nil {
+		return 0
+	} else if value_, err := strconv.ParseUint(flag.Value.String(), 10, 32); err != nil {
+		return 0
+	} else {
+		return uint(value_)
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
-/*
+
 func (this *config) String() string {
 	str := "<config"
 	str += " name=" + strconv.Quote(this.FlagSet.Name())
@@ -77,4 +103,3 @@ func (this *config) String() string {
 	})
 	return str + ">"
 }
-*/

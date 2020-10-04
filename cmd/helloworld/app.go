@@ -16,7 +16,7 @@ type app struct {
 }
 
 func (this *app) Define(cfg gopi.Config) error {
-	this.name = cfg.String("name", "", "Your name")
+	this.name = cfg.FlagString("name", "", "Your name")
 	return nil
 }
 

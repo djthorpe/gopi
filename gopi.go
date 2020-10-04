@@ -11,13 +11,18 @@ type Config interface {
 	// Parse
 	Parse() error
 
-	// Define flags
-	String(string, string, string) *string
-	Bool(string, bool, string) *bool
+	// Return arguments
+	Args() []string
 
-	// Get configuration values
+	// Define flags
+	FlagString(string, string, string) *string
+	FlagBool(string, bool, string) *bool
+	FlagUint(string, uint, string) *uint
+
+	// Get config values
 	GetString(string) string
 	GetBool(string) bool
+	GetUint(string) uint
 }
 
 // Unit marks an singleton object

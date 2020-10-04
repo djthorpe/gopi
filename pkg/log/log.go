@@ -13,15 +13,14 @@ type Log struct {
 	gopi.Unit
 
 	// Flags
-	debug, verbose *bool
+	debug *bool
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implement gopi.Unit
 
 func (this *Log) Define(cfg gopi.Config) error {
-	this.debug = cfg.Bool("debug", false, "Set debugging flag")
-	this.verbose = cfg.Bool("verbose", true, "Set verbose logging flag")
+	this.debug = cfg.FlagBool("debug", false, "Set debugging flag")
 	return nil
 }
 
@@ -31,10 +30,24 @@ func (*Log) New(gopi.Config) error {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Implement gopi.Logger
+// IMPLEMENTATION
 
 func (this *Log) Print(args ...interface{}) {
-	if this != nil {
+	this.Lock()
+	defer this.Unlock()
+	log.Print(args...)
+}
+
+func (this *Log) IsDebug() bool {
+	if this.debug == nil {
+		return false
+	} else {
+		return *this.debug
+	}
+}
+
+func (this *Log) Debug(args ...interface{}) {
+	if this.IsDebug() {
 		this.Lock()
 		defer this.Unlock()
 		log.Print(args...)
@@ -51,9 +64,6 @@ func (this *Log) String() string {
 	} else {
 		if this.debug != nil {
 			str += " debug=" + fmt.Sprint(*this.debug)
-		}
-		if this.verbose != nil {
-			str += " verbose=" + fmt.Sprint(*this.verbose)
 		}
 	}
 	return str + ">"
