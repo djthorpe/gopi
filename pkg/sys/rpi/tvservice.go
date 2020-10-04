@@ -80,9 +80,13 @@ func VCHI_Init() VCHIInstance {
 
 func VCHI_TVInit(instance VCHIInstance) (VCHIConnection, error) {
 	var connection VCHIConnection
+	// When vc_vchi_tv_init returns -2 that means already initialized
 	if err := C.vchi_connect(nil, 0, C.VCHI_INSTANCE_T(instance)); err != 0 {
 		return connection, ErrConnectError
-	} else if err := C.vc_vchi_tv_init(C.VCHI_INSTANCE_T(instance), (**C.VCHI_CONNECTION_T)(unsafe.Pointer(&connection)), 1); err != 0 {
+	} else if err := C.vc_vchi_tv_init(C.VCHI_INSTANCE_T(instance), (**C.VCHI_CONNECTION_T)(unsafe.Pointer(&connection)), 1); err == -2 {
+		VCHI_TVStop(instance)
+		return VCHI_TVInit(instance)
+	} else if err != 0 {
 		return connection, ErrConnectError
 	} else {
 		return connection, nil
