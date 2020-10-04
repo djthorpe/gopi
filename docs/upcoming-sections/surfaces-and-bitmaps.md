@@ -1,2 +1,0 @@
-# Surfaces & Bitmaps
-
