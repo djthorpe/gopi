@@ -22,7 +22,7 @@ import (
 #cgo pkg-config: bcm_host
 #include "bcm_host.h"
 #include <stdio.h>
-int vc_gencmd_wrap(char* response,int maxlen,const char* command) {
+static int vc_gencmd_wrap(char* response,int maxlen,const char* command) {
 	return vc_gencmd(response,maxlen,command);
 }
 */

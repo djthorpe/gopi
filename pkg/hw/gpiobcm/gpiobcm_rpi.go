@@ -1,6 +1,6 @@
 // +build rpi
 
-package gpiorpi
+package gpiobcm
 
 import (
 	"fmt"
@@ -10,23 +10,21 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/hw/platform"
+	"github.com/djthorpe/gopi/v3/pkg/sys/rpi"
 )
 
-type *GPIO struct {
+type GPIO struct {
 	gopi.Unit
-	*platform.Platform
-}
-
-/*
-type gpio struct {
-	platform gopi.Platform
-	product  rpi.ProductInfo
-	pins     map[gopi.GPIOPin]uint // map of logical to physical pins
-	mem8     []uint8               // access GPIO as bytes
-	mem32    []uint32              // access GPIO as uint32
-
-	base.Unit
 	sync.Mutex
+	*platform.Platform
+
+	product rpi.ProductInfo
+	pins    map[gopi.GPIOPin]uint // map of logical to physical pins
+	mem8    []uint8               // access GPIO as bytes
+	mem32   []uint32              // access GPIO as uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,25 +93,9 @@ var (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION gopi.Unit
+// IMPLEMENTATION
 
-func (GPIO) Name() string { return "gopi/gpio/rpi" }
-
-func (config GPIO) New(log gopi.Logger) (gopi.Unit, error) {
-	this := new(gpio)
-	if err := this.Unit.Init(log); err != nil {
-		return nil, err
-	}
-	if err := this.Init(config); err != nil {
-		return nil, err
-	}
-	return this, nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// INIT & CLOSE
-
-func (this *gpio) Init(config GPIO) error {
+func (this *GPIO) New(gopi.Config) error {
 	this.Lock()
 	defer this.Unlock()
 
@@ -156,7 +138,7 @@ func (this *gpio) Init(config GPIO) error {
 	return nil
 }
 
-func (this *gpio) Close() error {
+func (this *GPIO) Close() error {
 	this.Lock()
 	defer this.Unlock()
 
@@ -168,18 +150,21 @@ func (this *gpio) Close() error {
 	this.pins = nil
 
 	// Return success
-	return this.Unit.Close()
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *gpio) String() string {
-	if this.Unit.Closed {
-		return fmt.Sprintf("<%v>", this.Log.Name())
-	} else {
-		return fmt.Sprintf("<%v model=%v physical_pins=%v logical_pins=%v>", this.Log.Name(), this.product.Model, this.NumberOfPhysicalPins(), this.pins)
+func (this *GPIO) String() string {
+	str := "<gpiobcm"
+	if p := this.NumberOfPhysicalPins(); p > 0 {
+		str += " number_of_physical_pins=" + fmt.Sprint(p)
 	}
+	if l := this.pins; len(l) > 0 {
+		str += " pins=" + fmt.Sprint(l)
+	}
+	return str + ">"
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -187,7 +172,7 @@ func (this *gpio) String() string {
 
 // Return number of physical pins, or 0 if if cannot be returned
 // or nothing is known about physical pins
-func (this *gpio) NumberOfPhysicalPins() uint {
+func (this *GPIO) NumberOfPhysicalPins() uint {
 	if this.product.Model == rpi.RPI_MODEL_A || this.product.Model == rpi.RPI_MODEL_B {
 		return uint(26)
 	} else {
@@ -197,7 +182,7 @@ func (this *gpio) NumberOfPhysicalPins() uint {
 
 // Return array of available logical pins or nil if nothing is
 // known about pins
-func (this *gpio) Pins() []gopi.GPIOPin {
+func (this *GPIO) Pins() []gopi.GPIOPin {
 	pins := make([]gopi.GPIOPin, GPIO_MAXPINS)
 	for i := 0; i < GPIO_MAXPINS; i++ {
 		pins[i] = gopi.GPIOPin(i)
@@ -208,7 +193,7 @@ func (this *gpio) Pins() []gopi.GPIOPin {
 // Return logical pin for physical pin number. Returns
 // GPIO_PIN_NONE where there is no logical pin at that position
 // or we don't know about the physical pins
-func (this *gpio) PhysicalPin(pin uint) gopi.GPIOPin {
+func (this *GPIO) PhysicalPin(pin uint) gopi.GPIOPin {
 	// Check for Raspberry Pi Version 1 and fudge things a little
 	if this.product.Model == rpi.RPI_MODEL_A || this.product.Model == rpi.RPI_MODEL_B {
 		// pin can be 1-28
@@ -237,7 +222,7 @@ func (this *gpio) PhysicalPin(pin uint) gopi.GPIOPin {
 // Return physical pin number for logical pin. Returns 0 where there
 // is no physical pin for this logical pin, or we don't know anything
 // about the layout
-func (this *gpio) PhysicalPinForPin(logical gopi.GPIOPin) uint {
+func (this *GPIO) PhysicalPinForPin(logical gopi.GPIOPin) uint {
 	if physical, ok := this.pins[logical]; ok == false {
 		return 0
 	} else {
@@ -246,7 +231,7 @@ func (this *gpio) PhysicalPinForPin(logical gopi.GPIOPin) uint {
 }
 
 // Read pin state
-func (this *gpio) ReadPin(logical gopi.GPIOPin) gopi.GPIOState {
+func (this *GPIO) ReadPin(logical gopi.GPIOPin) gopi.GPIOState {
 	this.Lock()
 	defer this.Unlock()
 
@@ -265,7 +250,7 @@ func (this *gpio) ReadPin(logical gopi.GPIOPin) gopi.GPIOState {
 }
 
 // Write pin state
-func (this *gpio) WritePin(logical gopi.GPIOPin, state gopi.GPIOState) {
+func (this *GPIO) WritePin(logical gopi.GPIOPin, state gopi.GPIOState) {
 	this.Lock()
 	defer this.Unlock()
 
@@ -287,7 +272,7 @@ func (this *gpio) WritePin(logical gopi.GPIOPin, state gopi.GPIOState) {
 }
 
 // Get pin mode
-func (this *gpio) GetPinMode(logical gopi.GPIOPin) gopi.GPIOMode {
+func (this *GPIO) GetPinMode(logical gopi.GPIOPin) gopi.GPIOMode {
 	this.Lock()
 	defer this.Unlock()
 
@@ -300,7 +285,7 @@ func (this *gpio) GetPinMode(logical gopi.GPIOPin) gopi.GPIOMode {
 }
 
 // Set pin mode
-func (this *gpio) SetPinMode(logical gopi.GPIOPin, mode gopi.GPIOMode) {
+func (this *GPIO) SetPinMode(logical gopi.GPIOPin, mode gopi.GPIOMode) {
 	this.Lock()
 	defer this.Unlock()
 
@@ -314,7 +299,7 @@ func (this *gpio) SetPinMode(logical gopi.GPIOPin, mode gopi.GPIOMode) {
 
 // Set pull mode to pull down or pull up - will
 // return ErrNotImplemented if not supported
-func (this *gpio) SetPullMode(logical gopi.GPIOPin, pull gopi.GPIOPull) error {
+func (this *GPIO) SetPullMode(logical gopi.GPIOPin, pull gopi.GPIOPull) error {
 	this.Lock()
 	defer this.Unlock()
 
@@ -362,7 +347,7 @@ func (this *gpio) SetPullMode(logical gopi.GPIOPin, pull gopi.GPIOPull) error {
 // Start watching for rising and/or falling edge,
 // or stop watching when GPIO_EDGE_NONE is passed.
 // Will return ErrNotImplemented if not supported
-func (this *gpio) Watch(gopi.GPIOPin, gopi.GPIOEdge) error {
+func (this *GPIO) Watch(gopi.GPIOPin, gopi.GPIOEdge) error {
 	return gopi.ErrNotImplemented
 }
 
@@ -400,4 +385,3 @@ func gopiPinToRegister(pin gopi.GPIOPin) (uint, uint) {
 		return GPIO_GPFSEL5, uint((p - 50) * 3)
 	}
 }
-*/

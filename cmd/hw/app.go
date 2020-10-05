@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/hw/gpiobcm"
 	"github.com/djthorpe/gopi/v3/pkg/hw/platform"
 	"github.com/djthorpe/gopi/v3/pkg/hw/spi"
 	"github.com/djthorpe/gopi/v3/pkg/log"
@@ -21,18 +22,26 @@ type app struct {
 	*log.Log
 	*platform.Platform
 	*spi.Devices
-	*gpiorpi.GPIO
+	*gpiobcm.GPIO
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
 func (this *app) Run(context.Context) error {
+
+	// Output platform information
 	this.PlatformTable()
 
-	if err := this.SPITable(); err != nil {
-		return err
+	// Output SPI information
+	if spi := this.Devices.Enumerate(); len(spi) > 0 {
+		if err := this.SPITable(this.Devices.Enumerate()); err != nil {
+			return err
+		}
 	}
+
+	// Output GPIO information
+	this.GPIOTable()
 
 	return nil
 }
@@ -71,12 +80,11 @@ func (this *app) PlatformTable() {
 ////////////////////////////////////////////////////////////////////////////////
 // SPI
 
-func (this *app) SPITable() error {
-	// Display platform information
+func (this *app) SPITable(devices []spi.Device) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
-	for _, dev := range this.Devices.Enumerate() {
+	for _, dev := range devices {
 		spi, err := this.Devices.Open(dev, 0)
 		if err != nil {
 			return err
@@ -90,6 +98,31 @@ func (this *app) SPITable() error {
 
 	// Return success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GPIO
+
+func (this *app) GPIOTable() {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	table.SetHeader([]string{"Physical", "Logical", "Direction", "Value"})
+
+	// Physical pins start at index 1
+	for pin := uint(1); pin <= this.GPIO.NumberOfPhysicalPins(); pin++ {
+		var l, d, v string
+		if logical := this.GPIO.PhysicalPin(pin); logical != gopi.GPIO_PIN_NONE {
+			l = fmt.Sprint(logical)
+			d = fmt.Sprint(this.GPIO.GetPinMode(logical))
+			v = fmt.Sprint(this.GPIO.ReadPin(logical))
+		}
+		table.Append([]string{
+			fmt.Sprintf("%v", pin), l, d, v,
+		})
+	}
+
+	table.Render()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
