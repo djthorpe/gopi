@@ -2,11 +2,13 @@ package tool
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 
+	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/config"
 )
 
@@ -26,7 +28,7 @@ func CommandLine(name string, args []string, objs ...interface{}) int {
 	}
 
 	// Parse command-line arguments
-	if err := cfg.Parse(); err == flag.ErrHelp {
+	if err := cfg.Parse(); errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
 		return 0
 	} else if err != nil {
 		fmt.Fprintln(os.Stderr, "Config:", err)
@@ -34,7 +36,10 @@ func CommandLine(name string, args []string, objs ...interface{}) int {
 	}
 
 	// Call New
-	if err := graph.New(cfg); err != nil {
+	if err := graph.New(cfg); errors.Is(err, gopi.ErrHelp) || errors.Is(err, flag.ErrHelp) {
+		cfg.Usage("")
+		return 0
+	} else if err != nil {
 		fmt.Fprintln(os.Stderr, "New:", err)
 		return -1
 	}

@@ -58,6 +58,14 @@ func (this *config) Parse() error {
 	return nil
 }
 
+func (this *config) Usage(name string) {
+	if name == "" {
+		this.usage()
+	} else {
+		fmt.Println("TODO: usage for", name)
+	}
+}
+
 func (this *config) Command(name, usage string, fn gopi.CommandFunc) error {
 	name = strings.ToLower(strings.TrimSpace(name))
 	if name == "" {

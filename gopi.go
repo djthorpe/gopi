@@ -10,6 +10,7 @@ import (
 type Config interface {
 	Parse() error   // Parse command line arguments
 	Args() []string // Return arguments, not including flags
+	Usage(string)   // Print out usage for all or specific command
 
 	// Define flags
 	FlagString(string, string, string) *string
