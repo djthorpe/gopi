@@ -23,33 +23,42 @@ type app struct {
 	*platform.Platform
 	*spi.Devices
 	*gpiobcm.GPIO
+
+	cmd gopi.Command
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *app) Run(context.Context) error {
+func (this *app) Define(cfg gopi.Config) error {
+	// Define commands
+	cfg.Command("hw", "Return hardware platform information", this.RunHardware)
+	cfg.Command("display", "Return display information", nil) // Not yet implemented
+	cfg.Command("spi", "Return SPI interface parameters", this.RunSpi)
+	cfg.Command("i2c", "Return I2C interface parameters", nil) // Not yet implemented
+	cfg.Command("gpio", "Return GPIO interface parameters", this.RunGpio)
 
-	// Output platform information
-	this.PlatformTable()
-
-	// Output SPI information
-	if spi := this.Devices.Enumerate(); len(spi) > 0 {
-		if err := this.SPITable(this.Devices.Enumerate()); err != nil {
-			return err
-		}
-	}
-
-	// Output GPIO information
-	this.GPIOTable()
-
+	// Return success
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// PLATFORM
+func (this *app) New(cfg gopi.Config) error {
+	if cmd := cfg.GetCommand(nil); cmd == nil {
+		return gopi.ErrBadParameter
+	} else {
+		this.cmd = cmd
+	}
 
-func (this *app) PlatformTable() {
+	// Return success
+	return nil
+}
+
+func (this *app) Run(ctx context.Context) error {
+	// Run command
+	return this.cmd.Run(ctx)
+}
+
+func (this *app) RunHardware(context.Context) error {
 	// Display platform information
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -75,15 +84,19 @@ func (this *app) PlatformTable() {
 		"Attached Displays", fmt.Sprint(this.Platform.AttachedDisplays()),
 	})
 	table.Render()
+
+	// Return success
+	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// SPI
+func (this *app) RunSpi(context.Context) error {
+	devices := this.Devices.Enumerate()
+	if len(devices) == 0 {
+		return fmt.Errorf("No SPI interfaces found")
+	}
 
-func (this *app) SPITable(devices []spi.Device) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
-
 	for _, dev := range devices {
 		spi, err := this.Devices.Open(dev, 0)
 		if err != nil {
@@ -100,17 +113,19 @@ func (this *app) SPITable(devices []spi.Device) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// GPIO
+func (this *app) RunGpio(context.Context) error {
+	pins := this.GPIO.NumberOfPhysicalPins()
+	if pins == 0 {
+		return fmt.Errorf("No GPIO interface defined")
+	}
 
-func (this *app) GPIOTable() {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
 	table.SetHeader([]string{"Physical", "Logical", "Direction", "Value"})
 
 	// Physical pins start at index 1
-	for pin := uint(1); pin <= this.GPIO.NumberOfPhysicalPins(); pin++ {
+	for pin := uint(1); pin <= pins; pin++ {
 		var l, d, v string
 		if logical := this.GPIO.PhysicalPin(pin); logical != gopi.GPIO_PIN_NONE {
 			l = fmt.Sprint(logical)
@@ -123,6 +138,9 @@ func (this *app) GPIOTable() {
 	}
 
 	table.Render()
+
+	// Return success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -132,5 +150,6 @@ func (this *app) String() string {
 	str := "<app"
 	str += " platform=" + fmt.Sprint(this.Platform)
 	str += " spi=" + fmt.Sprint(this.Devices)
+	str += " gpio=" + fmt.Sprint(this.GPIO)
 	return str + ">"
 }

@@ -8,21 +8,33 @@ import (
 // INTERFACES
 
 type Config interface {
-	// Parse
-	Parse() error
-
-	// Return arguments
-	Args() []string
+	Parse() error   // Parse command line arguments
+	Args() []string // Return arguments, not including flags
 
 	// Define flags
 	FlagString(string, string, string) *string
 	FlagBool(string, bool, string) *bool
 	FlagUint(string, uint, string) *uint
 
-	// Get config values
+	// Define commands
+	Command(string, string, CommandFunc) error // Append a command with name and usage arguments
+
+	// Get values
 	GetString(string) string
 	GetBool(string) bool
 	GetUint(string) uint
+	GetCommand([]string) Command // Get command from provided arguments
+}
+
+// CommandFunc is the function signature for running a command
+type CommandFunc func(context.Context) error
+
+// Command is determined from parsed arguments
+type Command interface {
+	Name() string              // Return command name
+	Usage() string             // Return usage information
+	Args() []string            // Return command arguments
+	Run(context.Context) error // Run the command
 }
 
 // Unit marks an singleton object
