@@ -20,10 +20,10 @@ type command struct {
 ///////////////////////////////////////////////////////////////////////////////
 // NEW
 
-func NewCommand(cmd command, args []string) gopi.Command {
-	this := &cmd
-	this.args = args
-	return this
+func NewCommand(name, usage string, args []string, fn gopi.CommandFunc) gopi.Command {
+	return &command{
+		name, usage, args, fn,
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -79,12 +79,12 @@ func (this *config) GetCommand(args []string) gopi.Command {
 		args = this.FlagSet.Args()
 	}
 	if len(args) == 0 {
-		return NewCommand(this.commands[0], args)
+		return NewCommand(this.commands[0].name, this.commands[0].usage, args, this.commands[0].fn)
 	}
 	name := strings.ToLower(strings.TrimSpace(args[0]))
 	for _, cmd := range this.commands {
 		if cmd.name == name {
-			return NewCommand(cmd, args[1:])
+			return NewCommand(cmd.name, cmd.usage, args[1:], cmd.fn)
 		}
 	}
 
@@ -172,7 +172,7 @@ func (this *config) usageOne(cmd gopi.Command) {
 	name := this.FlagSet.Name()
 
 	fmt.Fprintln(w, "Syntax:")
-	fmt.Fprintf(w, "  %v (<flags>) %v %v\n", name, cmd.Name, "TODO")
+	fmt.Fprintf(w, "  %v (<flags>) %v %v\n", name, cmd.Name(), "TODO")
 	this.usageFlags(cmd.Name())
 }
 

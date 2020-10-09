@@ -1,6 +1,9 @@
 package waveshare
 
-import "github.com/djthorpe/gopi/v3"
+import (
+	gopi "github.com/djthorpe/gopi/v3"
+	gpiobcm "github.com/djthorpe/gopi/v3/pkg/hw/gpiobcm"
+)
 
 type EPD struct {
 	gopi.Unit
