@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"strconv"
@@ -19,25 +18,13 @@ type config struct {
 	commands []command
 }
 
-type command struct {
-	name, usage string
-	args        []string
-	fn          gopi.CommandFunc
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // NEW
 
 func New(name string, args []string) gopi.Config {
 	this := new(config)
 	this.FlagSet = flag.NewFlagSet(name, flag.ContinueOnError)
-	this.FlagSet.Usage = this.usage
-	this.args = args
-	return this
-}
-
-func NewCommand(cmd command, args []string) gopi.Command {
-	this := &cmd
+	this.FlagSet.Usage = this.usageAll
 	this.args = args
 	return this
 }
@@ -60,9 +47,9 @@ func (this *config) Parse() error {
 
 func (this *config) Usage(name string) {
 	if name == "" {
-		this.usage()
-	} else {
-		fmt.Println("TODO: usage for", name)
+		this.usageAll()
+	} else if cmd := this.GetCommand([]string{name}); cmd != nil {
+		this.usageOne(cmd)
 	}
 }
 
@@ -151,26 +138,6 @@ func (this *config) GetUint(name string) uint {
 	}
 }
 
-func (this *command) Name() string {
-	return this.name
-}
-
-func (this *command) Usage() string {
-	return this.usage
-}
-
-func (this *command) Args() []string {
-	return this.args
-}
-
-func (this *command) Run(ctx context.Context) error {
-	if this.fn == nil {
-		return gopi.ErrNotImplemented
-	} else {
-		return this.fn(ctx)
-	}
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -183,22 +150,10 @@ func (this *config) String() string {
 	return str + ">"
 }
 
-func (this *command) String() string {
-	str := "<command"
-	str += " name=" + strconv.Quote(this.name)
-	if this.usage != "" {
-		str += " usage=" + strconv.Quote(this.usage)
-	}
-	if len(this.args) > 0 {
-		str += " args=" + fmt.Sprint(this.args)
-	}
-	return str + ">"
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *config) usage() {
+func (this *config) usageAll() {
 	w := this.FlagSet.Output()
 	name := this.FlagSet.Name()
 
@@ -210,6 +165,15 @@ func (this *config) usage() {
 		fmt.Fprintf(w, "  %v %v\n  \t%v\n", cmd.name, "TODO", cmd.usage)
 	}
 	this.usageFlags("")
+}
+
+func (this *config) usageOne(cmd gopi.Command) {
+	w := this.Output()
+	name := this.FlagSet.Name()
+
+	fmt.Fprintln(w, "Syntax:")
+	fmt.Fprintf(w, "  %v (<flags>) %v %v\n", name, cmd.Name, "TODO")
+	this.usageFlags(cmd.Name())
 }
 
 func (this *config) usageFlags(name string) {
