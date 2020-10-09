@@ -1,9 +1,11 @@
 package event_test
 
 import (
+	"math/rand"
 	"sync"
 	"testing"
 
+	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/event"
 )
 
@@ -50,35 +52,42 @@ func Test_Event_001(t *testing.T) {
 	}
 }
 
-/*
 func Test_Event_002(t *testing.T) {
 	pub := &event.Publisher{}
 	evts := 0
+	rcvs := rand.Int() % 20
 	total := 100
 
-	// TODO
+	var wg sync.WaitGroup
 
 	// Receive events
-	recv := func() {
-		ch := pub.Subscribe()
+	recv := func(ch <-chan gopi.Event) {
 		for _ = range ch {
+			t.Log("got", evts)
 			evts += 1
 		}
-		pub.Unsubscribe(ch)
+		wg.Done()
 	}
 
-	// Receive events and increment counter
-	go recv()
-	go recv()
+	// Receive events in the background
+	for i := 0; i < rcvs; i++ {
+		wg.Add(1)
+		go recv(pub.Subscribe())
+	}
 
 	// Emit events
 	for i := 0; i < total; i++ {
 		pub.Emit(nil)
 	}
 
+	// Unsubscribe all receivers
+	pub.Close()
+
+	// Wait for all goroutinnes completed
+	wg.Wait()
+
 	// Check for number of events
-	if evts != total {
-		t.Error("Unexpected number of events,", evts, "!=", total)
+	if evts != total*rcvs {
+		t.Error("Unexpected number of events,", evts, "!=", total*rcvs)
 	}
 }
-*/

@@ -12,6 +12,18 @@ type Publisher struct {
 	ch []chan gopi.Event
 }
 
+func (this *Publisher) Close() {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	for _, ch := range this.ch {
+		if ch != nil {
+			close(ch)
+		}
+	}
+	this.ch = nil
+}
+
 func (this *Publisher) Subscribe() <-chan gopi.Event {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
