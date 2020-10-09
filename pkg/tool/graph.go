@@ -94,7 +94,7 @@ func (this *graph) Run(ctx context.Context) error {
 	go func() {
 		for err := range errs {
 			if err != nil && errors.Is(err, context.Canceled) == false {
-				fmt.Println("Err=", err)
+				fmt.Println("TODO: Err=", err)
 			}
 			this.WaitGroup.Done()
 		}
