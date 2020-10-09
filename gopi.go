@@ -41,6 +41,9 @@ type Command interface {
 // Unit marks an singleton object
 type Unit struct{}
 
+// Event is a generic emitted event
+type Event interface{}
+
 /////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 
