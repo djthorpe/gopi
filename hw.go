@@ -87,6 +87,14 @@ type GPIO interface {
 	Watch(GPIOPin, GPIOEdge) error
 }
 
+// Display implements a pixel-based display device
+type Display interface {
+	Id() uint16             // Return display number
+	Name() string           // Return name of the display
+	Size() (uint32, uint32) // Return display size for nominated display number, or (0,0) if display does not exist
+	PixelsPerInch() uint32  // Return the PPI (pixels-per-inch) for the display, or return zero if unknown
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 

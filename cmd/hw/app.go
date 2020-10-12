@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/hw/display"
 	"github.com/djthorpe/gopi/v3/pkg/hw/gpiobcm"
 	"github.com/djthorpe/gopi/v3/pkg/hw/platform"
 	"github.com/djthorpe/gopi/v3/pkg/hw/spi"
@@ -21,6 +22,7 @@ type app struct {
 	gopi.Unit
 	*log.Log
 	*platform.Platform
+	*display.Displays
 	*spi.Devices
 	*gpiobcm.GPIO
 
@@ -33,7 +35,7 @@ type app struct {
 func (this *app) Define(cfg gopi.Config) error {
 	// Define commands
 	cfg.Command("hw", "Return hardware platform information", this.RunHardware)
-	cfg.Command("display", "Return display information", nil) // Not yet implemented
+	cfg.Command("display", "Return display information", this.RunDisplays)
 	cfg.Command("spi", "Return SPI interface parameters", this.RunSpi)
 	cfg.Command("i2c", "Return I2C interface parameters", nil) // Not yet implemented
 	cfg.Command("gpio", "Return GPIO interface parameters", this.RunGpio)
@@ -82,6 +84,33 @@ func (this *app) RunHardware(context.Context) error {
 	table.Append([]string{
 		"Attached Displays", fmt.Sprint(this.Platform.AttachedDisplays()),
 	})
+	table.Render()
+
+	// Return success
+	return nil
+}
+
+func (this *app) RunDisplays(context.Context) error {
+	displays := this.Displays.Enumerate()
+	if len(displays) == 0 {
+		return fmt.Errorf("No Displays found")
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	for _, display := range displays {
+		w, h := display.Size()
+		ppi_ := "-"
+		if ppi := display.PixelsPerInch(); ppi != 0 {
+			ppi_ = fmt.Sprint(ppi)
+		}
+		table.Append([]string{
+			fmt.Sprint(display.Id()),
+			fmt.Sprint(display.Name()),
+			fmt.Sprint("{", w, ",", h, "}"),
+			ppi_,
+		})
+	}
 	table.Render()
 
 	// Return success
