@@ -1,6 +1,6 @@
 // +build !rpi
 
-package gpiobcm
+package broadcom
 
 import (
 	"github.com/djthorpe/gopi/v3"

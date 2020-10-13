@@ -1,6 +1,6 @@
 // +build rpi
 
-package gpiobcm
+package broadcom
 
 import (
 	"fmt"
@@ -155,7 +155,7 @@ func (this *GPIO) Dispose() error {
 // STRINGIFY
 
 func (this *GPIO) String() string {
-	str := "<gpiobcm"
+	str := "<gpio broadcom"
 	if p := this.NumberOfPhysicalPins(); p > 0 {
 		str += " number_of_physical_pins=" + fmt.Sprint(p)
 	}

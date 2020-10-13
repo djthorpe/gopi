@@ -7,18 +7,38 @@ import (
 	"strconv"
 	"strings"
 
+	gopi "github.com/djthorpe/gopi/v3"
 	rpi "github.com/djthorpe/gopi/v3/pkg/sys/rpi"
 	multierror "github.com/hashicorp/go-multierror"
 )
 
 type display struct {
+	gopi.Unit
+
 	id     uint16
 	handle rpi.DXDisplayHandle
 	info   rpi.DXDisplayModeInfo
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// CONSTRUCTOR
+// gopi.Unit
+
+func (this *display) Define(cfg gopi.Config) error {
+	cfg.FlagUint("display", 0, "Display to open")
+	return nil
+}
+
+func (this *display) New(cfg gopi.Config) error {
+	id := uint16(cfg.GetUint("display"))
+	return this.new(id)
+}
+
+func (this *display) Dispose() error {
+	return this.close()
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE NEW/CLOSE
 
 func (this *display) new(id uint16) error {
 	if handle, err := rpi.DXDisplayOpen(rpi.DXDisplayId(id)); err != nil {
@@ -64,7 +84,11 @@ func (this *display) Name() string {
 }
 
 func (this *display) Size() (uint32, uint32) {
-	return this.info.Size.W, this.info.Size.H
+	if this.handle != rpi.DX_NO_HANDLE {
+		return this.info.Size.W, this.info.Size.H
+	} else {
+		return 0, 0
+	}
 }
 
 func (this *display) PixelsPerInch() uint32 {

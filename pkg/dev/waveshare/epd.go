@@ -4,17 +4,12 @@ import (
 	"fmt"
 
 	gopi "github.com/djthorpe/gopi/v3"
-	gpiobcm "github.com/djthorpe/gopi/v3/pkg/hw/gpiobcm"
-	spi "github.com/djthorpe/gopi/v3/pkg/hw/spi"
+	_ "github.com/djthorpe/gopi/v3/pkg/hw/gpio/broadcom"
 )
 
 type EPD struct {
 	gopi.Unit
-	*gpiobcm.GPIO
-	*spi.Devices
-
-	bus, slave *uint
-	dev        gopi.SPI
+	gopi.GPIO
 }
 
 const (
@@ -33,17 +28,10 @@ const (
 // IMPLEMENTATION
 
 func (this *EPD) Define(cfg gopi.Config) error {
-	this.bus = cfg.FlagUint("spi.bus", 0, "SPI Bus")
-	this.slave = cfg.FlagUint("spi.slave", 0, "SPI Bus")
 	return nil
 }
 
 func (this *EPD) New(gopi.Config) error {
-	if dev := this.Devices.Open(*bus, *slave); err != nil {
-		return err
-	} else {
-		fmt.Println("spi=", dev)
-	}
 	return nil
 }
 
@@ -57,13 +45,5 @@ func (this *EPD) Dispose() error {
 func (this *EPD) String() string {
 	str := "<epd"
 	str += " gpio=" + fmt.Sprint(this.GPIO)
-	str += " spi=" + fmt.Sprint(this.SPI)
 	return str + ">"
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// RESET
-
-func (this *EPD) Reset() error {
-
 }

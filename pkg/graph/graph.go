@@ -45,7 +45,6 @@ func NewGraph() *graph {
 // REGISTER INTERFACE TO UNIT
 
 func RegisterUnit(t, i reflect.Type) {
-	fmt.Println("RegisterUnit", t, "=>", i)
 	if err := Global.RegisterUnit(t, i); err != nil {
 		panic(err)
 	}
@@ -62,10 +61,10 @@ func (this *graph) RegisterUnit(t, i reflect.Type) error {
 		i = i.Elem()
 	}
 	if i.Kind() != reflect.Interface {
-		return gopi.ErrBadParameter.WithPrefix(i)
+		return gopi.ErrBadParameter.WithPrefix(i, "Not an interface")
 	}
 	if isUnitType(t) == false {
-		return gopi.ErrBadParameter.WithPrefix(t)
+		return gopi.ErrBadParameter.WithPrefix(t, "Not a gopi.Unit")
 	}
 	if t.Implements(i) == false {
 		return fmt.Errorf("%v does not implement interface %v", t, i)
@@ -75,6 +74,9 @@ func (this *graph) RegisterUnit(t, i reflect.Type) error {
 	} else {
 		this.iface[i] = t
 	}
+
+	fmt.Println("RegisterUnit", t, "=>", i)
+
 	return nil
 }
 

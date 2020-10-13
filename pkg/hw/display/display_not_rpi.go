@@ -5,9 +5,13 @@ package display
 import (
 	"fmt"
 	"strconv"
+
+	gopi "github.com/djthorpe/gopi/v3"
 )
 
 type display struct {
+	gopi.Unit
+
 	id uint16
 }
 

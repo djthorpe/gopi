@@ -47,6 +47,6 @@ func (e Error) Error() string {
 	}
 }
 
-func (e Error) WithPrefix(prefix interface{}) error {
-	return fmt.Errorf("%v: %w", prefix, e)
+func (e Error) WithPrefix(p ...interface{}) error {
+	return fmt.Errorf("%v: %w", fmt.Sprint(p...), e)
 }

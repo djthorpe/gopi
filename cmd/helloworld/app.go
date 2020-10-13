@@ -5,12 +5,11 @@ import (
 	"fmt"
 
 	"github.com/djthorpe/gopi/v3"
-	"github.com/djthorpe/gopi/v3/pkg/log"
 )
 
 type app struct {
 	gopi.Unit
-	*log.Log
+	gopi.Logger
 
 	name *string
 	wait *bool
@@ -39,6 +38,6 @@ func (this *app) Run(ctx context.Context) error {
 
 func (this *app) String() string {
 	str := "<app"
-	str += " log=" + fmt.Sprint(this.Log)
+	str += " log=" + fmt.Sprint(this.Logger)
 	return str + ">"
 }
