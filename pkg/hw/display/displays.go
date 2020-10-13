@@ -1,6 +1,9 @@
 package display
 
 import (
+	"fmt"
+	"sync"
+
 	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/hw/platform"
 	"github.com/hashicorp/go-multierror"
@@ -11,6 +14,7 @@ import (
 
 type Displays struct {
 	gopi.Unit
+	sync.Mutex
 	*platform.Platform
 
 	displays map[uint16]gopi.Display
@@ -38,6 +42,9 @@ func (this *Displays) Dispose() error {
 
 // Open returns a gopi.Display object based on id
 func (this *Displays) Open(id uint16) (gopi.Display, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	display := new(display)
 	if display_, exists := this.displays[id]; exists {
 		return display_, nil
@@ -53,6 +60,9 @@ func (this *Displays) Open(id uint16) (gopi.Display, error) {
 
 // Close disposes of an open display
 func (this *Displays) Close(id uint16) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if display_, exists := this.displays[id]; exists == false {
 		return gopi.ErrBadParameter
 	} else {
@@ -66,5 +76,8 @@ func (this *Displays) Close(id uint16) error {
 
 func (this *Displays) String() string {
 	str := "<displays"
+	for _, v := range this.displays {
+		str += " " + fmt.Sprint(v)
+	}
 	return str + ">"
 }

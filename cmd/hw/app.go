@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/graphics/fonts/freetype"
 	"github.com/djthorpe/gopi/v3/pkg/hw/display"
 	"github.com/djthorpe/gopi/v3/pkg/hw/gpiobcm"
 	"github.com/djthorpe/gopi/v3/pkg/hw/platform"
@@ -25,20 +26,26 @@ type app struct {
 	*display.Displays
 	*spi.Devices
 	*gpiobcm.GPIO
+	*freetype.FontManager
 
-	cmd gopi.Command
+	cmd     gopi.Command
+	fontdir *string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
 func (this *app) Define(cfg gopi.Config) error {
+	// Define flags
+	this.fontdir = cfg.FlagString("fontdir", "", "Font directory")
+
 	// Define commands
 	cfg.Command("hw", "Return hardware platform information", this.RunHardware)
 	cfg.Command("display", "Return display information", this.RunDisplays)
 	cfg.Command("spi", "Return SPI interface parameters", this.RunSpi)
 	cfg.Command("i2c", "Return I2C interface parameters", nil) // Not yet implemented
 	cfg.Command("gpio", "Return GPIO interface parameters", this.RunGpio)
+	cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
 
 	// Return success
 	return nil
@@ -171,13 +178,39 @@ func (this *app) RunGpio(context.Context) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// STRINGIFY
+func (this *app) RunFonts(context.Context) error {
+	if this.fontdir == nil || *this.fontdir == "" {
+		return gopi.ErrBadParameter.WithPrefix("Missing -fontdir flag")
+	} else if stat, err := os.Stat(*this.fontdir); os.IsNotExist(err) || stat.IsDir() == false {
+		return gopi.ErrBadParameter.WithPrefix("Invalid -fontdir flag")
+	}
 
-func (this *app) String() string {
-	str := "<app"
-	str += " platform=" + fmt.Sprint(this.Platform)
-	str += " spi=" + fmt.Sprint(this.Devices)
-	str += " gpio=" + fmt.Sprint(this.GPIO)
-	return str + ">"
+	manager := gopi.FontManager(this.FontManager)
+	if err := manager.OpenFacesAtPath(*this.fontdir, nil); err != nil {
+		return err
+	}
+	if families := manager.Families(); len(families) == 0 {
+		return fmt.Errorf("No fonts found")
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetAutoMergeCells(true)
+
+	table.SetHeader([]string{"Family", "Name", "Style", "Glyphs"})
+	for _, family := range manager.Families() {
+		for _, face := range manager.Faces(family, gopi.FONT_FLAGS_STYLE_ANY) {
+			table.Append([]string{
+				family,
+				face.Name(),
+				face.Style(),
+				fmt.Sprint(face.NumGlyphs()),
+			})
+		}
+	}
+
+	table.Render()
+
+	// Return success
+	return nil
 }

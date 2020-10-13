@@ -6,8 +6,8 @@ package platform
 import (
 	"fmt"
 
-	rpi "github.com/djthorpe/gopi/v2/sys/rpi"
 	gopi "github.com/djthorpe/gopi/v3"
+	rpi "github.com/djthorpe/gopi/v3/pkg/sys/rpi"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
