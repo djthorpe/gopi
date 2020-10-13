@@ -19,6 +19,10 @@ type (
 	GPIOEdge     uint8 // GPIOEdge is a rising or falling edge
 )
 
+type SPIDevice struct {
+	Bus, Slave uint
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
@@ -29,7 +33,7 @@ type Platform interface {
 	Uptime() time.Duration                     // Uptime returns uptime for host
 	LoadAverages() (float64, float64, float64) // LoadAverages returns 1, 5 and 15 minute load averages
 	NumberOfDisplays() uint                    // NumberOfDisplays returns the number of possible displays for this host
-	AttachedDisplays() []uint                  // AttachedDisplays returns array of displays which are actually attached
+	AttachedDisplays() []uint                  // AttachedDisplays returns array of displays which are connected
 }
 
 // SPI implements the SPI interface for sensors, etc.

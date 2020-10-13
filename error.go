@@ -17,6 +17,8 @@ const (
 	ErrUnexpectedResponse
 	ErrHelp
 	ErrInternalAppError
+	ErrDuplicateEntry
+	ErrOutOfOrder
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,11 +38,15 @@ func (e Error) Error() string {
 		return "Unexpected Response"
 	case ErrInternalAppError:
 		return "Internal Application Error"
+	case ErrDuplicateEntry:
+		return "Duplicate Entry"
+	case ErrOutOfOrder:
+		return "Out of Order"
 	default:
 		return "[?? Invalid Error]"
 	}
 }
 
-func (e Error) WithPrefix(prefix string) error {
-	return fmt.Errorf("%s: %w", prefix, e)
+func (e Error) WithPrefix(prefix interface{}) error {
+	return fmt.Errorf("%v: %w", prefix, e)
 }

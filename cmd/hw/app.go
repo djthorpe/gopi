@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
-	"github.com/djthorpe/gopi/v3/pkg/graphics/fonts/freetype"
-	"github.com/djthorpe/gopi/v3/pkg/hw/display"
-	"github.com/djthorpe/gopi/v3/pkg/hw/gpiobcm"
-	"github.com/djthorpe/gopi/v3/pkg/hw/platform"
-	"github.com/djthorpe/gopi/v3/pkg/hw/spi"
-	"github.com/djthorpe/gopi/v3/pkg/log"
 	"github.com/olekukonko/tablewriter"
+
+	_ "github.com/djthorpe/gopi/v3/pkg/graphics/fonts/freetype"
+	_ "github.com/djthorpe/gopi/v3/pkg/hw/gpiobcm"
+	_ "github.com/djthorpe/gopi/v3/pkg/hw/platform"
+	_ "github.com/djthorpe/gopi/v3/pkg/log"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,12 +20,10 @@ import (
 
 type app struct {
 	gopi.Unit
-	*log.Log
-	*platform.Platform
-	*display.Displays
-	*spi.Devices
-	*gpiobcm.GPIO
-	*freetype.FontManager
+	gopi.Logger
+	gopi.Platform
+	gopi.GPIO
+	gopi.FontManager
 
 	cmd     gopi.Command
 	fontdir *string
@@ -41,10 +38,10 @@ func (this *app) Define(cfg gopi.Config) error {
 
 	// Define commands
 	cfg.Command("hw", "Return hardware platform information", this.RunHardware)
-	cfg.Command("display", "Return display information", this.RunDisplays)
-	cfg.Command("spi", "Return SPI interface parameters", this.RunSpi)
+	cfg.Command("display", "Return display information", nil)
+	cfg.Command("spi", "Return SPI interface parameters", nil)
 	cfg.Command("i2c", "Return I2C interface parameters", nil) // Not yet implemented
-	cfg.Command("gpio", "Return GPIO interface parameters", this.RunGpio)
+	cfg.Command("gpio", "Return GPIO interface parameters", this.RunGPIO)
 	cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
 
 	// Return success
@@ -97,6 +94,8 @@ func (this *app) RunHardware(context.Context) error {
 	return nil
 }
 
+/*
+
 func (this *app) RunDisplays(context.Context) error {
 	displays := this.Displays.Enumerate()
 	if len(displays) == 0 {
@@ -123,6 +122,9 @@ func (this *app) RunDisplays(context.Context) error {
 	// Return success
 	return nil
 }
+*/
+
+/*
 
 func (this *app) RunSpi(context.Context) error {
 	devices := this.Devices.Enumerate()
@@ -147,8 +149,9 @@ func (this *app) RunSpi(context.Context) error {
 	// Return success
 	return nil
 }
+*/
 
-func (this *app) RunGpio(context.Context) error {
+func (this *app) RunGPIO(context.Context) error {
 	pins := this.GPIO.NumberOfPhysicalPins()
 	if pins == 0 {
 		return fmt.Errorf("No GPIO interface defined")
@@ -185,7 +188,7 @@ func (this *app) RunFonts(context.Context) error {
 		return gopi.ErrBadParameter.WithPrefix("Invalid -fontdir flag")
 	}
 
-	manager := gopi.FontManager(this.FontManager)
+	manager := this.FontManager
 	if err := manager.OpenFacesAtPath(*this.fontdir, nil); err != nil {
 		return err
 	}

@@ -50,15 +50,16 @@ func (this *Devices) Enumerate() []Device {
 }
 
 // Open SPI device
-func (this *Devices) Open(dev Device, delay uint16) (gopi.SPI, error) {
+func (this *Devices) Open(bus, slave uint, delay uint16) (gopi.SPI, error) {
 	// Check for already opened
-	if this.Get(dev) != nil {
+	if this.get(bus, slave) != nil {
 		return nil, gopi.ErrBadParameter
 	}
 
 	// Open the device
 	spi := new(spi)
-	if fd, err := linux.SPIOpenDevice(dev.Bus, dev.Slave); err != nil {
+	spi.Device = Device{bus, slave}
+	if fd, err := linux.SPIOpenDevice(bus, slave); err != nil {
 		return nil, err
 	} else {
 		spi.dev = fd
@@ -66,7 +67,7 @@ func (this *Devices) Open(dev Device, delay uint16) (gopi.SPI, error) {
 	}
 
 	this.RWMutex.Lock()
-	this.devices[dev] = spi
+	this.devices[spi.Device] = spi
 	this.RWMutex.Unlock()
 
 	// Get current mode, speed and bits per word
@@ -90,23 +91,22 @@ func (this *Devices) Open(dev Device, delay uint16) (gopi.SPI, error) {
 	return spi, nil
 }
 
-func (this *Devices) Close(dev Device) error {
-	// Get the device
-	spi, _ := this.Get(dev).(*spi)
-	if spi == nil {
+func (this *Devices) Close(dev gopi.SPI) error {
+	if dev == nil {
+		return gopi.ErrBadParameter
+	} else if dev_, ok := dev.(*spi); ok == false {
 		return gopi.ErrBadParameter
 	} else {
-		this.Delete(dev)
-	}
+		this.delete(dev_.Bus, dev_.Slave)
 
-	// Close the filehandle
-	spi.Mutex.Lock()
-	defer spi.Mutex.Unlock()
-	if spi.dev != nil {
-		if err := spi.dev.Close(); err != nil {
-			return err
-		} else {
-			spi.dev = nil
+		dev_.Mutex.Lock()
+		defer dev_.Mutex.Unlock()
+		if dev_.dev != nil {
+			if err := dev_.dev.Close(); err != nil {
+				return err
+			} else {
+				dev_.dev = nil
+			}
 		}
 	}
 

@@ -10,12 +10,14 @@ import (
 
 	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/config"
+	"github.com/djthorpe/gopi/v3/pkg/graph"
 )
 
 func CommandLine(name string, args []string, objs ...interface{}) int {
 	// Create empty configuration and graph
 	cfg := config.New(name, args)
-	graph, err := NewGraph(objs...)
+
+	graph, err := graph.Create(objs...)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "New:", err)
 		return -1
@@ -46,7 +48,7 @@ func CommandLine(name string, args []string, objs ...interface{}) int {
 
 	// Call Dispose on exit
 	defer func() {
-		if err := graph.Dispose(cfg); err != nil {
+		if err := graph.Dispose(); err != nil {
 			fmt.Fprintln(os.Stderr, "Dispose:", err)
 		}
 	}()

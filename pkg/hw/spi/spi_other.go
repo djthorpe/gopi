@@ -10,15 +10,15 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *Devices) Enumerate() []Device {
+func (this *Devices) Enumerate() []gopi.SPI {
 	return nil
 }
 
 // Open SPI device
-func (this *Devices) Open(dev Device, delay uint16) (gopi.SPI, error) {
+func (this *Devices) Open(bus, slave uint, delay uint16) (gopi.SPI, error) {
 	return nil, gopi.ErrNotImplemented
 }
 
-func (this *Devices) Close(dev Device) error {
+func (this *Devices) Close(gopi.SPI) error {
 	return gopi.ErrNotImplemented
 }

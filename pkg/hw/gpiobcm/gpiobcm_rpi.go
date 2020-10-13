@@ -96,8 +96,6 @@ var (
 // IMPLEMENTATION
 
 func (this *GPIO) New(gopi.Config) error {
-	this.Lock()
-	defer this.Unlock()
 
 	if _, product, err := rpi.VCGetSerialProduct(); err != nil {
 		return err
@@ -138,7 +136,7 @@ func (this *GPIO) New(gopi.Config) error {
 	return nil
 }
 
-func (this *GPIO) Close() error {
+func (this *GPIO) Dispose() error {
 	this.Lock()
 	defer this.Unlock()
 

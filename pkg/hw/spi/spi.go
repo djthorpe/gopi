@@ -36,8 +36,8 @@ func (this *Devices) New(gopi.Config) error {
 func (this *Devices) Dispose() error {
 	var result error
 
-	for k := range this.devices {
-		if err := this.Close(k); err != nil {
+	for k, v := range this.devices {
+		if err := this.Close(v); err != nil {
 			result = multierror.Append(result, err)
 		}
 		this.RWMutex.Lock()
@@ -48,14 +48,21 @@ func (this *Devices) Dispose() error {
 	return result
 }
 
-// Get returns a gopi.SPI object based on bus and slave
-func (this *Devices) Get(device Device) gopi.SPI {
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func (this Device) equals(other Device) bool {
+	return this.Bus == other.Bus && this.Slave == other.Slave
+}
+
+func (this *Devices) get(bus, slave uint) gopi.SPI {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	// Iterate to get device
-	for k, v := range this.devices {
-		if device.equals(k) {
+	// Iterate through map to get an open device
+	k := Device{bus, slave}
+	for other, v := range this.devices {
+		if other.equals(k) {
 			return v
 		}
 	}
@@ -64,17 +71,12 @@ func (this *Devices) Get(device Device) gopi.SPI {
 	return nil
 }
 
-func (this *Devices) Delete(device Device) {
+func (this *Devices) delete(bus, slave uint) {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
-	delete(this.devices, device)
-}
 
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-
-func (this Device) equals(other Device) bool {
-	return this.Bus == other.Bus && this.Slave == other.Slave
+	// Delete a key from the map
+	delete(this.devices, Device{bus, slave})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,14 +85,7 @@ func (this Device) equals(other Device) bool {
 func (this *Devices) String() string {
 	str := "<spi"
 	for _, device := range this.Enumerate() {
-		str += " " + fmt.Sprint(device) + "=" + fmt.Sprint(this.Get(device))
+		str += " " + fmt.Sprint(device)
 	}
-	return str + ">"
-}
-
-func (this Device) String() string {
-	str := "<device"
-	str += " bus=" + fmt.Sprint(this.Bus)
-	str += " slave=" + fmt.Sprint(this.Slave)
 	return str + ">"
 }

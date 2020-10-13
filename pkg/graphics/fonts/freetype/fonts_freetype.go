@@ -185,11 +185,6 @@ func (this *FontManager) Families() []string {
 	return familes_
 }
 
-// TODO: Return open face for filepath
-func (this *FontManager) FaceForPath(path string) gopi.FontFace {
-	return nil
-}
-
 // Return faces in a family and/or with a particular set of attributes
 func (this *FontManager) Faces(family string, flags gopi.FontFlags) []gopi.FontFace {
 	this.Lock()

@@ -44,6 +44,13 @@ type Unit struct{}
 // Event is a generic emitted event
 type Event interface{}
 
+// Logger outputs information and debug messages
+type Logger interface {
+	Print(args ...interface{}) // Output logging
+	Debug(args ...interface{}) // Output debugging information
+	IsDebug() bool             // IsDebug returns true if debug flag is set
+}
+
 /////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 

@@ -41,9 +41,6 @@ type FontManager interface {
 	// Return an array of font families which are loaded
 	Families() []string
 
-	// Return open face for filepath
-	FaceForPath(path string) FontFace
-
 	// Return faces in a family and/or with a particular set of attributes
 	Faces(family string, flags FontFlags) []FontFace
 }
