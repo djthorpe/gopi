@@ -1,0 +1,9 @@
+syntax = "proto3";
+package gopi.ping;
+
+option go_package = "github.com/djthorpe/gopi/v3/rpc/ping";
+import "google/protobuf/empty.proto";
+
+service Ping {
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+}

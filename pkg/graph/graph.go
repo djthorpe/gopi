@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/djthorpe/gopi/v3"
+	gopi "github.com/djthorpe/gopi/v3"
 	multierror "github.com/hashicorp/go-multierror"
 )
 

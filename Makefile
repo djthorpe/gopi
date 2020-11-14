@@ -24,15 +24,18 @@ rpi: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
 rpi: test install
 
 # Build rules
-testrace:
+protogen:
+	$(GO) generate -x ./pkg/rpc
+
+testrace: protogen
 	$(GO) clean -testcache
 	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) -race ./pkg/...
 
-test: 
+test: protogen
 	$(GO) clean -testcache
 	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test -count 5 $(TAGS) ./pkg/...
 
-install:
+install: protogen
 	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) install $(TAGS) ${GOFLAGS} ./cmd/...
 
 clean: 
