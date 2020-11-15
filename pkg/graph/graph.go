@@ -15,11 +15,12 @@ import (
 // TYPES
 
 type graph struct {
-	sync.Mutex
+	sync.RWMutex
 	sync.WaitGroup
 
 	units map[reflect.Type]reflect.Value
 	iface map[reflect.Type]reflect.Type
+	stubs map[string]reflect.Type
 	objs  []reflect.Value
 }
 
@@ -38,6 +39,7 @@ func NewGraph() *graph {
 	this := new(graph)
 	this.units = make(map[reflect.Type]reflect.Value)
 	this.iface = make(map[reflect.Type]reflect.Type)
+	this.stubs = make(map[string]reflect.Type)
 	return this
 }
 
@@ -51,8 +53,8 @@ func RegisterUnit(t, i reflect.Type) {
 }
 
 func (this *graph) RegisterUnit(t, i reflect.Type) error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
 	if t == nil || i == nil {
 		return gopi.ErrBadParameter.WithPrefix("RegisterUnit")
@@ -75,8 +77,32 @@ func (this *graph) RegisterUnit(t, i reflect.Type) error {
 		this.iface[i] = t
 	}
 
+	// Return success
 	fmt.Println("RegisterUnit", t, "=>", i)
+	return nil
+}
 
+func RegisterServiceStub(s string, t reflect.Type) {
+	if err := Global.RegisterServiceStub(s, t); err != nil {
+		panic(err)
+	}
+}
+
+func (this *graph) RegisterServiceStub(s string, t reflect.Type) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	// Check that type implements the stub interface
+	if isServiceStubType(t) == false {
+		return gopi.ErrNotImplemented.WithPrefix(s)
+	} else if _, exists := this.stubs[s]; exists {
+		return gopi.ErrDuplicateEntry.WithPrefix(s)
+	} else {
+		this.stubs[s] = t
+	}
+
+	// Return success
+	fmt.Println("RegisterServiceStub", t, "=>", s)
 	return nil
 }
 
@@ -92,8 +118,8 @@ func Create(objs ...interface{}) (*graph, error) {
 }
 
 func (this *graph) Create(objs ...interface{}) error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
 	// Check for parameters. Create cannot be called twice
 	if len(objs) == 0 {
@@ -116,8 +142,8 @@ func (this *graph) Create(objs ...interface{}) error {
 
 // Call Define for each unit object
 func (this *graph) Define(cfg gopi.Config) error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
 
 	var result error
 	seen := make(map[reflect.Type]bool, len(this.units))
@@ -131,8 +157,8 @@ func (this *graph) Define(cfg gopi.Config) error {
 
 // Call New for each unit object
 func (this *graph) New(cfg gopi.Config) error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
 
 	var result error
 	seen := make(map[reflect.Type]bool, len(this.units))
@@ -146,8 +172,8 @@ func (this *graph) New(cfg gopi.Config) error {
 
 // Call Dispose for each unit object
 func (this *graph) Dispose() error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
 
 	var result error
 	seen := make(map[reflect.Type]bool, len(this.units))
@@ -161,8 +187,8 @@ func (this *graph) Dispose() error {
 
 // Call Run for each unit object
 func (this *graph) Run(ctx context.Context) error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
 
 	seen := make(map[reflect.Type]bool, len(this.units))
 	cancels := []context.CancelFunc{}
@@ -206,6 +232,23 @@ func (this *graph) Run(ctx context.Context) error {
 		return ctx.Err()
 	} else {
 		return multierror.Append(result, ctx.Err())
+	}
+}
+
+func NewServiceStub(s string) gopi.ServiceStub {
+	return Global.NewServiceStub(s)
+}
+
+func (this *graph) NewServiceStub(s string) gopi.ServiceStub {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if t, exists := this.stubs[s]; exists == false {
+		return nil
+	} else if stub := reflect.New(t.Elem()); stub.IsValid() == false {
+		return nil
+	} else {
+		return stub.Interface().(gopi.ServiceStub)
 	}
 }
 

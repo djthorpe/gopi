@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
+	graph "github.com/djthorpe/gopi/v3/pkg/graph"
 	multierror "github.com/hashicorp/go-multierror"
 	grpc "google.golang.org/grpc"
 	reflection "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
@@ -16,8 +17,8 @@ import (
 
 type conn struct {
 	sync.Mutex
+	*grpc.ClientConn
 
-	conn *grpc.ClientConn
 	stub reflection.ServerReflectionClient
 }
 
@@ -35,7 +36,7 @@ func NewConn(c *grpc.ClientConn) gopi.Conn {
 	if stub := reflection.NewServerReflectionClient(c); stub == nil {
 		return nil
 	} else {
-		this.conn = c
+		this.ClientConn = c
 		this.stub = stub
 	}
 
@@ -46,8 +47,8 @@ func NewConn(c *grpc.ClientConn) gopi.Conn {
 // PROPERTIES
 
 func (this *conn) Addr() string {
-	if this.conn != nil {
-		return this.conn.Target()
+	if this.ClientConn != nil {
+		return this.ClientConn.Target()
 	} else {
 		return ""
 	}
@@ -62,12 +63,12 @@ func (this *conn) Close() error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	if this.conn != nil {
-		if err := this.conn.Close(); err != nil {
+	if this.ClientConn != nil {
+		if err := this.ClientConn.Close(); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
-	this.conn = nil
+	this.ClientConn = nil
 
 	return result
 }
@@ -108,14 +109,31 @@ func (this *conn) ListServices(ctx context.Context) ([]string, error) {
 	return services, nil
 }
 
+func (this *conn) NewStub(service string) gopi.ServiceStub {
+
+	// Exclusive lock
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	// Lookup stub and create a new one
+	if this.ClientConn == nil {
+		return nil
+	} else if stub := graph.NewServiceStub(service); stub == nil {
+		return nil
+	} else {
+		stub.New(this)
+		return stub
+	}
+}
+
 /////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *conn) String() string {
 	str := "<conn"
 	str += fmt.Sprintf(" addr=%q", this.Addr())
-	if this.conn != nil {
-		str += " state=" + fmt.Sprint(this.conn.GetState())
+	if this.ClientConn != nil {
+		str += " state=" + fmt.Sprint(this.ClientConn.GetState())
 	} else {
 		str += " state=CLOSED"
 	}

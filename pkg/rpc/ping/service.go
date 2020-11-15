@@ -2,14 +2,17 @@ package ping
 
 import (
 	"context"
+	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	empty "github.com/golang/protobuf/ptypes/empty"
 )
 
 type service struct {
+	gopi.Logger
 	gopi.Unit
 	gopi.Server
+	sync.Mutex
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -29,5 +32,12 @@ func (this *service) CancelStreams() {}
 
 // Ping simply returns an empty data structure when called
 func (this *service) Ping(context.Context, *empty.Empty) (*empty.Empty, error) {
+	this.Logger.Debug("<Ping>")
 	return &empty.Empty{}, nil
+}
+
+// Version returns information about the running process
+func (this *service) Version(context.Context, *empty.Empty) (*VersionResponse, error) {
+	this.Logger.Debug("<Version>")
+	return &VersionResponse{}, nil
 }

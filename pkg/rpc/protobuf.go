@@ -3,10 +3,10 @@ package rpc
 //go:generate protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative ping/ping.proto
 
 /*
-	This folder contains all the protocol buffer definitions including
-	the RPC Service definitions. You generate golang code by running:
+	This folder contains all the protocol buffer definitions. You
+	can generate golang code for these definitions by running:
 
-	  go generate -x github.com/djthorpe/gopi/rpc
+	  go generate -x github.com/djthorpe/gopi/v3/pkg/rpc
 
 	where you have installed the protoc compiler and the GRPC plugin for
 	golang. In order to do that on a Mac:

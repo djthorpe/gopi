@@ -12,6 +12,7 @@ import (
 
 var (
 	unitType = reflect.TypeOf((*gopi.Unit)(nil)).Elem()
+	stubType = reflect.TypeOf((*gopi.ServiceStub)(nil)).Elem()
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -51,6 +52,17 @@ func isUnitType(t reflect.Type) bool {
 		}
 	}
 	return false
+}
+
+// isServiceStubType returns true if a type implements a stubservice
+func isServiceStubType(t reflect.Type) bool {
+	if isStructPtr(t) == false {
+		return false
+	} else if t.Implements(stubType) == false {
+		return false
+	}
+	// Return success
+	return true
 }
 
 // equalsType returns true if two types are equivalent

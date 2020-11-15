@@ -34,6 +34,12 @@ type Conn interface {
 
 	// Methods
 	ListServices(context.Context) ([]string, error) // Return a list of services supported
+	NewStub(string) ServiceStub                     // Return the stub for a named service
+}
+
+// ServiceStub is a service stub used to invoke remote service methods
+type ServiceStub interface {
+	New(Conn)
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -41,4 +47,10 @@ type Conn interface {
 
 type PingService interface {
 	Service
+}
+
+type PingStub interface {
+	ServiceStub
+
+	Ping(ctx context.Context) error
 }
