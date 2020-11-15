@@ -13,12 +13,15 @@ type service struct {
 	gopi.Unit
 	gopi.Server
 	sync.Mutex
+
+	version gopi.Version
 }
 
 /////////////////////////////////////////////////////////////////////
 // INIT
 
 func (this *service) New(cfg gopi.Config) error {
+	this.version = cfg.Version()
 	return this.Server.RegisterService(RegisterPingServer, this)
 }
 
@@ -39,5 +42,5 @@ func (this *service) Ping(context.Context, *empty.Empty) (*empty.Empty, error) {
 // Version returns information about the running process
 func (this *service) Version(context.Context, *empty.Empty) (*VersionResponse, error) {
 	this.Logger.Debug("<Version>")
-	return &VersionResponse{}, nil
+	return toProtoVersion(this.version), nil
 }

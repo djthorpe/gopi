@@ -32,6 +32,10 @@ func New(name string, args []string) gopi.Config {
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
+func (this *config) Version() gopi.Version {
+	return NewVersion(this.FlagSet.Name())
+}
+
 func (this *config) Parse() error {
 	// Check for already parsed
 	if this.FlagSet.Parsed() {

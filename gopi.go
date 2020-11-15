@@ -2,15 +2,17 @@ package gopi
 
 import (
 	"context"
+	"time"
 )
 
 /////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 type Config interface {
-	Parse() error   // Parse command line arguments
-	Args() []string // Return arguments, not including flags
-	Usage(string)   // Print out usage for all or specific command
+	Parse() error     // Parse command line arguments
+	Args() []string   // Return arguments, not including flags
+	Usage(string)     // Print out usage for all or specific command
+	Version() Version // Return version information
 
 	// Define flags
 	FlagString(string, string, string) *string
@@ -36,6 +38,13 @@ type Command interface {
 	Usage() string             // Return usage information
 	Args() []string            // Return command arguments
 	Run(context.Context) error // Run the command
+}
+
+type Version interface {
+	Name() string                      // Return process name
+	Version() (string, string, string) // Return tag, branch and hash
+	BuildTime() time.Time              // Return time of process compilation
+	GoVersion() string                 // Return go compiler version
 }
 
 // Unit marks an singleton object

@@ -40,6 +40,18 @@ func (this *stub) Ping(ctx context.Context) error {
 	}
 }
 
+func (this *stub) Version(ctx context.Context) (gopi.Version, error) {
+	// Ensure one call per connection
+	this.Conn.Lock()
+	defer this.Conn.Unlock()
+
+	if version, err := this.PingClient.Version(ctx, &empty.Empty{}); err != nil {
+		return nil, err
+	} else {
+		return fromProtoVersion(version), nil
+	}
+}
+
 /////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

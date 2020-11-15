@@ -53,4 +53,5 @@ type PingStub interface {
 	ServiceStub
 
 	Ping(ctx context.Context) error
+	Version(ctx context.Context) (Version, error)
 }
