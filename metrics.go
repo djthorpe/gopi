@@ -51,4 +51,7 @@ type Field interface {
 
 	// SetValue sets specific value and returns error if unsupported
 	SetValue(interface{}) error
+
+	// Copy returns a copy of the field
+	Copy() Field
 }

@@ -1,12 +1,17 @@
 package event
 
 import (
-	"math/rand"
-	"sync"
 	"testing"
+	"time"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/tool"
 )
+
+type App struct {
+	gopi.Unit
+	gopi.Publisher
+}
 
 func Test_Event_000(t *testing.T) {
 	pub := &publisher{}
@@ -16,6 +21,35 @@ func Test_Event_000(t *testing.T) {
 		pub.Unsubscribe(ch)
 	}
 }
+
+func Test_Event_001(t *testing.T) {
+	tool.Test(t, nil, new(App), func(app *App) {
+		if app.Publisher == nil {
+			t.Error("Unexpected nil value for publisher")
+		}
+
+		go func() {
+			for i := 0; i < 100; i++ {
+				t.Log("Emit", i)
+				if err := app.Emit(nil); err != nil {
+					t.Error(err)
+				}
+			}
+		}()
+
+		go func() {
+			sub := app.Subscribe()
+			defer app.Unsubscribe(sub)
+			for evt := range sub {
+				t.Log("Receive", evt)
+			}
+		}()
+
+		time.Sleep(time.Second * 5)
+	})
+}
+
+/*
 
 func Test_Event_001(t *testing.T) {
 	var wg sync.WaitGroup
@@ -87,3 +121,4 @@ func Test_Event_002(t *testing.T) {
 		t.Error("Unexpected number of events,", evts, "!=", total*rcvs)
 	}
 }
+*/

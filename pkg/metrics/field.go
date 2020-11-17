@@ -117,51 +117,89 @@ func (this *field) SetValue(v interface{}) error {
 
 	if v == nil {
 		this.value = nil
-		this.kind = kNone
-	} else {
-		switch v.(type) {
-		case uint8:
-			this.value = v
-			this.kind = kUint8
-		case uint16:
-			this.value = v
-			this.kind = kUint16
-		case uint32:
-			this.value = v
-			this.kind = kUint32
-		case uint64:
-			this.value = v
-			this.kind = kUint64
-		case int8:
-			this.value = v
-			this.kind = kInt8
-		case int16:
-			this.value = v
-			this.kind = kInt16
-		case int32:
-			this.value = v
-			this.kind = kInt32
-		case int64:
-			this.value = v
-			this.kind = kInt64
-		case string:
-			this.value = v
-			this.kind = kString
-		case bool:
-			this.value = v
-			this.kind = kBool
-		case float32:
-			this.value = v
-			this.kind = kFloat32
-		case float64:
-			this.value = v
-			this.kind = kFloat64
-		case time.Time:
-			this.value = v
-			this.kind = kTime
-		default:
+		return nil
+	}
+	switch v.(type) {
+	case uint8:
+		if this.kind != kNone && this.kind != kUint8 {
 			return gopi.ErrBadParameter.WithPrefix(this.name)
 		}
+		this.value = v
+		this.kind = kUint8
+	case uint16:
+		if this.kind != kNone && this.kind != kUint16 {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kUint16
+	case uint32:
+		if this.kind != kNone && this.kind != kUint32 {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kUint32
+	case uint64:
+		if this.kind != kNone && this.kind != kUint64 {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kUint64
+	case int8:
+		if this.kind != kNone && this.kind != kInt8 {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kInt8
+	case int16:
+		if this.kind != kNone && this.kind != kInt16 {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kInt16
+	case int32:
+		if this.kind != kNone && this.kind != kInt32 {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kInt32
+	case int64:
+		if this.kind != kNone && this.kind != kInt64 {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kInt64
+	case string:
+		if this.kind != kNone && this.kind != kString {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kString
+	case bool:
+		if this.kind != kNone && this.kind != kBool {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kBool
+	case float32:
+		if this.kind != kNone && this.kind != kFloat32 {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kFloat32
+	case float64:
+		if this.kind != kNone && this.kind != kFloat64 {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kFloat64
+	case time.Time:
+		if this.kind != kNone && this.kind != kTime {
+			return gopi.ErrBadParameter.WithPrefix(this.name)
+		}
+		this.value = v
+		this.kind = kTime
+	default:
+		return gopi.ErrBadParameter.WithPrefix(this.name)
 	}
 
 	// Return success
@@ -190,6 +228,16 @@ func (this *field) SetKind(k string) error {
 
 	// Return success
 	return nil
+}
+
+func (this *field) Copy() gopi.Field {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	return &field{
+		name:  this.name,
+		value: this.value,
+		kind:  this.kind,
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

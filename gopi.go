@@ -66,7 +66,7 @@ type Event interface {
 
 // Publisher emits events and allows for subscribing to emitted events
 type Publisher interface {
-	Emit(Event)
+	Emit(Event) error
 	Subscribe() <-chan Event
 	Unsubscribe(<-chan Event)
 }

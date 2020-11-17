@@ -14,11 +14,13 @@ const (
 	ErrNone Error = iota
 	ErrBadParameter
 	ErrNotImplemented
+	ErrNotFound
 	ErrUnexpectedResponse
 	ErrHelp
 	ErrInternalAppError
 	ErrDuplicateEntry
 	ErrOutOfOrder
+	ErrChannelFull
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,6 +34,8 @@ func (e Error) Error() string {
 		return "Bad Parameter"
 	case ErrNotImplemented:
 		return "Not Implemented"
+	case ErrNotFound:
+		return "Not Found"
 	case ErrHelp:
 		return "Help Requested"
 	case ErrUnexpectedResponse:
@@ -42,6 +46,8 @@ func (e Error) Error() string {
 		return "Duplicate Entry"
 	case ErrOutOfOrder:
 		return "Out of Order"
+	case ErrChannelFull:
+		return "Channel Full"
 	default:
 		return "[?? Invalid Error]"
 	}

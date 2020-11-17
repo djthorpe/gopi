@@ -16,7 +16,7 @@ import (
 
 type measurement struct {
 	name    string
-	ts      gopi.Field
+	ts      time.Time
 	metrics []gopi.Field
 	tags    []gopi.Field
 }
@@ -45,7 +45,7 @@ func NewMeasurement(name, metrics string, tags ...gopi.Field) (*measurement, err
 	}
 
 	// Check tags
-	if nilElement(tags) {
+	if hasNilElement(tags) {
 		return nil, gopi.ErrBadParameter.WithPrefix(name)
 	} else if dup := duplicateName(tags); dup != "" {
 		return nil, gopi.ErrDuplicateEntry.WithPrefix(name)
@@ -54,26 +54,22 @@ func NewMeasurement(name, metrics string, tags ...gopi.Field) (*measurement, err
 	// Parse metrics and check metrics
 	if metrics, err := parseMetrics(metrics); err != nil {
 		return nil, err
-	} else if len(metrics) == 0 || nilElement(metrics) {
+	} else if len(metrics) == 0 || hasNilElement(metrics) {
 		return nil, gopi.ErrBadParameter.WithPrefix(name)
 	} else {
-		return &measurement{name, nil, metrics, tags}, nil
+		return &measurement{name, time.Time{}, metrics, tags}, nil
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS - MEASUREMENT
+// PUBLIC METHODS
 
 func (this *measurement) Name() string {
 	return this.name
 }
 
 func (this *measurement) Time() time.Time {
-	if this.ts == nil {
-		return time.Time{}
-	} else {
-		return this.ts.Value().(time.Time)
-	}
+	return this.ts
 }
 
 func (this *measurement) Tags() []gopi.Field {
@@ -82,6 +78,23 @@ func (this *measurement) Tags() []gopi.Field {
 
 func (this *measurement) Metrics() []gopi.Field {
 	return this.metrics
+}
+
+func (this *measurement) Clone(ts time.Time, values ...interface{}) (*measurement, error) {
+	// Check correct number of arguments
+	if len(values) != len(this.metrics) {
+		return nil, gopi.ErrBadParameter.WithPrefix("Clone")
+	}
+	metrics := make([]gopi.Field, len(values))
+	for i, value := range values {
+		metrics[i] = this.metrics[i].Copy()
+		if err := metrics[i].SetValue(value); err != nil {
+			return nil, err
+		}
+	}
+	return &measurement{
+		this.name, ts, metrics, this.tags,
+	}, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -170,7 +183,7 @@ func duplicateName(fields []gopi.Field) string {
 	return ""
 }
 
-func nilElement(fields []gopi.Field) bool {
+func hasNilElement(fields []gopi.Field) bool {
 	for _, field := range fields {
 		if field == nil {
 			return true
