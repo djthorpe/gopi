@@ -17,6 +17,8 @@ type publisher struct {
 }
 
 const (
+	// queuesize defines the buffer of events, in case the receiver is not
+	// quick at picking up events compared to sender
 	queuesize = 10
 )
 
@@ -31,6 +33,9 @@ func (this *publisher) Dispose() error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
+	// Close queue
+	close(this.q)
+
 	// Unsubscribe channels
 	for _, ch := range this.ch {
 		if ch != nil {
@@ -39,7 +44,6 @@ func (this *publisher) Dispose() error {
 	}
 
 	// Dispose
-	close(this.q)
 	this.q = nil
 	this.ch = nil
 
@@ -48,12 +52,10 @@ func (this *publisher) Dispose() error {
 }
 
 func (this *publisher) Run(ctx context.Context) error {
-	fmt.Println("RUN")
-FOR_LOOP:
 	for {
 		select {
 		case <-ctx.Done():
-			break FOR_LOOP
+			return nil
 		case evt := <-this.q:
 			for _, ch := range this.ch {
 				if ch != nil && evt != nil {
@@ -62,8 +64,6 @@ FOR_LOOP:
 			}
 		}
 	}
-	fmt.Println("RUN FINISHED")
-	return nil
 }
 
 func (this *publisher) Subscribe() <-chan gopi.Event {
@@ -87,13 +87,19 @@ func (this *publisher) Unsubscribe(ch <-chan gopi.Event) {
 	}
 }
 
-func (this *publisher) Emit(evt gopi.Event) error {
+func (this *publisher) Emit(evt gopi.Event, block bool) error {
 	// Use NullEvent when evt is nil
 	if evt == nil {
 		evt = NewNullEvent()
 	}
 
-	// Emit and return error if cannot emit
+	// Blocking case
+	if block {
+		this.q <- evt
+		return nil
+	}
+
+	// Non-blocking case
 	select {
 	case this.q <- evt:
 		return nil

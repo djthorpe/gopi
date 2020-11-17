@@ -11,8 +11,9 @@ import (
 // GLOBALS
 
 var (
-	unitType = reflect.TypeOf((*gopi.Unit)(nil)).Elem()
-	stubType = reflect.TypeOf((*gopi.ServiceStub)(nil)).Elem()
+	unitType   = reflect.TypeOf((*gopi.Unit)(nil)).Elem()
+	stubType   = reflect.TypeOf((*gopi.ServiceStub)(nil)).Elem()
+	loggerType = reflect.TypeOf((*gopi.Logger)(nil)).Elem()
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -54,6 +55,17 @@ func isUnitType(t reflect.Type) bool {
 	return false
 }
 
+// isLoggerType returns true if a struct ptr is a gopi.Logger
+func isLoggerType(t reflect.Type) bool {
+	if isStructPtr(t) == false {
+		return false
+	} else if t.Implements(loggerType) == false {
+		return false
+	}
+	// Return success
+	return true
+}
+
 // isServiceStubType returns true if a type implements a stubservice
 func isServiceStubType(t reflect.Type) bool {
 	if isStructPtr(t) == false {
@@ -62,7 +74,7 @@ func isServiceStubType(t reflect.Type) bool {
 		return false
 	}
 	// Return success
- 	return true
+	return true
 }
 
 // equalsType returns true if two types are equivalent

@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -21,6 +22,11 @@ type metrics struct {
 
 	m map[string]*measurement
 }
+
+const (
+	retrycount      = 5
+	retrydurationms = 10
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
@@ -73,6 +79,7 @@ func (this *metrics) Emit(name string, values ...interface{}) error {
 }
 
 // EmitTS emits metrics for a named measurement, with defined timestamp
+// will retry if the channel is temporarily full
 func (this *metrics) EmitTS(name string, ts time.Time, values ...interface{}) error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
@@ -82,12 +89,18 @@ func (this *metrics) EmitTS(name string, ts time.Time, values ...interface{}) er
 		return gopi.ErrBadParameter.WithPrefix("Emit", name)
 	} else if m, err := m.Clone(ts, values...); err != nil {
 		return err
-	} else if err := this.Publisher.Emit(m); err != nil {
-		return err
+	} else {
+		for i := 0; i < retrycount; i++ {
+			if err := this.Publisher.Emit(m, false); errors.Is(err, gopi.ErrChannelFull) {
+				time.Sleep(time.Millisecond * retrydurationms)
+			} else if err != nil {
+				return err
+			} else {
+				return nil
+			}
+		}
+		return gopi.ErrChannelFull.WithPrefix("Emit", name)
 	}
-
-	// Return success
-	return nil
 }
 
 func (this *metrics) Measurements() []gopi.Measurement {

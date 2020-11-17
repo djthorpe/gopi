@@ -1,7 +1,10 @@
 package event
 
 import (
+	"math/rand"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/tool"
@@ -27,91 +30,65 @@ func Test_Event_001(t *testing.T) {
 			t.Error("Unexpected nil value for publisher")
 		}
 
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		// Receive null events
 		go func() {
-			for evt := range app.Subscribe() {
-				t.Log("Receive", evt)
+			i := 0
+			ch := app.Subscribe()
+			wg.Done()
+			for evt := range ch {
+				t.Log("->Receive", i, evt)
+				wg.Done()
+				i++
 			}
 		}()
 
-		for i := 0; i < 100; i++ {
-			t.Log("Emit", i)
-			if err := app.Emit(nil); err != nil {
-				t.Error(err)
-			}
+		wg.Wait()
+
+		// Emit null events
+		for i := 0; i < rand.Intn(1000)+1; i++ {
+			wg.Add(1)
+			t.Log("->Emit", i)
+			app.Emit(nil, true)
 		}
+		wg.Wait()
 	})
 }
 
-/*
-
-func Test_Event_001(t *testing.T) {
-	var wg sync.WaitGroup
-
-	pub := &publisher{}
-	evts := 0
-	total := 100
-	ch := pub.Subscribe()
-
-	// Receive events
-	go func() {
-		wg.Add(1)
-		for _ = range ch {
-			evts += 1
-		}
-		wg.Done()
-	}()
-
-	// Emit events
-	for i := 0; i < total; i++ {
-		pub.Emit(nil)
-	}
-
-	// Unsubscribe channel
-	pub.Unsubscribe(ch)
-
-	// Wait for end of goroutine
-	wg.Wait()
-
-	// Check for number of events
-	if evts != total {
-		t.Error("Unexpected number of events,", evts, "!=", total)
-	}
-}
-
 func Test_Event_002(t *testing.T) {
-	pub := &publisher{}
-	evts := 0
-	rcvs := rand.Int() % 20
-	total := 100
-
-	var wg sync.WaitGroup
-
-	// Receive events
-	recv := func(ch <-chan gopi.Event) {
-		for _ = range ch {
-			t.Log("got", evts)
-			evts += 1
-		}
-		wg.Done()
-	}
-
-	// Receive events in the background
-	for i := 0; i < rcvs; i++ {
+	tool.Test(t, nil, new(App), func(app *App) {
+		var wg sync.WaitGroup
 		wg.Add(1)
-		go recv(pub.Subscribe())
-	}
 
-	// Emit events
-	for i := 0; i < total; i++ {
-		pub.Emit(nil)
-	}
+		// Receive null events
+		go func() {
+			i := 0
+			ch := app.Subscribe()
+			wg.Done()
+			for evt := range ch {
+				t.Log("->Receive", i, evt)
+				wg.Done()
+				i++
+			}
+		}()
 
-	// Wait for all goroutinnes completed
-	wg.Wait()
+		wg.Wait()
 
-	// Check for number of events
-	if evts != total*rcvs {
-		t.Error("Unexpected number of events,", evts, "!=", total*rcvs)
-	}
+		// Emit null events
+		for i := 0; i < rand.Intn(1000)+1; i++ {
+			wg.Add(1)
+			for {
+				t.Log("->Emit", i)
+				if err := app.Emit(nil, false); err != nil {
+					t.Log("  (channel full, waiting for 10ms)")
+					time.Sleep(time.Millisecond * 10)
+				} else {
+					break
+				}
+			}
+		}
+		wg.Wait()
+	})
 }
-*/

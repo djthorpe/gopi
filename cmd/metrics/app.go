@@ -24,7 +24,9 @@ func (this *app) Define(cfg gopi.Config) error {
 }
 
 func (this *app) New(cfg gopi.Config) error {
-	this.Command = cfg.GetCommand(cfg.Args())
+	if this.Command = cfg.GetCommand(cfg.Args()); this.Command == nil {
+		return gopi.ErrHelp
+	}
 	return nil
 }
 

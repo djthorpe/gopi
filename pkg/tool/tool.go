@@ -16,12 +16,14 @@ import (
 func CommandLine(name string, args []string, objs ...interface{}) int {
 	// Create empty configuration and graph
 	cfg := config.New(name, args)
-
 	graph, err := graph.Create(objs...)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "New:", err)
 		return -1
 	}
+
+	// Get logger object
+	logger := graph.GetLogger()
 
 	// Call Define for each object
 	if err := graph.Define(cfg); err != nil {
@@ -46,6 +48,12 @@ func CommandLine(name string, args []string, objs ...interface{}) int {
 		return -1
 	}
 
+	// If there is a gopi.Logger object and debug is set then
+	// use the Debug method to output extra information
+	if logger != nil && logger.IsDebug() {
+		graph.Logfn = logger.Debug
+	}
+
 	// Call Dispose on exit
 	defer func() {
 		if err := graph.Dispose(); err != nil {
@@ -61,7 +69,9 @@ func CommandLine(name string, args []string, objs ...interface{}) int {
 	signal.Notify(ch, os.Interrupt)
 	go func() {
 		s := <-ch
-		fmt.Println("Got signal:", s)
+		if logger != nil && logger.IsDebug() {
+			logger.Debug("Got signal: ", s)
+		}
 		cancel()
 	}()
 

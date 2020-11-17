@@ -2,9 +2,9 @@ package graph
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -20,7 +20,7 @@ type graph struct {
 
 	units map[reflect.Type]reflect.Value
 	objs  []reflect.Value
-	logfn func(...interface{})
+	Logfn func(...interface{})
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -39,7 +39,7 @@ var (
 func NewGraph(fn func(...interface{})) *graph {
 	this := new(graph)
 	this.units = make(map[reflect.Type]reflect.Value)
-	this.logfn = fn
+	this.Logfn = fn
 	return this
 }
 
@@ -186,34 +186,34 @@ func (this *graph) Run(ctx context.Context) error {
 	cancels := []context.CancelFunc{}
 	errs := make(chan error)
 
-	// Collect errors
-	var result error
-	go func() {
-		for err := range errs {
-			if err != nil && errors.Is(err, context.Canceled) == false {
-				result = multierror.Append(result, err)
-			}
-			this.WaitGroup.Done()
-		}
-	}()
-
 	// Send cancels on context end
-	go func() {
-		// Wait until the context is done
-		<-ctx.Done()
-
-		// Call cancels
-		for _, cancel := range cancels {
-			cancel()
-		}
-	}()
+	var result error
 
 	// Call run functions
 	for _, obj := range this.objs {
 		cancels = append(cancels, this.run(obj, errs, seen)...)
 	}
 
-	// Wait for Run() functions to complete
+	go func() {
+		// Wait until the context is done or any error is received
+		if err := waitForEndRun(ctx, errs); err != nil {
+			result = multierror.Append(result, err)
+		}
+
+		// Send cancels
+		for _, cancel := range cancels {
+			cancel()
+		}
+
+		// Wait for remaining errors
+		for err := range errs {
+			if err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}()
+
+	// Wait for all run routines to end
 	this.WaitGroup.Wait()
 
 	// Close err channel
@@ -224,6 +224,19 @@ func (this *graph) Run(ctx context.Context) error {
 		return ctx.Err()
 	} else {
 		return multierror.Append(result, ctx.Err())
+	}
+}
+
+func waitForEndRun(ctx context.Context, errs <-chan error) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case err := <-errs:
+			if err != nil {
+				return err
+			}
+		}
 	}
 }
 
@@ -242,6 +255,19 @@ func (this *graph) NewServiceStub(s string) gopi.ServiceStub {
 	} else {
 		return stub.Interface().(gopi.ServiceStub)
 	}
+}
+
+// GetLogger returns a logger object if used, or nil
+func (this *graph) GetLogger() gopi.Logger {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	for t, obj := range this.units {
+		if isLoggerType(t) {
+			return obj.Interface().(gopi.Logger)
+		}
+	}
+	return nil
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -296,13 +322,15 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 		return gopi.ErrBadParameter.WithPrefix(unit.Type().String())
 	}
 
-	if this.logfn != nil {
-		this.logfn(fn, "=>", unit.Type())
+	if this.Logfn != nil {
+		this.Logfn(fn, "=>", unit.Type())
 	}
 
 	// For each field, call function
 	if err := forEachField(unit, func(f reflect.StructField, i int) error {
 		if t := this.unitTypeForField(f); t == nil {
+			return nil
+		} else if _, exists := seen[t]; exists {
 			return nil
 		} else if err := this.do(fn, this.units[t], args, seen); err != nil {
 			return err
@@ -323,20 +351,21 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.Type]bool) []context.CancelFunc {
 	cancels := []context.CancelFunc{}
 
-	if this.logfn != nil {
-		this.logfn("Run", "=>", unit.Type())
+	if this.Logfn != nil {
+		this.Logfn("Run started", " => ", unit.Type())
 	}
 
 	// Recurse into run
 	forEachField(unit, func(f reflect.StructField, i int) error {
-		if _, exists := seen[f.Type]; exists {
+		t := this.unitTypeForField(f)
+		if t == nil {
 			return nil
 		}
-		if isUnitType(f.Type) == false {
+		if _, exists := seen[t]; exists {
 			return nil
 		}
-		seen[f.Type] = true
-		cancels = append(cancels, this.run(this.units[f.Type], errs, seen)...)
+		seen[t] = true
+		cancels = append(cancels, this.run(this.units[t], errs, seen)...)
 		return nil
 	})
 
@@ -344,7 +373,16 @@ func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.T
 	ctx, cancel := context.WithCancel(context.Background())
 	this.WaitGroup.Add(1)
 	go func() {
-		errs <- callFn("Run", unit, []reflect.Value{reflect.ValueOf(ctx)})
+		err := callFn("Run", unit, []reflect.Value{reflect.ValueOf(ctx)})
+		if this.Logfn != nil {
+			if err == nil {
+				this.Logfn("Run ended", " => ", unit.Type(), " successfully")
+			} else {
+				this.Logfn("Run ended", " => ", unit.Type(), " with error ", strconv.Quote(err.Error()))
+			}
+		}
+		errs <- err
+		this.WaitGroup.Done()
 	}()
 
 	return append(cancels, cancel)

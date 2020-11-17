@@ -1,6 +1,8 @@
 package main
 
-import "sync"
+import (
+	"sync"
+)
 
 type table struct {
 	sync.Mutex
@@ -30,8 +32,6 @@ func (this *table) Scan(row []string) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	if columns == nil {
-		// Initialize header row
-	}
+	//fmt.Println(row)
 
 }
