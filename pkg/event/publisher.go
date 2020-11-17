@@ -48,9 +48,9 @@ func (this *publisher) Dispose() error {
 }
 
 func (this *publisher) Run(ctx context.Context) error {
+	fmt.Println("RUN")
 FOR_LOOP:
 	for {
-		fmt.Println("RUN")
 		select {
 		case <-ctx.Done():
 			break FOR_LOOP
@@ -88,15 +88,12 @@ func (this *publisher) Unsubscribe(ch <-chan gopi.Event) {
 }
 
 func (this *publisher) Emit(evt gopi.Event) error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
-
 	// Use NullEvent when evt is nil
 	if evt == nil {
 		evt = NewNullEvent()
 	}
 
-	// Emit and return error if cannot send
+	// Emit and return error if cannot emit
 	select {
 	case this.q <- evt:
 		return nil

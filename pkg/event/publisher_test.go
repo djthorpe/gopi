@@ -2,7 +2,6 @@ package event
 
 import (
 	"testing"
-	"time"
 
 	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/tool"
@@ -29,23 +28,17 @@ func Test_Event_001(t *testing.T) {
 		}
 
 		go func() {
-			for i := 0; i < 100; i++ {
-				t.Log("Emit", i)
-				if err := app.Emit(nil); err != nil {
-					t.Error(err)
-				}
-			}
-		}()
-
-		go func() {
-			sub := app.Subscribe()
-			defer app.Unsubscribe(sub)
-			for evt := range sub {
+			for evt := range app.Subscribe() {
 				t.Log("Receive", evt)
 			}
 		}()
 
-		time.Sleep(time.Second * 5)
+		for i := 0; i < 100; i++ {
+			t.Log("Emit", i)
+			if err := app.Emit(nil); err != nil {
+				t.Error(err)
+			}
+		}
 	})
 }
 
