@@ -28,6 +28,7 @@ const (
 	stateIdent = iota
 	stateEquals
 	stateValue
+	stateDone
 )
 
 var (

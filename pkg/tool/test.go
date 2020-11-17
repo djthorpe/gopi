@@ -58,8 +58,8 @@ func Test(t *testing.T, args []string, obj, fn interface{}) int {
 		t.Error("Invalid test function")
 		return -1
 	} else {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			fn_.Call([]reflect.Value{reflect.ValueOf(obj)})
 			cancel()
 			wg.Done()
@@ -67,7 +67,7 @@ func Test(t *testing.T, args []string, obj, fn interface{}) int {
 	}
 
 	// Call Run
-	if err := g.Run(ctx); err != nil {
+	if err := g.Run(ctx); err != nil && err != context.Canceled {
 		t.Error("Run:", err)
 		return -1
 	}
@@ -78,7 +78,7 @@ func Test(t *testing.T, args []string, obj, fn interface{}) int {
 		return -1
 	}
 
-	// End test routine
+	// Wait for end of test routine
 	wg.Wait()
 
 	// Return success

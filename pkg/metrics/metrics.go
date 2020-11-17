@@ -113,18 +113,50 @@ func (this *metrics) String() string {
 // PRIVATE METHODS
 
 func parseField(src string) (gopi.Field, error) {
+	var field gopi.Field
 	var s scanner.Scanner
 	s.Init(strings.NewReader(src))
 
 	// Start state looking for an identifier
-	//state := stateIdent
+	state := stateIdent
 
 	// Scan tokens
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		value := s.TokenText()
-		fmt.Println("TOK", value)
+		text := s.TokenText()
+		switch state {
+		case stateIdent:
+			if field = NewField(text); field == nil {
+				return nil, gopi.ErrBadParameter.WithPrefix(text)
+			}
+			state = stateEquals
+		case stateEquals:
+			if text != "=" {
+				return nil, gopi.ErrBadParameter.WithPrefix(field.Name())
+			}
+			state = stateValue
+		case stateValue:
+			if value := parseValue(text); value == nil {
+				return nil, gopi.ErrBadParameter.WithPrefix(field.Name())
+			} else if err := field.SetValue(value); err != nil {
+				return nil, err
+			}
+			state = stateDone
+		case stateDone:
+			return nil, gopi.ErrBadParameter.WithPrefix(field.Name())
+		default:
+			return nil, gopi.ErrInternalAppError
+		}
+	}
+
+	// Field without default value
+	if state == stateEquals || state == stateDone {
+		return field, nil
 	}
 
 	// Return success
 	return nil, gopi.ErrNotImplemented
+}
+
+func parseValue(src string) interface{} {
+	return nil
 }
