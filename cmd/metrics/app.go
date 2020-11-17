@@ -13,7 +13,6 @@ type app struct {
 	gopi.Unit
 	gopi.Logger
 	gopi.Metrics
-	gopi.Platform
 	gopi.Publisher
 	gopi.Command
 }

@@ -162,7 +162,8 @@ func (this *graph) New(cfg gopi.Config) error {
 	return result
 }
 
-// Call Dispose for each unit object
+// Call Dispose for each unit object. At the moment, the order of
+// the Dispose is not considered.
 func (this *graph) Dispose() error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
@@ -177,7 +178,10 @@ func (this *graph) Dispose() error {
 	return result
 }
 
-// Call Run for each unit object
+// Call Run for each unit object and wait for one of the following
+// conditions: 1. ctx.Done() returns a value 2. any unit Run() function
+// returns an error or 3. All object Run functions return, regardless of
+// error or not. Any error is returned or nil if Run completed successfully
 func (this *graph) Run(ctx context.Context) error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
@@ -190,13 +194,15 @@ func (this *graph) Run(ctx context.Context) error {
 	var result error
 
 	// Call run functions
+	c := new(counter)
 	for _, obj := range this.objs {
-		cancels = append(cancels, this.run(obj, errs, seen)...)
+		cancels = append(cancels, this.run(obj, errs, seen, c)...)
 	}
 
 	go func() {
-		// Wait until the context is done or any error is received
-		if err := waitForEndRun(ctx, errs); err != nil {
+		// Wait until the context is done, any error is received, or all
+		// objects ended
+		if err := waitForEndRun(ctx, errs, c); err != nil {
 			result = multierror.Append(result, err)
 		}
 
@@ -227,10 +233,12 @@ func (this *graph) Run(ctx context.Context) error {
 	}
 }
 
-func waitForEndRun(ctx context.Context, errs <-chan error) error {
+func waitForEndRun(ctx context.Context, errs <-chan error, objs *counter) error {
 	for {
 		select {
 		case <-ctx.Done():
+			return nil
+		case <-objs.Done():
 			return nil
 		case err := <-errs:
 			if err != nil {
@@ -348,7 +356,7 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 	return callFn(fn, unit, args)
 }
 
-func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.Type]bool) []context.CancelFunc {
+func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.Type]bool, obj *counter) []context.CancelFunc {
 	cancels := []context.CancelFunc{}
 
 	if this.Logfn != nil {
@@ -365,7 +373,7 @@ func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.T
 			return nil
 		}
 		seen[t] = true
-		cancels = append(cancels, this.run(this.units[t], errs, seen)...)
+		cancels = append(cancels, this.run(this.units[t], errs, seen, nil)...)
 		return nil
 	})
 
@@ -373,7 +381,13 @@ func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.T
 	ctx, cancel := context.WithCancel(context.Background())
 	this.WaitGroup.Add(1)
 	go func() {
+		// If top level object, decrement counter by one
+		if obj != nil {
+			obj.Add(1)
+		}
+		// Call Run and wait for error
 		err := callFn("Run", unit, []reflect.Value{reflect.ValueOf(ctx)})
+		// Debug
 		if this.Logfn != nil {
 			if err == nil {
 				this.Logfn("Run ended", " => ", unit.Type(), " successfully")
@@ -381,7 +395,13 @@ func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.T
 				this.Logfn("Run ended", " => ", unit.Type(), " with error ", strconv.Quote(err.Error()))
 			}
 		}
+		// Emit error
 		errs <- err
+		// If top level object, decrement counter by one
+		if obj != nil {
+			obj.Sub(1)
+		}
+		// Decrement waitgroup
 		this.WaitGroup.Done()
 	}()
 
