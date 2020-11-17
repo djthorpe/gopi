@@ -50,14 +50,25 @@ type Version interface {
 // Unit marks an singleton object
 type Unit struct{}
 
-// Event is a generic emitted event
-type Event interface{}
-
 // Logger outputs information and debug messages
 type Logger interface {
-	Print(args ...interface{}) // Output logging
-	Debug(args ...interface{}) // Output debugging information
-	IsDebug() bool             // IsDebug returns true if debug flag is set
+	Print(args ...interface{})              // Output logging
+	Debug(args ...interface{})              // Output debugging information
+	Printf(fmt string, args ...interface{}) // Output logging with format
+	Debugf(fmt string, args ...interface{}) // Output debugging with format
+	IsDebug() bool                          // IsDebug returns true if debug flag is set
+}
+
+// Event is an emitted event
+type Event interface {
+	Name() string // Return name of the event
+}
+
+// Publisher emits events and allows for subscribing to emitted events
+type Publisher interface {
+	Emit(Event)
+	Subscribe() <-chan Event
+	Unsubscribe(<-chan Event)
 }
 
 /////////////////////////////////////////////////////////////////////

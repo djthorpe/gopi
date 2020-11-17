@@ -13,7 +13,8 @@ type Server interface {
 	Addr() string                                 // Addr returns the address of the server, or empty if not connected
 }
 
-// Service defines an RPC service, which can cancel any on-going requests
+// Service defines an RPC service, which can cancel any on-going streams
+// when server stops
 type Service interface {
 	CancelStreams()
 }
@@ -37,7 +38,7 @@ type Conn interface {
 	NewStub(string) ServiceStub                     // Return the stub for a named service
 }
 
-// ServiceStub is a service stub used to invoke remote service methods
+// ServiceStub is a client-side stub used to invoke remote service methods
 type ServiceStub interface {
 	New(Conn)
 }

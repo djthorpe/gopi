@@ -54,6 +54,20 @@ func (this *Log) Debug(args ...interface{}) {
 	}
 }
 
+func (this *Log) Printf(fmt string, args ...interface{}) {
+	this.Lock()
+	defer this.Unlock()
+	log.Printf(fmt, args...)
+}
+
+func (this *Log) Debugf(fmt string, args ...interface{}) {
+	if this.IsDebug() {
+		this.Lock()
+		defer this.Unlock()
+		log.Printf(fmt, args...)
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

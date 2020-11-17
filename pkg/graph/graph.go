@@ -19,43 +19,46 @@ type graph struct {
 	sync.WaitGroup
 
 	units map[reflect.Type]reflect.Value
-	iface map[reflect.Type]reflect.Type
-	stubs map[string]reflect.Type
 	objs  []reflect.Value
+	logfn func(...interface{})
 }
 
 /////////////////////////////////////////////////////////////////////
 // GLOBALS
 
 var (
-	Global = NewGraph()
+	Global = NewGraph(nil)
+	iface  = make(map[reflect.Type]reflect.Type)
+	stubs  = make(map[string]reflect.Type)
 )
 
 /////////////////////////////////////////////////////////////////////
 // CONSTRUCTOR
 
 // Construct empty graph
-func NewGraph() *graph {
+func NewGraph(fn func(...interface{})) *graph {
 	this := new(graph)
 	this.units = make(map[reflect.Type]reflect.Value)
-	this.iface = make(map[reflect.Type]reflect.Type)
-	this.stubs = make(map[string]reflect.Type)
+	this.logfn = fn
 	return this
 }
 
 /////////////////////////////////////////////////////////////////////
-// REGISTER INTERFACE TO UNIT
+// REGISTRATION FUNCTIONS
 
 func RegisterUnit(t, i reflect.Type) {
-	if err := Global.RegisterUnit(t, i); err != nil {
+	if err := registerUnit(t, i); err != nil {
 		panic(err)
 	}
 }
 
-func (this *graph) RegisterUnit(t, i reflect.Type) error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
+func RegisterServiceStub(s string, t reflect.Type) {
+	if err := registerServiceStub(s, t); err != nil {
+		panic(err)
+	}
+}
 
+func registerUnit(t, i reflect.Type) error {
 	if t == nil || i == nil {
 		return gopi.ErrBadParameter.WithPrefix("RegisterUnit")
 	}
@@ -71,38 +74,27 @@ func (this *graph) RegisterUnit(t, i reflect.Type) error {
 	if t.Implements(i) == false {
 		return fmt.Errorf("%v does not implement interface %v", t, i)
 	}
-	if _, exists := this.iface[i]; exists {
+	if _, exists := iface[i]; exists {
 		return gopi.ErrDuplicateEntry.WithPrefix(i)
 	} else {
-		this.iface[i] = t
+		iface[i] = t
 	}
 
 	// Return success
-	fmt.Println("RegisterUnit", t, "=>", i)
 	return nil
 }
 
-func RegisterServiceStub(s string, t reflect.Type) {
-	if err := Global.RegisterServiceStub(s, t); err != nil {
-		panic(err)
-	}
-}
-
-func (this *graph) RegisterServiceStub(s string, t reflect.Type) error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
+func registerServiceStub(s string, t reflect.Type) error {
 	// Check that type implements the stub interface
 	if isServiceStubType(t) == false {
 		return gopi.ErrNotImplemented.WithPrefix(s)
-	} else if _, exists := this.stubs[s]; exists {
+	} else if _, exists := stubs[s]; exists {
 		return gopi.ErrDuplicateEntry.WithPrefix(s)
 	} else {
-		this.stubs[s] = t
+		stubs[s] = t
 	}
 
 	// Return success
-	fmt.Println("RegisterServiceStub", t, "=>", s)
 	return nil
 }
 
@@ -243,7 +235,7 @@ func (this *graph) NewServiceStub(s string) gopi.ServiceStub {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	if t, exists := this.stubs[s]; exists == false {
+	if t, exists := stubs[s]; exists == false {
 		return nil
 	} else if stub := reflect.New(t.Elem()); stub.IsValid() == false {
 		return nil
@@ -288,8 +280,8 @@ func (this *graph) graph(unit reflect.Value) error {
 
 func (this *graph) unitTypeForField(f reflect.StructField) reflect.Type {
 	if f.Type.Kind() == reflect.Interface {
-		if _, exists := this.iface[f.Type]; exists {
-			return this.iface[f.Type]
+		if _, exists := iface[f.Type]; exists {
+			return iface[f.Type]
 		}
 	} else if isUnitType(f.Type) {
 		return f.Type
@@ -299,10 +291,13 @@ func (this *graph) unitTypeForField(f reflect.StructField) reflect.Type {
 }
 
 func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen map[reflect.Type]bool) error {
-
 	// Check incoming parameter
 	if isUnitType(unit.Type()) == false {
 		return gopi.ErrBadParameter.WithPrefix(unit.Type().String())
+	}
+
+	if this.logfn != nil {
+		this.logfn(fn, "=>", unit.Type())
 	}
 
 	// For each field, call function
@@ -327,6 +322,10 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 
 func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.Type]bool) []context.CancelFunc {
 	cancels := []context.CancelFunc{}
+
+	if this.logfn != nil {
+		this.logfn("Run", "=>", unit.Type())
+	}
 
 	// Recurse into run
 	forEachField(unit, func(f reflect.StructField, i int) error {

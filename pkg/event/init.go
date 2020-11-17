@@ -1,4 +1,4 @@
-package log
+package event
 
 import (
 	"reflect"
@@ -8,5 +8,5 @@ import (
 )
 
 func init() {
-	graph.RegisterUnit(reflect.TypeOf(&Log{}), reflect.TypeOf((*gopi.Logger)(nil)))
+	graph.RegisterUnit(reflect.TypeOf(&publisher{}), reflect.TypeOf((*gopi.Publisher)(nil)))
 }

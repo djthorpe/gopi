@@ -62,7 +62,7 @@ func isServiceStubType(t reflect.Type) bool {
 		return false
 	}
 	// Return success
-	return true
+ 	return true
 }
 
 // equalsType returns true if two types are equivalent

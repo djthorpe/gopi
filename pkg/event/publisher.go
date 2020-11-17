@@ -7,24 +7,14 @@ import (
 	"github.com/djthorpe/gopi/v3"
 )
 
-type Publisher struct {
+type publisher struct {
+	gopi.Unit
 	sync.Mutex
+
 	ch []chan gopi.Event
 }
 
-func (this *Publisher) Close() {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
-
-	for _, ch := range this.ch {
-		if ch != nil {
-			close(ch)
-		}
-	}
-	this.ch = nil
-}
-
-func (this *Publisher) Subscribe() <-chan gopi.Event {
+func (this *publisher) Subscribe() <-chan gopi.Event {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -33,7 +23,7 @@ func (this *Publisher) Subscribe() <-chan gopi.Event {
 	return ch
 }
 
-func (this *Publisher) Unsubscribe(ch <-chan gopi.Event) {
+func (this *publisher) Unsubscribe(ch <-chan gopi.Event) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -45,7 +35,7 @@ func (this *Publisher) Unsubscribe(ch <-chan gopi.Event) {
 	}
 }
 
-func (this *Publisher) Emit(evt gopi.Event) {
+func (this *publisher) Emit(evt gopi.Event) {
 	for _, ch := range this.ch {
 		if ch != nil {
 			ch <- evt
@@ -56,7 +46,7 @@ func (this *Publisher) Emit(evt gopi.Event) {
 ///////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *Publisher) String() string {
+func (this *publisher) String() string {
 	str := "<publisher"
 	if this == nil {
 		str += " nil"

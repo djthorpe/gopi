@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	os.Exit(tool.CommandLine("douglas", os.Args[1:], new(app)))
+	os.Exit(tool.CommandLine("metrics", os.Args[1:], new(app)))
 }

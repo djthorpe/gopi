@@ -1,4 +1,4 @@
-package event_test
+package event
 
 import (
 	"math/rand"
@@ -6,11 +6,10 @@ import (
 	"testing"
 
 	"github.com/djthorpe/gopi/v3"
-	"github.com/djthorpe/gopi/v3/pkg/event"
 )
 
 func Test_Event_000(t *testing.T) {
-	pub := &event.Publisher{}
+	pub := &publisher{}
 	if ch := pub.Subscribe(); ch == nil {
 		t.Error("Unexpected nil return value")
 	} else {
@@ -21,7 +20,7 @@ func Test_Event_000(t *testing.T) {
 func Test_Event_001(t *testing.T) {
 	var wg sync.WaitGroup
 
-	pub := &event.Publisher{}
+	pub := &publisher{}
 	evts := 0
 	total := 100
 	ch := pub.Subscribe()
@@ -53,7 +52,7 @@ func Test_Event_001(t *testing.T) {
 }
 
 func Test_Event_002(t *testing.T) {
-	pub := &event.Publisher{}
+	pub := &publisher{}
 	evts := 0
 	rcvs := rand.Int() % 20
 	total := 100
@@ -79,9 +78,6 @@ func Test_Event_002(t *testing.T) {
 	for i := 0; i < total; i++ {
 		pub.Emit(nil)
 	}
-
-	// Unsubscribe all receivers
-	pub.Close()
 
 	// Wait for all goroutinnes completed
 	wg.Wait()
