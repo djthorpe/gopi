@@ -55,6 +55,7 @@ func (this *app) Version(v gopi.Version) func(context.Context) error {
 		if version := v.GoVersion(); version != "" {
 			fmt.Printf("%-10s %s\n", "GoVersion", version)
 		}
+		return nil
 	}
 }
 
@@ -67,14 +68,14 @@ func (this *app) Serve(ctx context.Context) error {
 		network = "tcp"
 		addr = ":0"
 	case len(args) == 1:
-		if _, _, err := net.SplitHostPort(args[0]); err == nil {
+		if _, _, err := net.SplitHostPort(args[0]); err != nil {
+			return err
+		} else {
 			network = "tcp"
 			addr = args[0]
-			break
 		}
-		fallthrough
 	default:
-		return gopi.ErrHelp.WithPrefix(this.Command.Name())
+		return gopi.ErrBadParameter.WithPrefix(this.Command.Name())
 	}
 
 	if err := this.Server.StartInBackground(network, addr); err != nil {

@@ -66,20 +66,20 @@ func Test(t *testing.T, args []string, obj, fn interface{}) int {
 		}()
 	}
 
-	// Call Run
+	// Call run
 	if err := g.Run(ctx); err != nil && err != context.Canceled {
 		t.Error("Run:", err)
 		return -1
 	}
+
+	// Wait for end of test routine before dispose called
+	wg.Wait()
 
 	// Call Dispose
 	if err := g.Dispose(); err != nil {
 		t.Error("Dispose:", err)
 		return -1
 	}
-
-	// Wait for end of test routine
-	wg.Wait()
 
 	// Return success
 	return 0

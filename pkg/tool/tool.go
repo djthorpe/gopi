@@ -11,6 +11,7 @@ import (
 	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/config"
 	"github.com/djthorpe/gopi/v3/pkg/graph"
+	_ "github.com/djthorpe/gopi/v3/pkg/log"
 )
 
 func CommandLine(name string, args []string, objs ...interface{}) int {

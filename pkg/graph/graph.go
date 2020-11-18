@@ -345,8 +345,14 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 		return gopi.ErrBadParameter.WithPrefix(unit.Type().String())
 	}
 
-	if this.Logfn != nil {
-		this.Logfn(strings.Repeat(" ", indent*2), fn, "=>", unit.Type())
+	var result error
+	if fn == "Dispose" {
+		if this.Logfn != nil {
+			this.Logfn(strings.Repeat(" ", indent*2), fn, "=>", unit.Type())
+		}
+		if err := callFn(fn, unit, args); err != nil {
+			result = multierror.Append(result, err)
+		}
 	}
 
 	// For each field, call function
@@ -356,19 +362,26 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 		} else if _, exists := seen[t]; exists {
 			return nil
 		} else if err := this.do(fn, this.units[t], args, seen, indent+1); err != nil {
+			seen[t] = true
 			return err
 		} else {
 			seen[t] = true
 		}
-
-		// Return success
 		return nil
 	}); err != nil {
-		return err
+		result = multierror.Append(result, err)
 	}
 
-	// Call the function and return the error
-	return callFn(fn, unit, args)
+	if fn != "Dispose" {
+		if this.Logfn != nil {
+			this.Logfn(strings.Repeat(" ", indent*2), fn, "=>", unit.Type())
+		}
+		if err := callFn(fn, unit, args); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	return result
 }
 
 func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.Type]bool, obj *counter) []context.CancelFunc {
