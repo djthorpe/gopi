@@ -20,14 +20,19 @@ var (
 // PRIVATE METHODS
 
 // forEachField calls a function for each field of a struct ptr
-// and returns all errors
-func forEachField(unit reflect.Value, fn func(reflect.StructField, int) error) error {
+// and returns all errors, or immediately with a single error if
+// immediate is set
+func forEachField(unit reflect.Value, immediate bool, fn func(reflect.StructField, int) error) error {
 	var result error
 	if isStructPtr(unit.Type()) {
 		t := unit.Elem().Type()
 		for i := 0; i < t.NumField(); i++ {
 			if err := fn(t.Field(i), i); err != nil {
-				result = multierror.Append(result, err)
+				if immediate {
+					return err
+				} else {
+					result = multierror.Append(result, err)
+				}
 			}
 		}
 	}

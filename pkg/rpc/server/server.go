@@ -10,6 +10,7 @@ import (
 	gopi "github.com/djthorpe/gopi/v3"
 	multierror "github.com/hashicorp/go-multierror"
 	grpc "google.golang.org/grpc"
+	credentials "google.golang.org/grpc/credentials"
 	reflection "google.golang.org/grpc/reflection"
 )
 
@@ -27,15 +28,26 @@ type server struct {
 /////////////////////////////////////////////////////////////////////
 // INIT
 
+func (this *server) Define(cfg gopi.Config) error {
+	cfg.FlagString("ssl.cert", "", "SSL certificate file")
+	cfg.FlagString("ssl.key", "", "SSL key file")
+	cfg.FlagDuration("timeout", 0, "Connection timeout")
+	return nil
+}
+
 func (this *server) New(cfg gopi.Config) error {
-	// Create a gRPC server
-	if server := grpc.NewServer(); server == nil {
+	opts := []grpc.ServerOption{}
+	if opts, err := appendServerCredentialOption(cfg, opts); err != nil {
+		return err
+	} else if opts, err := appendConnectionTimeoutOption(cfg, opts); err != nil {
+		return err
+	} else if server := grpc.NewServer(opts...); server == nil {
 		return gopi.ErrBadParameter
 	} else {
 		this.srv = server
 	}
 
-	// Register reflection
+	// Register reflection service
 	reflection.Register(this.srv)
 
 	// Return success
@@ -158,4 +170,27 @@ func (this *server) String() string {
 	}
 
 	return str + ">"
+}
+
+/////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func appendServerCredentialOption(cfg gopi.Config, opts []grpc.ServerOption) ([]grpc.ServerOption, error) {
+	cert := cfg.GetString("ssl.cert")
+	key := cfg.GetString("ssl.key")
+	if cert != "" || key != "" {
+		if creds, err := credentials.NewServerTLSFromFile(cert, key); err != nil {
+			return nil, err
+		} else {
+			opts = append(opts, grpc.Creds(creds))
+		}
+	}
+	return opts, nil
+}
+
+func appendConnectionTimeoutOption(cfg gopi.Config, opts []grpc.ServerOption) ([]grpc.ServerOption, error) {
+	if timeout := cfg.GetDuration("timeout"); timeout > 0 {
+		opts = append(opts, grpc.ConnectionTimeout(timeout))
+	}
+	return opts, nil
 }

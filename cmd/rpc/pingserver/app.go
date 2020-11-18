@@ -11,6 +11,7 @@ type app struct {
 	gopi.Unit
 	gopi.Server
 	gopi.PingService
+	gopi.Logger
 }
 
 func (this *app) Run(ctx context.Context) error {

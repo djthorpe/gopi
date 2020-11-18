@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -140,7 +141,7 @@ func (this *graph) Define(cfg gopi.Config) error {
 	var result error
 	seen := make(map[reflect.Type]bool, len(this.units))
 	for _, obj := range this.objs {
-		if err := this.do("Define", obj, []reflect.Value{reflect.ValueOf(cfg)}, seen); err != nil {
+		if err := this.do("Define", obj, []reflect.Value{reflect.ValueOf(cfg)}, seen, 0); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
@@ -152,14 +153,15 @@ func (this *graph) New(cfg gopi.Config) error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	var result error
 	seen := make(map[reflect.Type]bool, len(this.units))
 	for _, obj := range this.objs {
-		if err := this.do("New", obj, []reflect.Value{reflect.ValueOf(cfg)}, seen); err != nil {
-			result = multierror.Append(result, err)
+		if err := this.do("New", obj, []reflect.Value{reflect.ValueOf(cfg)}, seen, 0); err != nil {
+			return err
 		}
 	}
-	return unwrap(result)
+
+	// Return success
+	return nil
 }
 
 // Call Dispose for each unit object. At the moment, the order of
@@ -171,7 +173,7 @@ func (this *graph) Dispose() error {
 	var result error
 	seen := make(map[reflect.Type]bool, len(this.units))
 	for _, obj := range this.objs {
-		if err := this.do("Dispose", obj, []reflect.Value{}, seen); err != nil {
+		if err := this.do("Dispose", obj, []reflect.Value{}, seen, 0); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
@@ -302,7 +304,7 @@ func (this *graph) graph(unit reflect.Value) error {
 
 	// For each field, initialise either by mapping an interface to
 	// a registered unit type or directly
-	return forEachField(unit, func(f reflect.StructField, i int) error {
+	return forEachField(unit, false, func(f reflect.StructField, i int) error {
 		t := this.unitTypeForField(f)
 		if t == nil {
 			return nil
@@ -337,23 +339,23 @@ func (this *graph) unitTypeForField(f reflect.StructField) reflect.Type {
 	return nil
 }
 
-func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen map[reflect.Type]bool) error {
+func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen map[reflect.Type]bool, indent int) error {
 	// Check incoming parameter
 	if isUnitType(unit.Type()) == false {
 		return gopi.ErrBadParameter.WithPrefix(unit.Type().String())
 	}
 
 	if this.Logfn != nil {
-		this.Logfn(fn, "=>", unit.Type())
+		this.Logfn(strings.Repeat(" ", indent*2), fn, "=>", unit.Type())
 	}
 
 	// For each field, call function
-	if err := forEachField(unit, func(f reflect.StructField, i int) error {
+	if err := forEachField(unit, fn == "New", func(f reflect.StructField, i int) error {
 		if t := this.unitTypeForField(f); t == nil {
 			return nil
 		} else if _, exists := seen[t]; exists {
 			return nil
-		} else if err := this.do(fn, this.units[t], args, seen); err != nil {
+		} else if err := this.do(fn, this.units[t], args, seen, indent+1); err != nil {
 			return err
 		} else {
 			seen[t] = true
@@ -377,7 +379,7 @@ func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.T
 	}
 
 	// Recurse into run
-	forEachField(unit, func(f reflect.StructField, i int) error {
+	forEachField(unit, false, func(f reflect.StructField, i int) error {
 		t := this.unitTypeForField(f)
 		if t == nil {
 			return nil

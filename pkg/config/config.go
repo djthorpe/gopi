@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/djthorpe/gopi/v3"
 )
@@ -111,6 +112,10 @@ func (this *config) FlagUint(name string, value uint, usage string) *uint {
 	return this.FlagSet.Uint(name, value, usage)
 }
 
+func (this *config) FlagDuration(name string, value time.Duration, usage string) *time.Duration {
+	return this.FlagSet.Duration(name, value, usage)
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // GET PROPERTIES
 
@@ -142,6 +147,16 @@ func (this *config) GetUint(name string) uint {
 	}
 }
 
+func (this *config) GetDuration(name string) time.Duration {
+	if flag := this.FlagSet.Lookup(name); flag == nil {
+		return 0
+	} else if value_, err := time.ParseDuration(flag.Value.String()); err != nil {
+		return 0
+	} else {
+		return value_
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -164,7 +179,9 @@ func (this *config) usageAll() {
 	fmt.Fprintln(w, "Syntax:")
 	fmt.Fprintf(w, "  %v (<flags>) <command> (<args>)\n", name)
 	fmt.Fprintf(w, "  %v -help (<command>)\n", name)
-	fmt.Fprintln(w, "\nCommands:")
+	if len(this.commands) > 0 {
+		fmt.Fprintln(w, "\nCommands:")
+	}
 	for _, cmd := range this.commands {
 		fmt.Fprintf(w, "  %v %v\n  \t%v\n", cmd.name, "TODO", cmd.usage)
 	}

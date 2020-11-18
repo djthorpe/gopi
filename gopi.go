@@ -18,6 +18,7 @@ type Config interface {
 	FlagString(string, string, string) *string
 	FlagBool(string, bool, string) *bool
 	FlagUint(string, uint, string) *uint
+	FlagDuration(string, time.Duration, string) *time.Duration
 
 	// Define commands
 	Command(string, string, CommandFunc) error // Append a command with name and usage arguments
@@ -26,6 +27,7 @@ type Config interface {
 	GetString(string) string
 	GetBool(string) bool
 	GetUint(string) uint
+	GetDuration(string) time.Duration
 	GetCommand([]string) Command // Get command from provided arguments
 }
 
