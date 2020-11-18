@@ -129,7 +129,7 @@ func (this *graph) Create(objs ...interface{}) error {
 			this.objs = append(this.objs, obj_)
 		}
 	}
-	return result
+	return unwrap(result)
 }
 
 // Call Define for each unit object
@@ -144,7 +144,7 @@ func (this *graph) Define(cfg gopi.Config) error {
 			result = multierror.Append(result, err)
 		}
 	}
-	return result
+	return unwrap(result)
 }
 
 // Call New for each unit object
@@ -159,7 +159,7 @@ func (this *graph) New(cfg gopi.Config) error {
 			result = multierror.Append(result, err)
 		}
 	}
-	return result
+	return unwrap(result)
 }
 
 // Call Dispose for each unit object. At the moment, the order of
@@ -175,7 +175,7 @@ func (this *graph) Dispose() error {
 			result = multierror.Append(result, err)
 		}
 	}
-	return result
+	return unwrap(result)
 }
 
 // Call Run for each unit object and wait for one of the following
@@ -229,7 +229,7 @@ func (this *graph) Run(ctx context.Context) error {
 	if result == nil {
 		return ctx.Err()
 	} else {
-		return multierror.Append(result, ctx.Err())
+		return unwrap(multierror.Append(result, ctx.Err()))
 	}
 }
 
@@ -246,6 +246,19 @@ func waitForEndRun(ctx context.Context, errs <-chan error, objs *counter) error 
 			}
 		}
 	}
+}
+
+func unwrap(err error) error {
+	if err != nil {
+		if err_, ok := err.(*multierror.Error); ok {
+			if len(err_.Errors) == 0 {
+				return nil
+			} else if len(err_.Errors) == 1 {
+				return err_.Errors[0]
+			}
+		}
+	}
+	return err
 }
 
 func NewServiceStub(s string) gopi.ServiceStub {
@@ -397,12 +410,12 @@ func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.T
 		}
 		// Emit error
 		errs <- err
+		// Decrement waitgroup
+		this.WaitGroup.Done()
 		// If top level object, decrement counter by one
 		if obj != nil {
 			obj.Sub(1)
 		}
-		// Decrement waitgroup
-		this.WaitGroup.Done()
 	}()
 
 	return append(cancels, cancel)
