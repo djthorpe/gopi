@@ -7,8 +7,9 @@ import (
 
 type counter struct {
 	sync.RWMutex
-	c chan struct{}
-	v int
+	c    chan struct{}
+	v    int
+	done bool
 }
 
 func (this *counter) Add(i int) {
@@ -18,7 +19,7 @@ func (this *counter) Add(i int) {
 		this.c = make(chan struct{})
 	}
 	this.v += i
-	if this.v == 0 {
+	if this.v == 0 && this.done {
 		this.c <- struct{}{}
 	}
 }
@@ -30,7 +31,7 @@ func (this *counter) Sub(i int) {
 		this.c = make(chan struct{})
 	}
 	this.v -= i
-	if this.v == 0 {
+	if this.v == 0 && this.done {
 		this.c <- struct{}{}
 	}
 }

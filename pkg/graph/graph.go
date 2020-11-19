@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -22,6 +21,7 @@ type graph struct {
 	units map[reflect.Type]reflect.Value
 	objs  []reflect.Value
 	Logfn func(...interface{})
+	errs  chan error
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -180,59 +180,93 @@ func (this *graph) Dispose() error {
 	return unwrap(result)
 }
 
-// Call Run for each unit object and wait for one of the following
-// conditions: 1. ctx.Done() returns a value 2. any unit Run() function
-// returns an error or 3. All object Run functions return, regardless of
-// error or not. Any error is returned or nil if Run completed successfully
-func (this *graph) Run(ctx context.Context) error {
+// Call Run for each unit object and wait for all to complete
+func (this *graph) Run(ctx context.Context, done bool) error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	seen := make(map[reflect.Type]bool, len(this.units))
-	cancels := []context.CancelFunc{}
-	errs := make(chan error)
+	// Set up channel for receiving errors from Run invocations
+	this.errs = make(chan error)
 
-	// Send cancels on context end
+	// Collect errors
 	var result error
-
-	// Call run functions
-	c := new(counter)
-	for _, obj := range this.objs {
-		cancels = append(cancels, this.run(obj, errs, seen, c)...)
-	}
-
 	go func() {
-		// Wait until the context is done, any error is received, or all
-		// objects ended
-		if err := waitForEndRun(ctx, errs, c); err != nil {
-			result = multierror.Append(result, err)
-		}
-
-		// Send cancels
-		for _, cancel := range cancels {
-			cancel()
-		}
-
-		// Wait for remaining errors
-		for err := range errs {
+		for err := range this.errs {
 			if err != nil {
 				result = multierror.Append(result, err)
+				// Perform cancels!
+				fmt.Println("TODO: Perform cancels")
 			}
 		}
 	}()
 
-	// Wait for all run routines to end
-	this.WaitGroup.Wait()
-
-	// Close err channel
-	close(errs)
-
-	// Return the context cancel reason
-	if result == nil {
-		return ctx.Err()
-	} else {
-		return unwrap(multierror.Append(result, ctx.Err()))
+	// Call Run functions
+	seen := make(map[reflect.Type]bool, len(this.units))
+	for _, obj := range this.objs {
+		if err := this.do("Run", obj, []reflect.Value{reflect.ValueOf(ctx)}, seen, 0); err != nil {
+			result = multierror.Append(result, err)
+		}
 	}
+
+	// Wait for all Run functions to complete, then finish
+	// collecting errors
+	this.WaitGroup.Wait()
+	close(this.errs)
+
+	// Return the result
+	return unwrap(result)
+}
+
+/*
+		this.RWMutex.RLock()
+		defer this.RWMutex.RUnlock()
+
+		seen := make(map[reflect.Type]bool, len(this.units))
+		cancels := []context.CancelFunc{}
+		errs := make(chan error)
+
+		// Send cancels on context end
+		var result error
+
+		// Call run functions
+		c := new(counter)
+		c.done = done
+		for _, obj := range this.objs {
+			cancels = append(cancels, this.run(obj, errs, seen, c)...)
+		}
+
+		go func() {
+			// Wait until the context is done, any error is received, or all
+			// objects ended
+			if err := waitForEndRun(ctx, errs, c); err != nil {
+				result = multierror.Append(result, err)
+			}
+
+			// Send cancels
+			for _, cancel := range cancels {
+				cancel()
+			}
+
+			// Wait for remaining errors
+			for err := range errs {
+				if err != nil {
+					result = multierror.Append(result, err)
+				}
+			}
+		}()
+
+		// Wait for all run routines to end
+		this.WaitGroup.Wait()
+
+		// Close err channel
+		close(errs)
+
+		// Return the context cancel reason
+		if result == nil {
+			return ctx.Err()
+		} else {
+			return unwrap(multierror.Append(result, ctx.Err()))
+		}
 }
 
 func waitForEndRun(ctx context.Context, errs <-chan error, objs *counter) error {
@@ -249,6 +283,7 @@ func waitForEndRun(ctx context.Context, errs <-chan error, objs *counter) error 
 		}
 	}
 }
+*/
 
 func unwrap(err error) error {
 	if err != nil {
@@ -372,7 +407,12 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 		result = multierror.Append(result, err)
 	}
 
-	if fn != "Dispose" {
+	if fn == "Run" {
+		if this.Logfn != nil {
+			this.Logfn(strings.Repeat(" ", indent*2), fn, "=>", unit.Type())
+		}
+		this.callRun(unit, args)
+	} else if fn != "Dispose" {
 		if this.Logfn != nil {
 			this.Logfn(strings.Repeat(" ", indent*2), fn, "=>", unit.Type())
 		}
@@ -384,6 +424,17 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 	return result
 }
 
+func (this *graph) callRun(unit reflect.Value, args []reflect.Value) {
+	this.WaitGroup.Add(1)
+	ctx := args[0].Interface().(context.Context)
+	go func() {
+		this.errs <- callFn("Run", unit, args)
+		this.WaitGroup.Done()
+		<-ctx.Done()
+	}()
+}
+
+/*
 func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.Type]bool, obj *counter) []context.CancelFunc {
 	cancels := []context.CancelFunc{}
 
@@ -435,6 +486,7 @@ func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.T
 
 	return append(cancels, cancel)
 }
+*/
 
 /////////////////////////////////////////////////////////////////////
 // STRINGIFY

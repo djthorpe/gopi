@@ -32,4 +32,5 @@ _testmain.go
 *.pb.go
 go.sum
 *.tmp
+.vscode
 

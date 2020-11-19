@@ -30,30 +30,45 @@ func Test_Event_001(t *testing.T) {
 			t.Error("Unexpected nil value for publisher")
 		}
 
-		var wg sync.WaitGroup
-		wg.Add(1)
+		var wg, wg2 sync.WaitGroup
+
+		// Number of messages to send
+		msgs := rand.Intn(1000) + 1
+
+		// Subscribe
+		ch := app.Publisher.Subscribe()
+		defer app.Publisher.Unsubscribe(ch)
+
+		// Emit all null events
+		wg2.Add(1)
+		go func(n int) {
+			wg.Add(n)
+			for i := 0; i < n; i++ {
+				t.Log("Emitting events", i+1, "of", n)
+				if err := app.Publisher.Emit(nil, true); err != nil {
+					t.Error(err)
+				}
+			}
+			wg2.Done()
+		}(msgs)
 
 		// Receive null events
-		go func() {
-			i := 0
-			ch := app.Subscribe()
-			wg.Done()
-			for evt := range ch {
-				t.Log("->Receive", i, evt)
-				wg.Done()
+		wg2.Add(1)
+		go func(n int) {
+			i := 1
+			for _ = range ch {
+				t.Log("Receiving event", i, "of", n)
 				i++
+				wg.Done()
 			}
-		}()
+			wg2.Done()
+		}(msgs)
 
+		t.Log("Waiting for all messages received")
 		wg.Wait()
+		t.Log("Waiting for goroutines to end")
+		//wg2.Wait()
 
-		// Emit null events
-		for i := 0; i < rand.Intn(1000)+1; i++ {
-			wg.Add(1)
-			t.Log("->Emit", i)
-			app.Emit(nil, true)
-		}
-		wg.Wait()
 	})
 }
 

@@ -61,15 +61,18 @@ func Test(t *testing.T, args []string, obj, fn interface{}) int {
 		wg.Add(1)
 		go func() {
 			fn_.Call([]reflect.Value{reflect.ValueOf(obj)})
+			t.Log("Calling cancel")
 			cancel()
 			wg.Done()
 		}()
 	}
 
 	// Call run
-	if err := g.Run(ctx); err != nil && err != context.Canceled {
+	if err := g.Run(ctx, false); err != nil && err != context.Canceled {
 		t.Error("Run:", err)
 		return -1
+	} else if err == context.Canceled {
+		t.Log("Cancel called")
 	}
 
 	// Wait for end of test routine before dispose called

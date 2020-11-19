@@ -76,8 +76,8 @@ func CommandLine(name string, args []string, objs ...interface{}) int {
 		cancel()
 	}()
 
-	// Call Run
-	if err := graph.Run(ctx); err != nil && err != context.Canceled {
+	// Call Run and end when all top-level object Run methods return
+	if err := graph.Run(ctx, true); err != nil && err != context.Canceled {
 		fmt.Fprintln(os.Stderr, "Run:", err)
 		return -1
 	}
