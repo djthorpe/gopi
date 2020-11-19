@@ -4,10 +4,18 @@
 package linux
 
 import (
+	"io/ioutil"
 	"net"
+	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
+)
+
+const (
+	TEMPERATURE_PATH = "/sys/class/thermal"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,6 +66,30 @@ func LoadAverage() (float64, float64, float64) {
 	} else {
 		return 0, 0, 0
 	}
+}
+
+func TemperatureZones() map[string]float32 {
+	zones, err := ioutil.ReadDir(TEMPERATURE_PATH)
+	if err != nil {
+		return nil
+	}
+	temps := make(map[string]float32, len(zones))
+	for _, zone := range zones {
+		if data, err := ioutil.ReadFile(filepath.Join(TEMPERATURE_PATH, zone.Name(), "temp")); err != nil {
+			continue
+		} else if name, err := ioutil.ReadFile(filepath.Join(TEMPERATURE_PATH, zone.Name(), "type")); err != nil {
+			continue
+		} else {
+			data_ := strings.TrimSpace(string(data))
+			name_ := strings.TrimSpace(string(name))
+			if value, err := strconv.ParseFloat(data_, 32); err != nil {
+				continue
+			} else {
+				temps[name_] = float32(value) / float32(1000)
+			}
+		}
+	}
+	return temps
 }
 
 ////////////////////////////////////////////////////////////////////////////////

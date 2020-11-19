@@ -39,3 +39,13 @@ func Test_Platform_003(t *testing.T) {
 		t.Log("load averages", l1, l5, l15)
 	}
 }
+
+func Test_Platform_004(t *testing.T) {
+	if zones := linux.TemperatureZones(); zones == nil {
+		t.Error("Unexpected response from TemperatureZones")
+	} else if len(zones) == 0 {
+		t.Error("Zero responses from TemperatureZones")
+	} else {
+		t.Log(zones)
+	}
+}

@@ -34,6 +34,7 @@ type Platform interface {
 	SerialNumber() string                      // SerialNumber returns unique serial number for host
 	Uptime() time.Duration                     // Uptime returns uptime for host
 	LoadAverages() (float64, float64, float64) // LoadAverages returns 1, 5 and 15 minute load averages
+	TemperatureZones() map[string]float32      // Return celcius values for zones
 	NumberOfDisplays() uint                    // NumberOfDisplays returns the number of possible displays for this host
 	AttachedDisplays() []uint                  // AttachedDisplays returns array of displays which are connected
 }
@@ -65,6 +66,10 @@ type I2C interface {
 	// Return true if a slave was detected at a particular address
 	DetectSlave(I2CBus, uint8) (bool, error)
 
+	// Read and Write data directly
+	Read(I2CBus) ([]byte, error)
+	Write(I2CBus, []byte) (int, error)
+
 	// Read Byte (8-bits), Word (16-bits) & Block ([]byte) from registers
 	ReadUint8(bus I2CBus, reg uint8) (uint8, error)
 	ReadInt8(bus I2CBus, reg uint8) (int8, error)
@@ -72,7 +77,7 @@ type I2C interface {
 	ReadInt16(bus I2CBus, reg uint8) (int16, error)
 	ReadBlock(bus I2CBus, reg, length uint8) ([]byte, error)
 
-	// Write Byte (8-bits) & Word (16-bits) to registers
+	// Write Byte (8-bits) and Word (16-bits)
 	WriteUint8(bus I2CBus, reg, value uint8) error
 	WriteInt8(bus I2CBus, reg uint8, value int8) error
 	WriteUint16(bus I2CBus, reg uint8, value uint16) error

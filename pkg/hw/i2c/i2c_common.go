@@ -55,6 +55,33 @@ func (this *i2c) GetSlave(bus gopi.I2CBus) uint8 {
 	}
 }
 
+func (this *i2c) Read(bus gopi.I2CBus) ([]byte, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	var buf []byte
+	if device, err := this.Open(bus); err != nil {
+		return nil, err
+	} else if _, err := device.fh.Read(buf); err != nil {
+		return nil, err
+	} else {
+		return buf, nil
+	}
+}
+
+func (this *i2c) Write(bus gopi.I2CBus, buf []byte) (int, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if device, err := this.Open(bus); err != nil {
+		return 0, err
+	} else if n, err := device.fh.Write(buf); err != nil {
+		return n, err
+	} else {
+		return n, nil
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 

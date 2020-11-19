@@ -22,3 +22,7 @@ func (this *Platform) Uptime() time.Duration {
 func (this *Platform) LoadAverages() (float64, float64, float64) {
 	return linux.LoadAverage()
 }
+
+func (this *Platform) TemperatureZones() map[string]float32 {
+	return linux.TemperatureZones()
+}
