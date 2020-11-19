@@ -1,7 +1,7 @@
-# Go parameters
+# Alias for go exec
 GO=go
 
-# App parameters
+# Go parameters
 GOPI=github.com/djthorpe/gopi/v3/pkg/config
 GOLDFLAGS += -X $(GOPI).GitTag=$(shell git describe --tags)
 GOLDFLAGS += -X $(GOPI).GitBranch=$(shell git name-rev HEAD --name-only --always)
@@ -9,7 +9,7 @@ GOLDFLAGS += -X $(GOPI).GitHash=$(shell git rev-parse HEAD)
 GOLDFLAGS += -X $(GOPI).GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)" 
 
-all:
+all: checkdeps
 	@echo "Synax: make linux|darwin|rpi|test|clean"
 
 # Build for different platforms
@@ -25,8 +25,11 @@ rpi: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
 rpi: test install
 
 # Build rules
-protogen:
+protogen: protoc-gen-go
 	$(GO) generate -x ./pkg/rpc
+
+protoc-gen-go:
+	$(GO) get github.com/golang/protobuf/protoc-gen-go
 
 testrace: protogen
 	$(GO) clean -testcache
@@ -41,3 +44,11 @@ install: protogen
 
 clean: 
 	$(GO) clean
+
+checkdeps:
+ifndef GOBIN
+	$(error GOBIN is undefined)
+endif
+ifeq (,$(shell which protoc))
+	$(error protoc is not installed)
+endif

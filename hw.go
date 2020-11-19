@@ -23,6 +23,8 @@ type SPIDevice struct {
 	Bus, Slave uint
 }
 
+type I2CBus uint
+
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
@@ -47,6 +49,34 @@ type SPI interface {
 	Transfer(send []byte) ([]byte, error) // Read/Write
 	Read(len uint32) ([]byte, error)      // Read
 	Write(send []byte) error              // Write
+}
+
+// I2C implements the I2C interface for sensors, etc.
+type I2C interface {
+	// Return all valid devices
+	Devices() []I2CBus
+
+	// Set current slave address
+	SetSlave(I2CBus, uint8) error
+
+	// Get current slave address
+	GetSlave(I2CBus) uint8
+
+	// Return true if a slave was detected at a particular address
+	DetectSlave(I2CBus, uint8) (bool, error)
+
+	// Read Byte (8-bits), Word (16-bits) & Block ([]byte) from registers
+	ReadUint8(bus I2CBus, reg uint8) (uint8, error)
+	ReadInt8(bus I2CBus, reg uint8) (int8, error)
+	ReadUint16(bus I2CBus, reg uint8) (uint16, error)
+	ReadInt16(bus I2CBus, reg uint8) (int16, error)
+	ReadBlock(bus I2CBus, reg, length uint8) ([]byte, error)
+
+	// Write Byte (8-bits) & Word (16-bits) to registers
+	WriteUint8(bus I2CBus, reg, value uint8) error
+	WriteInt8(bus I2CBus, reg uint8, value int8) error
+	WriteUint16(bus I2CBus, reg uint8, value uint16) error
+	WriteInt16(bus I2CBus, reg uint8, value int16) error
 }
 
 // GPIO implements the GPIO interface for simple input and output
