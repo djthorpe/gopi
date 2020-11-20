@@ -11,6 +11,7 @@ type app struct {
 	gopi.Unit
 	gopi.ArgonOne
 	gopi.Command
+	gopi.Publisher
 }
 
 func (this *app) Define(cfg gopi.Config) error {
@@ -30,10 +31,16 @@ func (this *app) Run(ctx context.Context) error {
 }
 
 func (this *app) Serve(ctx context.Context) error {
+	ch := this.Publisher.Subscribe()
+	defer this.Publisher.Unsubscribe(ch)
+
 	fmt.Println("Press CTRL+C to end")
-
-	// Wait until done
-	<-ctx.Done()
-
-	return nil
+	for {
+		select {
+		case evt := <-ch:
+			fmt.Println(evt)
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }

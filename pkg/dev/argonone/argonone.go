@@ -3,7 +3,7 @@ package argonone
 import (
 	"context"
 	"fmt"
-	"sort"
+	"os"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -12,6 +12,7 @@ import (
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/i2c"
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/platform"
 	_ "github.com/djthorpe/gopi/v3/pkg/log"
+	_ "github.com/djthorpe/gopi/v3/pkg/metrics"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,49 +23,33 @@ type argonone struct {
 	gopi.I2C
 	gopi.Platform
 	gopi.Logger
+	gopi.Metrics
 
-	bus      gopi.I2CBus
-	slave    uint8
-	tempzone string
-	fan      uint8
-}
-
-type fanConfigArr []struct {
-	celcius float32
-	fan     uint8
-}
-
-func (arr fanConfigArr) Len() int {
-	return len(arr)
-}
-
-func (arr fanConfigArr) Swap(i, j int) {
-	arr[i].celcius, arr[j].celcius = arr[j].celcius, arr[i].celcius
-	arr[i].fan, arr[j].fan = arr[j].fan, arr[i].fan
-}
-
-func (arr fanConfigArr) Less(i, j int) bool {
-	return arr[i].celcius < arr[j].celcius
+	bus         gopi.I2CBus
+	slave       uint8
+	tempzone    string
+	measurement string
+	fan         *fanValue
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBALS
 
 const (
-	fanMin, fanMax = 0x00, 0x64 // Minimum and maximum fan duty cycle values
-	fanUnset       = fanMax + 1 // Unset fan value
+	fanMin, fanMax = 0x00, 0x64       // Minimum and maximum fan duty cycle values
+	fanDelay       = time.Second * 30 // Delay for this number of seconds to set new fan value
 
 	// The period for measuring CPU temperature
 	measureDelta = 5 * time.Second
 )
 
 var (
-	// Default fan configuration
+	// Default fan configuration, if celcius is greater or equal to
+	// value then return fan value or else return zero
 	fanConfig = fanConfigArr{
 		{55.0, 10},
-		{60.0, 55},
+		{60.0, 50},
 		{65.0, 100},
-		{0, 0},
 	}
 )
 
@@ -74,7 +59,8 @@ var (
 func (this *argonone) Define(cfg gopi.Config) error {
 	cfg.FlagUint("i2c.bus", 1, "I2C Bus")
 	cfg.FlagUint("i2c.slave", 0x1A, "I2C Slave")
-	cfg.FlagString("tempzone", "", "Temperature Zone name")
+	cfg.FlagString("argonone.zone", "", "Temperature Zone name")
+	cfg.FlagString("argonone.measurement", "argonone", "Measurement name")
 	return nil
 }
 
@@ -93,19 +79,31 @@ func (this *argonone) New(cfg gopi.Config) error {
 		this.slave = slave
 	}
 
-	// Set fan as fanUnset
-	this.fan = fanUnset
+	// Set Hysteresis to prevent flapping
+	this.fan = NewFanValue(fanDelay)
 
 	// Check platform
 	if this.Platform == nil {
 		return fmt.Errorf("Missing Platform interface")
 	} else {
-		this.tempzone = cfg.GetString("tempzone")
+		this.tempzone = cfg.GetString("argonone.zone")
 	}
 
-	// Sort config so lower celcius values come first
-	sort.Sort(fanConfig)
-	fmt.Println(fanConfig)
+	// Define measurement
+	if this.Metrics == nil {
+		return fmt.Errorf("Missing Metrics interface")
+	} else if measurement := cfg.GetString("argonone.measurement"); measurement != "" {
+		if host, err := os.Hostname(); err != nil {
+			return err
+		} else if tags := this.Metrics.NewFields(fmt.Sprintf("host=%q", host)); tags == nil {
+			return gopi.ErrInternalAppError
+		} else if m, err := this.Metrics.NewMeasurement(measurement, "celcius float32 fan uint8", tags...); err != nil {
+			return err
+		} else {
+			this.Debug("measurement=", m)
+			this.measurement = m.Name()
+		}
+	}
 
 	// Return success
 	return nil
@@ -221,6 +219,24 @@ func (this *argonone) getTemperature() float32 {
 }
 
 func (this *argonone) setFanForTemperature(celcius float32) error {
-	this.Debug("SET", celcius)
+	// Obtain fan value for temperature
+	fan := fanConfig.fanForTemperature(celcius)
+
+	// Report measurement
+	if this.measurement != "" {
+		if err := this.Metrics.Emit(this.measurement, celcius, fan); err != nil {
+			return err
+		}
+	}
+
+	// Determine if we should set the fan
+	if this.fan.Set(fan) {
+		this.Debugf("Setting fan => %d%%", fan)
+		if err := this.SetFan(fan); err != nil {
+			return err
+		}
+	}
+
+	// Return success
 	return nil
 }
