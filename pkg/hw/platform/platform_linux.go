@@ -1,6 +1,5 @@
 // +build linux
 // +build !rpi
-// +build !darwin
 
 package platform
 

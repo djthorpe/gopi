@@ -1,5 +1,4 @@
 // +build linux
-// +build !darwin
 
 package platform
 

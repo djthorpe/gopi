@@ -69,26 +69,35 @@ func (this *app) RunHardware(context.Context) error {
 	// Display platform information
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetAutoMergeCells(true)
 	table.Append([]string{
-		"Product", this.Platform.Product(),
+		"Product", this.Platform.Product(), fmt.Sprint(this.Platform.Type()),
 	})
 	table.Append([]string{
-		"Type", fmt.Sprint(this.Platform.Type()),
+		"Serial Number", "", this.Platform.SerialNumber(),
 	})
 	table.Append([]string{
-		"Serial Number", this.Platform.SerialNumber(),
+		"Uptime", "", this.Platform.Uptime().Truncate(time.Second).String(),
+	})
+	if l1, l5, l15 := this.Platform.LoadAverages(); l1 != 0 && l5 != 0 && l15 != 0 {
+		table.AppendBulk([][]string{
+			{"Load Averages", "1m", fmt.Sprintf("%.2f", l1)},
+			{"Load Averages", "5m", fmt.Sprintf("%.2f", l5)},
+			{"Load Averages", "15m", fmt.Sprintf("%.2f", l15)},
+		})
+	}
+	if zones := this.Platform.TemperatureZones(); len(zones) > 0 {
+		for k, v := range zones {
+			table.Append([]string{
+				"Temperature Zones", k, fmt.Sprintf("%.2fC", v),
+			})
+		}
+	}
+	table.Append([]string{
+		"Number of Displays", "", fmt.Sprint(this.Platform.NumberOfDisplays()),
 	})
 	table.Append([]string{
-		"Uptime", this.Platform.Uptime().Truncate(time.Second).String(),
-	})
-	table.Append([]string{
-		"Load Averages", fmt.Sprint(this.Platform.LoadAverages()),
-	})
-	table.Append([]string{
-		"Number of Displays", fmt.Sprint(this.Platform.NumberOfDisplays()),
-	})
-	table.Append([]string{
-		"Attached Displays", fmt.Sprint(this.Platform.AttachedDisplays()),
+		"Attached Displays", "", fmt.Sprint(this.Platform.AttachedDisplays()),
 	})
 	table.Render()
 

@@ -77,3 +77,9 @@ func (this *Platform) AttachedDisplays() []uint {
 func (this *Platform) Product() string {
 	return darwin.Product()
 }
+
+// Temperature Zones not currently supported
+// TODO
+func (this *Platform) TemperatureZones() map[string]float32 {
+	return nil
+}

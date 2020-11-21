@@ -14,6 +14,10 @@ type I2CFunction uint
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
+func (this *i2c) Open(bus gopi.I2CBus) (*device, error) {
+	return nil, gopi.ErrNotImplemented
+}
+
 func (this *i2c) Devices() []gopi.I2CBus {
 	return nil
 }
