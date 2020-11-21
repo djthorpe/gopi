@@ -10,6 +10,7 @@ import (
 
 	// Units
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/i2c"
+	_ "github.com/djthorpe/gopi/v3/pkg/hw/lirc"
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/platform"
 	_ "github.com/djthorpe/gopi/v3/pkg/log"
 	_ "github.com/djthorpe/gopi/v3/pkg/metrics"
@@ -24,6 +25,7 @@ type argonone struct {
 	gopi.Platform
 	gopi.Logger
 	gopi.Metrics
+	gopi.LIRC
 
 	bus         gopi.I2CBus
 	slave       uint8
@@ -65,6 +67,11 @@ func (this *argonone) Define(cfg gopi.Config) error {
 }
 
 func (this *argonone) New(cfg gopi.Config) error {
+	// Check devices
+	if this.I2C == nil || this.LIRC == nil || this.Metrics == nil || this.Platform == nil {
+		return fmt.Errorf("Missing devices (I2C, LIRC, Metrics and/or Platform)")
+	}
+
 	// Check I2C
 	if bus, slave := this.i2cBusSlave(cfg); slave == 0 {
 		return fmt.Errorf("Missing I2C interface")

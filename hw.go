@@ -11,12 +11,14 @@ import (
 
 type (
 	PlatformType uint32
-	SPIMode      uint8 // SPIMode is the SPI Mode
-	GPIOPin      uint8 // GPIOPin is the logical GPIO pin
-	GPIOState    uint8 // GPIOState is the GPIO Pin state
-	GPIOMode     uint8 // GPIOMode is the GPIO Pin mode
-	GPIOPull     uint8 // GPIOPull is the GPIO Pin resistor configuration (pull up/down or floating)
-	GPIOEdge     uint8 // GPIOEdge is a rising or falling edge
+	SPIMode      uint8  // SPIMode is the SPI Mode
+	GPIOPin      uint8  // GPIOPin is the logical GPIO pin
+	GPIOState    uint8  // GPIOState is the GPIO Pin state
+	GPIOMode     uint8  // GPIOMode is the GPIO Pin mode
+	GPIOPull     uint8  // GPIOPull is the GPIO Pin resistor configuration (pull up/down or floating)
+	GPIOEdge     uint8  // GPIOEdge is a rising or falling edge
+	LIRCMode     uint32 // LIRCMode is the LIRC Mode
+	LIRCType     uint32 // LIRCType is the LIRC Type
 )
 
 type SPIDevice struct {
@@ -134,6 +136,42 @@ type Display interface {
 	PixelsPerInch() uint32  // Return the PPI (pixels-per-inch) for the display, or return zero if unknown
 }
 
+// LIRC implements the IR send & receive interface
+type LIRC interface {
+	// Get receive and send modes
+	RecvMode() LIRCMode
+	SendMode() LIRCMode
+	SetRecvMode(LIRCMode) error
+	SetSendMode(LIRCMode) error
+
+	// Receive parameters
+	RecvDutyCycle() uint32
+	RecvResolutionMicros() uint32
+
+	// Receive parameters
+	SetRecvTimeoutMs(uint32) error
+	SetRecvTimeoutReports(bool) error
+	SetRecvCarrierHz(uint32) error
+	SetRecvCarrierRangeHz(min, max uint32) error
+
+	// Send parameters
+	SendDutyCycle() uint32
+	SetSendCarrierHz(uint32) error
+	SetSendDutyCycle(uint32) error
+
+	// Send Pulse Mode, values are in milliseconds
+	PulseSend([]uint32) error
+}
+
+// LIRCEvent is a value from LIRC
+type LIRCEvent interface {
+	Event
+
+	Type() LIRCType
+	Mode() LIRCMode
+	Value() interface{} // value is uint32 in ms when mode is LIRC_MODE_MODE2
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
@@ -199,6 +237,21 @@ const (
 	GPIO_EDGE_RISING
 	GPIO_EDGE_FALLING
 	GPIO_EDGE_BOTH
+)
+
+const (
+	LIRC_MODE_NONE     LIRCMode = 0x00000000
+	LIRC_MODE_RAW      LIRCMode = 0x00000001
+	LIRC_MODE_PULSE    LIRCMode = 0x00000002 // send only
+	LIRC_MODE_MODE2    LIRCMode = 0x00000004 // rcv only
+	LIRC_MODE_LIRCCODE LIRCMode = 0x00000010 // rcv only
+)
+
+const (
+	LIRC_TYPE_SPACE     LIRCType = 0x00000000
+	LIRC_TYPE_PULSE     LIRCType = 0x01000000
+	LIRC_TYPE_FREQUENCY LIRCType = 0x02000000
+	LIRC_TYPE_TIMEOUT   LIRCType = 0x03000000
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -324,5 +377,37 @@ func (e GPIOEdge) String() string {
 		return "GPIO_EDGE_BOTH"
 	default:
 		return "[??? Invalid GPIOEdge value]"
+	}
+}
+
+func (m LIRCMode) String() string {
+	switch m {
+	case LIRC_MODE_NONE:
+		return "LIRC_MODE_NONE"
+	case LIRC_MODE_RAW:
+		return "LIRC_MODE_RAW"
+	case LIRC_MODE_PULSE:
+		return "LIRC_MODE_PULSE"
+	case LIRC_MODE_MODE2:
+		return "LIRC_MODE_MODE2"
+	case LIRC_MODE_LIRCCODE:
+		return "LIRC_MODE_LIRCCODE"
+	default:
+		return "[?? Invalid LIRCMode value]"
+	}
+}
+
+func (t LIRCType) String() string {
+	switch t {
+	case LIRC_TYPE_SPACE:
+		return "LIRC_TYPE_SPACE"
+	case LIRC_TYPE_PULSE:
+		return "LIRC_TYPE_PULSE"
+	case LIRC_TYPE_FREQUENCY:
+		return "LIRC_TYPE_FREQUENCY"
+	case LIRC_TYPE_TIMEOUT:
+		return "LIRC_TYPE_TIMEOUT"
+	default:
+		return "[?? Invalid LIRCType value]"
 	}
 }

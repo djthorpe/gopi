@@ -157,9 +157,11 @@ func (this *filepoll) Run(ctx context.Context) error {
 		evts, err := linux.EpollWait(this.handle, 0, this.cap)
 		if err != nil {
 			this.Print("FilePoll: ", err)
-		}
-		for _, evt := range evts {
-			go this.call(uintptr(evt.Fd), maskToFlags(evt.Flags()))
+		} else {
+			for _, evt := range evts {
+				// events need to be called in the right order
+				this.call(uintptr(evt.Fd), maskToFlags(evt.Flags()))
+			}
 		}
 	}
 
