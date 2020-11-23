@@ -407,6 +407,31 @@ func (this *AVStream) AttachedPicture() *AVPacket {
 	}
 }
 
+func (this *AVStream) Duration() int64 {
+	ctx := (*C.AVStream)(unsafe.Pointer(this))
+	return int64(ctx.duration)
+}
+
+func (this *AVStream) NumFrames() int64 {
+	ctx := (*C.AVStream)(unsafe.Pointer(this))
+	return int64(ctx.nb_frames)
+}
+
+func (this *AVStream) StartTime() int64 {
+	ctx := (*C.AVStream)(unsafe.Pointer(this))
+	return int64(ctx.start_time)
+}
+
+func (this *AVStream) TimeBase() AVRational {
+	ctx := (*C.AVStream)(unsafe.Pointer(this))
+	return AVRational(ctx.time_base)
+}
+
+func (this *AVStream) MeanFrameRate() AVRational {
+	ctx := (*C.AVStream)(unsafe.Pointer(this))
+	return AVRational(ctx.avg_frame_rate)
+}
+
 func (this *AVStream) String() string {
 	str := "<AVCodecParameters"
 	str += " index=" + fmt.Sprint(this.Index())

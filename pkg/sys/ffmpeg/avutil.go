@@ -3,6 +3,7 @@
 package ffmpeg
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"unsafe"
@@ -46,6 +47,7 @@ type (
 	AVDictionaryEntry C.struct_AVDictionaryEntry
 	AVFrame           C.struct_AVFrame
 	AVDictionaryFlag  int
+	AVRational        C.struct_AVRational
 )
 
 type AVLogCallback func(level AVLogLevel, message string, userInfo uintptr)
@@ -85,7 +87,11 @@ var (
 func (this AVError) Error() string {
 	cbuffer := make([]byte, BUF_SIZE)
 	if err := C.av_strerror(C.int(this), (*C.char)(unsafe.Pointer(&cbuffer[0])), BUF_SIZE); err == 0 {
-		return string(cbuffer)
+		if n := bytes.IndexByte(cbuffer, 0); n >= 0 {
+			return string(cbuffer[:n])
+		} else {
+			return string(cbuffer)
+		}
 	} else {
 		return fmt.Sprintf("Error code: %v", this)
 	}
@@ -194,6 +200,25 @@ func (this *AVFrame) Free() {
 func (this *AVFrame) String() string {
 	str := "<AVFrame"
 	return str + ">"
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RATIONAL NUMBER
+
+func (this AVRational) Num() int {
+	return int(this.num)
+}
+
+func (this AVRational) Den() int {
+	return int(this.den)
+}
+
+func (this AVRational) String() string {
+	if this.Num() == 0 {
+		return "0"
+	} else {
+		return fmt.Sprintf("<AVRational>{ num=%v den=%v }", this.Num(), this.Den())
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
