@@ -78,10 +78,13 @@ func (this *app) WalkFunc(ctx context.Context, path string, info os.FileInfo, er
 		return ctx.Err()
 	}
 	if err != nil {
-		this.Print("Error", err)
+		this.Print("Error: ", info.Name(), err)
 		return err
 	}
 	if strings.HasPrefix(info.Name(), ".") {
+		return nil
+	}
+	if filepath.Ext(info.Name()) == ".csv" {
 		return nil
 	}
 	if info.Mode().IsRegular() {
@@ -93,7 +96,6 @@ func (this *app) WalkFunc(ctx context.Context, path string, info os.FileInfo, er
 func (this *app) Read(path string, info os.FileInfo) *file {
 	f := &file{Name: info.Name()}
 	if media, err := this.MediaManager.OpenFile(path); err != nil {
-		this.Print("Error", err)
 		f.Error = err
 	} else {
 		defer this.MediaManager.Close(media)

@@ -9,6 +9,10 @@ development libraries. On Darwin (Mac) with Homebrew installed:
 
 % brew install ffmpeg
 
+For debian,
+
+% sudo apt install libavcodec-dev libavformat-dev libavdevice-dev
+
 You will also need to use -tags ffmpeg when testing, building or
 installing.
 
