@@ -2,7 +2,9 @@ package influxdb
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/djthorpe/gopi/v3"
 )
@@ -19,36 +21,50 @@ func QuoteMeasurement(m gopi.Measurement) (string, error) {
 	} else {
 		str += name
 	}
+
 	// Append tags
-	if tags := m.Tags(); len(tags) > 0 {
-		for _, tag := range tags {
-			str += ","
-			if value, err := QuoteField(tag); err != nil {
-				return "", err
-			} else {
-				str += value
-			}
-		}
+	if tags, err := QuoteFields(m.Tags()); err != nil {
+		return "", err
+	} else if tags != "" {
+		str += "," + tags
 	}
+
 	// Append metrics
-	if metrics := m.Metrics(); len(metrics) > 0 {
-		str += " "
-		for i, metric := range metrics {
-			if i > 0 {
-				str += ","
-			}
-			if value, err := QuoteField(metric); err != nil {
-				return "", err
-			} else {
-				str += value
-			}
-		}
+	if metrics, err := QuoteFields(m.Metrics()); err != nil {
+		return "", err
+	} else if metrics == "" {
+		return "", gopi.ErrBadParameter.WithPrefix("metrics")
+	} else {
+		str += " " + metrics
 	}
+
 	// Append timestamp
 	if ts := m.Time(); ts.IsZero() == false {
 		str += " " + fmt.Sprint(ts.UnixNano())
 	}
+
 	// Return line
+	return str, nil
+}
+
+func QuoteFields(fields []gopi.Field) (string, error) {
+	str := ""
+	for _, f := range fields {
+		// Skip tags which have nil values
+		if f.IsNil() {
+			continue
+		}
+		// Add comma to split the tags
+		if str != "" {
+			str += ","
+		}
+		// Add name=value
+		if value, err := QuoteField(f); err != nil {
+			return "", err
+		} else {
+			str += value
+		}
+	}
 	return str, nil
 }
 
@@ -74,9 +90,25 @@ func QuoteFieldName(f gopi.Field) string {
 }
 
 // QuoteFieldName returns quoted version of the value, returning
-// empty string if invalid
+// empty string if invalid or nil
 func QuoteFieldValue(f gopi.Field) string {
-
+	if f.IsNil() {
+		return ""
+	}
+	switch f.Kind() {
+	case "nil":
+		return ""
+	case "string":
+		return strconv.Quote(f.Value().(string))
+	case "bool", "float32", "float64":
+		return fmt.Sprint(f.Value())
+	case "uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "int64":
+		return fmt.Sprint(f.Value()) + "i"
+	case "time.Time":
+		return fmt.Sprint(f.Value().(time.Time).UnixNano())
+	default:
+		return ""
+	}
 }
 
 func IsReservedName(name string) bool {
