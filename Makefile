@@ -16,13 +16,20 @@ all: checkdeps
 linux: TAGS = -tags linux
 linux: test install
 
-darwin: TAGS = -tags darwin
+darwin: TAGS = -tags "darwin"
 #darwin: testrace install
-darwin: install
+darwin: test install
 
 rpi: TAGS = -tags "rpi egl freetype"
 rpi: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
 rpi: test install
+
+ffmpeg-darwin: TAGS = -tags ffmpeg
+ffmpeg-darwin: PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
+ffmpeg-darwin:
+	$(GO) clean -testcache
+	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test -v $(TAGS) ./pkg/sys/ffmpeg/...
+	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test -v $(TAGS) ./pkg/media/ffmpeg/...
 
 # Build rules
 protogen: protoc-gen-go
