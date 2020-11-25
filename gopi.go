@@ -49,9 +49,6 @@ type Version interface {
 	GoVersion() string                 // Return go compiler version
 }
 
-// Unit marks an singleton object
-type Unit struct{}
-
 // Logger outputs information and debug messages
 type Logger interface {
 	Print(args ...interface{})              // Output logging
@@ -77,6 +74,12 @@ type Publisher interface {
 	// Unsubscribe from events
 	Unsubscribe(<-chan Event)
 }
+
+/////////////////////////////////////////////////////////////////////
+// UNITS
+
+// Unit marks an singleton object
+type Unit struct{}
 
 /////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
