@@ -10,6 +10,8 @@ import (
 
 type MediaKey string
 type MediaFlag uint
+type DecodeIteratorFunc func(MediaDecodeContext) error
+type DecodeFrameIteratorFunc func(MediaFrame) error
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -20,21 +22,42 @@ type MediaManager interface {
 	Close(Media) error                   // Close a media object
 }
 
+// Media is an input or output
 type Media interface {
-	URL() *url.URL
-	Metadata() MediaMetadata
-	Flags() MediaFlag
-	Streams() []MediaStream
+	// Properties
+	URL() *url.URL           // Return URL for the media location
+	Metadata() MediaMetadata // Return metadata
+	Flags() MediaFlag        // Return flags
+	Streams() []MediaStream  // Return streams
+
+	// DecodeIterator loops over decoded packets from media object
+	DecodeIterator(DecodeIteratorFunc) error
+
+	// DecodeFrameIterator loops over decoded frames from media object
+	DecodeFrameIterator(MediaDecodeContext, DecodeFrameIteratorFunc) error
 }
 
+// MediaMetadata are key value pairs for a media object
 type MediaMetadata interface {
 	Keys() []MediaKey           // Return all existing keys
 	Value(MediaKey) interface{} // Return value for key, or nil
 }
 
+// MediaStream is a stream of packets from a media object
 type MediaStream interface {
-	Index() int
-	Flags() MediaFlag
+	Index() int       // Stream index
+	Flags() MediaFlag // Flags for the stream (Audio, Video, etc)
+}
+
+// MediaFrame is a decoded audio or video frame
+type MediaFrame interface {
+}
+
+// MediaDecodeContext provides packet data and streams for decoding
+// frames of data
+type MediaDecodeContext interface {
+	Bytes() []byte       // Bytes in the packet
+	Stream() MediaStream // Origin of the packet
 }
 
 ////////////////////////////////////////////////////////////////////////////////

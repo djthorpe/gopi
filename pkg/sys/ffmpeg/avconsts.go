@@ -13,6 +13,7 @@ type (
 	AVCodecCap    uint32
 	AVDisposition int
 	AVFormatFlag  int
+	AVPacketFlag  int
 	AVIOFlag      int
 	AVLogLevel    int
 )
@@ -625,6 +626,17 @@ const (
 const (
 	AV_CODEC_ID_MIN = AV_CODEC_ID_MPEG1VIDEO
 	AV_CODEC_ID_MAX = AV_CODEC_ID_WRAPPED_AVFRAME
+)
+
+const (
+	AV_PKT_FLAG_NONE       AVPacketFlag = 0
+	AV_PKT_FLAG_KEY        AVPacketFlag = 0x0001 // The packet contains a keyframe
+	AV_PKT_FLAG_CORRUPT    AVPacketFlag = 0x0002 // The packet content is corrupted
+	AV_PKT_FLAG_DISCARD    AVPacketFlag = 0x0004 // Flag is used to discard packets
+	AV_PKT_FLAG_TRUSTED    AVPacketFlag = 0x0008 // The packet comes from a trusted source
+	AV_PKT_FLAG_DISPOSABLE AVPacketFlag = 0x0010 // The packet contains frames that can be discarded
+	AV_PKT_FLAG_MIN                     = AV_PKT_FLAG_KEY
+	AV_PKT_FLAG_MAX                     = AV_PKT_FLAG_DISPOSABLE
 )
 
 func (v AVCodecId) String() string {
@@ -1747,5 +1759,37 @@ func (v AVLogLevel) String() string {
 		return "AV_LOG_TRACE"
 	default:
 		return "[?? Invalid AVLogLevel value]"
+	}
+}
+
+func (f AVPacketFlag) String() string {
+	str := ""
+	if f == AV_PKT_FLAG_NONE {
+		return f.FlagString()
+	}
+	for v := AV_PKT_FLAG_MIN; v <= AV_PKT_FLAG_MAX; v <<= 1 {
+		if f&v == v {
+			str += v.FlagString() + "|"
+		}
+	}
+	return strings.TrimSuffix(str, "|")
+}
+
+func (v AVPacketFlag) FlagString() string {
+	switch v {
+	case AV_PKT_FLAG_NONE:
+		return "AV_PKT_FLAG_NONE"
+	case AV_PKT_FLAG_KEY:
+		return "AV_PKT_FLAG_KEY"
+	case AV_PKT_FLAG_CORRUPT:
+		return "AV_PKT_FLAG_CORRUPT"
+	case AV_PKT_FLAG_DISCARD:
+		return "AV_PKT_FLAG_DISCARD"
+	case AV_PKT_FLAG_TRUSTED:
+		return "AV_PKT_FLAG_TRUSTED"
+	case AV_PKT_FLAG_DISPOSABLE:
+		return "AV_PKT_FLAG_DISPOSABLE"
+	default:
+		return "[?? Invalid AVPacketFlag]"
 	}
 }

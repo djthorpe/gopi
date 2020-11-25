@@ -4,6 +4,7 @@ package ffmpeg
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -273,6 +274,16 @@ func (this *AVFormatContext) Dump(index int) {
 	}
 }
 
+func (this *AVFormatContext) ReadPacket(packet *AVPacket) error {
+	ctx := (*C.AVFormatContext)(unsafe.Pointer(this))
+	packetctx := (*C.AVPacket)(packet)
+	if ret := int(C.av_read_frame(ctx, packetctx)); ret >= 0 {
+		return nil
+	} else {
+		return io.EOF
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // AVInputFormat and AVOutputFormat
 
@@ -433,7 +444,7 @@ func (this *AVStream) MeanFrameRate() AVRational {
 }
 
 func (this *AVStream) String() string {
-	str := "<AVCodecParameters"
+	str := "<AVStream"
 	str += " index=" + fmt.Sprint(this.Index())
 	str += " id=" + fmt.Sprint(this.Id())
 	str += " metadata=" + fmt.Sprint(this.Metadata())

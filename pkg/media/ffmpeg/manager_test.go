@@ -48,3 +48,20 @@ func Test_MediaManager_003(t *testing.T) {
 		}
 	})
 }
+
+func Test_MediaManager_004(t *testing.T) {
+	tool.Test(t, nil, new(MediaApp), func(app *MediaApp) {
+		file, err := app.Manager.OpenFile(SAMPLE_FILE)
+		if err != nil {
+			t.Error(err)
+		}
+		defer app.Manager.Close(file)
+		if err := file.DecodeIterator(func(ctx gopi.MediaDecodeContext) error {
+			return file.DecodeFrameIterator(ctx, func(frame gopi.MediaFrame) error {
+				t.Log(frame)
+			})
+		}); err != nil {
+			t.Error(err)
+		}
+	})
+}
