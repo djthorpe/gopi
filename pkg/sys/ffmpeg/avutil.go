@@ -221,6 +221,11 @@ func (this AVRational) String() string {
 	}
 }
 
+// Float is used to convert an int64 value multipled by the rational to a float64
+func (this AVRational) Float(multiplier int64) float64 {
+	return float64(int64(this.num)*multiplier) / float64(this.den)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // LOGGING
 

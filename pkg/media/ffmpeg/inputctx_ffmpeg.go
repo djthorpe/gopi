@@ -121,7 +121,7 @@ func (this *inputctx) Streams() []gopi.MediaStream {
 // PUBLIC METHODS - ITERATE OVER PACKETS
 
 // Iterate over packets in the input stream
-func (this *inputctx) DecodeIterator(fn gopi.DecodeIteratorFunc) error {
+func (this *inputctx) DecodeIterator(streams []int, fn gopi.DecodeIteratorFunc) error {
 	// Lock for writing as ReadPacket modifies state
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
@@ -131,23 +131,81 @@ func (this *inputctx) DecodeIterator(fn gopi.DecodeIteratorFunc) error {
 		return gopi.ErrBadParameter.WithPrefix("DecodeIterator")
 	}
 
-	// Create context
-	ctx := NewDecodeContext()
-	exists := false
-	defer ctx.Close()
+	// If streams argument is empty or nil, select all streams
+	if len(streams) == 0 {
+		for index := range this.streams {
+			streams = append(streams, index)
+		}
+	}
 
+	// Create decode context map and call close on each on exit
+	contextmap := make(map[int]*decodectx, len(this.streams))
+	defer func() {
+		for _, ctx := range contextmap {
+			ctx.Close()
+		}
+	}()
+
+	// Create decode contexts
+	for _, index := range streams {
+		if stream, exists := this.streams[index]; exists == false {
+			return gopi.ErrInternalAppError.WithPrefix("DecodeIterator")
+		} else if decodectx := NewDecodeContext(stream); decodectx == nil {
+			return gopi.ErrInternalAppError.WithPrefix("DecodeIterator")
+		} else {
+			contextmap[index] = decodectx
+		}
+	}
+
+	// Create a packet
+	packet := ffmpeg.NewAVPacket()
+	if packet == nil {
+		return gopi.ErrInternalAppError.WithPrefix("DecodeIterator")
+	}
+	defer packet.Free()
+
+	// Iterate over incoming packets, callback when packet should
+	// be processed
 	for {
-		if err := this.ctx.ReadPacket(ctx.packet); err == io.EOF {
+		if err := this.ctx.ReadPacket(packet); err == io.EOF {
 			break
 		} else if err != nil {
 			return err
-		} else if ctx.stream, exists = this.streams[ctx.packet.Stream()]; exists == false {
-			return gopi.ErrInternalAppError
-		} else if err := fn(ctx); err != nil {
-			return err
+		} else if ctx, exists := contextmap[packet.Stream()]; exists {
+			if err := fn(ctx, packet); err != nil {
+				return err
+			}
+			packet.Release()
 		}
-		ctx.Release()
 	}
+
+	// Return success
+	return nil
+}
+
+func (this *inputctx) DecodeFrameIterator(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket, fn gopi.DecodeFrameIteratorFunc) error {
+	// Check parameters
+	if ctx == nil || fn == nil {
+		return gopi.ErrBadParameter.WithPrefix("DecodeFrameIterator")
+	}
+	// Get internal context object and check more parameters
+	ctx_, ok := ctx.(*decodectx)
+	if ok == false || packet == nil || ctx_.codecctx == nil {
+		return gopi.ErrBadParameter.WithPrefix("DecodeFrameIterator")
+	}
+
+	// Lock context for writing
+	ctx_.RWMutex.Lock()
+	defer ctx_.RWMutex.Unlock()
+
+	// Decode packet
+	// Supply raw packet data as input to a decoder
+	// https://ffmpeg.org/doxygen/trunk/group__lavc__decoding.html#ga58bc4bf1e0ac59e27362597e467efff3
+	if err := ctx_.codecctx.DecodePacket(packet.(*ffmpeg.AVPacket)); err != nil {
+		return err
+	}
+
+	// Iterate through frames
 
 	// Return success
 	return nil
@@ -156,29 +214,13 @@ func (this *inputctx) DecodeIterator(fn gopi.DecodeIteratorFunc) error {
 /*
 func (this *inputctx) FrameIterator(packet gopi.MediaPacket, fn FrameIteratorFunc) error {
 	// We don't lock in this function, assuming locking is done via PacketIterator
-	if fn == nil {
-		return gopi.ErrBadParameter.WithPrefix("FrameIterator")
-	}
 
-	// Supply raw packet data as input to a decoder
-	// https://ffmpeg.org/doxygen/trunk/group__lavc__decoding.html#ga58bc4bf1e0ac59e27362597e467efff3
 	if err := avcodec_send_packet(pCodecContext, packet); err != nil {
 		return err
 	}
 
 	for {
-		if codec.Decode()
-		frame.avcodec_receive_frame
-		if err := this.ctx.ReadPacket(packet); err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		} else if stream, exists := this.streams[packet.Stream()]; exists == false {
-			return gopi.ErrInternalAppError
-		} else if err := fn(packet, stream); err != nil {
-			return err
-		}
-		packet.Release()
+
 	}
 
 	// Return success

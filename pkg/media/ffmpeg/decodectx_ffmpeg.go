@@ -15,20 +15,21 @@ import (
 
 type decodectx struct {
 	sync.RWMutex
-	packet *ffmpeg.AVPacket
-	stream *stream
+	stream   *stream
+	codecctx *ffmpeg.AVCodecContext
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
 
-func NewDecodeContext() *decodectx {
+func NewDecodeContext(stream *stream) *decodectx {
 	this := new(decodectx)
 
-	if packet := ffmpeg.NewAVPacket(); packet == nil {
+	// Check parameters
+	if stream == nil {
 		return nil
 	} else {
-		this.packet = packet
+		this.stream = stream
 	}
 
 	// Return success
@@ -39,29 +40,11 @@ func (this *decodectx) Close() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	// Free packet
-	this.packet.Free()
-
 	// Release resources
-	this.packet = nil
 	this.stream = nil
 
 	// Return success
 	return nil
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PROPERTIES
-
-func (this *decodectx) Bytes() []byte {
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
-	if this.packet == nil {
-		return nil
-	} else {
-		return this.packet.Bytes()
-	}
 }
 
 func (this *decodectx) Stream() gopi.MediaStream {
@@ -72,18 +55,6 @@ func (this *decodectx) Stream() gopi.MediaStream {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// METHODS
-
-func (this *decodectx) Release() {
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
-	if this.packet != nil {
-		this.packet.Release()
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *decodectx) String() string {
@@ -91,9 +62,6 @@ func (this *decodectx) String() string {
 	defer this.RWMutex.RUnlock()
 
 	str := "<mediacontext"
-	if this.packet != nil {
-		str += " packet=" + fmt.Sprint(this.packet)
-	}
 	if this.stream != nil {
 		str += " stream=" + fmt.Sprint(this.stream)
 	}

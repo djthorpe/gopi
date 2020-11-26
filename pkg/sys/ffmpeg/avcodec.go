@@ -182,6 +182,16 @@ func (this *AVCodecContext) Close() error {
 	}
 }
 
+// DecodePacket does the packet decode
+func (this *AVCodecContext) DecodePacket(packet *AVPacket) error {
+	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
+	if err := AVError(C.avcodec_send_packet(ctx, (*C.AVPacket)(packet))); err != 0 {
+		return err
+	} else {
+		return nil
+	}
+}
+
 func (this *AVCodecContext) String() string {
 	str := "<AVCodecContext"
 	return str + ">"

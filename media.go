@@ -10,7 +10,7 @@ import (
 
 type MediaKey string
 type MediaFlag uint
-type DecodeIteratorFunc func(MediaDecodeContext) error
+type DecodeIteratorFunc func(MediaDecodeContext, MediaPacket) error
 type DecodeFrameIteratorFunc func(MediaFrame) error
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,11 +30,11 @@ type Media interface {
 	Flags() MediaFlag        // Return flags
 	Streams() []MediaStream  // Return streams
 
-	// DecodeIterator loops over decoded packets from media object
-	DecodeIterator(DecodeIteratorFunc) error
+	// DecodeIterator loops over selected streams from media object
+	DecodeIterator([]int, DecodeIteratorFunc) error
 
-	// DecodeFrameIterator loops over decoded frames from media object
-	DecodeFrameIterator(MediaDecodeContext, DecodeFrameIteratorFunc) error
+	// DecodeFrameIterator loops over decoded frames from media stream
+	DecodeFrameIterator(MediaDecodeContext, MediaPacket, DecodeFrameIteratorFunc) error
 }
 
 // MediaMetadata are key value pairs for a media object
@@ -45,8 +45,21 @@ type MediaMetadata interface {
 
 // MediaStream is a stream of packets from a media object
 type MediaStream interface {
-	Index() int       // Stream index
-	Flags() MediaFlag // Flags for the stream (Audio, Video, etc)
+	Index() int        // Stream index
+	Flags() MediaFlag  // Flags for the stream (Audio, Video, etc)
+	Codec() MediaCodec // Return codec and parameters
+}
+
+// MediaCodec is the codec and parameters
+type MediaCodec interface {
+	Flags() MediaFlag // Flags for the codec (Audio, Video, etc)
+}
+
+// MediaPacket is a packet of data from a stream
+type MediaPacket interface {
+	Size() int
+	Bytes() []byte
+	Stream() int
 }
 
 // MediaFrame is a decoded audio or video frame
@@ -56,7 +69,6 @@ type MediaFrame interface {
 // MediaDecodeContext provides packet data and streams for decoding
 // frames of data
 type MediaDecodeContext interface {
-	Bytes() []byte       // Bytes in the packet
 	Stream() MediaStream // Origin of the packet
 }
 
