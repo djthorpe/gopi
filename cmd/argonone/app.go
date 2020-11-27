@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/db/influxdb"
 )
 
 type app struct {
@@ -12,6 +13,7 @@ type app struct {
 	gopi.ArgonOne
 	gopi.Command
 	gopi.Publisher
+	*influxdb.Writer
 }
 
 func (this *app) Define(cfg gopi.Config) error {
