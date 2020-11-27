@@ -165,12 +165,6 @@ func (this *AVFormatContext) CloseInput() {
 	C.avformat_close_input(&ctx)
 }
 
-// Open Output
-func (this *AVFormatContext) OpenOutput(filename string, input_format *AVInputFormat) error {
-	// TODO
-	return nil
-}
-
 // Write header
 func (this *AVFormatContext) WriteHeader(dict *AVDictionary) error {
 	// TODO

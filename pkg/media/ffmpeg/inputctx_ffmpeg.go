@@ -231,6 +231,7 @@ func (this *inputctx) DecodeFrameIterator(ctx gopi.MediaDecodeContext, packet go
 	if ctx == nil || fn == nil {
 		return gopi.ErrBadParameter.WithPrefix("DecodeFrameIterator")
 	}
+
 	// Get internal context object and check more parameters
 	ctx_, ok := ctx.(*decodectx)
 	if ok == false || packet == nil {

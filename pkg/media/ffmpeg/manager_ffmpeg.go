@@ -20,7 +20,8 @@ type Manager struct {
 	gopi.Logger
 	sync.Mutex
 
-	in []*inputctx
+	in  []*inputctx
+	out []*outputctx
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,6 +52,15 @@ func (this *Manager) Dispose() error {
 
 	var result error
 
+	// Close all outputs
+	for _, out := range this.out {
+		if out != nil {
+			if err := out.Close(); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}
+
 	// Close all inputs
 	for _, in := range this.in {
 		if in != nil {
@@ -68,6 +78,7 @@ func (this *Manager) Dispose() error {
 
 	// Release resources
 	this.in = nil
+	this.out = nil
 
 	// Return success
 	return nil
@@ -103,6 +114,27 @@ func (this *Manager) OpenFile(path string) (gopi.Media, error) {
 	} else {
 		this.in = append(this.in, in)
 		return in, nil
+	}
+}
+
+func (this *Manager) CreateFile(path string) (gopi.Media, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	// Clean up the path
+	if filepath.IsAbs(path) == false {
+		if path_, err := filepath.Abs(path); err == nil {
+			path = filepath.Clean(path_)
+		}
+	}
+
+	if ctx, err := ffmpeg.NewAVFormatOutputContext(filename, nil); err != nil {
+		return nil, err
+	} else if out := NewOutputContext(ctx); out == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("NewOutputContext")
+	} else {
+		this.out = append(this.out, out)
+		return out, nil
 	}
 }
 

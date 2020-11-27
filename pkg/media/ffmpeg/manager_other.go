@@ -24,6 +24,10 @@ func (this *Manager) OpenFile(path string) (gopi.Media, error) {
 	return nil, gopi.ErrNotImplemented
 }
 
+func (this *Manager) CreateFile(path string) (gopi.Media, error) {
+	return nil, gopi.ErrNotImplemented
+}
+
 func (this *Manager) Close(gopi.Media) error {
 	return gopi.ErrNotImplemented
 }
