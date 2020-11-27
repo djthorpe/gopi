@@ -16,6 +16,7 @@ type (
 	AVPacketFlag   int
 	AVPixelFormat  int
 	AVSampleFormat int
+	AVPictureType  int
 	AVIOFlag       int
 	AVLogLevel     int
 )
@@ -37,6 +38,17 @@ const (
 	AVIO_FLAG_READ       AVIOFlag = 1
 	AVIO_FLAG_WRITE      AVIOFlag = 2
 	AVIO_FLAG_READ_WRITE AVIOFlag = (AVIO_FLAG_READ | AVIO_FLAG_WRITE)
+)
+
+const (
+	AV_PICTURE_TYPE_NONE AVPictureType = iota
+	AV_PICTURE_TYPE_I                  ///< Intra
+	AV_PICTURE_TYPE_P                  ///< Predicted
+	AV_PICTURE_TYPE_B                  ///< Bi-dir predicted
+	AV_PICTURE_TYPE_S                  ///< S(GMC)-VOP MPEG-4
+	AV_PICTURE_TYPE_SI                 ///< Switching Intra
+	AV_PICTURE_TYPE_SP                 ///< Switching Predicted
+	AV_PICTURE_TYPE_BI                 ///< BI type
 )
 
 const (
@@ -1790,5 +1802,28 @@ func (v AVPacketFlag) FlagString() string {
 		return "AV_PKT_FLAG_DISPOSABLE"
 	default:
 		return "[?? Invalid AVPacketFlag]"
+	}
+}
+
+func (p AVPictureType) String() string {
+	switch p {
+	case AV_PICTURE_TYPE_NONE:
+		return "AV_PICTURE_TYPE_NONE"
+	case AV_PICTURE_TYPE_I:
+		return "AV_PICTURE_TYPE_I"
+	case AV_PICTURE_TYPE_P:
+		return "AV_PICTURE_TYPE_P"
+	case AV_PICTURE_TYPE_B:
+		return "AV_PICTURE_TYPE_B"
+	case AV_PICTURE_TYPE_S:
+		return "AV_PICTURE_TYPE_S"
+	case AV_PICTURE_TYPE_SI:
+		return "AV_PICTURE_TYPE_SI"
+	case AV_PICTURE_TYPE_SP:
+		return "AV_PICTURE_TYPE_SP"
+	case AV_PICTURE_TYPE_BI:
+		return "AV_PICTURE_TYPE_BI"
+	default:
+		return "[?? Invalid AVPictureType value]"
 	}
 }

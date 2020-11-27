@@ -238,8 +238,8 @@ func (this *inputctx) DecodeFrameIterator(ctx gopi.MediaDecodeContext, packet go
 	}
 
 	// Lock context for writing
-	ctx_.RWMutex.Lock()
-	defer ctx_.RWMutex.Unlock()
+	//ctx_.RWMutex.Lock()
+	//defer ctx_.RWMutex.Unlock()
 
 	// Decode packet
 	if err := ctx_.DecodePacket(packet); err != nil {
@@ -257,7 +257,7 @@ func (this *inputctx) DecodeFrameIterator(ctx gopi.MediaDecodeContext, packet go
 			// Not enough data, so return without processing frame
 			return nil
 		} else {
-			err := fn(frame)
+			err := fn(ctx, frame)
 			frame.Release()
 			if err != nil {
 				return err

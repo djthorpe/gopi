@@ -214,10 +214,47 @@ func (this *AVCodecContext) Type() AVMediaType {
 	return AVMediaType(ctx.codec_type)
 }
 
+func (this *AVCodecContext) Frame() int {
+	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
+	return int(ctx.frame_number)
+}
+
+func (this *AVCodecContext) PixelFormat() AVPixelFormat {
+	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
+	if pix_fmt := AVPixelFormat(ctx.pix_fmt); pix_fmt <= AV_PIX_FMT_NONE {
+		return AV_PIX_FMT_NONE
+	} else {
+		return pix_fmt
+	}
+}
+
+func (this *AVCodecContext) SampleFormat() AVSampleFormat {
+	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
+	if sample_format := AVSampleFormat(ctx.sample_fmt); sample_format <= AV_SAMPLE_FMT_NONE {
+		return AV_SAMPLE_FMT_NONE
+	} else {
+		return sample_format
+	}
+}
+
 func (this *AVCodecContext) String() string {
 	str := "<AVCodecContext"
-	if media_type := this.Type(); media_type != AVMEDIA_TYPE_UNKNOWN {
+	media_type := this.Type()
+	if media_type != AVMEDIA_TYPE_UNKNOWN {
 		str += " type=" + fmt.Sprint(media_type)
+	}
+	if media_type == AVMEDIA_TYPE_VIDEO {
+		if pix_fmt := this.PixelFormat(); pix_fmt != AV_PIX_FMT_NONE {
+			str += " pix_fmt=" + fmt.Sprint(pix_fmt)
+		}
+	}
+	if media_type == AVMEDIA_TYPE_AUDIO {
+		if sample_fmt := this.SampleFormat(); sample_fmt != AV_SAMPLE_FMT_NONE {
+			str += " sample_fmt=" + fmt.Sprint(sample_fmt)
+		}
+	}
+	if frame_number := this.Frame(); frame_number >= 0 {
+		str += " frame_number=" + fmt.Sprint(frame_number)
 	}
 	return str + ">"
 }

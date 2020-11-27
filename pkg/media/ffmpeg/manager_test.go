@@ -73,8 +73,8 @@ func Test_MediaManager_005(t *testing.T) {
 		}
 		defer app.Manager.Close(file)
 		if err := file.DecodeIterator(nil, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
-			return file.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
-				t.Log("=>", frame)
+			return file.DecodeFrameIterator(ctx, packet, func(ctx gopi.MediaDecodeContext, frame gopi.MediaFrame) error {
+				t.Log("=>", ctx, frame)
 				return nil
 			})
 			return nil

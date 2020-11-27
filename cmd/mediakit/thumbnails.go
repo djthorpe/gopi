@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"image/png"
 	"os"
 	"path/filepath"
 
@@ -39,11 +40,13 @@ func (this *app) ProcessThumbnails(path string) error {
 	// Get video stream
 	streams := media.StreamsForFlag(gopi.MEDIA_FLAG_VIDEO)
 	if len(streams) == 0 {
-		return fmt.Errorf("No video streams found")
+		return fmt.Errorf("No video information found")
 	}
 
 	if err := media.DecodeIterator([]int{streams[0]}, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
-		return media.DecodeFrameIterator(ctx, packet, this.ProcessFrame)
+		return media.DecodeFrameIterator(ctx, packet, func(ctx gopi.MediaDecodeContext, frame gopi.MediaFrame) error {
+			return this.ProcessFrame(path, ctx, frame)
+		})
 	}); err != nil {
 		return err
 	}
@@ -52,7 +55,19 @@ func (this *app) ProcessThumbnails(path string) error {
 	return nil
 }
 
-func (this *app) ProcessFrame(frame gopi.MediaFrame) error {
-	fmt.Println(frame)
+func (this *app) ProcessFrame(path string, ctx gopi.MediaDecodeContext, frame gopi.MediaFrame) error {
+	filename := fmt.Sprintf("%06d", ctx.Frame()) + ".thumbnail.png"
+	out := filepath.Join(os.TempDir(), filename)
+	w, err := os.Create(out)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+	if err := png.Encode(w, frame); err != nil {
+		return err
+	} else {
+		fmt.Println(frame)
+		fmt.Println("  =>", out)
+	}
 	return nil
 }

@@ -24,8 +24,8 @@ type app struct {
 	quiet         *bool   // Whether errors should be displayed
 	match         *string // Regular expression to match
 
-	regexp *regexp.Regexp           // Regular expression for filename
-	fields map[gopi.MediaKey]string // Metadata which should be displayed
+	regexp *regexp.Regexp // Regular expression for filename
+	fields *fields        // Metadata which should be displayed
 }
 
 func (this *app) Define(cfg gopi.Config) error {
@@ -51,7 +51,7 @@ func (this *app) New(cfg gopi.Config) error {
 	}
 
 	// Set up fields
-	this.fields = make(map[gopi.MediaKey]string)
+	this.fields = NewFields()
 
 	// Set up regular expression for matching filenames
 	if *this.match != "" {
@@ -146,8 +146,7 @@ func WalkFunc(ctx context.Context, count, offset, limit *uint, path string, info
 	}
 
 	// Increment the count and check
-	*count += 1
-	if *count > *offset {
+	if *count++; *count > *offset {
 		if err := fn(path, info); err != nil {
 			return err
 		}

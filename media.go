@@ -1,6 +1,7 @@
 package gopi
 
 import (
+	"image"
 	"net/url"
 	"strings"
 )
@@ -11,7 +12,7 @@ import (
 type MediaKey string
 type MediaFlag uint
 type DecodeIteratorFunc func(MediaDecodeContext, MediaPacket) error
-type DecodeFrameIteratorFunc func(MediaFrame) error
+type DecodeFrameIteratorFunc func(MediaDecodeContext, MediaFrame) error
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -65,12 +66,14 @@ type MediaPacket interface {
 
 // MediaFrame is a decoded audio or video frame
 type MediaFrame interface {
+	image.Image
 }
 
 // MediaDecodeContext provides packet data and streams for decoding
 // frames of data
 type MediaDecodeContext interface {
 	Stream() MediaStream // Origin of the packet
+	Frame() int          // Frame counter
 }
 
 ////////////////////////////////////////////////////////////////////////////////

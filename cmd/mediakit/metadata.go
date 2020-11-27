@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/djthorpe/gopi/v3"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -32,33 +30,16 @@ func (this *app) Metadata(ctx context.Context) error {
 
 	// Print out stream information
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(append([]string{"Name", "Type"}, this.FieldNames()...))
+	table.SetHeader(append([]string{"Name", "Type"}, this.fields.Names()...))
 	table.SetAutoFormatHeaders(false)
 	for _, file := range files {
 		row := []string{filepath.Base(file.URL.Path), FormatFlags(file.Flags)}
-		row = append(row, FormatMetadata(file, this.FieldKeys())...)
+		row = append(row, FormatMetadata(file, this.fields.Keys())...)
 		table.Append(row)
 	}
 	table.Render()
 
 	return nil
-}
-
-func (this *app) FieldKeys() []gopi.MediaKey {
-	// Obtain key/value pairs
-	keys := []gopi.MediaKey{}
-	for key := range this.fields {
-		keys = append(keys, key)
-	}
-	return keys
-}
-
-func (this *app) FieldNames() []string {
-	result := []string{}
-	for _, key := range this.FieldKeys() {
-		result = append(result, this.fields[key])
-	}
-	return result
 }
 
 func (this *app) ProcessMetadata(path string) (*media, error) {
@@ -74,12 +55,7 @@ func (this *app) ProcessMetadata(path string) (*media, error) {
 	// Append metadata
 	meta := media.Metadata()
 	for _, key := range meta.Keys() {
-		// Add into list of columns
-		if _, exists := this.fields[key]; exists == false {
-			this.fields[key] = fmt.Sprint(key)
-		}
-
-		// Set metadata value
+		this.fields.Add(key)
 		m.Meta[key] = meta.Value(key)
 	}
 

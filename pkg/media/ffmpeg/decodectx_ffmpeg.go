@@ -18,8 +18,8 @@ import (
 type decodectx struct {
 	sync.RWMutex
 	stream *stream
+	frame  *frame
 	ctx    *ffmpeg.AVCodecContext
-	frame  *ffmpeg.AVFrame
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@ func NewDecodeContext(stream *stream) *decodectx {
 	}
 
 	// Create frame
-	if frame := ffmpeg.NewFrame(); frame == nil {
+	if frame := NewFrame(); frame == nil {
 		return nil
 	} else {
 		this.frame = frame
@@ -73,11 +73,25 @@ func (this *decodectx) Close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
 
+// Stream returns stream associated with decode or nil
 func (this *decodectx) Stream() gopi.MediaStream {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	return this.stream
+	if this.ctx == nil {
+		return nil
+	} else {
+		return this.stream
+	}
+}
+
+// Frame returns current frame number or -1
+func (this *decodectx) Frame() int {
+	if this.ctx == nil {
+		return -1
+	} else {
+		return this.ctx.Frame()
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,14 +105,16 @@ func (this *decodectx) DecodePacket(packet gopi.MediaPacket) error {
 
 // Decoded output data (into a frame) from a decoder
 // https://ffmpeg.org/doxygen/trunk/group__lavc__decoding.html#ga11e6542c4e66d3028668788a1a74217c
-func (this *decodectx) DecodeFrame() (*ffmpeg.AVFrame, error) {
-	if err := this.ctx.DecodeFrame(this.frame); err == syscall.EAGAIN {
+func (this *decodectx) DecodeFrame() (*frame, error) {
+	if err := this.ctx.DecodeFrame(this.frame.ctx); err == syscall.EAGAIN {
 		// Not enough data
 		return nil, nil
 	} else if err == syscall.EINVAL {
 		// End of stream
 		return nil, io.EOF
 	} else if err != nil {
+		return nil, err
+	} else if err := this.frame.Retain(); err != nil {
 		return nil, err
 	} else {
 		return this.frame, nil
@@ -113,8 +129,11 @@ func (this *decodectx) String() string {
 	defer this.RWMutex.RUnlock()
 
 	str := "<mediacontext"
-	if this.stream != nil {
-		str += " stream=" + fmt.Sprint(this.stream)
+	if frame_number := this.Frame(); frame_number >= 0 {
+		str += " frame_number=" + fmt.Sprint(frame_number)
+	}
+	if this.ctx != nil {
+		str += " " + fmt.Sprint(this.ctx)
 	}
 	return str + ">"
 }
