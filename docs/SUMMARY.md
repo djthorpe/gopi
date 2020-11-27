@@ -1,4 +1,4 @@
 # Table of contents
 
-* [README](../README.md)
+* [Read me first](../README.md)
 
