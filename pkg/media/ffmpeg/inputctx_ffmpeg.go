@@ -139,6 +139,25 @@ func (this *inputctx) Streams() []gopi.MediaStream {
 	return result
 }
 
+func (this *inputctx) StreamsForFlag(flag gopi.MediaFlag) []int {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	// Check for closed file
+	if this.ctx == nil {
+		return nil
+	}
+
+	// Iterate through streams
+	result := []int{}
+	for key, stream := range this.streams {
+		if stream.Flags()&flag != 0 {
+			result = append(result, key)
+		}
+	}
+	return result
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - ITERATE OVER PACKETS
 

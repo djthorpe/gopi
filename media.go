@@ -25,10 +25,11 @@ type MediaManager interface {
 // Media is an input or output
 type Media interface {
 	// Properties
-	URL() *url.URL           // Return URL for the media location
-	Metadata() MediaMetadata // Return metadata
-	Flags() MediaFlag        // Return flags
-	Streams() []MediaStream  // Return streams
+	URL() *url.URL                  // Return URL for the media location
+	Metadata() MediaMetadata        // Return metadata
+	Flags() MediaFlag               // Return flags
+	Streams() []MediaStream         // Return streams
+	StreamsForFlag(MediaFlag) []int // Return stream index for flag(s)
 
 	// DecodeIterator loops over selected streams from media object
 	DecodeIterator([]int, DecodeIteratorFunc) error

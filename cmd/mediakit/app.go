@@ -38,7 +38,7 @@ func (this *app) Define(cfg gopi.Config) error {
 	// Define commands
 	cfg.Command("metadata", "Dump metadata information", this.Metadata)
 	cfg.Command("streams", "Dump stream information", this.Streams)
-	//cfg.Command("remux", "Remultiplex file", this.Remux)
+	cfg.Command("thumbnails", "Extract thumbnails", this.Thumbnails)
 
 	// Return success
 	return nil
@@ -103,7 +103,7 @@ func (this *app) Walk(ctx context.Context, paths []string, count *uint, fn walkf
 	// Walk through the files
 	for _, path := range paths {
 		if err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-			if this.regexp != nil && this.regexp.MatchString(path) {
+			if this.regexp == nil || this.regexp.MatchString(path) {
 				return WalkFunc(ctx, count, this.offset, this.limit, path, info, fn, err)
 			} else {
 				return nil
