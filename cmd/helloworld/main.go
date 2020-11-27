@@ -4,8 +4,6 @@ import (
 	"os"
 
 	"github.com/djthorpe/gopi/v3/pkg/tool"
-
-	_ "github.com/djthorpe/gopi/v3/pkg/log"
 )
 
 func main() {

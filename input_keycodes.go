@@ -7,8 +7,6 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
-// See
-
 const (
 	KEYCODE_NONE             KeyCode = 0x0000
 	KEYCODE_ESC              KeyCode = 0x0001
