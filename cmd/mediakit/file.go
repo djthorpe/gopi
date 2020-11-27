@@ -10,9 +10,9 @@ import (
 )
 
 type media struct {
-	URL   *url.URL
-	Flags gopi.MediaFlag
-	//	Metadata map[gopi.MediaKey]interface{}
+	URL     *url.URL
+	Flags   gopi.MediaFlag
+	Meta    map[gopi.MediaKey]interface{}
 	Streams []*stream
 }
 
@@ -25,6 +25,7 @@ func NewMedia(m gopi.Media) *media {
 	this := new(media)
 	this.URL = m.URL()
 	this.Flags = m.Flags()
+	this.Meta = make(map[gopi.MediaKey]interface{})
 	return this
 }
 
@@ -55,13 +56,25 @@ func FormatStream(name string, stream *stream) []string {
 	}
 }
 
+func FormatMetadata(m *media, keys []gopi.MediaKey) []string {
+	row := []string{}
+	for _, key := range keys {
+		if value, exists := m.Meta[key]; exists == false {
+			row = append(row, "")
+		} else {
+			row = append(row, fmt.Sprint(value))
+		}
+	}
+	return row
+}
+
 func FormatFlags(flags gopi.MediaFlag) string {
 	str := ""
 	for _, flag := range strings.Split(fmt.Sprint(flags), "|") {
 		flag := strings.TrimPrefix(flag, "MEDIA_FLAG_")
-		str += flag
+		str += strings.ToLower(flag) + "|"
 	}
-	return str
+	return strings.TrimSuffix(str, "|")
 }
 
 /*

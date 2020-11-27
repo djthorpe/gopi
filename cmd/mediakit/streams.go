@@ -15,7 +15,7 @@ func (this *app) Streams(ctx context.Context) error {
 	// Process files
 	if paths, err := GetFileArgs(this.Command.Args()); err != nil {
 		return err
-	} else if err := Walk(ctx, paths, &count, this.offset, this.limit, func(path string, info os.FileInfo) error {
+	} else if err := this.Walk(ctx, paths, &count, func(path string, info os.FileInfo) error {
 		if media, err := this.ProcessStreams(path); err != nil {
 			if *this.quiet == false {
 				this.Logger.Print(filepath.Base(path), ": ", err)
