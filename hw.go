@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 /*
 	Go Language Raspberry Pi Interface
 	(c) Copyright David Thorpe 2016-2018
@@ -6,63 +8,97 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
+>>>>>>> master
 package gopi
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
-///////////////////////////////////////////////////////////////////////////////
-// INTERFACES
+////////////////////////////////////////////////////////////////////////////////
+// TYPES
 
-// Hardware implements the hardware driver interface, which
-// provides information about the hardware that the software is
-// running on
-type Hardware interface {
-	Driver
+type (
+	PlatformType uint32
+	SPIMode      uint8  // SPIMode is the SPI Mode
+	GPIOPin      uint8  // GPIOPin is the logical GPIO pin
+	GPIOState    uint8  // GPIOState is the GPIO Pin state
+	GPIOMode     uint8  // GPIOMode is the GPIO Pin mode
+	GPIOPull     uint8  // GPIOPull is the GPIO Pin resistor configuration (pull up/down or floating)
+	GPIOEdge     uint8  // GPIOEdge is a rising or falling edge
+	LIRCMode     uint32 // LIRCMode is the LIRC Mode
+	LIRCType     uint32 // LIRCType is the LIRC Type
+)
 
-	// Return name of the hardware platform
-	Name() string
-
-	// Return unique serial number of this hardware
-	SerialNumber() string
-
-	// Return the number of possible displays for this hardware
-	NumberOfDisplays() uint
-
-	// Return host uptime
-	UptimeHost() time.Duration
-
-	// Return load averages
-	LoadAverage() (float64, float64, float64)
+type SPIDevice struct {
+	Bus, Slave uint
 }
 
-// Display implements a pixel-based display device. Displays are always numbered
-// from zero onwards
-type Display interface {
-	Driver
+type I2CBus uint
 
-	// Return display number
-	Display() uint
+////////////////////////////////////////////////////////////////////////////////
+// INTERFACES
 
-	// Return name of the display
-	Name() string
+type Platform interface {
+	Product() string                           // Product returns product name
+	Type() PlatformType                        // Type returns flags identifying platform type
+	SerialNumber() string                      // SerialNumber returns unique serial number for host
+	Uptime() time.Duration                     // Uptime returns uptime for host
+	LoadAverages() (float64, float64, float64) // LoadAverages returns 1, 5 and 15 minute load averages
+	TemperatureZones() map[string]float32      // Return celcius values for zones
+	NumberOfDisplays() uint                    // NumberOfDisplays returns the number of possible displays for this host
+	AttachedDisplays() []uint                  // AttachedDisplays returns array of displays which are connected
+}
 
-	// Return display size for nominated display number, or (0,0) if display
-	// does not exist
-	Size() (uint32, uint32)
+// SPI implements the SPI interface for sensors, etc.
+type SPI interface {
+	Mode() SPIMode                        // Get SPI mode
+	MaxSpeedHz() uint32                   // Get SPI speed
+	BitsPerWord() uint8                   // Get Bits Per Word
+	SetMode(SPIMode) error                // Set SPI mode
+	SetMaxSpeedHz(uint32) error           // Set SPI speed
+	SetBitsPerWord(uint8) error           // Set Bits Per Word
+	Transfer(send []byte) ([]byte, error) // Read/Write
+	Read(len uint32) ([]byte, error)      // Read
+	Write(send []byte) error              // Write
+}
 
-	// Return the PPI (pixels-per-inch) for the display, or return zero if unknown
-	PixelsPerInch() uint32
+// I2C implements the I2C interface for sensors, etc.
+type I2C interface {
+	// Return all valid devices
+	Devices() []I2CBus
+
+	// Set current slave address
+	SetSlave(I2CBus, uint8) error
+
+	// Get current slave address
+	GetSlave(I2CBus) uint8
+
+	// Return true if a slave was detected at a particular address
+	DetectSlave(I2CBus, uint8) (bool, error)
+
+	// Read and Write data directly
+	Read(I2CBus) ([]byte, error)
+	Write(I2CBus, []byte) (int, error)
+
+	// Read Byte (8-bits), Word (16-bits) & Block ([]byte) from registers
+	ReadUint8(bus I2CBus, reg uint8) (uint8, error)
+	ReadInt8(bus I2CBus, reg uint8) (int8, error)
+	ReadUint16(bus I2CBus, reg uint8) (uint16, error)
+	ReadInt16(bus I2CBus, reg uint8) (int16, error)
+	ReadBlock(bus I2CBus, reg, length uint8) ([]byte, error)
+
+	// Write Byte (8-bits) and Word (16-bits)
+	WriteUint8(bus I2CBus, reg, value uint8) error
+	WriteInt8(bus I2CBus, reg uint8, value int8) error
+	WriteUint16(bus I2CBus, reg uint8, value uint16) error
+	WriteInt16(bus I2CBus, reg uint8, value int16) error
 }
 
 // GPIO implements the GPIO interface for simple input and output
 type GPIO interface {
-	// Enforces general driver and event publisher
-	Driver
-	Publisher
-
 	// Return number of physical pins, or 0 if if cannot be returned
 	// or nothing is known about physical pins
 	NumberOfPhysicalPins() uint
@@ -103,133 +139,80 @@ type GPIO interface {
 	Watch(GPIOPin, GPIOEdge) error
 }
 
-// I2C implements the I2C interface for sensors, etc.
-type I2C interface {
-	Driver
-
-	// Set current slave address
-	SetSlave(uint8) error
-
-	// Get current slave address
-	GetSlave() uint8
-
-	// Return true if a slave was detected at a particular address
-	DetectSlave(uint8) (bool, error)
-
-	// Read Byte (8-bits), Word (16-bits) & Block ([]byte) from registers
-	ReadUint8(reg uint8) (uint8, error)
-	ReadInt8(reg uint8) (int8, error)
-	ReadUint16(reg uint8) (uint16, error)
-	ReadInt16(reg uint8) (int16, error)
-	ReadBlock(reg, length uint8) ([]byte, error)
-
-	// Write Byte (8-bits) & Word (16-bits) to registers
-	WriteUint8(reg, value uint8) error
-	WriteInt8(reg uint8, value int8) error
-	WriteUint16(reg uint8, value uint16) error
-	WriteInt16(reg uint8, value int16) error
-}
-
-// SPI implements the SPI interface for sensors, etc.
-type SPI interface {
-	Driver
-
-	// Get SPI mode
-	Mode() SPIMode
-	// Get SPI speed
-	MaxSpeedHz() uint32
-	// Get Bits Per Word
-	BitsPerWord() uint8
-	// Set SPI mode
-	SetMode(SPIMode) error
-	// Set SPI speed
-	SetMaxSpeedHz(uint32) error
-	// Set Bits Per Word
-	SetBitsPerWord(uint8) error
-
-	// Read/Write
-	Transfer(send []byte) ([]byte, error)
-
-	// Read
-	Read(len uint32) ([]byte, error)
-
-	// Write
-	Write(send []byte) error
-}
-
-// PWM implements the PWM interface for actuators, motors, etc.
-type PWM interface {
-	Driver
-
-	// Return array of pins which are enabled for PWM
-	Pins() []GPIOPin
-
-	// Period
-	Period(GPIOPin) (time.Duration, error)
-	SetPeriod(time.Duration, ...GPIOPin) error
-
-	// Duty Cycle between 0.0 and 1.0 (0.0 is always off, 1.0 is always on)
-	DutyCycle(GPIOPin) (float32, error)
-	SetDutyCycle(float32, ...GPIOPin) error
+// Display implements a pixel-based display device
+type Display interface {
+	Id() uint16             // Return display number
+	Name() string           // Return name of the display
+	Size() (uint32, uint32) // Return display size for nominated display number, or (0,0) if display does not exist
+	PixelsPerInch() uint32  // Return the PPI (pixels-per-inch) for the display, or return zero if unknown
 }
 
 // LIRC implements the IR send & receive interface
 type LIRC interface {
-	Driver
-	Publisher
-
 	// Get receive and send modes
-	RcvMode() LIRCMode
+	RecvMode() LIRCMode
 	SendMode() LIRCMode
-	SetRcvMode(mode LIRCMode) error
-	SetSendMode(mode LIRCMode) error
+	SetRecvMode(LIRCMode) error
+	SetSendMode(LIRCMode) error
 
 	// Receive parameters
-	GetRcvResolution() (uint32, error)
-	SetRcvTimeout(micros uint32) error
-	SetRcvTimeoutReports(enable bool) error
-	SetRcvCarrierHz(value uint32) error
-	SetRcvCarrierRangeHz(min uint32, max uint32) error
+	RecvDutyCycle() uint32
+	RecvResolutionMicros() uint32
+
+	// Receive parameters
+	SetRecvTimeoutMs(uint32) error
+	SetRecvTimeoutReports(bool) error
+	SetRecvCarrierHz(uint32) error
+	SetRecvCarrierRangeHz(min, max uint32) error
 
 	// Send parameters
-	SetSendCarrierHz(value uint32) error
-	SetSendDutyCycle(value uint32) error
+	SendDutyCycle() uint32
+	SetSendCarrierHz(uint32) error
+	SetSendDutyCycle(uint32) error
 
 	// Send Pulse Mode, values are in milliseconds
-	PulseSend(values []uint32) error
+	PulseSend([]uint32) error
+}
+
+// LIRCEvent is a value from LIRC
+type LIRCEvent interface {
+	Event
+
+	Type() LIRCType
+	Mode() LIRCMode
+	Value() interface{} // value is uint32 in ms when mode is LIRC_MODE_MODE2
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// TYPES
+// CONSTANTS
 
-type (
-	// Logical GPIO pin
-	GPIOPin uint8
-
-	// GPIO Pin state
-	GPIOState uint8
-
-	// GPIO Pin mode
-	GPIOMode uint8
-
-	// GPIO Pin resistor configuration (pull up/down or floating)
-	GPIOPull uint8
-
-	// GPIOEdge is a rising or falling edge
-	GPIOEdge uint8
-
-	// SPIMode
-	SPIMode uint8
-
-	// LIRCMode
-	LIRCMode uint32
-
-	// LIRCType
-	LIRCType uint32
+const (
+	PLATFORM_NONE PlatformType = 0
+	// OS
+	PLATFORM_DARWIN PlatformType = (1 << iota) >> 1
+	PLATFORM_RPI
+	PLATFORM_LINUX
+	// CPU
+	PLATFORM_X86_32
+	PLATFORM_X86_64
+	PLATFORM_BCM2835_ARM6
+	PLATFORM_BCM2836_ARM7
+	PLATFORM_BCM2837_ARM8
+	PLATFORM_BCM2838_ARM8
+	// MIN AND MAX
+	PLATFORM_MIN = PLATFORM_DARWIN
+	PLATFORM_MAX = PLATFORM_BCM2838_ARM8
 )
 
-////////////////////////////////////////////////////////////////////////////////
-// CONSTANTS
+const (
+	SPI_MODE_CPHA SPIMode = 0x01
+	SPI_MODE_CPOL SPIMode = 0x02
+	SPI_MODE_0    SPIMode = 0x00
+	SPI_MODE_1    SPIMode = (0x00 | SPI_MODE_CPHA)
+	SPI_MODE_2    SPIMode = (SPI_MODE_CPOL | 0x00)
+	SPI_MODE_3    SPIMode = (SPI_MODE_CPOL | SPI_MODE_CPHA)
+	SPI_MODE_NONE SPIMode = 0xFF
+)
 
 const (
 	// Invalid pin constant
@@ -268,22 +251,11 @@ const (
 )
 
 const (
-	SPI_MODE_CPHA SPIMode = 0x01
-	SPI_MODE_CPOL SPIMode = 0x02
-	SPI_MODE_0    SPIMode = 0x00
-	SPI_MODE_1    SPIMode = (0x00 | SPI_MODE_CPHA)
-	SPI_MODE_2    SPIMode = (SPI_MODE_CPOL | 0x00)
-	SPI_MODE_3    SPIMode = (SPI_MODE_CPOL | SPI_MODE_CPHA)
-	SPI_MODE_NONE SPIMode = 0xFF
-)
-
-const (
 	LIRC_MODE_NONE     LIRCMode = 0x00000000
 	LIRC_MODE_RAW      LIRCMode = 0x00000001
 	LIRC_MODE_PULSE    LIRCMode = 0x00000002 // send only
 	LIRC_MODE_MODE2    LIRCMode = 0x00000004 // rcv only
 	LIRC_MODE_LIRCCODE LIRCMode = 0x00000010 // rcv only
-	LIRC_MODE_MAX      LIRCMode = LIRC_MODE_LIRCCODE
 )
 
 const (
@@ -291,11 +263,65 @@ const (
 	LIRC_TYPE_PULSE     LIRCType = 0x01000000
 	LIRC_TYPE_FREQUENCY LIRCType = 0x02000000
 	LIRC_TYPE_TIMEOUT   LIRCType = 0x03000000
-	LIRC_TYPE_MAX       LIRCType = LIRC_TYPE_TIMEOUT
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
+
+func (p PlatformType) String() string {
+	str := ""
+	if p == 0 {
+		return p.FlagString()
+	}
+	for v := PLATFORM_MIN; v <= PLATFORM_MAX; v <<= 1 {
+		if p&v == v {
+			str += "|" + v.FlagString()
+		}
+	}
+	return strings.TrimPrefix(str, "|")
+}
+
+func (p PlatformType) FlagString() string {
+	switch p {
+	case PLATFORM_NONE:
+		return "PLATFORM_NONE"
+	case PLATFORM_DARWIN:
+		return "PLATFORM_DARWIN"
+	case PLATFORM_RPI:
+		return "PLATFORM_RPI"
+	case PLATFORM_LINUX:
+		return "PLATFORM_LINUX"
+	case PLATFORM_X86_32:
+		return "PLATFORM_X86_32"
+	case PLATFORM_X86_64:
+		return "PLATFORM_X86_64"
+	case PLATFORM_BCM2835_ARM6:
+		return "PLATFORM_BCM2835_ARM6"
+	case PLATFORM_BCM2836_ARM7:
+		return "PLATFORM_BCM2836_ARM7"
+	case PLATFORM_BCM2837_ARM8:
+		return "PLATFORM_BCM2837_ARM8"
+	case PLATFORM_BCM2838_ARM8:
+		return "PLATFORM_BCM2838_ARM8"
+	default:
+		return "[?? Invalid PlatformType value]"
+	}
+}
+
+func (m SPIMode) String() string {
+	switch m {
+	case SPI_MODE_0:
+		return "SPI_MODE_0"
+	case SPI_MODE_1:
+		return "SPI_MODE_1"
+	case SPI_MODE_2:
+		return "SPI_MODE_2"
+	case SPI_MODE_3:
+		return "SPI_MODE_3"
+	default:
+		return "[?? Invalid SPIMode " + fmt.Sprint(uint(m)) + "]"
+	}
+}
 
 func (p GPIOPin) String() string {
 	return fmt.Sprintf("GPIO%v", uint8(p))
@@ -362,21 +388,6 @@ func (e GPIOEdge) String() string {
 		return "GPIO_EDGE_BOTH"
 	default:
 		return "[??? Invalid GPIOEdge value]"
-	}
-}
-
-func (m SPIMode) String() string {
-	switch m {
-	case SPI_MODE_0:
-		return "SPI_MODE_0"
-	case SPI_MODE_1:
-		return "SPI_MODE_1"
-	case SPI_MODE_2:
-		return "SPI_MODE_2"
-	case SPI_MODE_3:
-		return "SPI_MODE_3"
-	default:
-		return "[?? Invalid SPIMode]"
 	}
 }
 

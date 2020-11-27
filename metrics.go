@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 /*
 	Go Language Raspberry Pi Interface
 	(c) Copyright David Thorpe 2016-2018
@@ -6,107 +8,61 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
+>>>>>>> master
 package gopi
 
 import (
 	"time"
 )
 
-/////////////////////////////////////////////////////////////////////
-// TYPES
+////////////////////////////////////////////////////////////////////////////////
+// INTERFACES
 
-type (
-	MetricRate uint
-	MetricType uint
-)
+// Metrics provides a mechanism for defining measurements
+// and emitting data, which may be time-series based and include
+// tags/dimensions (which are indexed) and metrics (which are not)
+type Metrics interface {
+	// Define a measurement with metric definitions and optional tag fields
+	NewMeasurement(string, string, ...Field) (Measurement, error)
 
-/////////////////////////////////////////////////////////////////////
-// INTERFACE
+	// NewFields returns array of fields
+	NewFields(...string) []Field
 
-// Metric is an abstract method to store values associated with
-// a measurement
-type Metric interface {
-	// Return the metric rate (store values over a period)
-	Rate() MetricRate
+	// Emit metrics for a named measurement, omitting timestamp
+	Emit(string, ...interface{}) error
 
-	// Return the metric type (the units used for the metric)
-	Type() MetricType
+	// EmitTS emits metrics for a named measurement, with defined timestamp
+	EmitTS(string, time.Time, ...interface{}) error
 
-	// Return the name of the metric
+	// Measurements returns array of all defined measurements
+	Measurements() []Measurement
+}
+
+// Measurement is a single data point
+type Measurement interface {
+	Event
+
+	Time() time.Time  // Time returns the timestamp for the data point or time.Time{}
+	Tags() []Field    // Return the dimenstions/tags for the data point
+	Metrics() []Field // Return the metrics for the data point
+}
+
+type Field interface {
+	// Name returns field name
 	Name() string
 
-	// Return the unit for the metric (°C for example)
-	Unit() string
+	// Kind returns kind of field or nil
+	Kind() string
 
-	// Return the last metric value as a uint
-	UintValue() uint
+	// IsNil returns true if value is nil
+	IsNil() bool
 
-	// Return the last metric value as a float64
-	FloatValue() float64
-}
+	// Value returns field value, or nil
+	Value() interface{}
 
-// Metrics returns various metrics for host and
-// custom metrics
-type Metrics interface {
-	Driver
+	// SetValue sets specific value and returns error if unsupported
+	SetValue(interface{}) error
 
-	// Uptimes for host and for application
-	UptimeHost() time.Duration
-	UptimeApp() time.Duration
-
-	// Load Average (1, 5 and 15 minutes)
-	LoadAverage() (float64, float64, float64)
-
-	// Return metric channel which records uint values
-	NewMetricUint(MetricType, MetricRate, string) (chan<- uint, error)
-
-	// Return metric channel which records float64 values
-	NewMetricFloat64(MetricType, MetricRate, string) (chan<- float64, error)
-
-	// Return all metrics of a particular type, or METRIC_TYPE_NONE
-	// for all metrics
-	Metrics(MetricType) []Metric
-}
-
-/////////////////////////////////////////////////////////////////////
-// CONSTANTS
-
-const (
-	METRIC_RATE_NONE MetricRate = iota
-	METRIC_RATE_MINUTE
-	METRIC_RATE_HOUR
-	METRIC_RATE_DAY
-)
-
-const (
-	METRIC_TYPE_NONE    MetricType = iota
-	METRIC_TYPE_PURE               // Pure number
-	METRIC_TYPE_CELCIUS            // Temperature
-)
-
-/////////////////////////////////////////////////////////////////////
-// STRINGIFY
-
-func (v MetricRate) String() string {
-	switch v {
-	case METRIC_RATE_MINUTE:
-		return "METRIC_RATE_MINUTE"
-	case METRIC_RATE_HOUR:
-		return "METRIC_RATE_HOUR"
-	case METRIC_RATE_DAY:
-		return "METRIC_RATE_DAY"
-	default:
-		return "[?? Invalid MetricRate value]"
-	}
-}
-
-func (t MetricType) String() string {
-	switch t {
-	case METRIC_TYPE_PURE:
-		return "METRIC_TYPE_PURE"
-	case METRIC_TYPE_CELCIUS:
-		return "METRIC_TYPE_CELCIUS"
-	default:
-		return "[?? Invalid MetricType value]"
-	}
+	// Copy returns a copy of the field
+	Copy() Field
 }

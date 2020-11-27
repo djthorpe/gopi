@@ -1,0 +1,5 @@
+package mdns
+
+func init() {
+
+}

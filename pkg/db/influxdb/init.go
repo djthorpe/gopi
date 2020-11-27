@@ -1,0 +1,5 @@
+package influxdb
+
+func init() {
+
+}

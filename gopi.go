@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 /*
 	Go Language Raspberry Pi Interface
 	(c) Copyright David Thorpe 2016-2017
@@ -6,108 +8,94 @@
 	For Licensing and Usage information, please see LICENSE.md
 */
 
+>>>>>>> master
 package gopi
 
 import (
-	"fmt"
-	"log"
-	"sync"
+	"context"
+	"time"
 )
 
-////////////////////////////////////////////////////////////////////////////////
-// TYPES
+/////////////////////////////////////////////////////////////////////
+// INTERFACES
 
-// Abstract driver interface
-type Driver interface {
-	// Close closes the driver and frees the underlying resources
-	Close() error
-}
-
-// Abstract configuration which is used to open and return the
-// concrete driver
 type Config interface {
-	// Opens the driver from configuration, or returns error
-	Open(Logger) (Driver, error)
+	Parse() error     // Parse command line arguments
+	Args() []string   // Return arguments, not including flags
+	Usage(string)     // Print out usage for all or specific command
+	Version() Version // Return version information
+
+	// Define flags
+	FlagString(string, string, string) *string
+	FlagBool(string, bool, string) *bool
+	FlagUint(string, uint, string) *uint
+	FlagDuration(string, time.Duration, string) *time.Duration
+
+	// Define commands
+	Command(string, string, CommandFunc) error // Append a command with name and usage arguments
+
+	// Get values
+	GetString(string) string
+	GetBool(string) bool
+	GetUint(string) uint
+	GetDuration(string) time.Duration
+	GetCommand([]string) Command // Get command from provided arguments
 }
 
-// Abstract logging interface
+// CommandFunc is the function signature for running a command
+type CommandFunc func(context.Context) error
+
+// Command is determined from parsed arguments
+type Command interface {
+	Name() string              // Return command name
+	Usage() string             // Return usage information
+	Args() []string            // Return command arguments
+	Run(context.Context) error // Run the command
+}
+
+type Version interface {
+	Name() string                      // Return process name
+	Version() (string, string, string) // Return tag, branch and hash
+	BuildTime() time.Time              // Return time of process compilation
+	GoVersion() string                 // Return go compiler version
+}
+
+// Logger outputs information and debug messages
 type Logger interface {
-	Driver
-
-	// Output logging messages
-	Fatal(format string, v ...interface{}) error
-	Error(format string, v ...interface{}) error
-	Warn(format string, v ...interface{})
-	Info(format string, v ...interface{})
-	Debug(format string, v ...interface{})
-	Debug2(format string, v ...interface{})
-
-	// Return IsDebug flag
-	IsDebug() bool
+	Print(args ...interface{})              // Output logging
+	Debug(args ...interface{})              // Output debugging information
+	Printf(fmt string, args ...interface{}) // Output logging with format
+	Debugf(fmt string, args ...interface{}) // Output debugging with format
+	IsDebug() bool                          // IsDebug returns true if debug flag is set
 }
 
-// Concrete basic logger
-type logger struct {
-	sync.Mutex
+// Event is an emitted event
+type Event interface {
+	Name() string // Return name of the event
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS
+// Publisher emits events and allows for subscribing to emitted events
+type Publisher interface {
+	// Emit an event, which can block if second argument is true
+	Emit(Event, bool) error
 
-// Open a driver - opens the concrete version given the config method
-func Open(config Config, log Logger) (Driver, error) {
-	if log == nil {
-		log = new(logger)
-	}
-	if driver, err := config.Open(log); err != nil {
-		return nil, err
-	} else {
-		return driver, nil
-	}
+	// Subscribe to events
+	Subscribe() <-chan Event
+
+	// Unsubscribe from events
+	Unsubscribe(<-chan Event)
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
+/////////////////////////////////////////////////////////////////////
+// UNITS
 
-func (this *logger) Close() error {
-	this.Lock()
-	defer this.Unlock()
-	return nil
-}
-func (this *logger) Fatal(format string, v ...interface{}) error {
-	this.Lock()
-	defer this.Unlock()
-	err := fmt.Errorf(format, v...)
-	log.Printf("Fatal: %v", err.Error())
-	return err
-}
-func (this *logger) Error(format string, v ...interface{}) error {
-	this.Lock()
-	defer this.Unlock()
-	err := fmt.Errorf(format, v...)
-	log.Printf("Error: %v", err.Error())
-	return err
-}
-func (this *logger) Warn(format string, v ...interface{}) {
-	this.Lock()
-	defer this.Unlock()
-	log.Printf("Warn: %v", fmt.Sprintf(format, v...))
-}
-func (this *logger) Info(format string, v ...interface{}) {
-	this.Lock()
-	defer this.Unlock()
-	log.Printf("Info: %v", fmt.Sprintf(format, v...))
-}
-func (this *logger) Debug(format string, v ...interface{}) {
-	this.Lock()
-	defer this.Unlock()
-	log.Printf("Debug: %v", fmt.Sprintf(format, v...))
-}
-func (this *logger) Debug2(format string, v ...interface{}) {
-	this.Lock()
-	defer this.Unlock()
-	log.Printf("Debug: %v", fmt.Sprintf(format, v...))
-}
-func (this *logger) IsDebug() bool {
-	return true
-}
+// Unit marks an singleton object
+type Unit struct{}
+
+/////////////////////////////////////////////////////////////////////
+// PUBLIC FUNCTIONS
+
+func (this *Unit) Define(Config) error       { /* NOOP */ return nil }
+func (this *Unit) New(Config) error          { /* NOOP */ return nil }
+func (this *Unit) Run(context.Context) error { /* NOOP */ return nil }
+func (this *Unit) Dispose() error            { /* NOOP */ return nil }
