@@ -67,12 +67,26 @@ func (this *stream) Flags() gopi.MediaFlag {
 	return flags
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// METHODS - CODEC
-
 func (this *stream) Codec() gopi.MediaCodec {
 	return this.codec
 }
+
+func (this *stream) NewContextWithOptions(options *ffmpeg.AVDictionary) *ffmpeg.AVCodecContext {
+	if ctx, codec := this.codec.ctx.NewDecoderContext(); ctx == nil || codec == nil {
+		return nil
+	} else if err := this.codec.ctx.ToContext(ctx); err != nil {
+		ctx.Free()
+		return nil
+	} else if err := ctx.Open(codec, options); err != nil {
+		ctx.Free()
+		return nil
+	} else {
+		return ctx
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// METHODS - CODEC
 
 func (this *codec) Flags() gopi.MediaFlag {
 	flags := gopi.MEDIA_FLAG_NONE

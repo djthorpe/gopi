@@ -135,8 +135,8 @@ func Test_avformat_011(t *testing.T) {
 					t.Error(err)
 					break
 				} else {
-					packet.Release()
 					t.Log(packet)
+					packet.Release()
 				}
 			}
 		}

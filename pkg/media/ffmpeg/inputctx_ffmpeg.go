@@ -168,14 +168,16 @@ func (this *inputctx) DecodeIterator(streams []int, fn gopi.DecodeIteratorFunc) 
 	// be processed
 	for {
 		if err := this.ctx.ReadPacket(packet); err == io.EOF {
+			// End of stream
 			break
 		} else if err != nil {
 			return err
 		} else if ctx, exists := contextmap[packet.Stream()]; exists {
-			if err := fn(ctx, packet); err != nil {
+			err := fn(ctx, packet)
+			packet.Release()
+			if err != nil {
 				return err
 			}
-			packet.Release()
 		}
 	}
 
@@ -190,7 +192,7 @@ func (this *inputctx) DecodeFrameIterator(ctx gopi.MediaDecodeContext, packet go
 	}
 	// Get internal context object and check more parameters
 	ctx_, ok := ctx.(*decodectx)
-	if ok == false || packet == nil || ctx_.codecctx == nil {
+	if ok == false || packet == nil {
 		return gopi.ErrBadParameter.WithPrefix("DecodeFrameIterator")
 	}
 
@@ -199,34 +201,29 @@ func (this *inputctx) DecodeFrameIterator(ctx gopi.MediaDecodeContext, packet go
 	defer ctx_.RWMutex.Unlock()
 
 	// Decode packet
-	// Supply raw packet data as input to a decoder
-	// https://ffmpeg.org/doxygen/trunk/group__lavc__decoding.html#ga58bc4bf1e0ac59e27362597e467efff3
-	if err := ctx_.codecctx.DecodePacket(packet.(*ffmpeg.AVPacket)); err != nil {
-		return err
+	if err := ctx_.DecodePacket(packet); err != nil {
+		return fmt.Errorf("DecodeFrameIterator: %w", err)
 	}
 
 	// Iterate through frames
-
-	// Return success
-	return nil
-}
-
-/*
-func (this *inputctx) FrameIterator(packet gopi.MediaPacket, fn FrameIteratorFunc) error {
-	// We don't lock in this function, assuming locking is done via PacketIterator
-
-	if err := avcodec_send_packet(pCodecContext, packet); err != nil {
-		return err
-	}
-
 	for {
-
+		// Return frames until no more available
+		if frame, err := ctx_.DecodeFrame(); err == io.EOF {
+			return err
+		} else if err != nil {
+			return fmt.Errorf("DecodeFrameIterator: %w", err)
+		} else if frame == nil {
+			// Not enough data, so return without processing frame
+			return nil
+		} else {
+			err := fn(frame)
+			frame.Release()
+			if err != nil {
+				return err
+			}
+		}
 	}
-
-	// Return success
-	return nil
 }
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY

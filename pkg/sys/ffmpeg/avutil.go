@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"syscall"
 	"unsafe"
 )
 
@@ -18,6 +19,7 @@ import (
 #include <libavutil/dict.h>
 #include <libavutil/mem.h>
 #include <libavutil/frame.h>
+#include <libavutil/error.h>
 #include <stdlib.h>
 #define MAX_LOG_BUFFER 1024
 
@@ -36,6 +38,9 @@ static void av_log_set_callback_(int def) {
 		av_log_set_callback(av_log_cb);
 	}
 }
+static int av_error_matches(int av,int en) {
+	return av == AVERROR(en);
+}
 */
 import "C"
 
@@ -45,7 +50,6 @@ import "C"
 type (
 	AVError           int
 	AVDictionaryEntry C.struct_AVDictionaryEntry
-	AVFrame           C.struct_AVFrame
 	AVDictionaryFlag  int
 	AVRational        C.struct_AVRational
 )
@@ -95,6 +99,11 @@ func (this AVError) Error() string {
 	} else {
 		return fmt.Sprintf("Error code: %v", this)
 	}
+}
+
+func (this AVError) IsErrno(err syscall.Errno) bool {
+	c := int(C.av_error_matches(C.int(this), C.int(err)))
+	return c == 1
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,25 +190,6 @@ func (this *AVDictionaryEntry) Value() string {
 
 func (this *AVDictionaryEntry) String() string {
 	return fmt.Sprintf("%v=%v", this.Key(), strconv.Quote(this.Value()))
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// AVFrame
-
-// NewAVFrame allocates an AVFrame and set its fields to default values
-func NewAVFrame() *AVFrame {
-	return (*AVFrame)(C.av_frame_alloc())
-}
-
-// Free AVFormatContext
-func (this *AVFrame) Free() {
-	ctx := (*C.AVFrame)(unsafe.Pointer(this))
-	C.av_frame_free(&ctx)
-}
-
-func (this *AVFrame) String() string {
-	str := "<AVFrame"
-	return str + ">"
 }
 
 ////////////////////////////////////////////////////////////////////////////////

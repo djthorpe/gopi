@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"syscall"
 	"unsafe"
 )
 
@@ -155,7 +156,7 @@ func NewAVCodecContext(codec *AVCodec) *AVCodecContext {
 	return (*AVCodecContext)(C.avcodec_alloc_context3((*C.AVCodec)(codec)))
 }
 
-// Free AVFormatContext
+// Free AVCodecContext
 func (this *AVCodecContext) Free() {
 	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
 	C.avcodec_free_context(&ctx)
@@ -192,8 +193,32 @@ func (this *AVCodecContext) DecodePacket(packet *AVPacket) error {
 	}
 }
 
+// DecodeFrame does the frame decoding
+func (this *AVCodecContext) DecodeFrame(frame *AVFrame) error {
+	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
+	if err := AVError(C.avcodec_receive_frame(ctx, (*C.AVFrame)(frame))); err != 0 {
+		if err.IsErrno(syscall.EAGAIN) {
+			return syscall.EAGAIN
+		} else if err.IsErrno(syscall.EINVAL) {
+			return syscall.EINVAL
+		} else {
+			return err
+		}
+	} else {
+		return nil
+	}
+}
+
+func (this *AVCodecContext) Type() AVMediaType {
+	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
+	return AVMediaType(ctx.codec_type)
+}
+
 func (this *AVCodecContext) String() string {
 	str := "<AVCodecContext"
+	if media_type := this.Type(); media_type != AVMEDIA_TYPE_UNKNOWN {
+		str += " type=" + fmt.Sprint(media_type)
+	}
 	return str + ">"
 }
 
@@ -210,6 +235,17 @@ func NewAVCodecParameters() *AVCodecParameters {
 func (this *AVCodecParameters) Free() {
 	ctx := (*C.AVCodecParameters)(unsafe.Pointer(this))
 	C.avcodec_parameters_free(&ctx)
+}
+
+// Create a new Codec decoder context
+func (this *AVCodecParameters) NewDecoderContext() (*AVCodecContext, *AVCodec) {
+	if codec := FindDecoderById(this.Id()); codec == nil {
+		return nil, nil
+	} else if ctx := NewAVCodecContext(codec); ctx == nil {
+		return nil, nil
+	} else {
+		return ctx, codec
+	}
 }
 
 // FromContext fill the parameters based on the values from the

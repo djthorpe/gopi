@@ -8,14 +8,16 @@ import "strings"
 // TYPES
 
 type (
-	AVCodecId     int
-	AVMediaType   int
-	AVCodecCap    uint32
-	AVDisposition int
-	AVFormatFlag  int
-	AVPacketFlag  int
-	AVIOFlag      int
-	AVLogLevel    int
+	AVCodecId      int
+	AVMediaType    int
+	AVCodecCap     uint32
+	AVDisposition  int
+	AVFormatFlag   int
+	AVPacketFlag   int
+	AVPixelFormat  int
+	AVSampleFormat int
+	AVIOFlag       int
+	AVLogLevel     int
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,9 +28,8 @@ const (
 	AVMEDIA_TYPE_AUDIO
 	AVMEDIA_TYPE_DATA // Opaque data information usually continuous
 	AVMEDIA_TYPE_SUBTITLE
-	AVMEDIA_TYPE_ATTACHMENT // Opaque data information usually sparse
-	AVMEDIA_TYPE_NB
-	AVMEDIA_TYPE_UNKNOWN AVMediaType = -1 // Usually treated as AVMEDIA_TYPE_DATA
+	AVMEDIA_TYPE_ATTACHMENT                  // Opaque data information usually sparse
+	AVMEDIA_TYPE_UNKNOWN    AVMediaType = -1 // Usually treated as AVMEDIA_TYPE_DATA
 )
 
 const (
@@ -1558,8 +1559,6 @@ func (v AVMediaType) String() string {
 		return "AVMEDIA_TYPE_SUBTITLE"
 	case AVMEDIA_TYPE_ATTACHMENT:
 		return "AVMEDIA_TYPE_ATTACHMENT"
-	case AVMEDIA_TYPE_NB:
-		return "AVMEDIA_TYPE_NB"
 	case AVMEDIA_TYPE_UNKNOWN:
 		return "AVMEDIA_TYPE_UNKNOWN"
 	default:

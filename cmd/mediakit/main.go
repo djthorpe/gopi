@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	os.Exit(tool.CommandLine("mediascan", os.Args[1:], new(app)))
+	os.Exit(tool.CommandLine("mediakit", os.Args[1:], new(app)))
 }
