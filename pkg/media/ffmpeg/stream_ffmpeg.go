@@ -42,15 +42,33 @@ func NewCodec(ctx *ffmpeg.AVCodecParameters) *codec {
 	}
 }
 
+func (this *stream) Release() {
+	this.ctx = nil
+	this.codec = nil
+}
+
+func (this *codec) Release() {
+	this.ctx = nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS - STREAM
 
 func (this *stream) Index() int {
-	return this.ctx.Index()
+	if this.ctx == nil {
+		return -1
+	} else {
+		return this.ctx.Index()
+	}
 }
 
 func (this *stream) Flags() gopi.MediaFlag {
 	flags := gopi.MEDIA_FLAG_NONE
+
+	// Return NONE if released
+	if this.ctx == nil {
+		return flags
+	}
 
 	// Codec flags
 	flags |= this.codec.Flags()
@@ -68,11 +86,17 @@ func (this *stream) Flags() gopi.MediaFlag {
 }
 
 func (this *stream) Codec() gopi.MediaCodec {
-	return this.codec
+	if this.ctx == nil {
+		return nil
+	} else {
+		return this.codec
+	}
 }
 
 func (this *stream) NewContextWithOptions(options *ffmpeg.AVDictionary) *ffmpeg.AVCodecContext {
-	if ctx, codec := this.codec.ctx.NewDecoderContext(); ctx == nil || codec == nil {
+	if this.ctx == nil || this.codec == nil {
+		return nil
+	} else if ctx, codec := this.codec.ctx.NewDecoderContext(); ctx == nil || codec == nil {
 		return nil
 	} else if err := this.codec.ctx.ToContext(ctx); err != nil {
 		ctx.Free()
@@ -90,6 +114,9 @@ func (this *stream) NewContextWithOptions(options *ffmpeg.AVDictionary) *ffmpeg.
 
 func (this *codec) Flags() gopi.MediaFlag {
 	flags := gopi.MEDIA_FLAG_NONE
+	if this.ctx == nil {
+		return flags
+	}
 
 	switch this.ctx.Type() {
 	case ffmpeg.AVMEDIA_TYPE_VIDEO:

@@ -53,11 +53,15 @@ func (this *inputctx) Close() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	// Release resources
-	this.streams = nil
-
 	// Close media
 	this.ctx.CloseInput()
+
+	// Release resources
+	for _, stream := range this.streams {
+		stream.Release()
+	}
+	this.streams = nil
+	this.ctx = nil
 
 	// Return success
 	return nil
@@ -70,19 +74,32 @@ func (this *inputctx) URL() *url.URL {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	return this.ctx.Url()
+	if this.ctx == nil {
+		return nil
+	} else {
+		return this.ctx.Url()
+	}
 }
 
 func (this *inputctx) Metadata() gopi.MediaMetadata {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	return NewMetadata(this.ctx.Metadata())
+	if this.ctx == nil {
+		return nil
+	} else {
+		return NewMetadata(this.ctx.Metadata())
+	}
 }
 
 func (this *inputctx) Flags() gopi.MediaFlag {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
+
+	// Check for closed file
+	if this.ctx == nil {
+		return gopi.MEDIA_FLAG_NONE
+	}
 
 	// Stream flags
 	flags := gopi.MEDIA_FLAG_FILE
@@ -110,6 +127,11 @@ func (this *inputctx) Streams() []gopi.MediaStream {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
+	// Check for closed file
+	if this.ctx == nil {
+		return nil
+	}
+
 	result := []gopi.MediaStream{}
 	for _, stream := range this.streams {
 		result = append(result, stream)
@@ -127,7 +149,7 @@ func (this *inputctx) DecodeIterator(streams []int, fn gopi.DecodeIteratorFunc) 
 	defer this.RWMutex.Unlock()
 
 	// Check parameters
-	if fn == nil {
+	if fn == nil || this.ctx == nil {
 		return gopi.ErrBadParameter.WithPrefix("DecodeIterator")
 	}
 
@@ -233,7 +255,9 @@ func (this *inputctx) String() string {
 	if url := this.URL(); url != nil {
 		str += " url=" + strconv.Quote(url.String())
 	}
-	str += " metadata=" + fmt.Sprint(this.Metadata())
+	if metadata := this.Metadata(); metadata != nil {
+		str += " metadata=" + fmt.Sprint(metadata)
+	}
 	if flags := this.Flags(); flags != gopi.MEDIA_FLAG_NONE {
 		str += " flags=" + fmt.Sprint(flags)
 	}
