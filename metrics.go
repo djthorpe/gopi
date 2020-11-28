@@ -27,6 +27,12 @@ type Metrics interface {
 	Measurements() []Measurement
 }
 
+// MetricWriter implements a database writing object
+type MetricWriter interface {
+	Ping() (time.Duration, error) // Ping the database and return latency
+	Write(...Measurement) error   // Write one or more measurements to the database
+}
+
 // Measurement is a single data point
 type Measurement interface {
 	Event
