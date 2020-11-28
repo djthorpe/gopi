@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -22,14 +23,14 @@ type Writer struct {
 	gopi.Unit
 	gopi.Logger
 	sync.Mutex
+	*http.Client
 
-	// Parameters
+	// Flags & Parameters
 	url        *string
 	skipverify *bool
 	timeout    *time.Duration
 
-	// Members
-	*http.Client
+	// Instance variables
 	endpoint
 	version string
 }
@@ -159,7 +160,12 @@ func (this *Writer) Ping() (time.Duration, error) {
 }
 
 // Write measurements to the endpoint
-func (this *Writer) Write(m ...gopi.Measurement) error {
+func (this *Writer) Write(metrics ...gopi.Measurement) error {
+	// Return bad parameter if no metrics
+	if len(metrics) == 0 {
+		return gopi.ErrBadParameter.WithPrefix("Write")
+	}
+
 	// Perform a ping if not already done
 	if this.version == "" {
 		if _, err := this.Ping(); err != nil {
@@ -171,9 +177,20 @@ func (this *Writer) Write(m ...gopi.Measurement) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	// Add measurements
+	// Add measurements to the buffer
 	buffer := new(bytes.Buffer)
-	// TODO
+	for _, metric := range metrics {
+		if metric == nil {
+			continue
+		}
+		if line, err := QuoteMeasurement(metric); err != nil {
+			return err
+		} else if _, err := io.WriteString(buffer, line); err != nil {
+			return err
+		} else if _, err := buffer.Write([]byte{'\n'}); err != nil {
+			return err
+		}
+	}
 
 	// Set up request
 	ep := this.endpoint.URL
