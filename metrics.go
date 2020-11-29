@@ -14,8 +14,8 @@ type Metrics interface {
 	// Define a measurement with metric definitions and optional tag fields
 	NewMeasurement(string, string, ...Field) (Measurement, error)
 
-	// NewFields returns array of fields
-	NewFields(...string) []Field
+	// Field creates a field or nil if invalid
+	Field(string, ...interface{}) Field
 
 	// Emit metrics for a named measurement, omitting timestamp
 	Emit(string, ...interface{}) error
@@ -38,8 +38,11 @@ type Measurement interface {
 	Event
 
 	Time() time.Time  // Time returns the timestamp for the data point or time.Time{}
-	Tags() []Field    // Return the dimenstions/tags for the data point
+	Tags() []Field    // Return the dimensions/tags for the data point
 	Metrics() []Field // Return the metrics for the data point
+
+	Get(string) interface{}        // Return a field value
+	Set(string, interface{}) error // Set a field value
 }
 
 type Field interface {

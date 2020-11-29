@@ -1,15 +1,18 @@
 package influxdb_test
 
 import (
+	"fmt"
 	"testing"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	influxdb "github.com/djthorpe/gopi/v3/pkg/db/influxdb"
+	_ "github.com/djthorpe/gopi/v3/pkg/metrics"
 	tool "github.com/djthorpe/gopi/v3/pkg/tool"
 )
 
 type WriterApp struct {
 	gopi.Unit
+	gopi.Metrics
 	*influxdb.Writer
 }
 
@@ -76,11 +79,37 @@ func Test_Writer_001(t *testing.T) {
 }
 
 func Test_Writer_002(t *testing.T) {
-	tool.Test(t, []string{"-influxdb.url=rpi4b"}, new(WriterApp), func(app *WriterApp) {
-		if delta, err := app.Writer.Ping(); err != nil {
+	tool.Test(t, nil, new(WriterApp), func(app *WriterApp) {
+		listen := fmt.Sprint("localhost:", influxdb.DefaultPort)
+		if server, err := NewMockServer(t, listen); err != nil {
+			t.Error(err)
+		} else if delta, err := app.Writer.Ping(); err != nil {
+			t.Error(err)
+		} else if err := server.Close(); err != nil {
 			t.Error(err)
 		} else {
 			t.Log("Ping delta=", delta)
+		}
+	})
+}
+
+func Test_Writer_003(t *testing.T) {
+	tool.Test(t, nil, new(WriterApp), func(app *WriterApp) {
+		listen := fmt.Sprint("localhost:", influxdb.DefaultPort)
+		server, err := NewMockServer(t, listen)
+		if err != nil {
+			t.Error(err)
+		}
+		m, err := app.Metrics.NewMeasurement("test", "test string")
+		if err != nil {
+			t.Error(err)
+		}
+		m.Set("test", "hello, world")
+		if err := app.Writer.Write(m); err != nil {
+			t.Error(err)
+		}
+		if err := server.Close(); err != nil {
+			t.Error(err)
 		}
 	})
 }

@@ -3,10 +3,7 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
-	"text/scanner"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -62,15 +59,19 @@ func (this *metrics) NewMeasurement(name, metrics string, tags ...gopi.Field) (g
 	return this.m[name], nil
 }
 
-// NewFields returns array of fields. Some elements may be set to nil
-// where a parse error occured
-func (this *metrics) NewFields(values ...string) []gopi.Field {
-	fields := make([]gopi.Field, len(values))
-	for i, value := range values {
-		f, _ := parseField(value)
-		fields[i] = f
+func (this *metrics) Field(name string, value ...interface{}) gopi.Field {
+	if len(value) > 1 {
+		return nil
 	}
-	return fields
+	field := NewField(name)
+	if field == nil {
+		return nil
+	} else if len(value) == 1 {
+		if err := field.SetValue(value[0]); err != nil {
+			return nil
+		}
+	}
+	return field
 }
 
 // Emit metrics for a named measurement, omitting timestamp
@@ -124,7 +125,7 @@ func (this *metrics) String() string {
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
-
+/*
 func parseField(src string) (gopi.Field, error) {
 	var field gopi.Field
 	var s scanner.Scanner
@@ -207,3 +208,4 @@ func parseValue(src string) interface{} {
 	// Unable to interpret
 	return nil
 }
+*/

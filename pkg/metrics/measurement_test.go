@@ -1,7 +1,11 @@
 package metrics
 
 import (
+	"errors"
+	"strconv"
 	"testing"
+
+	"github.com/djthorpe/gopi/v3"
 )
 
 func Test_Measurement_001(t *testing.T) {
@@ -58,6 +62,21 @@ func Test_Measurement_003(t *testing.T) {
 }
 
 func Test_Measurement_004(t *testing.T) {
+	good := []string{
+		"m1 bool, m2 bool",
+		"m1,m2 float32, m3 bool",
+		"m1,m2 bool ,m3 float64",
+	}
+	for i, v := range good {
+		if m, err := parseMetrics(v); err != nil {
+			t.Error(i, strconv.Quote(v), err)
+		} else {
+			t.Log(v, "=>", m)
+		}
+	}
+}
+
+func Test_Measurement_005(t *testing.T) {
 	if _, err := NewMeasurement("", ""); err == nil {
 		t.Error("Expected error with empty name")
 	}
@@ -88,5 +107,35 @@ func Test_Measurement_004(t *testing.T) {
 		t.Error("Expected error with duplicate tag name")
 	} else {
 		t.Log("Expected error", err)
+	}
+}
+
+func Test_Measurement_006(t *testing.T) {
+	// Check same names for metrics and tags
+	if m, err := NewMeasurement("test", "m1,m2 uint8", NewField("m1")); errors.Is(err, gopi.ErrDuplicateEntry) {
+		t.Log("Expected error", err)
+	} else if err == nil {
+		t.Error(m, "Unexpected success")
+	} else if err != nil {
+		t.Error("Unexpected error", err)
+	}
+}
+
+func Test_Measurement_007(t *testing.T) {
+	// Check same names for metrics and tags
+	if m, err := NewMeasurement("test", "m1 bool, m2 uint8"); err != nil {
+		t.Error(err)
+	} else if err := m.Set("m1", true); err != nil {
+		t.Error(err)
+	} else if err := m.Set("m1", false); err != nil {
+		t.Error(err)
+	} else if err := m.Set("m1", nil); err != nil {
+		t.Error(err)
+	} else if err := m.Set("m2", uint8(0)); err != nil {
+		t.Error(err)
+	} else if err := m.Set("m2", uint8(1)); err != nil {
+		t.Error(err)
+	} else if err := m.Set("m2", nil); err != nil {
+		t.Error(err)
 	}
 }

@@ -40,6 +40,10 @@ type endpoint struct {
 	db, user, password string
 }
 
+// TODO
+// params.Set("rp", bp.RetentionPolicy())
+// params.Set("precision", bp.Precision())
+
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBALS
 

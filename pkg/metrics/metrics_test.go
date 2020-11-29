@@ -17,7 +17,7 @@ func Test_Metrics_001(t *testing.T) {
 		if app.Metrics == nil {
 			t.Error("nil metrics unit")
 		} else if m, err := app.Metrics.NewMeasurement("name", "m1,m2,m3 float64"); err != nil {
-			t.Error(err)
+			t.Error("NewMeasurement", err)
 		} else if m.Name() != "name" {
 			t.Error("Unexpected name", m.Name())
 		} else if len(m.Metrics()) != 3 {
@@ -30,56 +30,70 @@ func Test_Metrics_001(t *testing.T) {
 
 func Test_Metrics_002(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		fields := app.Metrics.NewFields("a", "b", "c")
-		if len(fields) != 3 {
-			t.Error("Unexpected number of fields")
+		a := app.Metrics.Field("a")
+		if a == nil {
+			t.Error("Unexpected nil returned")
 		} else {
-			t.Log(fields)
+			t.Log(a)
 		}
 	})
 }
 
 func Test_Metrics_003(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		fields := app.Metrics.NewFields("a=true")
-		if len(fields) != 1 {
-			t.Error("Unexpected number of fields")
-		} else if hasNilElement(fields) {
+		if field := app.Metrics.Field("a", true); field == nil {
 			t.Error("Field is nil")
+		} else if k := field.Name(); k != "a" {
+			t.Error("Unexpected field name")
+		} else if k := field.Kind(); k != "bool" {
+			t.Error("Unexpected field kind")
+		} else if v := field.Value().(bool); v != true {
+			t.Error("Field is not true")
 		} else {
-			t.Log(fields)
+			t.Log(field)
 		}
 	})
 }
 
 func Test_Metrics_004(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		fields := app.Metrics.NewFields("b=100", "c=200i")
-		if len(fields) != 2 {
-			t.Error("Unexpected number of fields")
-		} else if hasNilElement(fields) {
+		field := app.Metrics.Field("b", int64(100))
+		if field == nil {
 			t.Error("Field is nil")
-		} else if fields[0].Kind() != "uint64" {
-			t.Error(fields[0], "Unexpected kind")
-		} else if fields[1].Kind() != "int64" {
-			t.Error(fields[1], "Unexpected kind")
+		} else if field.Kind() != "int64" {
+			t.Error(field, "Unexpected kind")
+		} else if field.Value().(int64) != int64(100) {
+			t.Error(field, "Unexpected value")
 		} else {
-			t.Log(fields)
+			t.Log(field)
 		}
 	})
 }
 
 func Test_Metrics_005(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		fields := app.Metrics.NewFields("d=\"test\"")
-		if len(fields) != 1 {
-			t.Error("Unexpected number of fields")
-		} else if hasNilElement(fields) {
+		field := app.Metrics.Field("d")
+		if field == nil {
 			t.Error("Field is nil")
-		} else if fields[0].Kind() != "string" {
-			t.Error(fields[0], "Unexpected kind")
-		} else {
-			t.Log(fields)
+		} else if field.Kind() != "nil" {
+			t.Error(field, "Unexpected kind")
+		}
+		if err := field.SetValue("test"); err != nil {
+			t.Error(err)
+		} else if field.Kind() != "string" {
+			t.Error(field, "Unexpected kind")
+		} else if field.Value().(string) != "test" {
+			t.Error(field, "Unexpected value")
+		}
+
+		if err := field.SetValue(nil); err != nil {
+			t.Error(err)
+		} else if field.Kind() != "string" {
+			t.Error(field, "Unexpected kind")
+		} else if field.IsNil() == false {
+			t.Error(field, "Unexpected IsNil value")
+		} else if field.Value().(string) != "" {
+			t.Error(field, "Unexpected value")
 		}
 	})
 }

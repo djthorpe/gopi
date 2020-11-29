@@ -19,6 +19,7 @@ type measurement struct {
 	ts      time.Time
 	metrics []gopi.Field
 	tags    []gopi.Field
+	fields  map[string]gopi.Field
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +27,7 @@ type measurement struct {
 
 const (
 	stateIdent = iota
-	stateEquals
+	stateIdent2
 	stateValue
 	stateDone
 )
@@ -39,9 +40,14 @@ var (
 // INIT
 
 func NewMeasurement(name, metrics string, tags ...gopi.Field) (*measurement, error) {
+	// Create measurement
+	this := new(measurement)
+
 	// Check measurement name
 	if reMeasurementName.MatchString(name) == false {
 		return nil, gopi.ErrBadParameter.WithPrefix(name)
+	} else {
+		this.name = name
 	}
 
 	// Check tags
@@ -49,16 +55,41 @@ func NewMeasurement(name, metrics string, tags ...gopi.Field) (*measurement, err
 		return nil, gopi.ErrBadParameter.WithPrefix(name)
 	} else if dup := duplicateName(tags); dup != "" {
 		return nil, gopi.ErrDuplicateEntry.WithPrefix(name)
+	} else {
+		this.tags = tags
 	}
 
 	// Parse metrics and check metrics
-	if metrics, err := parseMetrics(metrics); err != nil {
+	metrics_, err := parseMetrics(metrics)
+	if err != nil {
 		return nil, err
-	} else if len(metrics) == 0 || hasNilElement(metrics) {
+	} else if len(metrics_) == 0 || hasNilElement(metrics_) {
 		return nil, gopi.ErrBadParameter.WithPrefix(name)
 	} else {
-		return &measurement{name, time.Time{}, metrics, tags}, nil
+		this.metrics = metrics_
 	}
+
+	// Map fields
+	this.fields = make(map[string]gopi.Field, len(tags)+len(metrics))
+	for _, field := range this.metrics {
+		key := field.Name()
+		if _, exists := this.fields[key]; exists {
+			return nil, gopi.ErrDuplicateEntry.WithPrefix(key)
+		} else {
+			this.fields[key] = field
+		}
+	}
+	for _, field := range this.tags {
+		key := field.Name()
+		if _, exists := this.fields[key]; exists {
+			return nil, gopi.ErrDuplicateEntry.WithPrefix(key)
+		} else {
+			this.fields[key] = field
+		}
+	}
+
+	// Return success
+	return this, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -80,21 +111,54 @@ func (this *measurement) Metrics() []gopi.Field {
 	return this.metrics
 }
 
+func (this *measurement) Get(name string) interface{} {
+	if field, exists := this.fields[name]; exists == false {
+		return nil
+	} else {
+		return field.Value()
+	}
+}
+func (this *measurement) Set(name string, value interface{}) error {
+	if field, exists := this.fields[name]; exists == false {
+		return nil
+	} else {
+		return field.SetValue(value)
+	}
+}
+
 func (this *measurement) Clone(ts time.Time, values ...interface{}) (*measurement, error) {
 	// Check correct number of arguments
 	if len(values) != len(this.metrics) {
 		return nil, gopi.ErrBadParameter.WithPrefix("Clone")
 	}
-	metrics := make([]gopi.Field, len(values))
-	for i, value := range values {
-		metrics[i] = this.metrics[i].Copy()
-		if err := metrics[i].SetValue(value); err != nil {
-			return nil, err
-		}
+
+	that := new(measurement)
+	that.name = this.name
+	that.ts = ts
+	that.fields = make(map[string]gopi.Field, len(this.fields))
+
+	// Clone tags
+	that.tags = make([]gopi.Field, len(this.tags))
+	for i, value := range this.tags {
+		field := value.Copy()
+		that.tags[i] = field
+		that.fields[field.Name()] = field
 	}
-	return &measurement{
-		this.name, ts, metrics, this.tags,
-	}, nil
+
+	// Clone metrics and set new values
+	that.metrics = make([]gopi.Field, len(this.metrics))
+	for i, value := range this.metrics {
+		field := value.Copy()
+		key := field.Name()
+		if err := field.SetValue(values[i]); err != nil {
+			return nil, fmt.Errorf("Clone: %q: %w", key, err)
+		}
+		that.metrics[i] = field
+		that.fields[key] = field
+	}
+
+	// Return success
+	return that, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -130,7 +194,13 @@ func parseMetrics(src string) ([]gopi.Field, error) {
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
 		value := s.TokenText()
 		switch state {
-		case stateIdent, stateEquals:
+		case stateIdent2:
+			if value == "," {
+				state = stateIdent
+				break
+			}
+			fallthrough
+		case stateIdent:
 			if f := NewField(value); f == nil {
 				return nil, gopi.ErrBadParameter.WithPrefix(value)
 			} else {
@@ -139,24 +209,24 @@ func parseMetrics(src string) ([]gopi.Field, error) {
 			state = stateValue
 		case stateValue:
 			if value == "," {
-				state = stateEquals
-			} else {
-				for _, f := range metrics {
-					if f.Kind() == "nil" {
-						if err := f.(*field).SetKind(value); err != nil {
-							return nil, gopi.ErrBadParameter.WithPrefix(value)
-						}
+				state = stateIdent
+				break
+			}
+			for _, f := range metrics {
+				if f.Kind() == "nil" {
+					if err := f.(*field).SetKind(value); err != nil {
+						return nil, gopi.ErrBadParameter.WithPrefix(value)
 					}
 				}
 			}
-			state = stateIdent
+			state = stateIdent2
 		default:
 			return nil, gopi.ErrInternalAppError
 		}
 	}
 
 	// Check state is as expected
-	if state != stateIdent {
+	if state != stateIdent && state != stateIdent2 {
 		return nil, gopi.ErrBadParameter.WithPrefix("metrics")
 	}
 
