@@ -1,0 +1,33 @@
+
+# nfpm file to create debian package for argonone
+name: "dnsregister"
+arch: "arm"
+platform: "linux"
+
+# Version is replaced with git tag
+version: "v0.0.0"
+
+replaces:
+  - dnsregister
+provides:
+  - dnsregister
+maintainer: "David Thorpe <djt@mutablelogic.com>"
+description: |
+  Registers your external IP address with the Google
+  DNS server
+vendor: "mutablelogic.com"
+homepage: "http://github.com/djthorpe/gopi/cmd/dnsregister"
+license: "Apache 2.0"
+
+files:
+  build/dnsregister: /opt/gopi/bin/dnsregister
+  etc/systemd/dnsregister.service: /opt/gopi/etc/dnsregister.service
+  etc/systemd/dnsregister.env: /opt/gopi/etc/dnsregister.env
+
+symlinks:
+  /etc/systemd/system/dnsregister.service: /opt/gopi/etc/dnsregister.service
+
+scripts:
+  postinstall: etc/nfpm/dnsregister-postinstall.sh
+  preremove: etc/nfpm/dnsregister-preremove.sh
+

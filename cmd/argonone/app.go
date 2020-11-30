@@ -35,20 +35,7 @@ func (this *app) Run(ctx context.Context) error {
 }
 
 func (this *app) Serve(ctx context.Context) error {
-	ch := this.Publisher.Subscribe()
-	defer this.Publisher.Unsubscribe(ch)
-
 	fmt.Println("Press CTRL+C to end")
-	for {
-		select {
-		case evt := <-ch:
-			if m, ok := evt.(gopi.Measurement); ok {
-				if err := this.Write(m); err != nil {
-					this.Print(err)
-				}
-			}
-		case <-ctx.Done():
-			return nil
-		}
-	}
+	<-ctx.Done()
+	return nil
 }

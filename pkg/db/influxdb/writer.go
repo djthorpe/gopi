@@ -2,6 +2,7 @@ package influxdb
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -21,9 +22,10 @@ import (
 // TYPES
 
 type Writer struct {
+	sync.Mutex
 	gopi.Unit
 	gopi.Logger
-	sync.Mutex
+	gopi.Publisher
 	*http.Client
 
 	// Flags & Parameters
@@ -98,6 +100,27 @@ func (this *Writer) Dispose() error {
 
 	// Return success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RUN
+
+func (this *Writer) Run(ctx context.Context) error {
+	ch := this.Publisher.Subscribe()
+	defer this.Publisher.Unsubscribe(ch)
+
+	for {
+		select {
+		case evt := <-ch:
+			if m, ok := evt.(gopi.Measurement); ok {
+				if err := this.Write(m); err != nil {
+					this.Print(err)
+				}
+			}
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
