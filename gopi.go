@@ -2,6 +2,7 @@ package gopi
 
 import (
 	"context"
+	"testing"
 	"time"
 )
 
@@ -56,6 +57,7 @@ type Logger interface {
 	Printf(fmt string, args ...interface{}) // Output logging with format
 	Debugf(fmt string, args ...interface{}) // Output debugging with format
 	IsDebug() bool                          // IsDebug returns true if debug flag is set
+	T() *testing.T                          // When testing, provides testing context
 }
 
 // Event is an emitted event

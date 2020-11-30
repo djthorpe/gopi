@@ -71,11 +71,14 @@ func (this *server) Close() error {
 
 func (this *server) Ping(w http.ResponseWriter, r *http.Request) {
 	this.T.Log("Mock server got Ping")
+	w.Header().Set("X-Influxdb-Version", "9.9.9")
 	http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
 }
 
 func (this *server) Write(w http.ResponseWriter, r *http.Request) {
-	this.T.Log("Mock server got Write")
+	this.T.Logf("Mock server got Write (%q)", r.RequestURI)
+	w.Header().Set("X-Influxdb-Version", "9.9.9")
+
 	if data, err := ioutil.ReadAll(r.Body); err != nil {
 		this.T.Error(err)
 	} else {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"testing"
 
 	"github.com/djthorpe/gopi/v3"
 )
@@ -14,6 +15,7 @@ type Log struct {
 
 	// Flags
 	debug *bool
+	t     *testing.T
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,6 +68,15 @@ func (this *Log) Debugf(fmt string, args ...interface{}) {
 		defer this.Unlock()
 		log.Printf(fmt, args...)
 	}
+}
+
+func (this *Log) T() *testing.T {
+	return this.t
+}
+
+func (this *Log) SetT(t *testing.T) {
+	this.t = t
+	*this.debug = true
 }
 
 ///////////////////////////////////////////////////////////////////////////////

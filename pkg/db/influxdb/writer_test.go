@@ -3,9 +3,11 @@ package influxdb_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	influxdb "github.com/djthorpe/gopi/v3/pkg/db/influxdb"
+	_ "github.com/djthorpe/gopi/v3/pkg/hw/platform"
 	_ "github.com/djthorpe/gopi/v3/pkg/metrics"
 	tool "github.com/djthorpe/gopi/v3/pkg/tool"
 )
@@ -14,6 +16,14 @@ type WriterApp struct {
 	gopi.Unit
 	gopi.Metrics
 	*influxdb.Writer
+}
+
+type WriterServerApp struct {
+	gopi.Unit
+	gopi.Metrics
+	gopi.Platform
+	*influxdb.Writer
+	*MockWriter
 }
 
 func Test_Writer_001(t *testing.T) {
@@ -28,6 +38,8 @@ func Test_Writer_001(t *testing.T) {
 			t.Log("endpoint=", ep)
 		}
 	})
+}
+func Test_Writer_002(t *testing.T) {
 	tool.Test(t, []string{"-influxdb.url=host/database"}, new(WriterApp), func(app *WriterApp) {
 		if app.Writer == nil {
 			t.Error("writer is nil")
@@ -41,6 +53,9 @@ func Test_Writer_001(t *testing.T) {
 			t.Log("endpoint=", ep, " database=", db)
 		}
 	})
+}
+func Test_Writer_003(t *testing.T) {
+
 	tool.Test(t, []string{"-influxdb.url=rpi4b"}, new(WriterApp), func(app *WriterApp) {
 		if ep := app.Writer.Endpoint(); ep == nil {
 			t.Error("Unexpected nil")
@@ -52,6 +67,9 @@ func Test_Writer_001(t *testing.T) {
 			t.Log("endpoint=", ep)
 		}
 	})
+}
+func Test_Writer_004(t *testing.T) {
+
 	tool.Test(t, []string{"-influxdb.url=rpi4b:9999"}, new(WriterApp), func(app *WriterApp) {
 		if ep := app.Writer.Endpoint(); ep == nil {
 			t.Error("Unexpected nil")
@@ -63,6 +81,8 @@ func Test_Writer_001(t *testing.T) {
 			t.Log("endpoint=", ep)
 		}
 	})
+}
+func Test_Writer_005(t *testing.T) {
 	tool.Test(t, []string{"-influxdb.url=rpi4b:9999/metrics"}, new(WriterApp), func(app *WriterApp) {
 		if ep := app.Writer.Endpoint(); ep == nil {
 			t.Error("Unexpected nil")
@@ -78,7 +98,7 @@ func Test_Writer_001(t *testing.T) {
 	})
 }
 
-func Test_Writer_002(t *testing.T) {
+func Test_Writer_006(t *testing.T) {
 	tool.Test(t, nil, new(WriterApp), func(app *WriterApp) {
 		listen := fmt.Sprint("localhost:", influxdb.DefaultPort)
 		if server, err := NewMockServer(t, listen); err != nil {
@@ -93,7 +113,7 @@ func Test_Writer_002(t *testing.T) {
 	})
 }
 
-func Test_Writer_003(t *testing.T) {
+func Test_Writer_007(t *testing.T) {
 	tool.Test(t, nil, new(WriterApp), func(app *WriterApp) {
 		listen := fmt.Sprint("localhost:", influxdb.DefaultPort)
 		server, err := NewMockServer(t, listen)
@@ -110,6 +130,32 @@ func Test_Writer_003(t *testing.T) {
 		}
 		if err := server.Close(); err != nil {
 			t.Error(err)
+		}
+	})
+}
+
+func Test_Writer_008(t *testing.T) {
+	tool.Test(t, nil, new(WriterServerApp), func(app *WriterServerApp) {
+		if _, err := app.Metrics.NewMeasurement("loadavg", "l1,l5,l15 float64"); err != nil {
+			t.Error(err)
+		}
+
+		// Emit metrics and have the mockwriter write to the database
+		for i := 0; i < 10; i++ {
+			l1, l5, l15 := app.Platform.LoadAverages()
+			if err := app.Metrics.Emit("loadavg", l1, l5, l15); err != nil {
+				t.Error(err)
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		// Emit metrics and have the mockwriter write to the database
+		for i := 0; i < 10; i++ {
+			l1, l5, l15 := app.Platform.LoadAverages()
+			if err := app.Metrics.EmitTS("loadavg", time.Now(), l1, l5, l15); err != nil {
+				t.Error(err)
+			}
+			time.Sleep(100 * time.Millisecond)
 		}
 	})
 }

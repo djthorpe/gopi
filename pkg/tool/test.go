@@ -11,6 +11,7 @@ import (
 	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/config"
 	"github.com/djthorpe/gopi/v3/pkg/graph"
+	"github.com/djthorpe/gopi/v3/pkg/log"
 )
 
 func Test(t *testing.T, args []string, obj, fn interface{}) int {
@@ -36,6 +37,11 @@ func Test(t *testing.T, args []string, obj, fn interface{}) int {
 	} else if err != nil {
 		t.Error("Config:", err)
 		return -1
+	}
+
+	// Set testing flag on logging object
+	if logger, ok := g.GetLogger().(*log.Log); ok && logger != nil {
+		logger.SetT(t)
 	}
 
 	// Call New

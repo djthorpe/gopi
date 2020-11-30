@@ -320,12 +320,15 @@ func (this *graph) GetLogger() gopi.Logger {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	for t, obj := range this.units {
-		if isLoggerType(t) {
-			return obj.Interface().(gopi.Logger)
-		}
+	if t, exists := iface[loggerType]; exists == false {
+		return nil
+	} else if unit, exists := this.units[t]; exists == false {
+		return nil
+	} else if isLoggerType(t) == false {
+		return nil
+	} else {
+		return unit.Interface().(gopi.Logger)
 	}
-	return nil
 }
 
 /////////////////////////////////////////////////////////////////////

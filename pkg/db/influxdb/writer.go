@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -267,10 +268,16 @@ func (e endpoint) String() string {
 
 // Parse -influxdb.url parameter to extract host,port,username,password,database
 func parseUrl(value string) (endpoint, error) {
-	// Set default value
+	// Check various styles
 	if value == "" {
 		value = DefaultEndpoint
+	} else if host, port, err := net.SplitHostPort(value); err == nil {
+		value = DefaultScheme + "://" + host
+		if port != "" {
+			value += ":" + port
+		}
 	}
+
 	// Parse URL
 	u, err := url.Parse(value)
 	if err != nil {
@@ -311,6 +318,5 @@ func parseUrl(value string) (endpoint, error) {
 }
 
 func parseDatabase(value *url.URL) (string, error) {
-	db := strings.Trim(value.Path, "/")
-	return db, nil
+	return strings.Trim(value.Path, "/"), nil
 }
