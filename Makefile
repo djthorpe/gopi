@@ -34,6 +34,15 @@ argonone: nfpm
 	nfpm pkg -f $(BUILDDIR)/argonone.yaml --packager deb --target $(BUILDDIR)
 	@echo "Use sudo dpkg -i <package> to install"
 
+dnsregister: VERSION = $(shell git describe --tags)
+dnsregister: nfpm
+	install -d $(BUILDDIR)
+	$(GO) build -o ${BUILDDIR}/dnsregister $(TAGS) ${GOFLAGS} ./cmd/dnsregister
+	sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/dnsregister.yaml > $(BUILDDIR)/dnsregister.yaml
+	nfpm pkg -f $(BUILDDIR)/dnsregister.yaml --packager deb --target $(BUILDDIR)
+	@echo "Use sudo dpkg -i <package> to install"
+
+
 # Build rules - dependencies
 nfpm:
 	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm

@@ -1,0 +1,16 @@
+[Unit]
+Description=Google DNS Registration Service
+Documentation=https://github.com/djthorpe/gopi
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=gopi
+Group=gopi
+EnvironmentFile=/opt/gopi/etc/dnsregister.env
+ExecStart=/opt/gopi/bin/dnsregister \
+    -debug=${DEBUG} \
+    -influxdb.url=${INFLUXDB}
+Restart=on-failure
