@@ -19,7 +19,7 @@ type event struct {
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 
-func NewEvent(name string, mode gopi.LIRCMode, value uint32) gopi.Event {
+func NewEvent(name string, mode gopi.LIRCMode, value uint32) gopi.LIRCEvent {
 	this := new(event)
 	this.name = name
 	this.mode = mode

@@ -10,7 +10,7 @@ import (
 
 type publisher struct {
 	gopi.Unit
-	sync.Mutex
+	sync.RWMutex
 
 	q  chan gopi.Event
 	ch []chan gopi.Event
@@ -19,19 +19,17 @@ type publisher struct {
 const (
 	// queuesize defines the buffer of events, in case the receiver is not
 	// quick at picking up events compared to sender
-	queuesize = 10
+	queuesize = 1000
 )
 
 func (this *publisher) New(gopi.Config) error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
 	this.q = make(chan gopi.Event, queuesize)
 	return nil
 }
 
 func (this *publisher) Dispose() error {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
 	// Close queue
 	close(this.q)
@@ -57,18 +55,20 @@ func (this *publisher) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case evt := <-this.q:
+			this.RWMutex.RLock()
 			for _, ch := range this.ch {
-				if ch != nil && evt != nil {
+				if ch != nil {
 					ch <- evt
 				}
 			}
+			this.RWMutex.RUnlock()
 		}
 	}
 }
 
 func (this *publisher) Subscribe() <-chan gopi.Event {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
 	ch := make(chan gopi.Event)
 	this.ch = append(this.ch, ch)
@@ -76,8 +76,8 @@ func (this *publisher) Subscribe() <-chan gopi.Event {
 }
 
 func (this *publisher) Unsubscribe(ch <-chan gopi.Event) {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
 	for i, other := range this.ch {
 		if other == ch {

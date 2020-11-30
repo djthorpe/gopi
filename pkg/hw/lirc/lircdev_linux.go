@@ -142,12 +142,17 @@ func (this *lircdev) Name() string {
 ////////////////////////////////////////////////////////////////////////////////
 // READ FROM DEVICE
 
-func (this *lircdev) ReadEvent(uintptr, gopi.FilePollFlags) (gopi.Event, error) {
+func (this *lircdev) ReadEvent(uintptr, gopi.FilePollFlags) (gopi.LIRCEvent, error) {
 	var value uint32
+
 	if err := binary.Read(this.dev, binary.LittleEndian, &value); err != nil {
 		return nil, err
+	} else if err != nil {
+		return nil, err
+	} else if evt := NewEvent(this.dev.Name(), this.recv_mode, value); evt == nil {
+		return nil, nil
 	} else {
-		return NewEvent(this.dev.Name(), this.recv_mode, value), nil
+		return evt, nil
 	}
 }
 

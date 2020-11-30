@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/ircodec"
 )
 
 type app struct {
@@ -14,6 +15,7 @@ type app struct {
 	gopi.Publisher
 	gopi.MetricWriter
 	gopi.Logger
+	*ircodec.IRCodec
 }
 
 func (this *app) Define(cfg gopi.Config) error {
@@ -44,8 +46,6 @@ func (this *app) Serve(ctx context.Context) error {
 				if err := this.Write(m); err != nil {
 					this.Print(err)
 				}
-			} else {
-				this.Print(evt)
 			}
 		case <-ctx.Done():
 			return nil

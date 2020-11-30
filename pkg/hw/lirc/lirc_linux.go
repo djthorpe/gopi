@@ -123,14 +123,14 @@ func (this *lirc) ReadEvent(fd uintptr, flags gopi.FilePollFlags) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	if device, exists := this.devices[fd]; exists {
-		if evt, err := device.ReadEvent(fd, flags); err != nil {
-			this.Print("ReadEvent: ", device.Name(), err)
-		} else if err := this.Publisher.Emit(evt, true); err != nil {
-			this.Print("ReadEvent: ", device.Name(), err)
-		}
-	} else {
-		this.Print("Not watching fd=", fd)
+	if device, exists := this.devices[fd]; exists == false {
+		return
+	} else if evt, err := device.ReadEvent(fd, flags); err != nil {
+		this.Print("ReadEvent: ", device.Name(), err)
+	} else if evt == nil {
+		return
+	} else if err := this.Publisher.Emit(evt, true); err != nil {
+		this.Print("ReadEvent: ", device.Name(), err)
 	}
 }
 
