@@ -61,8 +61,8 @@ var (
 func (this *argonone) Define(cfg gopi.Config) error {
 	cfg.FlagUint("i2c.bus", 1, "I2C Bus")
 	cfg.FlagUint("i2c.slave", 0x1A, "I2C Slave")
-	cfg.FlagString("argonone.zone", "", "Temperature Zone name")
-	cfg.FlagString("argonone.measurement", "argonone", "Measurement name")
+	cfg.FlagString("argonone.zone", "", "Temperature zone")
+	cfg.FlagString("argonone.measurement", "cpufan", "Measurement name")
 	return nil
 }
 
@@ -98,16 +98,17 @@ func (this *argonone) New(cfg gopi.Config) error {
 
 	// Define measurement
 	if this.Metrics == nil {
-		return fmt.Errorf("Missing Metrics interface")
-	} else if measurement := cfg.GetString("argonone.measurement"); measurement != "" {
-		if host, err := os.Hostname(); err != nil {
+		return fmt.Errorf("Missing metrics interface")
+	}
+	if measurement := cfg.GetString("argonone.measurement"); measurement != "" {
+		host, err := os.Hostname()
+		if err != nil {
 			return err
-		} else if tags := this.Metrics.NewFields(fmt.Sprintf("host=%q", host)); tags == nil {
-			return gopi.ErrInternalAppError
-		} else if m, err := this.Metrics.NewMeasurement(measurement, "celcius float32 fan uint8", tags...); err != nil {
+		}
+		hostTag := this.Metrics.Field("host", host)
+		if m, err := this.Metrics.NewMeasurement(measurement, "celcius float32, fan uint8", hostTag); err != nil {
 			return err
 		} else {
-			this.Debug("measurement=", m)
 			this.measurement = m.Name()
 		}
 	}

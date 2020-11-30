@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/djthorpe/gopi/v3"
-	"github.com/djthorpe/gopi/v3/pkg/db/influxdb"
 )
 
 type app struct {
@@ -13,7 +12,8 @@ type app struct {
 	gopi.ArgonOne
 	gopi.Command
 	gopi.Publisher
-	*influxdb.Writer
+	gopi.MetricWriter
+	gopi.Logger
 }
 
 func (this *app) Define(cfg gopi.Config) error {
@@ -40,7 +40,13 @@ func (this *app) Serve(ctx context.Context) error {
 	for {
 		select {
 		case evt := <-ch:
-			fmt.Println(evt)
+			if m, ok := evt.(gopi.Measurement); ok {
+				if err := this.Write(m); err != nil {
+					this.Print(err)
+				}
+			} else {
+				this.Print(evt)
+			}
 		case <-ctx.Done():
 			return nil
 		}

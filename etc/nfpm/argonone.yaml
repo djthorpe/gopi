@@ -1,0 +1,33 @@
+
+# nfpm file to create debian package for argonone
+name: "argonone"
+arch: "arm"
+platform: "linux"
+
+# TODO: version needs replaced with git tag
+version: "v1.0.1"
+
+replaces:
+  - argonone
+provides:
+  - argonone
+maintainer: "David Thorpe <djt@mutablelogic.com>"
+description: |
+  Interfaces to the features of the Argon One case including Fan,
+  Power and IR receiver and transmitter
+vendor: "mutablelogic.com"
+homepage: "http://github.com/djthorpe/gopi/cmd/argonone"
+license: "Apache 2.0"
+
+files:
+  build/argonone: /opt/gopi/bin/argonone
+  etc/systemd/argonone.service: /opt/gopi/etc/argonone.service
+  etc/systemd/argonone.env: /opt/gopi/etc/argonone.env
+
+symlinks:
+  /etc/systemd/system/argonone.service: /opt/gopi/etc/argonone.service
+
+scripts:
+  postinstall: etc/nfpm/argonone-postinstall.sh
+  preremove: etc/nfpm/argonone-preremove.sh
+

@@ -59,7 +59,7 @@ const (
 
 func (this *Writer) Define(cfg gopi.Config) error {
 	this.url = cfg.FlagString("influxdb.url", "", "Database URL")
-	this.skipverify = cfg.FlagBool("influxdb.slipverify", false, "Skip SSL certificate verification")
+	this.skipverify = cfg.FlagBool("influxdb.skipverify", false, "Skip SSL certificate verification")
 	this.timeout = cfg.FlagDuration("influxdb.timeout", 15*time.Second, "Database connection timeout")
 	return nil
 }
