@@ -22,16 +22,19 @@ darwin: PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
 darwin: checkdeps install
 
 rpi: TAGS = -tags "rpi egl freetype"
-rpi: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
-rpi: checkdeps install
+rpi: checkdeps argonone
 
-# Build rules
+# Build rules - commands
 argonone: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
+argonone: VERSION = $(shell git describe --tags)
 argonone: nfpm
 	install -d $(BUILDDIR)
-	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) build -o ${BUILDDIR}/argonone $(TAGS) ${GOFLAGS} ./cmd/argonone
-	nfpm pkg -f etc/nfpm/argonone.yaml --packager deb --target $(BUILDDIR)
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/argonone $(TAGS) ${GOFLAGS} ./cmd/argonone
+	sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/argonone.yaml > $(BUILDDIR)/argonone.yaml
+	nfpm pkg -f $(BUILDDIR)/argonone.yaml --packager deb --target $(BUILDDIR)
+	@echo "Use sudo dpkg -i <package> to install"
 
+# Build rules - dependencies
 nfpm:
 	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm
 

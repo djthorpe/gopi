@@ -4,8 +4,8 @@ name: "argonone"
 arch: "arm"
 platform: "linux"
 
-# TODO: version needs replaced with git tag
-version: "v1.0.1"
+# Version is replaced with git tag
+version: "v0.0.0"
 
 replaces:
   - argonone
