@@ -1,49 +1,65 @@
 package gopi
 
+import "strings"
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type InputEvent uint
+type InputType uint
+type InputDevice uint16
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-type KeyEvent interface {
+type InputEvent interface {
 	Event
 
-	Code() KeyCode     // Translated keycode
-	Scan() uint32      // Scancode
-	Event() InputEvent // Event
-	Repeat() bool      // Event is a repeat
-	IRAddress() uint16 // IR device address
-	IRCommand() uint16 // IR device command
+	Type() InputType                   // Event type (key press, repeat, etc)
+	Code() KeyCode                     // Translated keycode
+	ScanDevice() (uint32, InputDevice) // Scancode and device type
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
 const (
-	INPUT_EVENT_NONE InputEvent = 0x0000
+	INPUT_DEVICE_NONE        InputDevice = 0x0000
+	INPUT_DEVICE_KEYBOARD    InputDevice = 0x0001
+	INPUT_DEVICE_MOUSE       InputDevice = 0x0002
+	INPUT_DEVICE_TOUCHSCREEN InputDevice = 0x0004
+	INPUT_DEVICE_JOYSTICK    InputDevice = 0x0008
+	INPUT_DEVICE_REMOTE      InputDevice = 0x0010 // IR Remote
+	INPUT_DEVICE_SONY_12     InputDevice = 0x0020 // 12-bit Sony IR codes
+	INPUT_DEVICE_SONY_15     InputDevice = 0x0040 // 15-bit Sony IR codes
+	INPUT_DEVICE_SONY_20     InputDevice = 0x0080 // 20-bit Sony IR codes
+	INPUT_DEVICE_RC5_14      InputDevice = 0x0100 // 14-bit RC5 IR codes
+	INPUT_DEVICE_ANY         InputDevice = 0xFFFF
+	INPUT_DEVICE_MIN                     = INPUT_DEVICE_KEYBOARD
+	INPUT_DEVICE_MAX                     = INPUT_DEVICE_RC5_14
+)
+
+const (
+	INPUT_EVENT_NONE InputType = 0x0000
 
 	// Mouse and/or keyboard key/button press events
-	INPUT_EVENT_KEYPRESS   InputEvent = 0x0001
-	INPUT_EVENT_KEYRELEASE InputEvent = 0x0002
-	INPUT_EVENT_KEYREPEAT  InputEvent = 0x0003
+	INPUT_EVENT_KEYPRESS   InputType = 0x0001
+	INPUT_EVENT_KEYRELEASE InputType = 0x0002
+	INPUT_EVENT_KEYREPEAT  InputType = 0x0003
 
 	// Mouse and/or touchscreen move events
-	INPUT_EVENT_ABSPOSITION InputEvent = 0x0004
-	INPUT_EVENT_RELPOSITION InputEvent = 0x0005
+	INPUT_EVENT_ABSPOSITION InputType = 0x0004
+	INPUT_EVENT_RELPOSITION InputType = 0x0005
 
 	// Multi-touch events
-	INPUT_EVENT_TOUCHPRESS    InputEvent = 0x0006
-	INPUT_EVENT_TOUCHRELEASE  InputEvent = 0x0007
-	INPUT_EVENT_TOUCHPOSITION InputEvent = 0x0008
+	INPUT_EVENT_TOUCHPRESS    InputType = 0x0006
+	INPUT_EVENT_TOUCHRELEASE  InputType = 0x0007
+	INPUT_EVENT_TOUCHPOSITION InputType = 0x0008
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (e InputEvent) String() string {
+func (e InputType) String() string {
 	switch e {
 	case INPUT_EVENT_NONE:
 		return "INPUT_EVENT_NONE"
@@ -66,4 +82,46 @@ func (e InputEvent) String() string {
 	default:
 		return "[?? Invalid InputEvent value]"
 	}
+}
+
+func (d InputDevice) FlagString() string {
+	switch d {
+	case INPUT_DEVICE_NONE:
+		return "INPUT_DEVICE_NONE"
+	case INPUT_DEVICE_KEYBOARD:
+		return "INPUT_DEVICE_KEYBOARD"
+	case INPUT_DEVICE_MOUSE:
+		return "INPUT_DEVICE_MOUSE"
+	case INPUT_DEVICE_TOUCHSCREEN:
+		return "INPUT_DEVICE_TOUCHSCREEN"
+	case INPUT_DEVICE_JOYSTICK:
+		return "INPUT_DEVICE_JOYSTICK"
+	case INPUT_DEVICE_REMOTE:
+		return "INPUT_DEVICE_REMOTE"
+	case INPUT_DEVICE_SONY_12:
+		return "INPUT_DEVICE_SONY_12"
+	case INPUT_DEVICE_SONY_15:
+		return "INPUT_DEVICE_SONY_15"
+	case INPUT_DEVICE_SONY_20:
+		return "INPUT_DEVICE_SONY_20"
+	case INPUT_DEVICE_RC5_14:
+		return "INPUT_DEVICE_RC5_14"
+	case INPUT_DEVICE_ANY:
+		return "INPUT_DEVICE_ANY"
+	default:
+		return "[?? Invalid InputDevice value]"
+	}
+}
+
+func (d InputDevice) String() string {
+	if d == INPUT_DEVICE_NONE || d == INPUT_DEVICE_ANY {
+		return d.FlagString()
+	}
+	str := ""
+	for v := INPUT_DEVICE_MIN; v <= INPUT_DEVICE_MAX; v <<= 1 {
+		if v&d == v {
+			str += d.FlagString() + "|"
+		}
+	}
+	return strings.TrimSuffix(str, "|")
 }

@@ -172,6 +172,19 @@ type LIRCEvent interface {
 	Value() interface{} // value is uint32 in ms when mode is LIRC_MODE_MODE2
 }
 
+// LIRCKeycodeManager manages the database of keycodes and IR codes
+type LIRCKeycodeManager interface {
+	// Keycode returns keycodes which match a name
+	Keycode(string) []KeyCode
+
+	// Lookup returns Keycodes in priority order for scancode
+	Lookup(InputDevice, uint32) []KeyCode
+
+	// Set Keycode for scancode, InputDevice and device name
+	// or removes entry where KeyCode is KEYCODE_NONE
+	Set(InputDevice, uint32, string, KeyCode) error
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
 
