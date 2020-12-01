@@ -42,7 +42,7 @@ func (this *CodecEvent) String() string {
 		str += " type=" + fmt.Sprint(this.Type)
 	}
 	if this.Device != gopi.INPUT_DEVICE_NONE {
-		str += " device=" + fmt.Sprint(this.Device)
+		str += " device=" + fmt.Sprint(this.Device|gopi.INPUT_DEVICE_REMOTE)
 	}
 	if this.Code > 0x0000 && this.Code <= 0xFFFF {
 		str += fmt.Sprintf(" code=0x%04X", this.Code)

@@ -120,7 +120,7 @@ func (d InputDevice) String() string {
 	str := ""
 	for v := INPUT_DEVICE_MIN; v <= INPUT_DEVICE_MAX; v <<= 1 {
 		if v&d == v {
-			str += d.FlagString() + "|"
+			str += v.FlagString() + "|"
 		}
 	}
 	return strings.TrimSuffix(str, "|")
