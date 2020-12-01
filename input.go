@@ -14,9 +14,9 @@ type InputDevice uint16
 type InputEvent interface {
 	Event
 
-	Type() InputType                   // Event type (key press, repeat, etc)
-	Code() KeyCode                     // Translated keycode
-	ScanDevice() (uint32, InputDevice) // Scancode and device type
+	Key() KeyCode                  // Translated keycode
+	Type() InputType               // Event type (key press, repeat, etc)
+	Device() (InputDevice, uint32) // Device information
 }
 
 ////////////////////////////////////////////////////////////////////////////////

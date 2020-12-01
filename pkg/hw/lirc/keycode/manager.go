@@ -23,6 +23,7 @@ import (
 type Manager struct {
 	gopi.Unit
 	gopi.Publisher
+	gopi.Logger
 	sync.Mutex
 
 	folder, ext *string
@@ -129,7 +130,13 @@ FOR_LOOP:
 			break FOR_LOOP
 		case evt := <-ch:
 			if codecevt, ok := evt.(*codec.CodecEvent); ok {
-				fmt.Println("CODECEVT=", codecevt)
+				inputevt := NewInputEvent(codecevt.Name(), gopi.KEYCODE_NONE, codecevt)
+				if kc := this.Lookup(codecevt.Device, codecevt.Code); len(kc) > 0 {
+					inputevt.KeyCode = kc[0]
+				}
+				if err := this.Publisher.Emit(inputevt, true); err != nil {
+					this.Print(err)
+				}
 			}
 		}
 	}

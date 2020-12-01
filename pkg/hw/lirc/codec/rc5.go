@@ -44,7 +44,7 @@ type RC5 struct {
 	length uint
 	state  rc5state
 	bits   []bool
-	toggle bool
+	toggle *bool
 }
 
 type rc5state uint
@@ -87,7 +87,7 @@ func NewRC5(codec gopi.InputDevice) *RC5 {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// METHODS
+// PUBLIC METHODS
 
 func (this *RC5) Run(ctx context.Context, publisher gopi.Publisher) error {
 	// Subscribe to LIRCEvent messages
@@ -109,6 +109,9 @@ func (this *RC5) Run(ctx context.Context, publisher gopi.Publisher) error {
 		}
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
 
 func (this *RC5) Reset() {
 	this.state = RC5_EXPECT_FIRST_PULSE
@@ -178,15 +181,12 @@ func (this *RC5) rc5Eject(publisher gopi.Publisher, bits ...bool) {
 	// Stop bits should be 0x03
 	if stop, toggle, scancode := rc5Decode(value); stop == 0x03 {
 		evtType := gopi.INPUT_EVENT_KEYPRESS
-		if toggle == this.toggle {
+		if this.toggle != nil && toggle == *this.toggle {
 			evtType = gopi.INPUT_EVENT_KEYREPEAT
 		}
 		publisher.Emit(&CodecEvent{evtType, this.codec, uint32(scancode)}, true)
-		this.toggle = toggle
+		this.toggle = &toggle
 	}
-
-	// Reset
-	this.bits = nil
 }
 
 // TODO: Currently assumes 14 bits
