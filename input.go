@@ -33,9 +33,11 @@ const (
 	INPUT_DEVICE_SONY_15     InputDevice = 0x0040 // 15-bit Sony IR codes
 	INPUT_DEVICE_SONY_20     InputDevice = 0x0080 // 20-bit Sony IR codes
 	INPUT_DEVICE_RC5_14      InputDevice = 0x0100 // 14-bit RC5 IR codes
+	INPUT_DEVICE_NEC_32      InputDevice = 0x0200 // 32-bit NEC IR codes
+	INPUT_DEVICE_APPLETV_32  InputDevice = 0x0400 // 32-bit Apple TV IR codes
 	INPUT_DEVICE_ANY         InputDevice = 0xFFFF
 	INPUT_DEVICE_MIN                     = INPUT_DEVICE_KEYBOARD
-	INPUT_DEVICE_MAX                     = INPUT_DEVICE_RC5_14
+	INPUT_DEVICE_MAX                     = INPUT_DEVICE_APPLETV_32
 )
 
 const (
@@ -106,6 +108,10 @@ func (d InputDevice) FlagString() string {
 		return "INPUT_DEVICE_SONY_20"
 	case INPUT_DEVICE_RC5_14:
 		return "INPUT_DEVICE_RC5_14"
+	case INPUT_DEVICE_NEC_32:
+		return "INPUT_DEVICE_NEC_32"
+	case INPUT_DEVICE_APPLETV_32:
+		return "INPUT_DEVICE_APPLETV_32"
 	case INPUT_DEVICE_ANY:
 		return "INPUT_DEVICE_ANY"
 	default:

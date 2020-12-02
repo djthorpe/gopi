@@ -174,14 +174,13 @@ type LIRCEvent interface {
 
 // LIRCKeycodeManager manages the database of keycodes and IR codes
 type LIRCKeycodeManager interface {
-	// Keycode returns keycodes which match a name
+	// Keycode returns keycodes which match a search phrase
 	Keycode(string) []KeyCode
 
 	// Lookup returns Keycodes in priority order for scancode
 	Lookup(InputDevice, uint32) []KeyCode
 
 	// Set Keycode for scancode, InputDevice and device name
-	// or removes entry where KeyCode is KEYCODE_NONE
 	Set(InputDevice, uint32, KeyCode, string) error
 }
 

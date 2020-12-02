@@ -43,8 +43,8 @@ func (this *app) LearnCode(ctx context.Context, code gopi.KeyCode, name string) 
 			return ctx.Err()
 		case <-timer.C:
 			return nil
-		case evt := <-ch:
-			fmt.Println(evt)
+		case <-ch:
+			//fmt.Println(evt)
 		}
 	}
 }

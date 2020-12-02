@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/djthorpe/gopi v1.0.86
+	github.com/djthorpe/remotes v1.0.0
 	github.com/golang/protobuf v1.4.3
 	github.com/goreleaser/nfpm v1.10.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.0

@@ -33,13 +33,9 @@ func (this *Cache) New(gopi.Config) error {
 	this.device = make(map[string]gopi.InputDevice)
 	this.keycode = make(map[string]gopi.KeyCode, gopi.KEYCODE_MAX)
 
-	// Do indexing in the background
-	go func() {
-		this.RWMutex.Lock()
-		defer this.RWMutex.Unlock()
-		this.IndexKeycode()
-		this.IndexDevice()
-	}()
+	// Index
+	this.IndexKeycode()
+	this.IndexDevice()
 
 	// Return success
 	return nil

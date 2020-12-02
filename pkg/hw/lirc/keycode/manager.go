@@ -82,6 +82,7 @@ func (this *Manager) New(cfg gopi.Config) error {
 
 	// Add codecs
 	this.codecs = append(this.codecs, codec.NewRC5(gopi.INPUT_DEVICE_RC5_14))
+	this.codecs = append(this.codecs, codec.NewNEC(gopi.INPUT_DEVICE_NEC_32))
 
 	// Return success
 	return nil
@@ -93,6 +94,7 @@ func (this *Manager) Dispose() error {
 
 	// Release resources
 	this.db = nil
+	this.codecs = nil
 
 	// Return success
 	return nil
@@ -106,14 +108,14 @@ func (this *Manager) Run(ctx context.Context) error {
 	var cancels []context.CancelFunc
 
 	// Run codecs in background
-	for _, codec := range this.codecs {
+	for _, c := range this.codecs {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancels = append(cancels, cancel)
 		wg.Add(1)
-		go func() {
+		go func(codec codec.Codec) {
 			codec.Run(ctx, this.Publisher)
 			wg.Done()
-		}()
+		}(c)
 	}
 
 	// Subscribe for CodecEvents
@@ -124,13 +126,14 @@ func (this *Manager) Run(ctx context.Context) error {
 	timer := time.NewTimer(1 * time.Second)
 	defer timer.Stop()
 
-	// Receive CodecEvents until done
 FOR_LOOP:
 	for {
 		select {
 		case <-ctx.Done():
+			// End of Run
 			break FOR_LOOP
 		case evt := <-ch:
+			// Process CodecEvent messages
 			if codecevt, ok := evt.(*codec.CodecEvent); ok {
 				inputevt := NewInputEvent(codecevt.Name(), gopi.KEYCODE_NONE, codecevt)
 				if kc := this.Lookup(codecevt.Device, codecevt.Code); len(kc) > 0 {
@@ -141,6 +144,7 @@ FOR_LOOP:
 				}
 			}
 		case <-timer.C:
+			// Ocassionally write to disk
 			if err := this.writeDirty(); err != nil {
 				this.Print("LIRCKeycodeManager: ", err)
 			}
