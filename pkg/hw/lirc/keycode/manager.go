@@ -9,10 +9,11 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"unicode"
+	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	codec "github.com/djthorpe/gopi/v3/pkg/hw/lirc/codec"
+	"github.com/hashicorp/go-multierror"
 
 	_ "github.com/djthorpe/gopi/v3/pkg/event"
 )
@@ -25,15 +26,20 @@ type Manager struct {
 	gopi.Publisher
 	gopi.Logger
 	sync.Mutex
+	*Cache
 
 	folder, ext *string
 	db          []*keycodedb
-	keycodes    map[string][]gopi.KeyCode
 	codecs      []codec.Codec
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBALS
+
+const (
+	// Databases get written once every thirty seconds
+	writeDelta = 30 * time.Second
+)
 
 var (
 	// Name for keycode files must be alphanumeric with one or more chars
@@ -45,7 +51,7 @@ var (
 
 func (this *Manager) Define(cfg gopi.Config) error {
 	this.folder = cfg.FlagString("lirc.db", "", "Folder for keycode database")
-	this.ext = cfg.FlagString("lirc.dbext", ".keycodes", "Extension for keycode files")
+	this.ext = cfg.FlagString("lirc.ext", ".keycode", "Extension for keycode files")
 	return nil
 }
 
@@ -54,7 +60,7 @@ func (this *Manager) New(cfg gopi.Config) error {
 		return gopi.ErrBadParameter.WithPrefix("Publisher")
 	}
 	if ext := "." + strings.Trim(strings.TrimSpace(*this.ext), "."); ext == "." {
-		return gopi.ErrBadParameter.WithPrefix("-lirc.dbext")
+		return gopi.ErrBadParameter.WithPrefix("-lirc.ext")
 	} else if *this.folder != "" {
 		if stat, err := os.Stat(*this.folder); os.IsNotExist(err) {
 			if folder, err := filepath.Abs(*this.folder); err != nil {
@@ -66,20 +72,13 @@ func (this *Manager) New(cfg gopi.Config) error {
 			return err
 		} else if stat.IsDir() == false {
 			return gopi.ErrBadParameter.WithPrefix(*this.folder)
-		} else if db, err := readAll(*this.folder, ext); err != nil {
+		} else if db, err := this.readAll(*this.folder, ext); err != nil {
 			return err
 		} else {
 			this.db = db
+			*this.ext = ext
 		}
 	}
-
-	// Index keycodes in the background
-	this.keycodes = make(map[string][]gopi.KeyCode, gopi.KEYCODE_MAX)
-	go func() {
-		this.Mutex.Lock()
-		defer this.Mutex.Unlock()
-		this.indexKeycodes()
-	}()
 
 	// Add codecs
 	this.codecs = append(this.codecs, codec.NewRC5(gopi.INPUT_DEVICE_RC5_14))
@@ -94,7 +93,6 @@ func (this *Manager) Dispose() error {
 
 	// Release resources
 	this.db = nil
-	this.keycodes = nil
 
 	// Return success
 	return nil
@@ -122,6 +120,10 @@ func (this *Manager) Run(ctx context.Context) error {
 	ch := this.Publisher.Subscribe()
 	defer this.Publisher.Unsubscribe(ch)
 
+	// Timer to write databases occasionally on modified
+	timer := time.NewTimer(1 * time.Second)
+	defer timer.Stop()
+
 	// Receive CodecEvents until done
 FOR_LOOP:
 	for {
@@ -138,6 +140,11 @@ FOR_LOOP:
 					this.Print(err)
 				}
 			}
+		case <-timer.C:
+			if err := this.writeDirty(); err != nil {
+				this.Print("LIRCKeycodeManager: ", err)
+			}
+			timer.Reset(writeDelta)
 		}
 	}
 
@@ -146,6 +153,11 @@ FOR_LOOP:
 		cancel()
 	}
 	wg.Wait()
+
+	// Write databases if necessary
+	if err := this.writeDirty(); err != nil {
+		this.Print("LIRCKeycodeManager: ", err)
+	}
 
 	// Return success
 	return nil
@@ -156,60 +168,64 @@ FOR_LOOP:
 
 // Keycode returns keycodes which match a name
 func (this *Manager) Keycode(name string) []gopi.KeyCode {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
-
-	// Index the keycodes
-	if len(this.keycodes) == 0 {
-		this.indexKeycodes()
+	if k := this.Cache.LookupKeycode(name); k != gopi.KEYCODE_NONE {
+		return []gopi.KeyCode{k}
+	} else {
+		return this.Cache.SearchKeycode(name)
 	}
-
-	// Result is an array of possible keycodes
-	var result []gopi.KeyCode
-
-	// Split up terms by spaces and commas
-	terms := strings.FieldsFunc(name, func(r rune) bool {
-		if unicode.IsSpace(r) {
-			return true
-		}
-		if r == ',' {
-			return true
-		}
-		if r == '_' {
-			return true
-		}
-		return false
-	})
-	for _, term := range terms {
-		term = strings.ToUpper(term)
-		if keycodes, exists := this.keycodes[term]; exists {
-			result = append(result, keycodes...)
-		}
-	}
-
-	// Return keycodes
-	return result
 }
 
 // Lookup one or more keycodes for a device and scancode
-func (this *Manager) Lookup(gopi.InputDevice, uint32) []gopi.KeyCode {
+func (this *Manager) Lookup(device gopi.InputDevice, code uint32) []gopi.KeyCode {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	return nil
+	keys := []gopi.KeyCode{}
+	for _, db := range this.db {
+		if k := db.Lookup(device, code); k != gopi.KEYCODE_NONE {
+			keys = append(keys, k)
+		}
+	}
+	return keys
 }
 
 // Set keycode for name,device and scancode
-func (this *Manager) Set(gopi.InputDevice, uint32, string, gopi.KeyCode) error {
+func (this *Manager) Set(device gopi.InputDevice, code uint32, key gopi.KeyCode, name string) error {
+	// Set mapping in existing or new database
+	if db, err := this.DatabaseForName(name); err != nil {
+		return err
+	} else if err := db.Set(device, code, key); err != nil {
+		return err
+	}
+
+	// Return sucess
+	return nil
+}
+
+func (this *Manager) DatabaseForName(name string) (*keycodedb, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	return gopi.ErrNotImplemented
-}
+	// Return existing database
+	for _, db := range this.db {
+		if db.Name() == name {
+			return db, nil
+		}
+	}
 
-func (this *Manager) DatabaseForName(string) (*keycodedb, error) {
-	// Return an existing database or create a new one
-	return nil, gopi.ErrNotImplemented
+	// Check name parameter
+	if reKeycodeName.MatchString(name) == false {
+		return nil, gopi.ErrBadParameter.WithPrefix("DatabaseForName", name)
+	}
+
+	// Create a new database
+	path := filepath.Join(*this.folder, name+*this.ext)
+	if db, err := NewDatabase(path, name, this.Cache); err != nil {
+		return nil, err
+	} else {
+		this.db = append(this.db, db)
+		return db, nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -223,14 +239,30 @@ func (this *Manager) String() string {
 	for _, db := range this.db {
 		str += " " + db.name + "=" + fmt.Sprint(db)
 	}
-	str += " " + fmt.Sprint(this.keycodes)
 	return str + ">"
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func readAll(path, ext string) ([]*keycodedb, error) {
+func (this *Manager) writeDirty() error {
+	var result error
+
+	// Write all modified databases
+	for _, db := range this.db {
+		if db.Modified() {
+			this.Debug("LIRCKeycodeManager: Writing:", db.Name())
+			if err := db.Write(this.Cache); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}
+
+	// Return any errors
+	return result
+}
+
+func (this *Manager) readAll(path, ext string) ([]*keycodedb, error) {
 	dbs := []*keycodedb{}
 
 	// Files are sorted alphabetically, which is how we
@@ -250,32 +282,14 @@ func readAll(path, ext string) ([]*keycodedb, error) {
 			continue
 		} else if name := strings.TrimSuffix(file.Name(), ext); reKeycodeName.MatchString(name) == false {
 			continue
-		} else if db, err := NewKeycodeDatabase(filepath.Join(path, file.Name()), name); err != nil {
+		} else if db, err := NewDatabase(filepath.Join(path, file.Name()), name, this.Cache); err != nil {
 			return nil, err
 		} else {
+			this.Debug("LIRCKeycodeManager: Read:", db.Name())
 			dbs = append(dbs, db)
 		}
 	}
 
 	// Return databases
 	return dbs, nil
-}
-
-func (this *Manager) indexKeycodes() {
-	// Index from names to keycodes
-	for k := gopi.KEYCODE_NONE; k <= gopi.KEYCODE_MAX; k++ {
-		name := strings.TrimPrefix(fmt.Sprint(k), "KEYCODE_")
-		terms := []string{name}
-		if words := strings.Split(name, "_"); len(words) > 1 {
-			terms = append(terms, words...)
-		}
-		for _, term := range terms {
-			term = strings.ToUpper(term)
-			if _, exists := this.keycodes[term]; exists {
-				this.keycodes[term] = append(this.keycodes[term], k)
-			} else {
-				this.keycodes[term] = []gopi.KeyCode{k}
-			}
-		}
-	}
 }

@@ -182,7 +182,7 @@ type LIRCKeycodeManager interface {
 
 	// Set Keycode for scancode, InputDevice and device name
 	// or removes entry where KeyCode is KEYCODE_NONE
-	Set(InputDevice, uint32, string, KeyCode) error
+	Set(InputDevice, uint32, KeyCode, string) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////

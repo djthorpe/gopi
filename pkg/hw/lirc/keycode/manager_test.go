@@ -20,8 +20,8 @@ type App struct {
 ////////////////////////////////////////////////////////////////////////////////
 // TESTS
 
-func Test_Keycodes_001(t *testing.T) {
-	tool.Test(t, []string{"-lirc.db=../../../../etc/keycodes"}, new(App), func(app *App) {
+func Test_Manager_001(t *testing.T) {
+	tool.Test(t, []string{"-lirc.db=../../../../etc/keycode"}, new(App), func(app *App) {
 		if app.LIRCKeycodeManager == nil {
 			t.Error("nil LIRCKeycodeManager unit")
 		} else {
@@ -30,8 +30,8 @@ func Test_Keycodes_001(t *testing.T) {
 	})
 }
 
-func Test_Keycodes_002(t *testing.T) {
-	tool.Test(t, []string{"-lirc.db=../../../../etc/keycodes"}, new(App), func(app *App) {
+func Test_Manager_002(t *testing.T) {
+	tool.Test(t, []string{"-lirc.db=../../../../etc/keycode"}, new(App), func(app *App) {
 		names := []string{"power", "up", "down", "1"}
 		for _, name := range names {
 			if keycodes := app.LIRCKeycodeManager.Keycode(name); len(keycodes) > 0 {
