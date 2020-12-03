@@ -263,7 +263,7 @@ func (this *Writer) Write(metrics ...gopi.Measurement) error {
 // STRINGIFY
 
 func (this *Writer) String() string {
-	str := "<influxdb writer"
+	str := "<writer.influxdb"
 	str += " endpoint=" + fmt.Sprint(this.endpoint)
 	if this.version != "" {
 		str += " version=" + strconv.Quote(this.version)

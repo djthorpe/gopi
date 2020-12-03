@@ -183,7 +183,7 @@ func (this *GPIO) Run(ctx context.Context) error {
 // STRINGIFY
 
 func (this *GPIO) String() string {
-	str := "<gpio broadcom"
+	str := "<gpio.broadcom"
 	if p := this.NumberOfPhysicalPins(); p > 0 {
 		str += " number_of_physical_pins=" + fmt.Sprint(p)
 	}
