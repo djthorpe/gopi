@@ -171,10 +171,9 @@ type LIRC interface {
 	PulseSend([]uint32) error
 }
 
-// LIRCEvent is a value from LIRC
+// LIRCEvent is a pulse, space or timeout from an IR sensor
 type LIRCEvent interface {
 	Event
-
 	Type() LIRCType
 	Mode() LIRCMode
 	Value() interface{} // value is uint32 in ms when mode is LIRC_MODE_MODE2

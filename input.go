@@ -11,9 +11,9 @@ type InputDevice uint16
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
+// InputEvent is a key press, mouse move, etc.
 type InputEvent interface {
 	Event
-
 	Key() KeyCode                  // Translated keycode
 	Type() InputType               // Event type (key press, repeat, etc)
 	Device() (InputDevice, uint32) // Device information
