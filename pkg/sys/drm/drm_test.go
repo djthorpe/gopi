@@ -31,7 +31,31 @@ func Test_DRM_001(t *testing.T) {
 	}
 	defer fh.Close()
 
-	if err := drm.GetResources(fh.Fd()); err != nil {
+	if r, err := drm.GetResources(fh.Fd()); err != nil {
 		t.Error(err)
+	} else {
+		defer r.Free()
+		t.Log(r)
+	}
+}
+
+func Test_DRM_002(t *testing.T) {
+	fh, err := drm.OpenDevice(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fh.Close()
+
+	r, err := drm.GetResources(fh.Fd())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Free()
+
+	if connectors := r.Connectors(); len(connectors) == 0 {
+		t.Log("Skipping test as no connectors")
+		t.SkipNow()
+	} else {
+		t.Log("connectors=", connectors)
 	}
 }

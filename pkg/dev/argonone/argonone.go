@@ -7,7 +7,6 @@ import (
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
-	ircodec "github.com/djthorpe/gopi/v3/pkg/ircodec"
 
 	// Units
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/i2c"
@@ -27,7 +26,6 @@ type argonone struct {
 	gopi.Logger
 	gopi.Metrics
 	gopi.LIRC
-	*ircodec.IRCodec
 
 	bus         gopi.I2CBus
 	slave       uint8
