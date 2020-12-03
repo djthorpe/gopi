@@ -13,6 +13,7 @@ import (
 	"unsafe"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/hw/gpio"
 	"github.com/djthorpe/gopi/v3/pkg/hw/platform"
 	"github.com/djthorpe/gopi/v3/pkg/sys/rpi"
 )
@@ -20,6 +21,7 @@ import (
 type GPIO struct {
 	gopi.Unit
 	sync.RWMutex
+	gopi.Publisher
 	*platform.Platform
 
 	product rpi.ProductInfo
@@ -408,10 +410,14 @@ func (this *GPIO) changeWatchState() {
 			defer this.RWMutex.Unlock()
 			this.watch[pin] = newstate
 		}
-		if state == gopi.GPIO_LOW {
-			fmt.Println("RISING EDGE")
-		} else {
-			fmt.Println("FALLING EDGE")
+		if this.Publisher != nil {
+			edge := gopi.GPIO_EDGE_NONE
+			if state == gopi.GPIO_LOW {
+				edge = gopi.GPIO_EDGE_RISING
+			} else {
+				edge = gopi.GPIO_EDGE_FALLING
+			}
+			this.Publisher.Emit(gpio.NewEvent(fmt.Sprint(pin), pin, edge), true)
 		}
 	}
 }

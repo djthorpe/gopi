@@ -18,7 +18,6 @@ type app struct {
 	gopi.Logger
 	gopi.Publisher
 	gopi.Platform
-	gopi.Display
 	gopi.GPIO
 	gopi.I2C
 	gopi.FontManager
@@ -38,7 +37,6 @@ func (this *app) Define(cfg gopi.Config) error {
 
 	// Define commands
 	cfg.Command("hw", "Return hardware platform information", this.RunHardware)
-	cfg.Command("display", "Return display information", nil)
 	cfg.Command("spi", "Return SPI interface parameters", nil)
 	cfg.Command("i2c", "Return I2C interface parameters", this.RunI2C)
 	cfg.Command("gpio", "Control GPIO interface", this.RunGPIO)
@@ -101,63 +99,6 @@ func (this *app) RunHardware(context.Context) error {
 	// Return success
 	return nil
 }
-
-/*
-
-func (this *app) RunDisplays(context.Context) error {
-	displays := this.Displays.Enumerate()
-	if len(displays) == 0 {
-		return fmt.Errorf("No Displays found")
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	for _, display := range displays {
-		w, h := display.Size()
-		ppi_ := "-"
-		if ppi := display.PixelsPerInch(); ppi != 0 {
-			ppi_ = fmt.Sprint(ppi)
-		}
-		table.Append([]string{
-			fmt.Sprint(display.Id()),
-			fmt.Sprint(display.Name()),
-			fmt.Sprint("{", w, ",", h, "}"),
-			ppi_,
-		})
-	}
-	table.Render()
-
-	// Return success
-	return nil
-}
-*/
-
-/*
-
-func (this *app) RunSpi(context.Context) error {
-	devices := this.Devices.Enumerate()
-	if len(devices) == 0 {
-		return fmt.Errorf("No SPI interfaces found")
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	for _, dev := range devices {
-		spi, err := this.Devices.Open(dev, 0)
-		if err != nil {
-			return err
-		}
-		table.Append([]string{
-			dev.String(),
-			fmt.Sprint(spi),
-		})
-	}
-	table.Render()
-
-	// Return success
-	return nil
-}
-*/
 
 func (this *app) RunFonts(context.Context) error {
 	if this.fontdir == nil || *this.fontdir == "" {

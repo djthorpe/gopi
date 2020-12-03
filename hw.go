@@ -128,6 +128,14 @@ type GPIO interface {
 	Watch(GPIOPin, GPIOEdge) error
 }
 
+// GPIOEvent happens when a pin is watched and edge is
+// either rising or falling
+type GPIOEvent interface {
+	Event
+	Pin() GPIOPin
+	Edge() GPIOEdge
+}
+
 // Display implements a pixel-based display device
 type Display interface {
 	Id() uint16             // Return display number

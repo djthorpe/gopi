@@ -401,7 +401,7 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 			return nil
 		} else if err := this.do(fn, this.units[t], args, seen, indent+1); err != nil {
 			seen[t] = true
-			return err
+			return fmt.Errorf("%w (in %v)", err, t)
 		} else {
 			seen[t] = true
 		}
