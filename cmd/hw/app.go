@@ -26,8 +26,8 @@ type app struct {
 	gopi.Display
 	gopi.GPIO
 	gopi.FontManager
+	gopi.Command
 
-	cmd     gopi.Command
 	fontdir *string
 }
 
@@ -43,7 +43,7 @@ func (this *app) Define(cfg gopi.Config) error {
 	cfg.Command("display", "Return display information", nil)
 	cfg.Command("spi", "Return SPI interface parameters", nil)
 	cfg.Command("i2c", "Return I2C interface parameters", nil) // Not yet implemented
-	cfg.Command("gpio", "Return GPIO interface parameters", this.RunGPIO)
+	cfg.Command("gpio", "Control GPIO interface", this.RunGPIO)
 	cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
 
 	// Return success
@@ -51,10 +51,9 @@ func (this *app) Define(cfg gopi.Config) error {
 }
 
 func (this *app) New(cfg gopi.Config) error {
-	if cmd := cfg.GetCommand(nil); cmd == nil {
+	// Set the command to run
+	if this.Command = cfg.GetCommand(nil); this.Command == nil {
 		return gopi.ErrHelp
-	} else {
-		this.cmd = cmd
 	}
 
 	// Return success
@@ -62,7 +61,7 @@ func (this *app) New(cfg gopi.Config) error {
 }
 
 func (this *app) Run(ctx context.Context) error {
-	return this.cmd.Run(ctx)
+	return this.Command.Run(ctx)
 }
 
 func (this *app) RunHardware(context.Context) error {
@@ -161,36 +160,6 @@ func (this *app) RunSpi(context.Context) error {
 	return nil
 }
 */
-
-func (this *app) RunGPIO(context.Context) error {
-	pins := this.GPIO.NumberOfPhysicalPins()
-	if pins == 0 {
-		return fmt.Errorf("No GPIO interface defined")
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-
-	table.SetHeader([]string{"Physical", "Logical", "Direction", "Value"})
-
-	// Physical pins start at index 1
-	for pin := uint(1); pin <= pins; pin++ {
-		var l, d, v string
-		if logical := this.GPIO.PhysicalPin(pin); logical != gopi.GPIO_PIN_NONE {
-			l = fmt.Sprint(logical)
-			d = fmt.Sprint(this.GPIO.GetPinMode(logical))
-			v = fmt.Sprint(this.GPIO.ReadPin(logical))
-		}
-		table.Append([]string{
-			fmt.Sprintf("%v", pin), l, d, v,
-		})
-	}
-
-	table.Render()
-
-	// Return success
-	return nil
-}
 
 func (this *app) RunFonts(context.Context) error {
 	if this.fontdir == nil || *this.fontdir == "" {

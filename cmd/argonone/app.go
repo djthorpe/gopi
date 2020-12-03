@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/djthorpe/gopi/v3"
-	"github.com/djthorpe/gopi/v3/pkg/ircodec"
 )
 
 type app struct {
@@ -15,7 +14,8 @@ type app struct {
 	gopi.Publisher
 	gopi.MetricWriter
 	gopi.Logger
-	*ircodec.IRCodec
+	gopi.LIRC
+	gopi.LIRCKeycodeManager
 }
 
 func (this *app) Define(cfg gopi.Config) error {
