@@ -52,10 +52,17 @@ func Test_DRM_002(t *testing.T) {
 	}
 	defer r.Free()
 
-	if connectors := r.Connectors(); len(connectors) == 0 {
+	connectors := r.Connectors()
+	if len(connectors) == 0 {
 		t.Log("Skipping test as no connectors")
 		t.SkipNow()
-	} else {
-		t.Log("connectors=", connectors)
+	}
+	for _, id := range connectors {
+		if connector, err := drm.GetConnector(fh.Fd(), id); err != nil {
+			t.Error(err)
+		} else {
+			defer connector.Free()
+			t.Log(connector)
+		}
 	}
 }
