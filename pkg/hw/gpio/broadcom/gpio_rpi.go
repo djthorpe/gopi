@@ -3,6 +3,7 @@
 package broadcom
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
@@ -18,13 +19,14 @@ import (
 
 type GPIO struct {
 	gopi.Unit
-	sync.Mutex
+	sync.RWMutex
 	*platform.Platform
 
 	product rpi.ProductInfo
-	pins    map[gopi.GPIOPin]uint // map of logical to physical pins
-	mem8    []uint8               // access GPIO as bytes
-	mem32   []uint32              // access GPIO as uint32
+	pins    map[gopi.GPIOPin]uint           // map of logical to physical pins
+	mem8    []uint8                         // access GPIO as bytes
+	mem32   []uint32                        // access GPIO as uint32
+	watch   map[gopi.GPIOPin]gopi.GPIOState // current pin state
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,6 +38,10 @@ const (
 	GPIO_BASE        uint32 = 0x200000
 	GPIO_SIZE        uint32 = 4096
 	GPIO_MAXPINS            = 54 // GPIO0 to GPIO53
+)
+
+const (
+	watchDelta = 250 * time.Millisecond // Updates pin state every 250ms
 )
 
 const (
@@ -132,13 +138,16 @@ func (this *GPIO) New(gopi.Config) error {
 		this.mem32 = *(*[]uint32)(unsafe.Pointer(&header))
 	}
 
+	// Set up pin watching
+	this.watch = make(map[gopi.GPIOPin]gopi.GPIOState)
+
 	// Return success
 	return nil
 }
 
 func (this *GPIO) Dispose() error {
-	this.Lock()
-	defer this.Unlock()
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
 	if err := syscall.Munmap(this.mem8); err != nil {
 		return os.NewSyscallError("munmap", err)
@@ -146,9 +155,26 @@ func (this *GPIO) Dispose() error {
 
 	// Release resources
 	this.pins = nil
+	this.watch = nil
 
 	// Return success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RUN
+
+func (this *GPIO) Run(ctx context.Context) error {
+	timer := time.NewTicker(watchDelta)
+	defer timer.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-timer.C:
+			this.changeWatchState()
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -230,8 +256,8 @@ func (this *GPIO) PhysicalPinForPin(logical gopi.GPIOPin) uint {
 
 // Read pin state
 func (this *GPIO) ReadPin(logical gopi.GPIOPin) gopi.GPIOState {
-	this.Lock()
-	defer this.Unlock()
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
 
 	var register uint32
 	if uint8(logical) <= uint8(31) {
@@ -249,8 +275,8 @@ func (this *GPIO) ReadPin(logical gopi.GPIOPin) gopi.GPIOState {
 
 // Write pin state
 func (this *GPIO) WritePin(logical gopi.GPIOPin, state gopi.GPIOState) {
-	this.Lock()
-	defer this.Unlock()
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
 	value := uint32(1 << (uint8(logical) & 31))
 	switch state {
@@ -271,8 +297,8 @@ func (this *GPIO) WritePin(logical gopi.GPIOPin, state gopi.GPIOState) {
 
 // Get pin mode
 func (this *GPIO) GetPinMode(logical gopi.GPIOPin) gopi.GPIOMode {
-	this.Lock()
-	defer this.Unlock()
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
 
 	// return the register and the number of bits to shift to
 	// access the current mode
@@ -284,8 +310,8 @@ func (this *GPIO) GetPinMode(logical gopi.GPIOPin) gopi.GPIOMode {
 
 // Set pin mode
 func (this *GPIO) SetPinMode(logical gopi.GPIOPin, mode gopi.GPIOMode) {
-	this.Lock()
-	defer this.Unlock()
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
 	// get register and the number of bits to shift to
 	// access the current mode
@@ -298,8 +324,8 @@ func (this *GPIO) SetPinMode(logical gopi.GPIOPin, mode gopi.GPIOMode) {
 // Set pull mode to pull down or pull up - will
 // return ErrNotImplemented if not supported
 func (this *GPIO) SetPullMode(logical gopi.GPIOPin, pull gopi.GPIOPull) error {
-	this.Lock()
-	defer this.Unlock()
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
 	// Check pin to make sure there is a physical pin mapping
 	if this.PhysicalPinForPin(logical) == 0 {
@@ -345,8 +371,49 @@ func (this *GPIO) SetPullMode(logical gopi.GPIOPin, pull gopi.GPIOPull) error {
 // Start watching for rising and/or falling edge,
 // or stop watching when GPIO_EDGE_NONE is passed.
 // Will return ErrNotImplemented if not supported
-func (this *GPIO) Watch(gopi.GPIOPin, gopi.GPIOEdge) error {
-	return gopi.ErrNotImplemented
+func (this *GPIO) Watch(pin gopi.GPIOPin, edge gopi.GPIOEdge) error {
+	// Check pin mode is INPUT
+	if mode := this.GetPinMode(pin); mode != gopi.GPIO_INPUT {
+		return gopi.ErrOutOfOrder.WithPrefix("Watch", pin)
+	}
+
+	// Get existing state of pin
+	state := gopi.GPIO_LOW
+	if edge != gopi.GPIO_EDGE_NONE {
+		state = this.ReadPin(pin)
+	}
+
+	// Lock for writing
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	// Delete watch or set existing state
+	if edge == gopi.GPIO_EDGE_NONE {
+		delete(this.watch, pin)
+		return nil
+	} else {
+		this.watch[pin] = state
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *GPIO) changeWatchState() {
+	for pin, state := range this.watch {
+		if newstate := this.ReadPin(pin); newstate == state {
+			continue
+		} else {
+			this.RWMutex.Lock()
+			defer this.RWMutex.Unlock()
+			this.watch[pin] = newstate
+		}
+		if state == gopi.GPIO_LOW {
+			fmt.Println("RISING EDGE")
+		} else {
+			fmt.Println("FALLING EDGE")
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -8,12 +8,6 @@ import (
 
 	"github.com/djthorpe/gopi/v3"
 	"github.com/olekukonko/tablewriter"
-
-	_ "github.com/djthorpe/gopi/v3/pkg/graphics/fonts/freetype"
-	_ "github.com/djthorpe/gopi/v3/pkg/hw/display"
-	_ "github.com/djthorpe/gopi/v3/pkg/hw/gpio/broadcom"
-	_ "github.com/djthorpe/gopi/v3/pkg/hw/platform"
-	_ "github.com/djthorpe/gopi/v3/pkg/log"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,13 +16,16 @@ import (
 type app struct {
 	gopi.Unit
 	gopi.Logger
+	gopi.Publisher
 	gopi.Platform
 	gopi.Display
 	gopi.GPIO
+	gopi.I2C
 	gopi.FontManager
 	gopi.Command
 
 	fontdir *string
+	i2cbus  *uint
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,12 +34,13 @@ type app struct {
 func (this *app) Define(cfg gopi.Config) error {
 	// Define flags
 	this.fontdir = cfg.FlagString("fontdir", "", "Font directory")
+	this.i2cbus = cfg.FlagUint("i2c.bus", 0, "I2C Bus")
 
 	// Define commands
 	cfg.Command("hw", "Return hardware platform information", this.RunHardware)
 	cfg.Command("display", "Return display information", nil)
 	cfg.Command("spi", "Return SPI interface parameters", nil)
-	cfg.Command("i2c", "Return I2C interface parameters", nil) // Not yet implemented
+	cfg.Command("i2c", "Return I2C interface parameters", this.RunI2C)
 	cfg.Command("gpio", "Control GPIO interface", this.RunGPIO)
 	cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
 

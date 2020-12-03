@@ -10,12 +10,6 @@ import (
 	"github.com/djthorpe/gopi/v3"
 	"github.com/hashicorp/go-multierror"
 	"github.com/olekukonko/tablewriter"
-
-	_ "github.com/djthorpe/gopi/v3/pkg/graphics/fonts/freetype"
-	_ "github.com/djthorpe/gopi/v3/pkg/hw/display"
-	_ "github.com/djthorpe/gopi/v3/pkg/hw/gpio/broadcom"
-	_ "github.com/djthorpe/gopi/v3/pkg/hw/platform"
-	_ "github.com/djthorpe/gopi/v3/pkg/log"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,8 +36,6 @@ func (this *app) RunGPIO(ctx context.Context) error {
 
 	var result error
 	switch args[0] {
-	case "value":
-		break
 	case "pullup":
 		for _, pin := range pins {
 			this.GPIO.SetPinMode(pin, gopi.GPIO_INPUT)
@@ -100,6 +92,8 @@ func (this *app) RunGPIO(ctx context.Context) error {
 		for _, pin := range pins {
 			this.GPIO.SetPinMode(pin, gopi.GPIO_ALT5)
 		}
+	case "watch":
+		return this.GPIOWatchPins(ctx, pins)
 	default:
 		return gopi.ErrBadParameter.WithPrefix(args[0])
 	}
@@ -172,4 +166,31 @@ func (this *app) GPIOParsePins(args []string) ([]gopi.GPIOPin, error) {
 
 	// Return success
 	return result, nil
+}
+
+// Watch pins until cancel
+func (this *app) GPIOWatchPins(ctx context.Context, pins []gopi.GPIOPin) error {
+	ch := this.Subscribe()
+	defer this.Unsubscribe(ch)
+
+	for _, pin := range pins {
+		this.GPIO.SetPinMode(pin, gopi.GPIO_INPUT)
+		if err := this.GPIO.Watch(pin, gopi.GPIO_EDGE_BOTH); err != nil {
+			return fmt.Errorf("%w: %v", err, pin)
+		}
+	}
+
+	fmt.Println("Press CTRL+C to end watching")
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case evt := <-ch:
+			fmt.Println(evt)
+		}
+	}
+
+	// Return success
+	return nil
 }

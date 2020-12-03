@@ -14,6 +14,7 @@ import (
 type i2c struct {
 	gopi.Unit
 	sync.Mutex
+	gopi.Logger
 
 	devices map[gopi.I2CBus]*device
 }
@@ -90,6 +91,7 @@ func (this *i2c) Close(bus gopi.I2CBus) error {
 
 	device, exists := this.devices[bus]
 	if exists {
+		this.Debug("i2C Close=>", bus)
 		result = device.fh.Close()
 		delete(this.devices, bus)
 	}

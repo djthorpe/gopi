@@ -195,6 +195,7 @@ func (f I2CFunction) String() string {
 func (this *i2c) Open(bus gopi.I2CBus) (*device, error) {
 	device, exists := this.devices[bus]
 	if exists == false {
+		this.Debug("i2C Open=>", bus)
 		if fh, err := linux.I2COpenDevice(uint(bus)); err != nil {
 			return nil, err
 		} else if funcs, err := linux.I2CFunctions(fh.Fd()); err != nil {
