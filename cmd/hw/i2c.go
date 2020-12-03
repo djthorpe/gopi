@@ -81,12 +81,15 @@ func (this *app) I2CWrite(ctx context.Context, bus gopi.I2CBus, args []string) e
 			data = append(data, bytes)
 		}
 	}
-	for _, bytes := range data {
-		if n, err := this.I2C.Write(bus, bytes); err != nil {
-			return err
-		} else {
-			fmt.Println(hex.EncodeToString(bytes), "=>", n, "bytes written")
-		}
+	if len(data) != 2 || len(data[0]) != 1 {
+		return gopi.ErrBadParameter.WithPrefix("I2CWrite")
+	}
+	if err := this.I2C.SetSlave(bus, data[0][0]); err != nil {
+		return err
+	} else if n, err := this.I2C.Write(bus, data[1]); err != nil {
+		return err
+	} else {
+		fmt.Println(hex.EncodeToString(data[1]), "=>", n, "bytes written")
 	}
 	return nil
 }

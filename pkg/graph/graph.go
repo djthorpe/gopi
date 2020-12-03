@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -18,10 +19,11 @@ type graph struct {
 	sync.RWMutex
 	sync.WaitGroup
 
-	units map[reflect.Type]reflect.Value
-	objs  []reflect.Value
-	Logfn func(...interface{})
-	errs  chan error
+	units   map[reflect.Type]reflect.Value
+	objs    []reflect.Value
+	Logfn   func(...interface{})
+	errs    chan error
+	cancels []context.CancelFunc
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -192,21 +194,28 @@ func (this *graph) Run(ctx context.Context, done bool) error {
 	var result error
 	go func() {
 		for err := range this.errs {
-			if err != nil {
+			if err != nil && errors.Is(err, context.Canceled) == false {
 				result = multierror.Append(result, err)
-				// Perform cancels!
-				fmt.Println("TODO: Perform cancels")
+				this.cancelWithError(unwrap(result))
 			}
 		}
 	}()
 
+	// Make new context with cancel
+	ctx2, cancel := context.WithCancel(ctx)
+	this.cancels = append(this.cancels, cancel)
+
 	// Call Run functions
 	seen := make(map[reflect.Type]bool, len(this.units))
 	for _, obj := range this.objs {
-		if err := this.do("Run", obj, []reflect.Value{reflect.ValueOf(ctx)}, seen, 0); err != nil {
+		if err := this.do("Run", obj, nil, seen, 0); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
+
+	// Wait for ctx.Done, then send cancels
+	<-ctx2.Done()
+	this.cancelWithError(nil)
 
 	// Wait for all Run functions to complete, then finish
 	// collecting errors
@@ -217,73 +226,14 @@ func (this *graph) Run(ctx context.Context, done bool) error {
 	return unwrap(result)
 }
 
-/*
-		this.RWMutex.RLock()
-		defer this.RWMutex.RUnlock()
-
-		seen := make(map[reflect.Type]bool, len(this.units))
-		cancels := []context.CancelFunc{}
-		errs := make(chan error)
-
-		// Send cancels on context end
-		var result error
-
-		// Call run functions
-		c := new(counter)
-		c.done = done
-		for _, obj := range this.objs {
-			cancels = append(cancels, this.run(obj, errs, seen, c)...)
-		}
-
-		go func() {
-			// Wait until the context is done, any error is received, or all
-			// objects ended
-			if err := waitForEndRun(ctx, errs, c); err != nil {
-				result = multierror.Append(result, err)
-			}
-
-			// Send cancels
-			for _, cancel := range cancels {
-				cancel()
-			}
-
-			// Wait for remaining errors
-			for err := range errs {
-				if err != nil {
-					result = multierror.Append(result, err)
-				}
-			}
-		}()
-
-		// Wait for all run routines to end
-		this.WaitGroup.Wait()
-
-		// Close err channel
-		close(errs)
-
-		// Return the context cancel reason
-		if result == nil {
-			return ctx.Err()
-		} else {
-			return unwrap(multierror.Append(result, ctx.Err()))
-		}
-}
-
-func waitForEndRun(ctx context.Context, errs <-chan error, objs *counter) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-objs.Done():
-			return nil
-		case err := <-errs:
-			if err != nil {
-				return err
-			}
-		}
+func (this *graph) cancelWithError(err error) {
+	if err != nil {
+		this.GetLogger().Debug("Cancelling with error", err)
+	}
+	for _, cancel := range this.cancels {
+		cancel()
 	}
 }
-*/
 
 func unwrap(err error) error {
 	if err != nil {
@@ -365,6 +315,15 @@ func (this *graph) graph(unit reflect.Value) error {
 	})
 }
 
+func (this *graph) isAppObject(unit reflect.Value) bool {
+	for _, obj := range this.objs {
+		if obj == unit {
+			return true
+		}
+	}
+	return false
+}
+
 func (this *graph) unitTypeForField(f reflect.StructField) reflect.Type {
 	if f.Type.Kind() == reflect.Interface {
 		if _, exists := iface[f.Type]; exists {
@@ -414,7 +373,7 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 		if this.Logfn != nil {
 			this.Logfn(strings.Repeat(" ", indent*2), fn, "=>", unit.Type())
 		}
-		this.callRun(unit, args)
+		this.callRun(unit)
 	} else if fn != "Dispose" {
 		if this.Logfn != nil {
 			this.Logfn(strings.Repeat(" ", indent*2), fn, "=>", unit.Type())
@@ -427,69 +386,21 @@ func (this *graph) do(fn string, unit reflect.Value, args []reflect.Value, seen 
 	return result
 }
 
-func (this *graph) callRun(unit reflect.Value, args []reflect.Value) {
+func (this *graph) callRun(unit reflect.Value) {
 	this.WaitGroup.Add(1)
-	ctx := args[0].Interface().(context.Context)
+	ctx, cancel := context.WithCancel(context.Background())
+	this.cancels = append(this.cancels, cancel)
 	go func() {
-		this.errs <- callFn("Run", unit, args)
+		err := callFn("Run", unit, []reflect.Value{reflect.ValueOf(ctx)})
+		if this.isAppObject(unit) {
+			// Run ends when any application Run function ends
+			this.cancelWithError(err)
+		}
+		this.errs <- err
 		this.WaitGroup.Done()
 		<-ctx.Done()
 	}()
 }
-
-/*
-func (this *graph) run(unit reflect.Value, errs chan<- error, seen map[reflect.Type]bool, obj *counter) []context.CancelFunc {
-	cancels := []context.CancelFunc{}
-
-	if this.Logfn != nil {
-		this.Logfn("Run started", " => ", unit.Type())
-	}
-
-	// Recurse into run
-	forEachField(unit, false, func(f reflect.StructField, i int) error {
-		t := this.unitTypeForField(f)
-		if t == nil {
-			return nil
-		}
-		if _, exists := seen[t]; exists {
-			return nil
-		}
-		seen[t] = true
-		cancels = append(cancels, this.run(this.units[t], errs, seen, nil)...)
-		return nil
-	})
-
-	// Now call Run in a goroutine, which passes error back to channel
-	ctx, cancel := context.WithCancel(context.Background())
-	this.WaitGroup.Add(1)
-	go func() {
-		// If top level object, decrement counter by one
-		if obj != nil {
-			obj.Add(1)
-		}
-		// Call Run and wait for error
-		err := callFn("Run", unit, []reflect.Value{reflect.ValueOf(ctx)})
-		// Debug
-		if this.Logfn != nil {
-			if err == nil {
-				this.Logfn("Run ended", " => ", unit.Type(), " successfully")
-			} else {
-				this.Logfn("Run ended", " => ", unit.Type(), " with error ", strconv.Quote(err.Error()))
-			}
-		}
-		// Emit error
-		errs <- err
-		// Decrement waitgroup
-		this.WaitGroup.Done()
-		// If top level object, decrement counter by one
-		if obj != nil {
-			obj.Sub(1)
-		}
-	}()
-
-	return append(cancels, cancel)
-}
-*/
 
 /////////////////////////////////////////////////////////////////////
 // STRINGIFY
