@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	os.Exit(tool.CommandLine("gaffer", os.Args[1:], new(app)))
+	os.Exit(tool.CommandLine("helloworld", os.Args[1:], new(app)))
 }

@@ -20,6 +20,7 @@ import (
 type server struct {
 	gopi.Unit
 	sync.Mutex
+	gopi.Logger
 
 	srv      *grpc.Server
 	listener net.Listener
@@ -124,6 +125,10 @@ func (this *server) Stop(force bool) error {
 }
 
 func (this *server) RegisterService(fn interface{}, service gopi.Service) error {
+	if this.Logger != nil {
+		this.Logger.Debug("RegisterService", reflect.TypeOf(service))
+	}
+
 	// Check parameters
 	if fn == nil {
 		return gopi.ErrBadParameter.WithPrefix("fn")

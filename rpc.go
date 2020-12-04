@@ -55,4 +55,5 @@ type PingStub interface {
 
 	Ping(ctx context.Context) error
 	Version(ctx context.Context) (Version, error)
+	ListServices(context.Context) ([]string, error) // Return a list of services supported
 }

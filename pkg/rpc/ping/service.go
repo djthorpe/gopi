@@ -22,7 +22,11 @@ type service struct {
 
 func (this *service) New(cfg gopi.Config) error {
 	this.version = cfg.Version()
-	return this.Server.RegisterService(RegisterPingServer, this)
+	if this.Server == nil {
+		return gopi.ErrInternalAppError.WithPrefix("RegisterService")
+	} else {
+		return this.Server.RegisterService(RegisterPingServer, this)
+	}
 }
 
 /////////////////////////////////////////////////////////////////////

@@ -11,7 +11,10 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 BUILDDIR = build
 
 all: checkdeps
-	@echo "Synax: make hw|argonone|dnsregister|debian|test|clean"
+	@echo "Synax: make hw|argonone|dnsregister|rpcping|debian|clean"
+
+clean: 
+	$(GO) clean
 
 # Darwin anticipates additional libraries installed via homebrew
 darwin:
@@ -71,31 +74,20 @@ argonone: builddir rpi
 dnsregister: builddir
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/dnsregister -tags "$(TAGS)" ${GOFLAGS} ./cmd/dnsregister
 
+rpcping: protogen
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rpcping -tags "$(TAGS)" ${GOFLAGS} ./cmd/rpcping
+
 # Build rules - dependencies
 nfpm:
 	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm
 
-protogen: protoc-gen-go
+protogen: protoc protoc-gen-go
 	$(GO) generate -x ./pkg/rpc
 
 protoc-gen-go:
 	$(GO) get github.com/golang/protobuf/protoc-gen-go
 
-testrace: protogen
-	$(GO) clean -testcache
-	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) -race ./pkg/...
-
-test: protogen
-	$(GO) clean -testcache
-	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test -count 5 $(TAGS) ./pkg/...
-
-install: protogen
-	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) install $(TAGS) ${GOFLAGS} ./cmd/...
-
-clean: 
-	$(GO) clean
-
-checkdeps:
+protoc:
 ifeq ($(shell which protoc),)
 	$(error protoc is not installed)
 endif

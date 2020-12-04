@@ -6,30 +6,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/djthorpe/gopi/v3"
 	"github.com/olekukonko/tablewriter"
 )
 
-func (this *app) RunPing(ctx context.Context) error {
-	timer := time.NewTicker(time.Second)
-	defer timer.Stop()
-	for {
-		select {
-		case <-timer.C:
-			fmt.Println("ping")
-			if err := this.stub.Ping(ctx); err != nil {
-				return err
-			}
-		case <-ctx.Done():
-			return nil
-		}
-	}
-
-	// Return success
-	return nil
-}
-
-func (this *app) RunVersion(ctx context.Context) error {
-	version, err := this.stub.Version(ctx)
+func (this *app) RunVersion(ctx context.Context, stub gopi.PingStub) error {
+	version, err := stub.Version(ctx)
 	if err != nil {
 		return err
 	}
@@ -37,6 +19,7 @@ func (this *app) RunVersion(ctx context.Context) error {
 	// Display platform information
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetAutoMergeCells(true)
 	table.Append([]string{
 		"Name", version.Name(),
 	})
@@ -64,8 +47,37 @@ func (this *app) RunVersion(ctx context.Context) error {
 			"Build time", t.Format(time.RFC3339),
 		})
 	}
+
+	if services, err := stub.ListServices(ctx); err != nil {
+		return err
+	} else if len(services) > 0 {
+		for _, service := range services {
+			table.Append([]string{
+				"Services", service,
+			})
+		}
+	}
+
 	table.Render()
 
 	// Return success
 	return nil
+}
+
+func (this *app) RunPing(ctx context.Context, stub gopi.PingStub) error {
+	timer := time.NewTicker(time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case <-timer.C:
+			now := time.Now()
+			if err := stub.Ping(ctx); err != nil {
+				return err
+			} else {
+				fmt.Println("ping: ", time.Since(now))
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 }
