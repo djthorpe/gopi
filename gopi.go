@@ -16,18 +16,20 @@ type Config interface {
 	Version() Version // Return version information
 
 	// Define flags
-	FlagString(string, string, string) *string
-	FlagBool(string, bool, string) *bool
-	FlagUint(string, uint, string) *uint
-	FlagDuration(string, time.Duration, string) *time.Duration
+	FlagString(string, string, string, ...string) *string
+	FlagBool(string, bool, string, ...string) *bool
+	FlagUint(string, uint, string, ...string) *uint
+	FlagInt(string, int, string, ...string) *int
+	FlagDuration(string, time.Duration, string, ...string) *time.Duration
 
-	// Define commands
-	Command(string, string, CommandFunc) error // Append a command with name and usage arguments
+	// Define a command with name, description, calling function
+	Command(string, string, CommandFunc) error
 
 	// Get values
 	GetString(string) string
 	GetBool(string) bool
 	GetUint(string) uint
+	GetInt(string) int
 	GetDuration(string) time.Duration
 	GetCommand([]string) Command // Get command from provided arguments
 }

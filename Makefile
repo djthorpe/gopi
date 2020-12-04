@@ -11,22 +11,24 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 BUILDDIR = build
 
 all: checkdeps
-	@echo "Synax: make linux|darwin|rpi|test|clean"
+	@echo "Synax: make hw|argonone|dnsregister|test|clean"
 
 # Platform-specific tags and environment variables
-linux:
-	$(eval TAGS += linux)
-
 darwin:
-	$(eval TAGS += darwin)
+ifeq ($(shell test -d /usr/local/lib/pkgconfig; echo $$?),0)
+	@echo "Targetting darwin"
 	$(eval PKG_CONFIG_PATH += /usr/local/lib/pkgconfig)
+endif
 
-rpi: 
+rpi:
+ifeq ($(shell test -d /opt/vc/lib/pkgconfig; echo $$?),0)
+	@echo "Targetting rpi"
 	$(eval TAGS += rpi)
 	$(eval PKG_CONFIG_PATH += /opt/vc/lib/pkgconfig)
+endif
 
 # Build rules - commands
-hw: rpi
+hw: rpi darwin
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/hw -tags "$(TAGS)" ${GOFLAGS} ./cmd/hw
 
 argonone: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
@@ -71,6 +73,6 @@ clean:
 	$(GO) clean
 
 checkdeps:
-ifeq (,$(shell which protoc))
+ifeq ($(shell which protoc),)
 	$(error protoc is not installed)
 endif

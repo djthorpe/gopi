@@ -15,14 +15,15 @@ type command struct {
 	name, usage string
 	args        []string
 	fn          gopi.CommandFunc
+	cmds        []string
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // NEW
 
-func NewCommand(name, usage string, args []string, fn gopi.CommandFunc) gopi.Command {
+func NewCommand(name, usage string, args []string, fn gopi.CommandFunc, cmds ...string) gopi.Command {
 	return &command{
-		name, usage, args, fn,
+		name, usage, args, fn, cmds,
 	}
 }
 
@@ -60,6 +61,9 @@ func (this *command) String() string {
 	}
 	if len(this.args) > 0 {
 		str += " args=" + fmt.Sprint(this.args)
+	}
+	if len(this.cmds) > 0 {
+		str += " cmds=" + fmt.Sprint(this.cmds)
 	}
 	return str + ">"
 }

@@ -20,6 +20,7 @@ type app struct {
 	gopi.Platform
 	gopi.GPIO
 	gopi.I2C
+	gopi.LIRC
 	gopi.FontManager
 	gopi.Command
 
@@ -32,10 +33,10 @@ type app struct {
 
 func (this *app) Define(cfg gopi.Config) error {
 	// Define flags
-	this.fontdir = cfg.FlagString("fontdir", "", "Font directory")
-	this.i2cbus = cfg.FlagUint("i2c.bus", 0, "I2C Bus")
+	this.fontdir = cfg.FlagString("fontdir", "", "Font directory", "fonts")
+	this.i2cbus = cfg.FlagUint("bus", 0, "I2C Bus", "i2c")
 
-	// Define commands
+	// Define version command
 	cfg.Command("version", "Return information about the command", func(context.Context) error {
 		if err := this.PrintVersion(cfg); err != nil {
 			return err
@@ -44,8 +45,16 @@ func (this *app) Define(cfg gopi.Config) error {
 		}
 	})
 
+	// Define LIRC command
+	cfg.Command("lirc", "IR sending and receiving control", func(ctx context.Context) error {
+		return this.RunLIRC(ctx, cfg)
+	})
+	cfg.Command("lirc print", "Print LIRC Parameters", func(ctx context.Context) error {
+		return nil
+	})
+
+	// Define other commands
 	cfg.Command("hw", "Return hardware platform information", this.RunHardware)
-	cfg.Command("spi", "Return SPI interface parameters", nil)
 	cfg.Command("i2c", "Return I2C interface parameters", this.RunI2C)
 	cfg.Command("gpio", "Control GPIO interface", this.RunGPIO)
 	cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
