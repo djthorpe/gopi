@@ -151,7 +151,7 @@ func GetCredentials() (string, string, string) {
 
 func (this *app) Emit(latency float64, subdomain, ip, status string) error {
 	if *this.measurement != "" {
-		return this.Metrics.Emit(*this.measurement, latency, subdomain, ip, status)
+		return this.Metrics.EmitTS(*this.measurement, time.Now(), latency, subdomain, ip, status)
 	} else {
 		return nil
 	}

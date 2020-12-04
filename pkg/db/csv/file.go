@@ -42,6 +42,8 @@ func NewFile(path, name, ext string, append bool) (*file, error) {
 	mode := os.O_WRONLY | os.O_CREATE
 	if append {
 		mode |= os.O_APPEND
+	} else {
+		mode |= os.O_TRUNC
 	}
 	if fh, err := os.OpenFile(this.path, mode, 0666); err != nil {
 		return nil, err
