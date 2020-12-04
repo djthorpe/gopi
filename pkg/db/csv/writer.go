@@ -2,11 +2,13 @@ package csv
 
 import (
 	"context"
+	"os"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -19,18 +21,55 @@ type Writer struct {
 	gopi.Publisher
 
 	// Flags & Parameters
-	path *string
+	path   *string
+	ext    *string
+	append *bool
+
+	// Member variables
+	files map[string]*file
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
 
 func (this *Writer) Define(cfg gopi.Config) error {
-	this.path = cfg.FlagString("csv.path", "", "Metrics Folder")
+	this.path = cfg.FlagString("csv.path", "", "Metrics path")
+	this.ext = cfg.FlagString("csv.ext", ".csv", "Metrics file extension")
+	this.append = cfg.FlagBool("csv.append", true, "Append metrics to existing files")
 	return nil
 }
 
 func (this *Writer) New(cfg gopi.Config) error {
+
+	// Check path is a folder
+	if *this.path != "" {
+		if stat, err := os.Stat(*this.path); os.IsNotExist(err) {
+			return gopi.ErrBadParameter.WithPrefix("-csv.path")
+		} else if err != nil {
+			return err
+		} else if stat.IsDir() == false {
+			return gopi.ErrBadParameter.WithPrefix("-csv.path")
+		}
+	}
+
+	// Create file mapping
+	this.files = make(map[string]*file)
+
+	// Return success
+	return nil
+}
+
+func (this *Writer) Dispose() error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	// Close all opened files
+	for _, file := range this.files {
+		file.Close()
+	}
+
+	// Release resources
+	this.files = nil
 
 	// Return success
 	return nil
@@ -78,8 +117,30 @@ func (this *Writer) Write(metrics ...gopi.Measurement) error {
 		return gopi.ErrBadParameter.WithPrefix("Write")
 	}
 
-	// Noop
-	return gopi.ErrNotImplemented
+	var result error
+
+	// Create new files
+	for _, metric := range metrics {
+		key := metric.Name()
+		if _, exists := this.files[key]; exists == false {
+			if file, err := NewFile(*this.path, key, *this.ext, *this.append); err != nil {
+				result = multierror.Append(result, err)
+			} else {
+				this.files[key] = file
+			}
+		}
+	}
+
+	// Write metrics
+	for _, metric := range metrics {
+		key := metric.Name()
+		if err := this.files[key].Write(metric); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	// Return any errors
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
