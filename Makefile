@@ -54,9 +54,19 @@ builddir:
 # Make debian packages
 debian: builddir argonone dnsregister nfpm
 	$(eval VERSION = $(shell git describe --tags))
-	@sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/argonone.yaml > $(BUILDDIR)/argonone.yaml
+	$(eval ARCH = $(shell $(GO) env GOARCH))
+	$(eval PLATFORM = $(shell $(GO) env GOOS))
+	@sed \
+		-e 's/^version:.*$$/version: $(VERSION)/'  \
+		-e 's/^arch:.*$$/arch: $(ARCH)/' \
+		-e 's/^platform:.*$$/platform: $(PLATFORM)/' \
+		etc/nfpm/argonone.yaml > $(BUILDDIR)/argonone.yaml
 	@nfpm pkg -f $(BUILDDIR)/argonone.yaml --packager deb --target $(BUILDDIR)
-	@sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/dnsregister.yaml > $(BUILDDIR)/dnsregister.yaml
+	@sed \
+		-e 's/^version:.*$$/version: $(VERSION)/'  \
+		-e 's/^arch:.*$$/arch: $(ARCH)/' \
+		-e 's/^platform:.*$$/platform: $(PLATFORM)/' \
+		etc/nfpm/dnsregister.yaml > $(BUILDDIR)/dnsregister.yaml
 	@nfpm pkg -f $(BUILDDIR)/dnsregister.yaml --packager deb --target $(BUILDDIR)
 	@echo
 	@ls -1 $(BUILDDIR)/*.deb

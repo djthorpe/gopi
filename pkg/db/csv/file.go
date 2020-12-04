@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	multierror "github.com/hashicorp/go-multierror"
@@ -97,7 +98,7 @@ func (this *file) Write(metric gopi.Measurement) error {
 	if t := metric.Time(); t.IsZero() == false {
 		header = append(header, "time")
 		comment = append(comment, "time")
-		row = append(row, fmt.Sprint(t.UnixNano()))
+		row = append(row, t.Format(time.RFC3339))
 	}
 	for _, tag := range metric.Tags() {
 		header = append(header, tag.Name())

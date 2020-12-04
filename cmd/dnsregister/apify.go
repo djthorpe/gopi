@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/djthorpe/gopi/v3"
+	gopi "github.com/djthorpe/gopi/v3"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

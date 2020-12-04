@@ -12,5 +12,6 @@ Group=gopi
 EnvironmentFile=/opt/gopi/etc/dnsregister.env
 ExecStart=/opt/gopi/bin/dnsregister daemon\
     -debug=${DEBUG} \
-    -influxdb.url=${INFLUXDB}
+    -csv.path=${CSVPATH} \
+    -csv.append=${CSVAPPEND}
 Restart=on-failure
