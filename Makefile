@@ -11,7 +11,7 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 BUILDDIR = build
 
 all: checkdeps
-	@echo "Synax: make hw|argonone|dnsregister|test|clean"
+	@echo "Synax: make hw|argonone|dnsregister|debian|test|clean"
 
 # Darwin anticipates additional libraries installed via homebrew
 darwin:
