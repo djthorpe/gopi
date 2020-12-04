@@ -3,6 +3,9 @@ package metrics
 import (
 	"errors"
 	"fmt"
+	"os"
+	"os/user"
+	"strings"
 	"sync"
 	"time"
 
@@ -110,6 +113,28 @@ func (this *metrics) Measurements() []gopi.Measurement {
 		m = append(m, v)
 	}
 	return m
+}
+
+func (this *metrics) HostTag() gopi.Field {
+	host, _ := os.Hostname()
+	return NewField("host", host)
+}
+
+func (this *metrics) UserTag() gopi.Field {
+	if user, _ := user.Current(); user != nil {
+		return NewField("user", user.Username)
+	} else {
+		return nil
+	}
+}
+
+func (this *metrics) EnvTag(name string) gopi.Field {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil
+	} else {
+		return NewField(name, os.Getenv(name))
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -30,6 +30,13 @@ type Writer struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// GLOBALS
+
+const (
+	runeComment = "#"
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // INIT
 
 func (this *Writer) Define(cfg gopi.Config) error {
@@ -91,7 +98,7 @@ func (this *Writer) Run(ctx context.Context) error {
 				}
 			}
 		case <-ctx.Done():
-			return nil
+			return ctx.Err()
 		}
 	}
 }

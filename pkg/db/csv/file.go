@@ -83,11 +83,25 @@ func (this *file) Close() error {
 }
 
 func (this *file) Write(metric gopi.Measurement) error {
+	// Check size of file, so that empty files
+	// can have header and comment written
+	size := int64(0)
+	if stat, err := this.fh.Stat(); err == nil {
+		size = stat.Size()
+	}
+
+	// Generate the header, comment and row
+	header := []string{}
+	comment := []string{}
 	row := []string{}
 	if t := metric.Time(); t.IsZero() == false {
+		header = append(header, "time")
+		comment = append(comment, "time")
 		row = append(row, fmt.Sprint(t.UnixNano()))
 	}
 	for _, tag := range metric.Tags() {
+		header = append(header, tag.Name())
+		comment = append(comment, "tag["+tag.Kind()+"]")
 		if tag.IsNil() {
 			row = append(row, "")
 		} else {
@@ -95,11 +109,32 @@ func (this *file) Write(metric gopi.Measurement) error {
 		}
 	}
 	for _, metric := range metric.Metrics() {
+		header = append(header, metric.Name())
+		comment = append(comment, "metric["+metric.Kind()+"]")
 		if metric.IsNil() {
 			row = append(row, "")
 		} else {
 			row = append(row, fmt.Sprint(metric.Value()))
 		}
 	}
-	return this.writer.Write(row)
+
+	// Write the header
+	if size == 0 {
+		if err := this.writer.Write(header); err != nil {
+			return err
+		}
+		comment[0] = string(runeComment) + " " + comment[0]
+		if err := this.writer.Write(comment); err != nil {
+			return err
+		}
+	}
+
+	// Write the row
+	if err := this.writer.Write(row); err != nil {
+		return err
+	}
+
+	// Flush and return any errors
+	this.writer.Flush()
+	return this.writer.Error()
 }
