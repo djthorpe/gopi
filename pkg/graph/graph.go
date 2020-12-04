@@ -398,6 +398,9 @@ func (this *graph) callRun(unit reflect.Value) {
 			// Run ends when any application Run function ends
 			this.cancelWithError(err)
 		}
+		if this.Logfn != nil {
+			this.Logfn("Run", "<=", unit.Type())
+		}
 		this.errs <- err
 		this.WaitGroup.Done()
 		<-ctx.Done()

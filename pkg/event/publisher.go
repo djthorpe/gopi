@@ -19,7 +19,7 @@ type publisher struct {
 const (
 	// queuesize defines the buffer of events, in case the receiver is not
 	// quick at picking up events compared to sender
-	queuesize = 1000
+	queuesize = 100
 )
 
 func (this *publisher) New(gopi.Config) error {
@@ -52,8 +52,6 @@ func (this *publisher) Dispose() error {
 func (this *publisher) Run(ctx context.Context) error {
 	for {
 		select {
-		case <-ctx.Done():
-			return nil
 		case evt := <-this.q:
 			this.RWMutex.RLock()
 			for _, ch := range this.ch {
@@ -62,6 +60,8 @@ func (this *publisher) Run(ctx context.Context) error {
 				}
 			}
 			this.RWMutex.RUnlock()
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
 }
