@@ -227,9 +227,9 @@ func (this *graph) Run(ctx context.Context, done bool) error {
 }
 
 func (this *graph) cancelWithError(err error) {
-	if err != nil {
+	if err != nil && errors.Is(err, context.Canceled) == false {
 		if logger := this.GetLogger(); logger != nil {
-			logger.Debug("Cancelling with error", err)
+			logger.Debug("Cancelling with error: ", err)
 		}
 	}
 	for _, cancel := range this.cancels {
