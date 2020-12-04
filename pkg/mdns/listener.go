@@ -224,7 +224,7 @@ func (this *Listener) run4(ctx context.Context, conn *ipv4.PacketConn) {
 				continue
 			} else if msg, err := parseDnsPacket(buf[:n], cm.IfIndex, from); err != nil {
 				this.Print("DNS Error:", err)
-			} else if err := this.Publisher.Emit(NewDNSEvent(msg), true); err != nil {
+			} else if err := this.Publisher.Emit(NewMsgEvent(msg), true); err != nil {
 				this.Print("Emit Error:", err)
 			}
 		}
@@ -246,7 +246,7 @@ func (this *Listener) run6(ctx context.Context, conn *ipv6.PacketConn) {
 				continue
 			} else if msg, err := parseDnsPacket(buf[:n], cm.IfIndex, from); err != nil {
 				this.Print("DNS Error:", err)
-			} else if err := this.Publisher.Emit(NewDNSEvent(msg), true); err != nil {
+			} else if err := this.Publisher.Emit(NewMsgEvent(msg), true); err != nil {
 				this.Print("Emit Error:", err)
 			}
 		}

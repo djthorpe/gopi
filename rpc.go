@@ -56,6 +56,7 @@ type ServiceDiscovery interface {
 }
 
 type ServiceRecord interface {
+	Service() string
 	Name() string
 	HostPort() []string
 	Addrs() []net.IP

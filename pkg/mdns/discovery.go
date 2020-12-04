@@ -22,15 +22,15 @@ type Discovery struct {
 
 const (
 	queryServices = "_services._dns-sd._udp"
-	queryRepeat   = 3
-	queryBackoff  = time.Millisecond * 200
+	queryRepeat   = 2
+	queryBackoff  = time.Millisecond * 50
 )
 
 ///////////////////////////////////////////////////////////////////////////////
 // RUN
 
 func (this *Discovery) Run(ctx context.Context) error {
-	// Subscribe to messages
+	// Subscribe to DNS messages
 	ch := this.Publisher.Subscribe()
 	defer this.Publisher.Unsubscribe(ch)
 
@@ -38,8 +38,14 @@ FOR_LOOP:
 	for {
 		select {
 		case evt := <-ch:
-			if msg, ok := evt.(*dnsevent); ok {
-				NewServices(msg.Msg(), this.Listener.Domain())
+			if msg, ok := evt.(*msgevent); ok {
+				if services := NewServices(msg.Msg, this.Listener.Domain()).Services(); len(services) > 0 {
+					for _, service := range services {
+						if err := this.Publisher.Emit(service, true); err != nil {
+							this.Print(err)
+						}
+					}
+				}
 			}
 		case <-ctx.Done():
 			break FOR_LOOP
@@ -56,20 +62,99 @@ FOR_LOOP:
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *Discovery) EnumerateServices(ctx context.Context) error {
+func (this *Discovery) Lookup(ctx context.Context, srv string) ([]gopi.ServiceRecord, error) {
 	this.WaitGroup.Add(1)
 	defer this.WaitGroup.Done()
+
+	// Collect services in goroutine
+	var wg sync.WaitGroup
+	ch := this.Publisher.Subscribe()
+	records := make([]*service, 0, 10)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer this.Publisher.Unsubscribe(ch)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case evt := <-ch:
+				if service, ok := evt.(*service); ok {
+					if service.Service() == srv {
+						records = append(records, service)
+					}
+				}
+			}
+		}
+	}()
+
+	// Query for lookup on all interfaces
+	zone := this.Listener.Domain()
+	if err := this.query(ctx, msgQueryLookup(srv, zone), 0); err != nil {
+		return nil, err
+	}
+
+	// Wait for end of collection of names
+	wg.Wait()
+
+	// Collect services
+	result := make([]gopi.ServiceRecord, 0, len(records))
+	for _, record := range records {
+		result = append(result, record)
+	}
+
+	// Return result
+	return result, nil
+}
+
+func (this *Discovery) EnumerateServices(ctx context.Context) ([]string, error) {
+	this.WaitGroup.Add(1)
+	defer this.WaitGroup.Done()
+
+	// Collect names in goroutine
+	var wg sync.WaitGroup
+	names := make(map[string]bool)
+	ch := this.Publisher.Subscribe()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer this.Publisher.Unsubscribe(ch)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case evt := <-ch:
+				if srv, ok := evt.(*service); ok {
+					if srv.Service() == fqn(queryServices) && srv.ttl != 0 {
+						key := srv.Name()
+						names[key] = true
+					}
+				}
+			}
+		}
+	}()
 
 	// Query for services on all interfaces
 	zone := this.Listener.Domain()
 	if err := this.query(ctx, msgQueryServices(zone), 0); err != nil {
-		return err
+		return nil, err
 	}
 
-	// Wait for completion
-	<-ctx.Done()
+	// Wait for end of collection of names
+	wg.Wait()
 
-	return ctx.Err()
+	// Collect names
+	result := make([]string, 0, len(names))
+	for name := range names {
+		result = append(result, name)
+	}
+
+	return result, nil
+}
+
+func (this *Discovery) Serve(context.Context, []gopi.ServiceRecord) error {
+	return gopi.ErrNotImplemented
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -96,9 +181,16 @@ func (this *Discovery) query(ctx context.Context, msg *dns.Msg, iface int) error
 	}
 }
 
-func msgQueryServices(domain string) *dns.Msg {
+func msgQueryServices(zone string) *dns.Msg {
 	msg := new(dns.Msg)
-	msg.SetQuestion(fqn(queryServices)+fqn(domain), dns.TypePTR)
+	msg.SetQuestion(fqn(queryServices)+fqn(zone), dns.TypePTR)
+	msg.RecursionDesired = false
+	return msg
+}
+
+func msgQueryLookup(srv, zone string) *dns.Msg {
+	msg := new(dns.Msg)
+	msg.SetQuestion(fqn(srv)+fqn(zone), dns.TypePTR)
 	msg.RecursionDesired = false
 	return msg
 }

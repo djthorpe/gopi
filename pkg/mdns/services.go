@@ -1,54 +1,54 @@
 package mdns
 
 import (
-	"fmt"
-	"net"
+	"strings"
 
+	"github.com/djthorpe/gopi/v3"
 	"github.com/miekg/dns"
 )
 
 type services struct {
-	zone string
+	services []*service
 }
 
+// Parse DNS message and capture service records
 func NewServices(msg *dns.Msg, zone string) *services {
 	this := new(services)
-	this.zone = zone
 	sections := append(append(msg.Answer, msg.Ns...), msg.Extra...)
 	for _, answer := range sections {
 		switch rr := answer.(type) {
 		case *dns.PTR:
-			this.SetPTR(rr)
+			this.services = append(this.services, NewService(zone))
+			this.services[0].SetPTR(rr)
 		case *dns.SRV:
-			this.SetSRV(rr.Target, rr.Port, rr.Priority)
+			if len(this.services) > 0 {
+				this.services[0].SetSRV(rr.Target, rr.Port, rr.Priority)
+			}
 		case *dns.TXT:
-			this.SetTXT(rr.Txt)
+			if len(this.services) > 0 {
+				this.services[0].SetTXT(rr.Txt)
+			}
 		case *dns.A:
-			this.SetA(rr.A)
+			if len(this.services) > 0 {
+				this.services[0].SetA(rr.A)
+			}
 		case *dns.AAAA:
-			this.SetAAAA(rr.AAAA)
+			if len(this.services) > 0 {
+				this.services[0].SetAAAA(rr.AAAA)
+			}
 		}
 	}
 
 	return this
 }
 
-func (this *services) SetPTR(ptr *dns.PTR) {
-	fmt.Println("PTR=", ptr)
-}
-
-func (this *services) SetSRV(target string, port uint16, priority uint16) {
-	fmt.Println("SRV=", target, port, priority)
-}
-
-func (this *services) SetTXT(txt []string) {
-	fmt.Println("TXT=", txt)
-}
-
-func (this *services) SetA(ip net.IP) {
-	fmt.Println("A=", ip)
-}
-
-func (this *services) SetAAAA(ip net.IP) {
-	fmt.Println("AAAA=", ip)
+// Services returns all service records relevant for zone
+func (this *services) Services() []gopi.ServiceRecord {
+	result := make([]gopi.ServiceRecord, 0, len(this.services))
+	for _, service := range this.services {
+		if strings.HasSuffix(service.service, service.zone) {
+			result = append(result, service)
+		}
+	}
+	return result
 }
