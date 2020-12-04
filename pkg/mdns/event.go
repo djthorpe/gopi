@@ -34,11 +34,15 @@ func (this *dnsevent) Name() string {
 	}
 }
 
+func (this *dnsevent) Msg() *dns.Msg {
+	return this.msg
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *dnsevent) String() string {
-	str := "<dnsevent"
+	str := "<dns.event"
 	str += fmt.Sprintf(" name=%q", this.Name())
 	return str + ">"
 }

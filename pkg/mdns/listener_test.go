@@ -1,8 +1,8 @@
 package mdns_test
 
 import (
+	"context"
 	"testing"
-	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	_ "github.com/djthorpe/gopi/v3/pkg/event"
@@ -13,6 +13,11 @@ import (
 type App struct {
 	gopi.Unit
 	*mdns.Listener
+}
+
+func (this *App) Run(ctx context.Context) error {
+	<-ctx.Done()
+	return ctx.Err()
 }
 
 func Test_Listener_001(t *testing.T) {
@@ -32,6 +37,5 @@ func Test_Listener_002(t *testing.T) {
 			t.Errorf("Unexpected domain: %q", domain)
 		}
 		t.Log(app.Listener)
-		time.Sleep(5 * time.Second)
 	})
 }
