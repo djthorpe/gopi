@@ -10,8 +10,8 @@ WantedBy=multi-user.target
 User=gopi
 Group=gopi
 EnvironmentFile=/opt/gopi/etc/dnsregister.env
-ExecStart=/opt/gopi/bin/dnsregister daemon\
+ExecStart=/opt/gopi/bin/dnsregister \
     -debug=${DEBUG} \
-    -csv.path=${CSVPATH} \
-    -csv.append=${CSVAPPEND}
+    -csv.path=${CSVPATH} -csv.append=${CSVAPPEND} \
+    daemon
 Restart=on-failure
