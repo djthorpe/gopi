@@ -36,6 +36,14 @@ func (this *app) Define(cfg gopi.Config) error {
 	this.i2cbus = cfg.FlagUint("i2c.bus", 0, "I2C Bus")
 
 	// Define commands
+	cfg.Command("version", "Return information about the command", func(context.Context) error {
+		if err := this.PrintVersion(cfg); err != nil {
+			return err
+		} else {
+			return gopi.ErrHelp
+		}
+	})
+
 	cfg.Command("hw", "Return hardware platform information", this.RunHardware)
 	cfg.Command("spi", "Return SPI interface parameters", nil)
 	cfg.Command("i2c", "Return I2C interface parameters", this.RunI2C)

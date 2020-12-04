@@ -13,18 +13,22 @@ BUILDDIR = build
 all: checkdeps
 	@echo "Synax: make linux|darwin|rpi|test|clean"
 
-# Build for different platforms
-linux: TAGS = -tags linux
-linux: checkdeps install
+# Platform-specific tags and environment variables
+linux:
+	$(eval TAGS += linux)
 
-darwin: TAGS = -tags "darwin ffmpeg"
-darwin: PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
-darwin: checkdeps install
+darwin:
+	$(eval TAGS += darwin)
+	$(eval PKG_CONFIG_PATH += /usr/local/lib/pkgconfig)
 
-rpi: TAGS = -tags "rpi egl freetype"
-rpi: checkdeps argonone
+rpi: 
+	$(eval TAGS += rpi)
+	$(eval PKG_CONFIG_PATH += /opt/vc/lib/pkgconfig)
 
 # Build rules - commands
+hw: rpi
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/hw -tags "$(TAGS)" ${GOFLAGS} ./cmd/hw
+
 argonone: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
 argonone: VERSION = $(shell git describe --tags)
 argonone: nfpm
@@ -41,7 +45,6 @@ dnsregister: nfpm
 	sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/dnsregister.yaml > $(BUILDDIR)/dnsregister.yaml
 	nfpm pkg -f $(BUILDDIR)/dnsregister.yaml --packager deb --target $(BUILDDIR)
 	@echo "Use sudo dpkg -i <package> to install"
-
 
 # Build rules - dependencies
 nfpm:
@@ -68,9 +71,6 @@ clean:
 	$(GO) clean
 
 checkdeps:
-ifndef GOBIN
-	$(error GOBIN is undefined)
-endif
 ifeq (,$(shell which protoc))
 	$(error protoc is not installed)
 endif
