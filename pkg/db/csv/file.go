@@ -87,6 +87,9 @@ func (this *file) Write(metric gopi.Measurement) error {
 	// Check size of file, so that empty files
 	// can have header and comment written
 	size := int64(0)
+	if this.fh == nil {
+		return gopi.ErrBadParameter.WithPrefix("Write", this.path)
+	}
 	if stat, err := this.fh.Stat(); err == nil {
 		size = stat.Size()
 	}

@@ -110,15 +110,19 @@ func (this *app) Daemon(ctx context.Context) error {
 			return nil
 		case <-timer.C:
 			now := time.Now()
+			this.Debug("Discovery")
 			if ip, err := this.GetExternalAddress(); err != nil {
 				this.Print(err)
 			} else if ip.Equal(this.ip) {
+				this.Debug("...no change: ", this.ip)
 				if err := this.Emit(time.Since(now).Seconds(), "", ip.String(), "nochg"); err != nil {
 					this.Print(err)
 				}
 			} else if status, err := this.RegisterExternalAddress(ip, subdomain, user, passwd); err != nil {
 				this.Print("Error", err)
 			} else {
+				this.Debug("...registration: ", ip, " ", status)
+
 				// Update stored IP address when successful
 				if status == "good" || status == "nochg" {
 					this.ip = ip
