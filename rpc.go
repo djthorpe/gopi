@@ -1,6 +1,9 @@
 package gopi
 
-import "context"
+import (
+	"context"
+	"net"
+)
 
 /////////////////////////////////////////////////////////////////////
 // INTERFACES
@@ -41,6 +44,22 @@ type Conn interface {
 // ServiceStub is a client-side stub used to invoke remote service methods
 type ServiceStub interface {
 	New(Conn)
+}
+
+/////////////////////////////////////////////////////////////////////
+// SERVICE DISCOVERY
+
+type ServiceDiscovery interface {
+	EnumerateServices(context.Context) ([]string, error)
+	Lookup(context.Context, string) ([]ServiceRecord, error)
+	Serve(context.Context, []ServiceRecord) error
+}
+
+type ServiceRecord interface {
+	Name() string
+	HostPort() []string
+	Addrs() []net.IP
+	Txt() []string
 }
 
 /////////////////////////////////////////////////////////////////////
