@@ -13,13 +13,14 @@ BUILDDIR = build
 all: checkdeps
 	@echo "Synax: make hw|argonone|dnsregister|test|clean"
 
-# Platform-specific tags and environment variables
+# Darwin anticipates additional libraries installed via homebrew
 darwin:
 ifeq ($(shell test -d /usr/local/lib/pkgconfig; echo $$?),0)
 	@echo "Targetting darwin"
 	$(eval PKG_CONFIG_PATH += /usr/local/lib/pkgconfig)
 endif
 
+# Raspberry Pi anticipates additional libraries in /opt/vc
 rpi:
 ifeq ($(shell test -d /opt/vc/lib/pkgconfig; echo $$?),0)
 	@echo "Targetting rpi"
@@ -27,26 +28,48 @@ ifeq ($(shell test -d /opt/vc/lib/pkgconfig; echo $$?),0)
 	$(eval PKG_CONFIG_PATH += /opt/vc/lib/pkgconfig)
 endif
 
-# Build rules - commands
-hw: rpi darwin
+# MMAL package
+mmal: rpi
+	$(eval MMAL = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion mmal))
+ifneq ($strip $(MMAL)),)
+	@echo "Targetting mmal"
+	$(eval TAGS += mmal)
+endif
+
+# Freetype package
+freetype: darwin rpi
+	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion freetype2))
+ifneq ($strip $(FT)),)
+	@echo "Targetting freetype2"
+	$(eval TAGS += freetype)
+endif
+
+# Create build
+builddir:
+	install -d $(BUILDDIR)
+
+# Make debian packages
+debian: builddir argonone dnsregister nfpm
+	$(eval VERSION = $(shell git describe --tags))
+	@sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/argonone.yaml > $(BUILDDIR)/argonone.yaml
+	@nfpm pkg -f $(BUILDDIR)/argonone.yaml --packager deb --target $(BUILDDIR)
+	@sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/dnsregister.yaml > $(BUILDDIR)/dnsregister.yaml
+	@nfpm pkg -f $(BUILDDIR)/dnsregister.yaml --packager deb --target $(BUILDDIR)
+	@echo
+	@ls -1 $(BUILDDIR)/*.deb
+	@echo
+	@echo "Use sudo dpkg -i <package> to install"
+	@echo
+
+# Commands
+hw: rpi darwin freetype
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/hw -tags "$(TAGS)" ${GOFLAGS} ./cmd/hw
 
-argonone: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
-argonone: VERSION = $(shell git describe --tags)
-argonone: nfpm
-	install -d $(BUILDDIR)
-	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/argonone $(TAGS) ${GOFLAGS} ./cmd/argonone
-	sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/argonone.yaml > $(BUILDDIR)/argonone.yaml
-	nfpm pkg -f $(BUILDDIR)/argonone.yaml --packager deb --target $(BUILDDIR)
-	@echo "Use sudo dpkg -i <package> to install"
+argonone: builddir rpi
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/argonone -tags "$(TAGS)" ${GOFLAGS} ./cmd/argonone
 
-dnsregister: VERSION = $(shell git describe --tags)
-dnsregister: nfpm
-	install -d $(BUILDDIR)
-	$(GO) build -o ${BUILDDIR}/dnsregister $(TAGS) ${GOFLAGS} ./cmd/dnsregister
-	sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/dnsregister.yaml > $(BUILDDIR)/dnsregister.yaml
-	nfpm pkg -f $(BUILDDIR)/dnsregister.yaml --packager deb --target $(BUILDDIR)
-	@echo "Use sudo dpkg -i <package> to install"
+dnsregister: builddir
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/dnsregister -tags "$(TAGS)" ${GOFLAGS} ./cmd/dnsregister
 
 # Build rules - dependencies
 nfpm:
