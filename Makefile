@@ -14,6 +14,7 @@ all: checkdeps
 	@echo "Synax: make hw|argonone|dnsregister|rpcping|debian|clean"
 
 clean: 
+	rm -fr $(BUILDDIR)
 	$(GO) clean
 
 # Darwin anticipates additional libraries installed via homebrew

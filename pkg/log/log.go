@@ -37,7 +37,11 @@ func (*Log) New(gopi.Config) error {
 func (this *Log) Print(args ...interface{}) {
 	this.Lock()
 	defer this.Unlock()
-	log.Print(args...)
+	if this.t != nil {
+		this.t.Log(args...)
+	} else {
+		log.Print(args...)
+	}
 }
 
 func (this *Log) IsDebug() bool {
@@ -52,21 +56,33 @@ func (this *Log) Debug(args ...interface{}) {
 	if this.IsDebug() {
 		this.Lock()
 		defer this.Unlock()
-		log.Print(args...)
+		if this.t != nil {
+			this.t.Log(args...)
+		} else {
+			log.Print(args...)
+		}
 	}
 }
 
 func (this *Log) Printf(fmt string, args ...interface{}) {
 	this.Lock()
 	defer this.Unlock()
-	log.Printf(fmt, args...)
+	if this.t != nil {
+		this.t.Logf(fmt, args...)
+	} else {
+		log.Printf(fmt, args...)
+	}
 }
 
 func (this *Log) Debugf(fmt string, args ...interface{}) {
 	if this.IsDebug() {
 		this.Lock()
 		defer this.Unlock()
-		log.Printf(fmt, args...)
+		if this.t != nil {
+			this.t.Logf(fmt, args...)
+		} else {
+			log.Printf(fmt, args...)
+		}
 	}
 }
 
@@ -75,6 +91,8 @@ func (this *Log) T() *testing.T {
 }
 
 func (this *Log) SetT(t *testing.T) {
+	this.Lock()
+	defer this.Unlock()
 	this.t = t
 	*this.debug = true
 }
