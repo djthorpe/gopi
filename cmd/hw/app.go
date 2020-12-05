@@ -21,11 +21,13 @@ type app struct {
 	gopi.GPIO
 	gopi.I2C
 	gopi.LIRC
+	gopi.ServiceDiscovery
 	gopi.FontManager
 	gopi.Command
 
 	fontdir *string
 	i2cbus  *uint
+	timeout *time.Duration
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,6 +37,7 @@ func (this *app) Define(cfg gopi.Config) error {
 	// Define flags
 	this.fontdir = cfg.FlagString("fontdir", "", "Font directory", "fonts")
 	this.i2cbus = cfg.FlagUint("bus", 0, "I2C Bus", "i2c")
+	this.timeout = cfg.FlagDuration("timeout", time.Second, "Discovery timeout", "mdns")
 
 	// Define version command
 	cfg.Command("version", "Return information about the command", func(context.Context) error {
@@ -52,6 +55,9 @@ func (this *app) Define(cfg gopi.Config) error {
 	cfg.Command("lirc print", "Print LIRC Parameters", func(ctx context.Context) error {
 		return nil
 	})
+
+	// Define mDNS command
+	cfg.Command("mdns", "Service discovery", this.RunDiscovery)
 
 	// Define other commands
 	cfg.Command("hw", "Return hardware platform information", this.RunHardware)

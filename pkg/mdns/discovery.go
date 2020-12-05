@@ -82,6 +82,13 @@ func (this *Discovery) Lookup(ctx context.Context, srv string) ([]gopi.ServiceRe
 	this.WaitGroup.Add(1)
 	defer this.WaitGroup.Done()
 
+	// Sanitize srv
+	if srv == "" {
+		return nil, gopi.ErrBadParameter.WithPrefix(srv)
+	} else {
+		srv = fqn(srv)
+	}
+
 	// Collect services in goroutine
 	var wg sync.WaitGroup
 	ch := this.Publisher.Subscribe()
@@ -97,7 +104,7 @@ func (this *Discovery) Lookup(ctx context.Context, srv string) ([]gopi.ServiceRe
 				return
 			case evt := <-ch:
 				if service, ok := evt.(*service); ok {
-					if service.Service() == srv {
+					if service.Service() == srv && service.ttl != 0 {
 						records = append(records, service)
 					}
 				}
