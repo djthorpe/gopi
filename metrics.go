@@ -25,6 +25,11 @@ type Metrics interface {
 
 	// Measurements returns array of all defined measurements
 	Measurements() []Measurement
+
+	// Return some standard tags
+	HostTag() Field
+	UserTag() Field
+	EnvTag(string) Field
 }
 
 // MetricWriter implements a database writing object

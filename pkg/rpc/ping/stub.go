@@ -52,11 +52,15 @@ func (this *stub) Version(ctx context.Context) (gopi.Version, error) {
 	}
 }
 
+func (this *stub) ListServices(ctx context.Context) ([]string, error) {
+	return this.Conn.ListServices(ctx)
+}
+
 /////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *stub) String() string {
-	str := "<pingstub"
+	str := "<rpc.pingstub"
 	str += " addr=" + strconv.Quote(this.Addr())
 	return str + ">"
 }

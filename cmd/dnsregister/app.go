@@ -8,9 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/djthorpe/gopi/v3"
-	_ "github.com/djthorpe/gopi/v3/pkg/db/influxdb"
-	_ "github.com/djthorpe/gopi/v3/pkg/metrics"
+	gopi "github.com/djthorpe/gopi/v3"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -112,13 +110,19 @@ func (this *app) Daemon(ctx context.Context) error {
 			return nil
 		case <-timer.C:
 			now := time.Now()
+			this.Debug("Discovery")
 			if ip, err := this.GetExternalAddress(); err != nil {
 				this.Print(err)
 			} else if ip.Equal(this.ip) {
-				this.Debug("Skipping registration, no change")
+				this.Debug("...no change: ", this.ip)
+				if err := this.Emit(time.Since(now).Seconds(), "", ip.String(), "nochg"); err != nil {
+					this.Print(err)
+				}
 			} else if status, err := this.RegisterExternalAddress(ip, subdomain, user, passwd); err != nil {
 				this.Print("Error", err)
 			} else {
+				this.Debug("...registration: ", ip, " ", status)
+
 				// Update stored IP address when successful
 				if status == "good" || status == "nochg" {
 					this.ip = ip
@@ -126,14 +130,9 @@ func (this *app) Daemon(ctx context.Context) error {
 					this.ip = nil
 				}
 
-				// Debugging
-				this.Debug("Time=", time.Since(now).Seconds(), " A=", subdomain, " IP=", ip, " status=", status)
-
-				// Output the measurement
-				if *this.measurement != "" {
-					if err := this.Metrics.Emit(*this.measurement, time.Since(now).Seconds(), subdomain, ip.String(), status); err != nil {
-						this.Print(err)
-					}
+				// Metrics
+				if err := this.Emit(time.Since(now).Seconds(), subdomain, ip.String(), status); err != nil {
+					this.Print(err)
 				}
 			}
 
@@ -148,4 +147,12 @@ func GetCredentials() (string, string, string) {
 	user, _ := os.LookupEnv("GOOGLE_DNS_USER")
 	passwd, _ := os.LookupEnv("GOOGLE_DNS_PASSWORD")
 	return subdomain, user, passwd
+}
+
+func (this *app) Emit(latency float64, subdomain, ip, status string) error {
+	if *this.measurement != "" {
+		return this.Metrics.EmitTS(*this.measurement, time.Now(), latency, subdomain, ip, status)
+	} else {
+		return nil
+	}
 }

@@ -2,7 +2,6 @@ package mdns
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -41,7 +40,7 @@ type Listener struct {
 // GLOBAL VARIABLES
 
 const (
-	emitRetryCount    = 5
+	emitRetryCount    = 3
 	emitRetryDuration = 100 * time.Millisecond
 )
 
@@ -158,10 +157,6 @@ func (this *Listener) Run(ctx context.Context) error {
 
 // Send a DNS message to a particular interface or all interfaces if 0
 func (this *Listener) Send(msg *dns.Msg, ifIndex int) error {
-	fmt.Println("in send")
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
 	var buf []byte
 	var result error
 
@@ -184,9 +179,7 @@ func (this *Listener) Send(msg *dns.Msg, ifIndex int) error {
 			for _, intf := range this.ifaces {
 				cm.IfIndex = intf.Index
 				if intf.Flags&net.FlagUp != 0 {
-					if _, err := this.ip4.WriteTo(buf, &cm, MULTICAST_ADDR_IPV4); err != nil {
-						result = multierror.Append(result, err)
-					}
+					this.ip4.WriteTo(buf, &cm, MULTICAST_ADDR_IPV4)
 				}
 			}
 		}
@@ -203,9 +196,7 @@ func (this *Listener) Send(msg *dns.Msg, ifIndex int) error {
 			for _, intf := range this.ifaces {
 				cm.IfIndex = intf.Index
 				if intf.Flags&net.FlagUp != 0 {
-					if _, err := this.ip6.WriteTo(buf, &cm, MULTICAST_ADDR_IPV6); err != nil {
-						result = multierror.Append(result, err)
-					}
+					this.ip6.WriteTo(buf, &cm, MULTICAST_ADDR_IPV6)
 				}
 			}
 		}
@@ -231,9 +222,9 @@ func (this *Listener) run4(ctx context.Context, conn *ipv4.PacketConn) {
 				continue
 			} else if cm == nil {
 				continue
-			} else if msg, err := parseDnsPacket(buf[:n], cm.IfIndex, from); err != nil {
+			} else if msg, err := parseDnsPacket(buf[:n]); err != nil {
 				this.Print("DNS Error:", err)
-			} else if err := this.emit(msg); err != nil {
+			} else if err := this.Publisher.Emit(NewMsgEvent(msg, from, cm.IfIndex), true); err != nil {
 				this.Print("Emit Error:", err)
 			}
 		}
@@ -253,38 +244,50 @@ func (this *Listener) run6(ctx context.Context, conn *ipv6.PacketConn) {
 				continue
 			} else if cm == nil {
 				continue
-			} else if msg, err := parseDnsPacket(buf[:n], cm.IfIndex, from); err != nil {
+			} else if msg, err := parseDnsPacket(buf[:n]); err != nil {
 				this.Print("DNS Error:", err)
-			} else if err := this.emit(msg); err != nil {
+			} else if err := this.Publisher.Emit(NewMsgEvent(msg, from, cm.IfIndex), true); err != nil {
 				this.Print("Emit Error:", err)
 			}
 		}
 	}
 }
 
-// emit message as a DNS event, use non-blocking and attempt to try a few times
-func (this *Listener) emit(msg *dns.Msg) error {
-	var err error
-	event := NewDNSEvent(msg)
-	this.Debug("Emit ", event)
-	for i := 1; i <= emitRetryCount; i++ {
-		if err = this.Publisher.Emit(event, false); err == nil {
-			break
-		} else if errors.Is(err, gopi.ErrChannelFull) == false {
-			break
-		} else if i < emitRetryCount {
-			this.Debug("Retrying", err)
-			time.Sleep(emitRetryDuration)
-		}
-	}
-	return err
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
 
-func (this *Listener) Domain() string {
+func (this *Listener) Zone() string {
 	return *this.domain
+}
+
+func (this *Listener) AddrForIface(ifIndex int, flags gopi.ServiceFlag) []net.IP {
+	ips := []net.IP{}
+	for _, iface := range this.ifaces {
+		if ifIndex != 0 && ifIndex != iface.Index {
+			continue
+		}
+		if iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			if ip, _, err := net.ParseCIDR(addr.String()); err != nil {
+				fmt.Println("NOT OK: ", addr.String())
+			} else if ip.Equal(net.IPv6loopback) {
+				continue
+			} else if ip.String() == "127.0.0.1" {
+				continue
+			} else if flags == gopi.SERVICE_FLAG_IP6 && ip.To16() != nil {
+				ips = append(ips, ip)
+			} else if flags == gopi.SERVICE_FLAG_IP4 && ip.To4() != nil {
+				ips = append(ips, ip)
+			}
+		}
+	}
+	return ips
 }
 
 ///////////////////////////////////////////////////////////////////////////////

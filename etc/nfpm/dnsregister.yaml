@@ -1,10 +1,10 @@
 
 # nfpm file to create debian package for argonone
 name: "dnsregister"
+
+# arch, platform and version are replaced with GOARCH, GOOS and git tag
 arch: "arm"
 platform: "linux"
-
-# Version is replaced with git tag
 version: "v0.0.0"
 
 replaces:

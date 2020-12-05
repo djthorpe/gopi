@@ -10,7 +10,8 @@ WantedBy=multi-user.target
 User=gopi
 Group=gopi
 EnvironmentFile=/opt/gopi/etc/dnsregister.env
-ExecStart=/opt/gopi/bin/dnsregister daemon\
+ExecStart=/opt/gopi/bin/dnsregister \
     -debug=${DEBUG} \
-    -influxdb.url=${INFLUXDB}
+    -csv.path=${CSVPATH} -csv.append=${CSVAPPEND} \
+    daemon
 Restart=on-failure

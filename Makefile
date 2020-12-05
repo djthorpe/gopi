@@ -11,66 +11,94 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 BUILDDIR = build
 
 all: checkdeps
-	@echo "Synax: make linux|darwin|rpi|test|clean"
+	@echo "Synax: make hw|argonone|dnsregister|rpcping|debian|clean"
 
-# Build for different platforms
-linux: TAGS = -tags linux
-linux: checkdeps install
+clean: 
+	rm -fr $(BUILDDIR)
+	$(GO) clean
 
-darwin: TAGS = -tags "darwin ffmpeg"
-darwin: PKG_CONFIG_PATH = /usr/local/lib/pkgconfig
-darwin: checkdeps install
+# Darwin anticipates additional libraries installed via homebrew
+darwin:
+ifeq ($(shell test -d /usr/local/lib/pkgconfig; echo $$?),0)
+	@echo "Targetting darwin"
+	$(eval PKG_CONFIG_PATH += /usr/local/lib/pkgconfig)
+endif
 
-rpi: TAGS = -tags "rpi egl freetype"
-rpi: checkdeps argonone
+# Raspberry Pi anticipates additional libraries in /opt/vc
+rpi:
+ifeq ($(shell test -d /opt/vc/lib/pkgconfig; echo $$?),0)
+	@echo "Targetting rpi"
+	$(eval TAGS += rpi)
+	$(eval PKG_CONFIG_PATH += /opt/vc/lib/pkgconfig)
+endif
 
-# Build rules - commands
-argonone: PKG_CONFIG_PATH = /opt/vc/lib/pkgconfig
-argonone: VERSION = $(shell git describe --tags)
-argonone: nfpm
+# MMAL package
+mmal: rpi
+	$(eval MMAL = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion mmal))
+ifneq ($strip $(MMAL)),)
+	@echo "Targetting mmal"
+	$(eval TAGS += mmal)
+endif
+
+# Freetype package
+freetype: darwin rpi
+	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion freetype2))
+ifneq ($strip $(FT)),)
+	@echo "Targetting freetype2"
+	$(eval TAGS += freetype)
+endif
+
+# Create build
+builddir:
 	install -d $(BUILDDIR)
-	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/argonone $(TAGS) ${GOFLAGS} ./cmd/argonone
-	sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/argonone.yaml > $(BUILDDIR)/argonone.yaml
-	nfpm pkg -f $(BUILDDIR)/argonone.yaml --packager deb --target $(BUILDDIR)
-	@echo "Use sudo dpkg -i <package> to install"
 
-dnsregister: VERSION = $(shell git describe --tags)
-dnsregister: nfpm
-	install -d $(BUILDDIR)
-	$(GO) build -o ${BUILDDIR}/dnsregister $(TAGS) ${GOFLAGS} ./cmd/dnsregister
-	sed -e 's/^version:.*$$/version: $(VERSION)/' etc/nfpm/dnsregister.yaml > $(BUILDDIR)/dnsregister.yaml
-	nfpm pkg -f $(BUILDDIR)/dnsregister.yaml --packager deb --target $(BUILDDIR)
+# Make debian packages
+debian: builddir argonone dnsregister nfpm
+	$(eval VERSION = $(shell git describe --tags))
+	$(eval ARCH = $(shell $(GO) env GOARCH))
+	$(eval PLATFORM = $(shell $(GO) env GOOS))
+	@sed \
+		-e 's/^version:.*$$/version: $(VERSION)/'  \
+		-e 's/^arch:.*$$/arch: $(ARCH)/' \
+		-e 's/^platform:.*$$/platform: $(PLATFORM)/' \
+		etc/nfpm/argonone.yaml > $(BUILDDIR)/argonone.yaml
+	@nfpm pkg -f $(BUILDDIR)/argonone.yaml --packager deb --target $(BUILDDIR)
+	@sed \
+		-e 's/^version:.*$$/version: $(VERSION)/'  \
+		-e 's/^arch:.*$$/arch: $(ARCH)/' \
+		-e 's/^platform:.*$$/platform: $(PLATFORM)/' \
+		etc/nfpm/dnsregister.yaml > $(BUILDDIR)/dnsregister.yaml
+	@nfpm pkg -f $(BUILDDIR)/dnsregister.yaml --packager deb --target $(BUILDDIR)
+	@echo
+	@ls -1 $(BUILDDIR)/*.deb
+	@echo
 	@echo "Use sudo dpkg -i <package> to install"
+	@echo
 
+# Commands
+hw: rpi darwin freetype
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/hw -tags "$(TAGS)" ${GOFLAGS} ./cmd/hw
+
+argonone: builddir rpi
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/argonone -tags "$(TAGS)" ${GOFLAGS} ./cmd/argonone
+
+dnsregister: builddir
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/dnsregister -tags "$(TAGS)" ${GOFLAGS} ./cmd/dnsregister
+
+rpcping: protogen
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rpcping -tags "$(TAGS)" ${GOFLAGS} ./cmd/rpcping
 
 # Build rules - dependencies
 nfpm:
 	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm
 
-protogen: protoc-gen-go
+protogen: protoc protoc-gen-go
 	$(GO) generate -x ./pkg/rpc
 
 protoc-gen-go:
 	$(GO) get github.com/golang/protobuf/protoc-gen-go
 
-testrace: protogen
-	$(GO) clean -testcache
-	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test $(TAGS) -race ./pkg/...
-
-test: protogen
-	$(GO) clean -testcache
-	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) test -count 5 $(TAGS) ./pkg/...
-
-install: protogen
-	PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" $(GO) install $(TAGS) ${GOFLAGS} ./cmd/...
-
-clean: 
-	$(GO) clean
-
-checkdeps:
-ifndef GOBIN
-	$(error GOBIN is undefined)
-endif
-ifeq (,$(shell which protoc))
+protoc:
+ifeq ($(shell which protoc),)
 	$(error protoc is not installed)
 endif

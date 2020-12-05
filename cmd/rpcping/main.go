@@ -8,5 +8,5 @@ import (
 )
 
 func main() {
-	os.Exit(tool.CommandLine("pingclient", os.Args[1:], new(app)))
+	os.Exit(tool.CommandLine("rpcping", os.Args[1:], new(app)))
 }

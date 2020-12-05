@@ -3,6 +3,9 @@ package metrics
 import (
 	"errors"
 	"fmt"
+	"os"
+	"os/user"
+	"strings"
 	"sync"
 	"time"
 
@@ -91,6 +94,7 @@ func (this *metrics) EmitTS(name string, ts time.Time, values ...interface{}) er
 	} else if m, err := m.Clone(ts, values...); err != nil {
 		return err
 	} else {
+		// Unreliable emit mechanism but don't block
 		for i := 0; i < retrycount; i++ {
 			if err := this.Publisher.Emit(m, false); errors.Is(err, gopi.ErrChannelFull) {
 				time.Sleep(time.Millisecond * retrydurationms)
@@ -110,6 +114,31 @@ func (this *metrics) Measurements() []gopi.Measurement {
 		m = append(m, v)
 	}
 	return m
+}
+
+// HostTag() returns hostname tag
+func (this *metrics) HostTag() gopi.Field {
+	host, _ := os.Hostname()
+	return NewField("host", host)
+}
+
+// UserTag() returns username tag
+func (this *metrics) UserTag() gopi.Field {
+	if user, _ := user.Current(); user != nil {
+		return NewField("user", user.Username)
+	} else {
+		return nil
+	}
+}
+
+// EnvTag("name") returns a tag with an environment variable
+func (this *metrics) EnvTag(name string) gopi.Field {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil
+	} else {
+		return NewField(name, os.Getenv(name))
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

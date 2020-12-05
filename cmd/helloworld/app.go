@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/djthorpe/gopi/v3"
 )
@@ -34,10 +33,4 @@ func (this *app) Run(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (this *app) String() string {
-	str := "<app"
-	str += " log=" + fmt.Sprint(this.Logger)
-	return str + ">"
 }

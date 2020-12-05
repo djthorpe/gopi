@@ -2,6 +2,7 @@ package mdns
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/djthorpe/gopi/v3"
 	"github.com/miekg/dns"
@@ -10,35 +11,41 @@ import (
 ///////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type dnsevent struct {
-	msg *dns.Msg
+type msgevent struct {
+	*dns.Msg
+	net.Addr
+	ifIndex int
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // NEW
 
-func NewDNSEvent(msg *dns.Msg) gopi.Event {
-	this := new(dnsevent)
-	this.msg = msg
-	return this
+func NewMsgEvent(msg *dns.Msg, addr net.Addr, ifIndex int) gopi.Event {
+	return &msgevent{msg, addr, ifIndex}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // PUBLIC PROPERTIES
 
-func (this *dnsevent) Name() string {
-	if this.msg == nil {
+func (this *msgevent) Name() string {
+	if this.Msg == nil {
 		return ""
 	} else {
-		return this.msg.MsgHdr.String()
+		return this.Msg.MsgHdr.String()
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *dnsevent) String() string {
-	str := "<dnsevent"
+func (this *msgevent) String() string {
+	str := "<dns.msg"
 	str += fmt.Sprintf(" name=%q", this.Name())
+	if this.Addr != nil {
+		str += fmt.Sprintf(" addr=%v", this.Addr)
+	}
+	if this.ifIndex >= 0 {
+		str += fmt.Sprintf(" ifIndex=%v", this.ifIndex)
+	}
 	return str + ">"
 }

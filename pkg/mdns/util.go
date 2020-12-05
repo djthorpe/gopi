@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/djthorpe/gopi/v3"
@@ -26,14 +24,12 @@ func interfaceForName(name string) (net.Interface, error) {
 	if err != nil {
 		return net.Interface{}, err
 	}
-	names := ""
 	for _, iface := range ifaces {
 		if iface.Name == name {
 			return iface, nil
 		}
-		names += strconv.Quote(iface.Name) + ","
 	}
-	return net.Interface{}, fmt.Errorf("Invalid -mdns.iface flag (values: %v)", strings.Trim(names, ","))
+	return net.Interface{}, gopi.ErrBadParameter.WithPrefix(name)
 }
 
 // multicastInterfaces returns one or more interfaces which should be bound
@@ -130,8 +126,8 @@ func bindUdp6(ifaces []net.Interface, addr *net.UDPAddr) (*ipv6.PacketConn, erro
 	}
 }
 
-// parseDnsPacket parses packets into service records
-func parseDnsPacket(packet []byte, ifIndex int, from net.Addr) (*dns.Msg, error) {
+// parseDnsPacket parses packets into DNS message
+func parseDnsPacket(packet []byte) (*dns.Msg, error) {
 	var msg dns.Msg
 	if err := msg.Unpack(packet); err != nil {
 		return nil, err

@@ -17,6 +17,7 @@ type config struct {
 	*flag.FlagSet
 	args     []string
 	commands []command
+	flags    map[string][]string
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,6 +28,7 @@ func New(name string, args []string) gopi.Config {
 	this.FlagSet = flag.NewFlagSet(name, flag.ContinueOnError)
 	this.FlagSet.Usage = this.usageAll
 	this.args = args
+	this.flags = make(map[string][]string)
 	return this
 }
 
@@ -100,19 +102,28 @@ func (this *config) GetCommand(args []string) gopi.Command {
 ///////////////////////////////////////////////////////////////////////////////
 // DEFINE FLAGS
 
-func (this *config) FlagString(name, value, usage string) *string {
+func (this *config) FlagString(name, value, usage string, cmds ...string) *string {
+	this.flags[name] = cmds
 	return this.FlagSet.String(name, value, usage)
 }
 
-func (this *config) FlagBool(name string, value bool, usage string) *bool {
+func (this *config) FlagBool(name string, value bool, usage string, cmds ...string) *bool {
+	this.flags[name] = cmds
 	return this.FlagSet.Bool(name, value, usage)
 }
 
-func (this *config) FlagUint(name string, value uint, usage string) *uint {
+func (this *config) FlagUint(name string, value uint, usage string, cmds ...string) *uint {
+	this.flags[name] = cmds
 	return this.FlagSet.Uint(name, value, usage)
 }
 
-func (this *config) FlagDuration(name string, value time.Duration, usage string) *time.Duration {
+func (this *config) FlagInt(name string, value int, usage string, cmds ...string) *int {
+	this.flags[name] = cmds
+	return this.FlagSet.Int(name, value, usage)
+}
+
+func (this *config) FlagDuration(name string, value time.Duration, usage string, cmds ...string) *time.Duration {
+	this.flags[name] = cmds
 	return this.FlagSet.Duration(name, value, usage)
 }
 
@@ -140,10 +151,20 @@ func (this *config) GetBool(name string) bool {
 func (this *config) GetUint(name string) uint {
 	if flag := this.FlagSet.Lookup(name); flag == nil {
 		return 0
-	} else if value_, err := strconv.ParseUint(flag.Value.String(), 10, 32); err != nil {
+	} else if value_, err := strconv.ParseUint(flag.Value.String(), 0, 64); err != nil {
 		return 0
 	} else {
 		return uint(value_)
+	}
+}
+
+func (this *config) GetInt(name string) int {
+	if flag := this.FlagSet.Lookup(name); flag == nil {
+		return 0
+	} else if value_, err := strconv.ParseInt(flag.Value.String(), 0, 64); err != nil {
+		return 0
+	} else {
+		return int(value_)
 	}
 }
 
@@ -193,7 +214,7 @@ func (this *config) usageOne(cmd gopi.Command) {
 	name := this.FlagSet.Name()
 
 	fmt.Fprintln(w, "Syntax:")
-	fmt.Fprintf(w, "  %v (<flags>) %v %v\n", name, cmd.Name(), "TODO")
+	fmt.Fprintf(w, "  %v (<flags>) %v %v\n", name, cmd.Name())
 	this.usageFlags(cmd.Name())
 }
 
@@ -205,9 +226,19 @@ func (this *config) usageFlags(name string) {
 		fmt.Fprintf(w, "\nFlags for %q:\n", name)
 	}
 	this.FlagSet.VisitAll(func(flag *flag.Flag) {
-		arg, usage, def := flagUsage(flag)
-		fmt.Fprintf(w, "  -%v %v\n  \t%v %v\n", flag.Name, arg, usage, def)
+		if name == "" && this.flagIsGlobal(flag) {
+			arg, usage, def := flagUsage(flag)
+			fmt.Fprintf(w, "  -%v %v\n  \t%v %v\n", flag.Name, arg, usage, def)
+		}
 	})
+}
+
+func (this *config) flagIsGlobal(f *flag.Flag) bool {
+	if cmds, exists := this.flags[f.Name]; exists == false {
+		return false
+	} else {
+		return len(cmds) == 0
+	}
 }
 
 // Get type and defaults to print in defaults
