@@ -126,8 +126,8 @@ func bindUdp6(ifaces []net.Interface, addr *net.UDPAddr) (*ipv6.PacketConn, erro
 	}
 }
 
-// parseDnsPacket parses packets into service records
-func parseDnsPacket(packet []byte, ifIndex int, from net.Addr) (*dns.Msg, error) {
+// parseDnsPacket parses packets into DNS message
+func parseDnsPacket(packet []byte) (*dns.Msg, error) {
 	var msg dns.Msg
 	if err := msg.Unpack(packet); err != nil {
 		return nil, err

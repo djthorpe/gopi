@@ -222,9 +222,9 @@ func (this *Listener) run4(ctx context.Context, conn *ipv4.PacketConn) {
 				continue
 			} else if cm == nil {
 				continue
-			} else if msg, err := parseDnsPacket(buf[:n], cm.IfIndex, from); err != nil {
+			} else if msg, err := parseDnsPacket(buf[:n]); err != nil {
 				this.Print("DNS Error:", err)
-			} else if err := this.Publisher.Emit(NewMsgEvent(msg), true); err != nil {
+			} else if err := this.Publisher.Emit(NewMsgEvent(msg, from, cm.IfIndex), true); err != nil {
 				this.Print("Emit Error:", err)
 			}
 		}
@@ -244,9 +244,9 @@ func (this *Listener) run6(ctx context.Context, conn *ipv6.PacketConn) {
 				continue
 			} else if cm == nil {
 				continue
-			} else if msg, err := parseDnsPacket(buf[:n], cm.IfIndex, from); err != nil {
+			} else if msg, err := parseDnsPacket(buf[:n]); err != nil {
 				this.Print("DNS Error:", err)
-			} else if err := this.Publisher.Emit(NewMsgEvent(msg), true); err != nil {
+			} else if err := this.Publisher.Emit(NewMsgEvent(msg, from, cm.IfIndex), true); err != nil {
 				this.Print("Emit Error:", err)
 			}
 		}
@@ -256,7 +256,7 @@ func (this *Listener) run6(ctx context.Context, conn *ipv6.PacketConn) {
 ///////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
 
-func (this *Listener) Domain() string {
+func (this *Listener) Zone() string {
 	return *this.domain
 }
 

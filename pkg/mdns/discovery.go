@@ -17,14 +17,17 @@ import (
 type Discovery struct {
 	gopi.Unit
 	gopi.Publisher
-	*Listener
 	sync.WaitGroup
+	gopi.Logger
+	*Listener
+	*Responder
 }
 
 const (
-	queryServices = "_services._dns-sd._udp"
-	queryRepeat   = 2
-	queryBackoff  = time.Millisecond * 50
+	queryServices   = "_services._dns-sd._udp"
+	queryRepeat     = 0
+	queryBackoff    = time.Millisecond * 250
+	queryDefaultTTL = 60 * 30 // In seconds
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -58,7 +61,7 @@ FOR_LOOP:
 
 func (this *Discovery) ParseEmit(msg *dns.Msg) error {
 	// Parse into services
-	services := NewServices(msg, this.Listener.Domain()).Services()
+	services := NewServices(msg, this.Listener.Zone()).Services()
 	if len(services) == 0 {
 		return nil
 	}
@@ -113,7 +116,7 @@ func (this *Discovery) Lookup(ctx context.Context, srv string) ([]gopi.ServiceRe
 	}()
 
 	// Query for lookup on all interfaces
-	zone := this.Listener.Domain()
+	zone := this.Listener.Zone()
 	if err := this.query(ctx, msgQueryLookup(srv, zone), 0); err != nil {
 		return nil, err
 	}
@@ -159,7 +162,7 @@ func (this *Discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 	}()
 
 	// Query for services on all interfaces
-	zone := this.Listener.Domain()
+	zone := this.Listener.Zone()
 	if err := this.query(ctx, msgQueryServices(zone), 0); err != nil {
 		return nil, err
 	}
@@ -174,10 +177,6 @@ func (this *Discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 	}
 
 	return result, nil
-}
-
-func (this *Discovery) Serve(context.Context, []gopi.ServiceRecord) error {
-	return gopi.ErrNotImplemented
 }
 
 ///////////////////////////////////////////////////////////////////////////////

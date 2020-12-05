@@ -79,7 +79,6 @@ func (this *Platform) Product() string {
 }
 
 // Temperature Zones not currently supported
-// TODO
 func (this *Platform) TemperatureZones() map[string]float32 {
 	return nil
 }
