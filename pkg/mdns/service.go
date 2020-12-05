@@ -9,6 +9,9 @@ import (
 	"github.com/miekg/dns"
 )
 
+///////////////////////////////////////////////////////////////////////////////
+// TYPES
+
 type service struct {
 	service string
 	zone    string
@@ -26,18 +29,34 @@ type target struct {
 	priority uint16
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// INIT
+
 func NewService(zone string) *service {
 	this := new(service)
 	this.zone = zone
 	return this
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// GET PROPERTIES
+
 func (this *service) Service() string {
 	return strings.TrimSuffix(this.service, this.zone)
 }
 
 func (this *service) Name() string {
-	return strings.TrimSuffix(this.name, this.zone)
+	name := ""
+	if this.Service() == fqn(queryServices) {
+		name = strings.TrimSuffix(this.name, this.zone)
+	} else {
+		name = strings.TrimSuffix(this.name, this.service)
+		if name_, err := Unquote(unfqn(name)); err != nil {
+		} else {
+			name = name_
+		}
+	}
+	return name
 }
 
 func (this *service) HostPort() []string {
@@ -58,6 +77,9 @@ func (this *service) Addrs() []net.IP {
 func (this *service) Txt() []string {
 	return this.txt
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// SET PROPERTIES
 
 func (this *service) SetPTR(ptr *dns.PTR) {
 	this.service = ptr.Hdr.Name
@@ -81,25 +103,25 @@ func (this *service) SetAAAA(ip net.IP) {
 	this.aaaa = append(this.aaaa, ip)
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
 func (this *service) String() string {
 	str := "<dns.servicerecord"
-	if this.service != "" {
-		str += fmt.Sprintf(" service=%q", strings.TrimSuffix(this.service, this.zone))
+	if service := this.Service(); service != "" {
+		str += fmt.Sprintf(" service=%q", service)
 	}
-	if this.name != "" {
-		str += fmt.Sprintf(" name=%q", strings.TrimSuffix(this.name, this.zone))
+	if name := this.Name(); name != "" {
+		str += fmt.Sprintf(" name=%q", name)
 	}
-	if len(this.host) > 0 {
-		str += fmt.Sprintf(" host=%v", this.host)
+	if hostport := this.HostPort(); len(hostport) > 0 {
+		str += fmt.Sprintf(" host=%v", hostport)
 	}
-	if len(this.a) > 0 {
-		str += fmt.Sprintf(" a=%v", this.a)
+	if ips := this.Addrs(); len(ips) > 0 {
+		str += fmt.Sprintf(" addrs=%v", ips)
 	}
-	if len(this.aaaa) > 0 {
-		str += fmt.Sprintf(" aaaa=%v", this.aaaa)
-	}
-	if len(this.txt) > 0 {
-		str += fmt.Sprintf(" txt=%v", this.txt)
+	if txt := this.Txt(); len(this.txt) > 0 {
+		str += fmt.Sprintf(" txt=%v", txt)
 	}
 	if this.ttl != 0 {
 		str += fmt.Sprintf(" ttl=%v", this.ttl)

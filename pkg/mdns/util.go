@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/djthorpe/gopi/v3"
@@ -26,14 +24,12 @@ func interfaceForName(name string) (net.Interface, error) {
 	if err != nil {
 		return net.Interface{}, err
 	}
-	names := ""
 	for _, iface := range ifaces {
 		if iface.Name == name {
 			return iface, nil
 		}
-		names += strconv.Quote(iface.Name) + ","
 	}
-	return net.Interface{}, fmt.Errorf("Invalid -mdns.iface flag (values: %v)", strings.Trim(names, ","))
+	return net.Interface{}, gopi.ErrBadParameter.WithPrefix(name)
 }
 
 // multicastInterfaces returns one or more interfaces which should be bound

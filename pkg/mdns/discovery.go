@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/hashicorp/go-multierror"
 	"github.com/miekg/dns"
 )
 
@@ -39,12 +40,8 @@ FOR_LOOP:
 		select {
 		case evt := <-ch:
 			if msg, ok := evt.(*msgevent); ok {
-				if services := NewServices(msg.Msg, this.Listener.Domain()).Services(); len(services) > 0 {
-					for _, service := range services {
-						if err := this.Publisher.Emit(service, true); err != nil {
-							this.Print(err)
-						}
-					}
+				if err := this.ParseEmit(msg.Msg); err != nil {
+					this.Print(err)
 				}
 			}
 		case <-ctx.Done():
@@ -57,6 +54,25 @@ FOR_LOOP:
 
 	// Return context state
 	return ctx.Err()
+}
+
+func (this *Discovery) ParseEmit(msg *dns.Msg) error {
+	// Parse into services
+	services := NewServices(msg, this.Listener.Domain()).Services()
+	if len(services) == 0 {
+		return nil
+	}
+
+	// Emit services
+	var result error
+	for _, service := range services {
+		if err := this.Publisher.Emit(service, true); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	// Return any errors
+	return result
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,6 +197,7 @@ func (this *Discovery) query(ctx context.Context, msg *dns.Msg, iface int) error
 	}
 }
 
+// Return a query message looking up all services
 func msgQueryServices(zone string) *dns.Msg {
 	msg := new(dns.Msg)
 	msg.SetQuestion(fqn(queryServices)+fqn(zone), dns.TypePTR)
@@ -188,6 +205,7 @@ func msgQueryServices(zone string) *dns.Msg {
 	return msg
 }
 
+// Return a query message looking up a specific service record
 func msgQueryLookup(srv, zone string) *dns.Msg {
 	msg := new(dns.Msg)
 	msg.SetQuestion(fqn(srv)+fqn(zone), dns.TypePTR)
@@ -195,6 +213,12 @@ func msgQueryLookup(srv, zone string) *dns.Msg {
 	return msg
 }
 
+// Return fully-qualified value
 func fqn(value string) string {
 	return strings.Trim(value, ".") + "."
+}
+
+// Transform from fully-qualified value
+func unfqn(value string) string {
+	return strings.TrimSuffix(value, ".")
 }
