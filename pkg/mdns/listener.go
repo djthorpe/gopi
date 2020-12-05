@@ -260,6 +260,36 @@ func (this *Listener) Zone() string {
 	return *this.domain
 }
 
+func (this *Listener) AddrForIface(ifIndex int, flags gopi.ServiceFlag) []net.IP {
+	ips := []net.IP{}
+	for _, iface := range this.ifaces {
+		if ifIndex != 0 && ifIndex != iface.Index {
+			continue
+		}
+		if iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			if ip, _, err := net.ParseCIDR(addr.String()); err != nil {
+				fmt.Println("NOT OK: ", addr.String())
+			} else if ip.Equal(net.IPv6loopback) {
+				continue
+			} else if ip.String() == "127.0.0.1" {
+				continue
+			} else if flags == gopi.SERVICE_FLAG_IP6 && ip.To16() != nil {
+				ips = append(ips, ip)
+			} else if flags == gopi.SERVICE_FLAG_IP4 && ip.To4() != nil {
+				ips = append(ips, ip)
+			}
+		}
+	}
+	return ips
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

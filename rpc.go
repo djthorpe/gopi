@@ -6,6 +6,11 @@ import (
 )
 
 /////////////////////////////////////////////////////////////////////
+// TYPES
+
+type ServiceFlag uint
+
+/////////////////////////////////////////////////////////////////////
 // INTERFACES
 
 // Server is a generic gRPC server, which can serve registered services
@@ -50,8 +55,18 @@ type ServiceStub interface {
 // SERVICE DISCOVERY
 
 type ServiceDiscovery interface {
+	// NewServiceRecord returns a record from service, name, port, txt and
+	// flags for IP4, IP6 or both
+	NewServiceRecord(string, string, uint16, []string, ServiceFlag) (ServiceRecord, error)
+
+	// EnumerateServices queries for available service names
 	EnumerateServices(context.Context) ([]string, error)
+
+	// Lookup queries for records for a service name
 	Lookup(context.Context, string) ([]ServiceRecord, error)
+
+	// Serve will respond to service discovery queries and
+	// de-register those services when ending
 	Serve(context.Context, []ServiceRecord) error
 }
 
@@ -77,3 +92,13 @@ type PingStub interface {
 	Version(ctx context.Context) (Version, error)
 	ListServices(context.Context) ([]string, error) // Return a list of services supported
 }
+
+/////////////////////////////////////////////////////////////////////
+// GLOBALS
+
+const (
+	SERVICE_FLAG_NONE ServiceFlag = 0
+	SERVICE_FLAG_IP4  ServiceFlag = (1 << iota)
+	SERVICE_FLAG_IP6
+	SERVICE_FLAG_MAX = SERVICE_FLAG_IP6
+)
