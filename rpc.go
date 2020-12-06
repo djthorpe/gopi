@@ -56,7 +56,7 @@ type ServiceStub interface {
 
 type ServiceDiscovery interface {
 	// NewServiceRecord returns a record from service, name, port, txt and
-	// flags for IP4, IP6 or both
+	// flags for binding to IP4, IP6 or both
 	NewServiceRecord(string, string, uint16, []string, ServiceFlag) (ServiceRecord, error)
 
 	// EnumerateServices queries for available service names

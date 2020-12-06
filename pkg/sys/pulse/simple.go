@@ -13,6 +13,7 @@ package pulse
 import "C"
 
 import (
+	"fmt"
 	"time"
 	"unsafe"
 )
@@ -60,7 +61,7 @@ const (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// PulseSampleSpec
+// PulseSampleFormat
 
 func NewSampleSpec(fmt PulseSampleFormat, rate uint32, channels uint8) *PulseSampleSpec {
 	this := new(PulseSampleSpec)
@@ -69,6 +70,38 @@ func NewSampleSpec(fmt PulseSampleFormat, rate uint32, channels uint8) *PulseSam
 	ctx.rate = C.uint32_t(rate)
 	ctx.channels = C.uint8_t(channels)
 	return this
+}
+
+func (this *PulseSampleSpec) Rate() uint32 {
+	ctx := (*C.pa_sample_spec)(this)
+	return uint32(ctx.rate)
+}
+
+func (this *PulseSampleSpec) Channels() uint8 {
+	ctx := (*C.pa_sample_spec)(this)
+	return uint8(ctx.channels)
+}
+
+func (this *PulseSampleSpec) Format() PulseSampleFormat {
+	ctx := (*C.pa_sample_spec)(this)
+	return PulseSampleFormat(ctx.format)
+}
+
+func (this *PulseSampleSpec) String() string {
+	str := "<pulse.samplespec"
+	if f := this.Format(); f != PA_SAMPLE_INVALID {
+		str += " format=" + fmt.Sprint(f)
+
+	}
+	if r := this.Rate(); r != 0 {
+		str += " rate=" + fmt.Sprint(r)
+
+	}
+	if c := this.Channels(); c != 0 {
+		str += " channels=" + fmt.Sprint(c)
+
+	}
+	return str + ">"
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +168,28 @@ func (this *PulseHandle) GetLatency() (time.Duration, error) {
 }
 
 func (this *PulseHandle) Write(data []byte) error {
-	return nil
+	var err C.int
+	ctx := (*C.pa_simple)(this)
+	ptr := unsafe.Pointer(&data[0])
+	size := len(data)
+	fmt.Println("ptr=", ptr, " size=", size)
+	if res := C.pa_simple_write(ctx, ptr, C.size_t(size), &err); res != 0 {
+		return PulseError(err)
+	} else {
+		return nil
+	}
+}
+
+func (this *PulseHandle) WriteFloat32(data []float32) error {
+	var err C.int
+	ctx := (*C.pa_simple)(this)
+	ptr := unsafe.Pointer(&data[0])
+	size := len(data) * 4 // float32 = 4 bytes
+	if res := C.pa_simple_write(ctx, ptr, C.size_t(size), &err); res != 0 {
+		return PulseError(err)
+	} else {
+		return nil
+	}
 }
 
 func (this *PulseHandle) Read(data []byte) error {

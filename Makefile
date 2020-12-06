@@ -40,15 +40,31 @@ ifneq ($strip $(MMAL)),)
 	$(eval TAGS += mmal)
 endif
 
-# Freetype package
-freetype: darwin rpi
+# freetype2
+freetype: darwin rpi linux
 	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion freetype2))
 ifneq ($strip $(FT)),)
 	@echo "Targetting freetype2"
 	$(eval TAGS += freetype)
 endif
 
-# Create build
+# pulseaudio
+pulseaudio: darwin
+	$(eval PULSEAUDIO = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion libpulse))
+ifneq ($strip $(PULSEAUDIO)),)
+	@echo "Targetting pulseaudio"
+	$(eval TAGS += pulse)
+endif
+
+# ffmpeg
+ffmpeg: darwin
+	$(eval FFMEG = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion libavformat))
+ifneq ($strip $(FFMEG)),)
+	@echo "Targetting ffmpeg"
+	$(eval TAGS += ffmpeg)
+endif
+
+# Create build folder
 builddir:
 	install -d $(BUILDDIR)
 
@@ -76,7 +92,7 @@ debian: builddir argonone dnsregister nfpm
 	@echo
 
 # Commands
-hw: rpi darwin freetype
+hw: builddir rpi darwin freetype
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/hw -tags "$(TAGS)" ${GOFLAGS} ./cmd/hw
 
 argonone: builddir rpi
@@ -85,8 +101,11 @@ argonone: builddir rpi
 dnsregister: builddir
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/dnsregister -tags "$(TAGS)" ${GOFLAGS} ./cmd/dnsregister
 
-rpcping: protogen
+rpcping: builddir protogen
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rpcping -tags "$(TAGS)" ${GOFLAGS} ./cmd/rpcping
+
+mediakit: builddir pulseaudio ffmpeg
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit
 
 # Build rules - dependencies
 nfpm:
