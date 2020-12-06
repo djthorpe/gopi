@@ -44,9 +44,9 @@ const (
 )
 
 const (
-	PA_SAMPLE_U8 PulseSampleFormat = iota
-	PA_SAMPLE_ALAW
-	PA_SAMPLE_ULAW
+	PA_SAMPLE_U8   PulseSampleFormat = iota
+	PA_SAMPLE_ALAW                   // 8 bit
+	PA_SAMPLE_ULAW                   // 8 bit
 	PA_SAMPLE_S16LE
 	PA_SAMPLE_S16BE
 	PA_SAMPLE_FLOAT32LE
@@ -167,12 +167,36 @@ func (this *PulseHandle) GetLatency() (time.Duration, error) {
 	}
 }
 
-func (this *PulseHandle) Write(data []byte) error {
+func (this *PulseHandle) WriteByte(data []byte) error {
 	var err C.int
 	ctx := (*C.pa_simple)(this)
 	ptr := unsafe.Pointer(&data[0])
 	size := len(data)
 	fmt.Println("ptr=", ptr, " size=", size)
+	if res := C.pa_simple_write(ctx, ptr, C.size_t(size), &err); res != 0 {
+		return PulseError(err)
+	} else {
+		return nil
+	}
+}
+
+func (this *PulseHandle) WriteInt32(data []int32) error {
+	var err C.int
+	ctx := (*C.pa_simple)(this)
+	ptr := unsafe.Pointer(&data[0])
+	size := len(data) * 4 // int32 = 4 bytes
+	if res := C.pa_simple_write(ctx, ptr, C.size_t(size), &err); res != 0 {
+		return PulseError(err)
+	} else {
+		return nil
+	}
+}
+
+func (this *PulseHandle) WriteInt16(data []int16) error {
+	var err C.int
+	ctx := (*C.pa_simple)(this)
+	ptr := unsafe.Pointer(&data[0])
+	size := len(data) * 2 // int16 = 2 bytes
 	if res := C.pa_simple_write(ctx, ptr, C.size_t(size), &err); res != 0 {
 		return PulseError(err)
 	} else {
@@ -192,11 +216,47 @@ func (this *PulseHandle) WriteFloat32(data []float32) error {
 	}
 }
 
-func (this *PulseHandle) Read(data []byte) error {
+func (this *PulseHandle) ReadByte(data []byte) error {
 	var err C.int
 	ctx := (*C.pa_simple)(this)
 	ptr := unsafe.Pointer(&data[0])
 	size := len(data)
+	if res := C.pa_simple_read(ctx, ptr, C.size_t(size), &err); res != 0 {
+		return PulseError(err)
+	} else {
+		return nil
+	}
+}
+
+func (this *PulseHandle) ReadFloat32(data []float32) error {
+	var err C.int
+	ctx := (*C.pa_simple)(this)
+	ptr := unsafe.Pointer(&data[0])
+	size := len(data) * 4
+	if res := C.pa_simple_read(ctx, ptr, C.size_t(size), &err); res != 0 {
+		return PulseError(err)
+	} else {
+		return nil
+	}
+}
+
+func (this *PulseHandle) ReadInt32(data []int32) error {
+	var err C.int
+	ctx := (*C.pa_simple)(this)
+	ptr := unsafe.Pointer(&data[0])
+	size := len(data) * 4
+	if res := C.pa_simple_read(ctx, ptr, C.size_t(size), &err); res != 0 {
+		return PulseError(err)
+	} else {
+		return nil
+	}
+}
+
+func (this *PulseHandle) ReadInt16(data []int16) error {
+	var err C.int
+	ctx := (*C.pa_simple)(this)
+	ptr := unsafe.Pointer(&data[0])
+	size := len(data) * 2
 	if res := C.pa_simple_read(ctx, ptr, C.size_t(size), &err); res != 0 {
 		return PulseError(err)
 	} else {
