@@ -59,7 +59,7 @@ func Test_Responder_003(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancel()
 		if err := app.Responder.Serve(ctx, []gopi.ServiceRecord{r}); err != nil {
 			t.Error(err)

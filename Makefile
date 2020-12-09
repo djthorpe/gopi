@@ -48,6 +48,22 @@ ifneq ($strip $(FT)),)
 	$(eval TAGS += freetype)
 endif
 
+# FFmpeg package
+ffmpeg: darwin
+	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion libavcodec))
+ifneq ($strip $(FT)),)
+	@echo "Targetting ffmpeg"
+	$(eval TAGS += ffmpeg)
+endif
+
+# Chromaprint package
+chromaprint: darwin
+	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion libchromaprint))
+ifneq ($strip $(FT)),)
+	@echo "Targetting chromaprint"
+	$(eval TAGS += chromaprint)
+endif
+
 # Create build
 builddir:
 	install -d $(BUILDDIR)
@@ -87,6 +103,9 @@ dnsregister: builddir
 
 rpcping: protogen
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rpcping -tags "$(TAGS)" ${GOFLAGS} ./cmd/rpcping
+
+mediakit: ffmpeg chromaprint
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit
 
 # Build rules - dependencies
 nfpm:
