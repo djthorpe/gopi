@@ -51,14 +51,14 @@ func (this *SwrContext) Init() error {
 	}
 }
 
-func (this *SwrContext) Free() {
-	ctx := (*C.SwrContext)(this)
-	C.swr_free(&ctx)
-}
-
 func (this *SwrContext) Close() {
 	ctx := (*C.SwrContext)(this)
 	C.swr_close(ctx)
+}
+
+func (this *SwrContext) Free() {
+	ctx := (*C.SwrContext)(this)
+	C.swr_free(&ctx)
 }
 
 func (this *SwrContext) IsInitialized() bool {
@@ -72,6 +72,8 @@ func (this *SwrContext) IsInitialized() bool {
 func (this *SwrContext) ConfigFrame(out, in *AVFrame) error {
 	ctx := (*C.SwrContext)(this)
 	if err := AVError(C.swr_config_frame(ctx, (*C.AVFrame)(out), (*C.AVFrame)(in))); err != 0 {
+		return err
+	} else if err := this.Init(); err != nil {
 		return err
 	} else {
 		return nil

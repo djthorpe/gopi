@@ -45,3 +45,54 @@ func Test_swresample_002(t *testing.T) {
 		}
 	}
 }
+
+func Test_swresample_003(t *testing.T) {
+	ctx := ffmpeg.NewSwrContext()
+	if ctx == nil {
+		t.Error("Unexpected nil return from NewSwrContext")
+	}
+	defer ctx.Free()
+
+	in := ffmpeg.NewAudioFrame(ffmpeg.AV_SAMPLE_FMT_U8, 44100, ffmpeg.AV_CH_LAYOUT_MONO)
+	if in == nil {
+		t.Fatal("Unexpected nil return for NewAudioFrame")
+	} else {
+		t.Log("in=", in)
+	}
+	defer in.Free()
+
+	out := ffmpeg.NewAudioFrame(ffmpeg.AV_SAMPLE_FMT_U8, 11025, ffmpeg.AV_CH_LAYOUT_STEREO)
+	if out == nil {
+		t.Fatal("Unexpected nil return for NewAudioFrame")
+	} else {
+		t.Log("out=", out)
+	}
+	defer out.Free()
+
+	if err := ctx.ConfigFrame(out, in); err != nil {
+		t.Error(err)
+	} else if ctx.IsInitialized() == false {
+		t.Error("Expected IsInitialized=true")
+	} else {
+		t.Log(ctx)
+	}
+
+	// Set number of samples to 10
+	if err := in.GetAudioBuffer(10); err != nil {
+		t.Error(err)
+	}
+
+	// Write out 10 lots of 10 zero samples
+	for i := 0; i < 10; i++ {
+		if err := ctx.ConvertFrame(out, in); err != nil {
+			t.Error(err)
+		} else {
+			t.Log("out=", out)
+		}
+	}
+	if err := ctx.FlushFrame(out); err != nil {
+		t.Error(err)
+	} else {
+		t.Log("out=", out)
+	}
+}

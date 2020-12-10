@@ -1902,7 +1902,7 @@ func (c AVChannelLayout) String() string {
 		return c.FlagString()
 	}
 	str := ""
-	for v := AV_CH_LAYOUT_MIN; c <= AV_CH_LAYOUT_MAX; v <<= 1 {
+	for v := AV_CH_LAYOUT_MIN; v <= AV_CH_LAYOUT_MAX; v <<= 1 {
 		if c&v == v {
 			str += v.FlagString() + "|"
 		}
