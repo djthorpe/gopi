@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/media/pulseaudio"
 )
 
 type walkfunc func(path string, info os.FileInfo) error
@@ -17,6 +18,7 @@ type walkfunc func(path string, info os.FileInfo) error
 type app struct {
 	gopi.Unit
 	gopi.MediaManager
+	pulseaudio.
 	gopi.Logger
 	gopi.Command
 
@@ -39,6 +41,7 @@ func (this *app) Define(cfg gopi.Config) error {
 	cfg.Command("metadata", "Dump metadata information", this.Metadata)
 	cfg.Command("streams", "Dump stream information", this.Streams)
 	cfg.Command("thumbnails", "Extract thumbnails", this.Thumbnails)
+	cfg.Command("play", "Play media", this.Play)
 
 	// Return success
 	return nil

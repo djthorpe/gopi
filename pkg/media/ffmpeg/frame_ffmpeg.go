@@ -34,11 +34,11 @@ func (this *frame) Retain() error {
 	this.planes = nil
 	i := 0
 	for {
-		bytes := this.ctx.BytesForPlane(i)
-		if len(bytes) == 0 {
+		if buf := this.ctx.Buffer(i); buf == nil {
 			break
+		} else {
+			this.planes = append(this.planes, buf.Data())
 		}
-		this.planes = append(this.planes, bytes)
 		i++
 	}
 

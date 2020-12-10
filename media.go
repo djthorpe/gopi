@@ -12,10 +12,10 @@ import (
 type MediaKey string
 type MediaFlag uint
 type DecodeIteratorFunc func(MediaDecodeContext, MediaPacket) error
-type DecodeFrameIteratorFunc func(MediaDecodeContext, MediaFrame) error
+type DecodeFrameIteratorFunc func(MediaFrame) error
 
 ////////////////////////////////////////////////////////////////////////////////
-// INTERFACES
+// MEDIA FILE INTERFACES
 
 // MediaManager for media file management
 type MediaManager interface {
@@ -75,6 +75,22 @@ type MediaFrame interface {
 type MediaDecodeContext interface {
 	Stream() MediaStream // Origin of the packet
 	Frame() int          // Frame counter
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AUDIO INTERFACES
+
+type AudioManager interface {
+	// OpenDefaultSink opens default output device
+	OpenDefaultSink() (AudioContext, error)
+
+	// Close audio stream
+	Close(AudioContext) error
+}
+
+type AudioContext interface {
+	// Write data to audio output device
+	Write(MediaFrame) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////

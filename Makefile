@@ -64,6 +64,14 @@ ifneq ($strip $(FFMEG)),)
 	$(eval TAGS += ffmpeg)
 endif
 
+# chromaprint
+chromaprint: darwin
+	$(eval OK = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion libchromaprint))
+ifneq ($strip $(OK)),)
+	@echo "Targetting chromaprint"
+	$(eval TAGS += chromaprint)
+endif
+
 # Create build folder
 builddir:
 	install -d $(BUILDDIR)
@@ -104,7 +112,7 @@ dnsregister: builddir
 rpcping: builddir protogen
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rpcping -tags "$(TAGS)" ${GOFLAGS} ./cmd/rpcping
 
-mediakit: builddir ffmpeg chromaprint
+mediakit: builddir ffmpeg pulseaudio chromaprint
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit
 
 # Build rules - dependencies
