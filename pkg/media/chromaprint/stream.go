@@ -4,6 +4,8 @@ package chromaprint
 
 import (
 	"fmt"
+	"strconv"
+	"sync"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -14,8 +16,12 @@ import (
 // TYPES
 
 type stream struct {
-	ctx         *chromaprint.Context
-	fingerprint string
+	sync.Mutex
+
+	ctx            *chromaprint.Context
+	rate, channels int
+	duration       time.Duration
+	fingerprint    string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,9 +32,10 @@ func NewStream(rate, channels int) (*stream, error) {
 
 	if ctx := chromaprint.NewChromaprint(chromaprint.ALGORITHM_DEFAULT); ctx == nil {
 		return nil, gopi.ErrInternalAppError.WithPrefix("NewStream")
-	} else if err := ctx.Start(rate, channels); err != nil {
-		ctx.Free()
-		return nil, err
+	} else {
+		this.ctx = ctx
+		this.rate = rate
+		this.channels = channels
 	}
 
 	// Return success
@@ -36,9 +43,18 @@ func NewStream(rate, channels int) (*stream, error) {
 }
 
 func (this *stream) Close() error {
-	this.ctx.Free()
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if this.ctx != nil {
+		this.ctx.Free()
+	}
+
+	// Release resources
 	this.ctx = nil
 	this.fingerprint = ""
+
+	// Return success
 	return nil
 }
 
@@ -46,13 +62,41 @@ func (this *stream) Close() error {
 // PUBLIC FUNCTIONS
 
 func (this *stream) Write(data []int16) error {
-	return this.ctx.Feed(data)
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	if len(data) == 0 || len(data)%this.channels != 0 {
+		return gopi.ErrBadParameter.WithPrefix("Write")
+	} else if this.ctx == nil {
+		return gopi.ErrOutOfOrder.WithPrefix("Write")
+	} else if this.duration == 0 {
+		if err := this.ctx.Start(this.rate, this.channels); err != nil {
+			return err
+		}
+	}
+
+	// Write data and update duration field
+	if err := this.ctx.Feed(data); err != nil {
+		return err
+	} else {
+		samples_per_second := time.Duration(this.rate) * time.Duration(this.channels)
+		this.duration += time.Second * time.Duration(len(data)) / samples_per_second
+	}
+
+	// Return success
+	return nil
 }
 
 func (this *stream) GetFingerprint() (string, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	if this.fingerprint != "" {
 		return this.fingerprint, nil
+	} else if this.duration == 0 || this.ctx == nil {
+		return "", gopi.ErrOutOfOrder.WithPrefix("GetFingerprint")
 	}
+
 	if err := this.ctx.Finish(); err != nil {
 		return "", err
 	} else if fp, err := this.ctx.GetFingerprint(); err != nil {
@@ -66,15 +110,15 @@ func (this *stream) GetFingerprint() (string, error) {
 }
 
 func (this *stream) Duration() time.Duration {
-	return this.ctx.DurationMs()
+	return this.duration
 }
 
 func (this *stream) Channels() int {
-	return this.ctx.Channels()
+	return this.channels
 }
 
 func (this *stream) Rate() int {
-	return this.ctx.Rate()
+	return this.rate
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -82,6 +126,20 @@ func (this *stream) Rate() int {
 
 func (this *stream) String() string {
 	str := "<chromaprint.stream"
-	str += " context=" + fmt.Sprint(this.ctx)
+	if this.ctx != nil {
+		str += " context=" + fmt.Sprint(this.ctx)
+	}
+	if r := this.Rate(); r != 0 {
+		str += " sample_rate=" + fmt.Sprint(r)
+	}
+	if c := this.Channels(); c != 0 {
+		str += " channels=" + fmt.Sprint(c)
+	}
+	if d := this.Duration(); d != 0 {
+		str += " duration=" + fmt.Sprint(d)
+	}
+	if this.fingerprint != "" {
+		str += " fingerprint=" + strconv.Quote(this.fingerprint)
+	}
 	return str + ">"
 }

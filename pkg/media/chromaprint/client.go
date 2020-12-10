@@ -72,6 +72,7 @@ const (
 	META_SOURCE
 	META_MIN = META_RECORDING
 	META_MAX = META_SOURCE
+	META_ALL = META_RECORDING | META_RECORDINGID | META_RELEASE | META_RELEASEID | META_RELEASEGROUP | META_RELEASEGROUPID | META_TRACK | META_COMPRESS | META_USERMETA | META_SOURCE
 )
 
 var (
@@ -164,7 +165,7 @@ func (this *Client) Lookup(fingerprint string, duration time.Duration, flags Met
 	defer response.Body.Close()
 
 	// Debug output
-	if this.Logger !+ nil {
+	if this.Logger != nil {
 		this.Debug("Lookup", url, "took", time.Since(now), "returned", response.Status)
 	}
 

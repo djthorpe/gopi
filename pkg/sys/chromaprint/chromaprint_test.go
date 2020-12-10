@@ -62,7 +62,7 @@ func Test_Chromaprint_005(t *testing.T) {
 	defer ctx.Free()
 	rate := 44100
 	ch := 1
-	size := rate * 5 * ch // Uint16 samples for 5 seconds
+	size := rate * 5 * ch // Int16 samples for 5 seconds
 	if err := ctx.Start(44100, 2); err != nil {
 		t.Error(err)
 	}
