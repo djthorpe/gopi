@@ -11,11 +11,11 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TEST ENUMS
 
-func Test_chromaprint_000(t *testing.T) {
+func Test_Chromaprint_000(t *testing.T) {
 	t.Log("Test_chromaprint_000")
 }
 
-func Test_chromaprint_001(t *testing.T) {
+func Test_Chromaprint_001(t *testing.T) {
 	if version := chromaprint.Version(); version != "" {
 		t.Log("Version:", version)
 	} else {
@@ -23,7 +23,7 @@ func Test_chromaprint_001(t *testing.T) {
 	}
 }
 
-func Test_chromaprint_002(t *testing.T) {
+func Test_Chromaprint_002(t *testing.T) {
 	if ctx := chromaprint.NewChromaprint(chromaprint.ALGORITHM_DEFAULT); ctx == nil {
 		t.Error("Unexpected nil return from NewChromaprint")
 	} else {
@@ -31,7 +31,30 @@ func Test_chromaprint_002(t *testing.T) {
 	}
 }
 
+/*
 func Test_chromaprint_003(t *testing.T) {
+	if ctx := chromaprint.NewChromaprint(chromaprint.ALGORITHM_DEFAULT); ctx == nil {
+		t.Error("Unexpected nil return from NewChromaprint")
+	} else if a := ctx.Algorithm(); a != chromaprint.ALGORITHM_DEFAULT {
+		t.Error("Unexpected AlgorithmType", a)
+	} else {
+		ctx.Free()
+	}
+}
+*/
+
+func Test_Chromaprint_004(t *testing.T) {
+	if ctx := chromaprint.NewChromaprint(chromaprint.ALGORITHM_DEFAULT); ctx == nil {
+		t.Error("Unexpected nil return from NewChromaprint")
+	} else if err := ctx.Start(44100, 2); err != nil {
+		t.Error(err)
+	} else {
+		t.Log(ctx)
+		ctx.Free()
+	}
+}
+
+func Test_Chromaprint_005(t *testing.T) {
 	ctx := chromaprint.NewChromaprint(chromaprint.ALGORITHM_DEFAULT)
 	if ctx == nil {
 		t.Error("Unexpected nil return from NewChromaprint")
@@ -43,7 +66,7 @@ func Test_chromaprint_003(t *testing.T) {
 	if err := ctx.Start(44100, 2); err != nil {
 		t.Error(err)
 	}
-	buf := make([]byte, size*2) // Two bytes per sample
+	buf := make([]int16, size)
 	for i := 0; i < 5; i++ {
 		t.Log("Feeding 5 seconds of silence...")
 		if err := ctx.Feed(buf); err != nil {
@@ -56,6 +79,7 @@ func Test_chromaprint_003(t *testing.T) {
 	if fp, err := ctx.GetFingerprint(); err != nil {
 		t.Error(err)
 	} else {
+		t.Log("Ctx=", ctx)
 		t.Log("Fingerprint=", fp)
 	}
 

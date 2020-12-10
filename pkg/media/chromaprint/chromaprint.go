@@ -3,11 +3,13 @@
 package chromaprint
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	chromaprint "github.com/djthorpe/gopi/v3/pkg/sys/chromaprint"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -18,14 +20,13 @@ type Manager struct {
 	gopi.Logger
 	sync.Mutex
 
-	ctx []*chromaprint.Context
+	streams []*stream
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // NEW
 
 func (this *Manager) New(gopi.Config) error {
-
 	// Return success
 	return nil
 }
@@ -34,14 +35,18 @@ func (this *Manager) Dispose() error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	for _, ctx := range this.ctx {
-		if ctx != nil {
-			ctx.Free()
+	var result error
+	for _, stream := range this.streams {
+		if stream == nil {
+			continue
+		}
+		if err := stream.Close(); err != nil {
+			result = multierror.Append(result, err)
 		}
 	}
 
 	// Release resources
-	this.ctx = nil
+	this.streams = nil
 
 	// Return success
 	return nil
@@ -51,9 +56,12 @@ func (this *Manager) Dispose() error {
 // STRINGIFY
 
 func (this *Manager) String() string {
-	str := "<manager.chromaprint"
+	str := "<chromaprint.manager"
 	if v := chromaprint.Version(); v != "" {
 		str += " version=" + strconv.Quote(v)
+	}
+	if len(this.streams) > 0 {
+		str += " streams=" + fmt.Sprint(this.streams)
 	}
 	return str + ">"
 }
@@ -61,29 +69,33 @@ func (this *Manager) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *Manager) NewStream(rate, channels int) (*chromaprint.Context, error) {
-	if ctx := chromaprint.NewChromaprint(chromaprint.ALGORITHM_DEFAULT); ctx == nil {
-		return nil, gopi.ErrInternalAppError.WithPrefix("NewStream")
-	} else if err := ctx.Start(rate, channels); err != nil {
-		ctx.Free()
-		return nil, err
-	} else {
-		this.ctx = append(this.ctx, ctx)
-		return ctx, nil
-	}
-}
-
-func (this *Manager) Close(ctx *chromaprint.Context) error {
+func (this *Manager) NewStream(rate, channels int) (*stream, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	for i := range this.ctx {
-		if ctx == this.ctx[i] {
-			ctx.Free()
-			this.ctx[i] = nil
-			return nil
-		}
+	stream, err := NewStream(rate, channels)
+	if err != nil {
+		return nil, err
+	} else {
+		this.streams = append(this.streams, stream)
 	}
 
-	return gopi.ErrNotFound.WithPrefix("Close")
+	// Return success
+	return stream, nil
+}
+
+func (this *Manager) Close(s *stream) error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	var result error
+	for i := range this.streams {
+		if s == this.streams[i] && s != nil {
+			if err := s.Close(); err != nil {
+				result = multierror.Append(result, err)
+			}
+			this.streams[i] = nil
+		}
+	}
+	return result
 }
