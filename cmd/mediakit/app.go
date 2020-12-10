@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/djthorpe/gopi/v3"
-	"github.com/djthorpe/gopi/v3/pkg/media/pulseaudio"
 )
 
 type walkfunc func(path string, info os.FileInfo) error
@@ -18,7 +17,6 @@ type walkfunc func(path string, info os.FileInfo) error
 type app struct {
 	gopi.Unit
 	gopi.MediaManager
-	pulseaudio.
 	gopi.Logger
 	gopi.Command
 

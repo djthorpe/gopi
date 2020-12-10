@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/djthorpe/gopi/v3"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -48,6 +50,11 @@ func (this *app) ProcessMetadata(path string) (*media, error) {
 		return nil, err
 	}
 	defer this.MediaManager.Close(media)
+
+	// Ignore if only a file
+	if media.Flags() == gopi.MEDIA_FLAG_FILE {
+		return nil, fmt.Errorf("Not a media file")
+	}
 
 	// Create obj
 	m := NewMedia(media)

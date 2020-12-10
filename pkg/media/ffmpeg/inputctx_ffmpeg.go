@@ -258,7 +258,7 @@ func (this *inputctx) DecodeFrameIterator(ctx gopi.MediaDecodeContext, packet go
 			// Not enough data, so return without processing frame
 			return nil
 		} else {
-			err := fn(ctx, frame)
+			err := fn(frame)
 			frame.Release()
 			if err != nil {
 				return err

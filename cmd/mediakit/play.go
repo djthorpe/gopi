@@ -48,7 +48,7 @@ func (this *app) PlayMedia(path string) error {
 
 	// Iterate through the frames decoding them
 	media.DecodeIterator([]int{streams[0]}, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
-		media.DecodeFrameIterator(ctx, packet, func(ctx gopi.MediaDecodeContext, frame gopi.MediaFrame) error {
+		media.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
 			fmt.Println("f=", frame)
 			return nil
 		})

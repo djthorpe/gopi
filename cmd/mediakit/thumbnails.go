@@ -37,6 +37,11 @@ func (this *app) ProcessThumbnails(path string) error {
 	}
 	defer this.MediaManager.Close(media)
 
+	// Ignore if only a file
+	if media.Flags() == gopi.MEDIA_FLAG_FILE {
+		return fmt.Errorf("Not a media file")
+	}
+
 	// Get video stream
 	streams := media.StreamsForFlag(gopi.MEDIA_FLAG_VIDEO)
 	if len(streams) == 0 {
@@ -44,8 +49,9 @@ func (this *app) ProcessThumbnails(path string) error {
 	}
 
 	if err := media.DecodeIterator([]int{streams[0]}, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
-		return media.DecodeFrameIterator(ctx, packet, func(ctx gopi.MediaDecodeContext, frame gopi.MediaFrame) error {
-			return this.ProcessFrame(path, ctx, frame)
+		return media.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
+			num := ctx.Frame()
+			return this.ProcessFrame(path, num, frame)
 		})
 	}); err != nil {
 		return err
@@ -55,8 +61,8 @@ func (this *app) ProcessThumbnails(path string) error {
 	return nil
 }
 
-func (this *app) ProcessFrame(path string, ctx gopi.MediaDecodeContext, frame gopi.MediaFrame) error {
-	filename := fmt.Sprintf("%06d", ctx.Frame()) + ".thumbnail.png"
+func (this *app) ProcessFrame(path string, num int, frame gopi.MediaFrame) error {
+	filename := fmt.Sprintf("%06d", num) + ".thumbnail.png"
 	out := filepath.Join(os.TempDir(), filename)
 	w, err := os.Create(out)
 	if err != nil {

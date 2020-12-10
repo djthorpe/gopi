@@ -20,6 +20,7 @@ type DecodeFrameIteratorFunc func(MediaFrame) error
 // MediaManager for media file management
 type MediaManager interface {
 	OpenFile(path string) (Media, error)   // Open a media file
+	OpenURL(url *url.URL) (Media, error)   // Open a media stream
 	CreateFile(path string) (Media, error) // Create an output file
 	Close(Media) error                     // Close a media object
 }

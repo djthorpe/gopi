@@ -37,10 +37,21 @@ func (this *Manager) Dispose() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS
+
+func (this *Manager) OpenDefaultSink() (gopi.AudioContext, error) {
+
+}
+
+func (this *Manager) Close(ctx gopi.AudioContext) error {
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *Manager) String() string {
-	str := "<mediamanager.pulseaudio"
+	str := "<pulseaudio.manager"
 	return str + ">"
 }
 
