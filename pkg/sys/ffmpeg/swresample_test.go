@@ -87,12 +87,12 @@ func Test_swresample_003(t *testing.T) {
 		if err := ctx.ConvertFrame(out, in); err != nil {
 			t.Error(err)
 		} else {
-			t.Log("out=", out)
+			t.Log("out=", out.Buffer(0), " samples=", out.NumSamples())
 		}
 	}
 	if err := ctx.FlushFrame(out); err != nil {
 		t.Error(err)
 	} else {
-		t.Log("out=", out)
+		t.Log("out=", out.Buffer(0), " samples=", out.NumSamples())
 	}
 }

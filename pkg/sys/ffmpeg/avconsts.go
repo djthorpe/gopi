@@ -23,7 +23,7 @@ type (
 	AVDisposition   int
 	AVFormatFlag    int
 	AVPacketFlag    int
-	AVPixelFormat   int
+	AVPixelFormat   C.enum_AVPixelFormat
 	AVSampleFormat  C.enum_AVSampleFormat
 	AVPictureType   int
 	AVIOFlag        int

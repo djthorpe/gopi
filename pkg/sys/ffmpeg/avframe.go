@@ -20,7 +20,8 @@ import (
 // TYPES
 
 type (
-	AVFrame C.struct_AVFrame
+	AVFrame     C.struct_AVFrame
+	AVBufferRef C.AVBufferRef
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,6 +99,15 @@ func (this *AVFrame) NumSamples() int {
 	return int(ctx.nb_samples)
 }
 
+func (this *AVFrame) IsPlanar() bool {
+	f := C.enum_AVSampleFormat(this.SampleFormat())
+	if ret := C.av_sample_fmt_is_planar(f); ret == 0 {
+		return false
+	} else {
+		return true
+	}
+}
+
 func (this *AVFrame) KeyFrame() bool {
 	ctx := (*C.AVFrame)(unsafe.Pointer(this))
 	return int(ctx.key_frame) != 0
@@ -113,23 +123,13 @@ func (this *AVFrame) PictSize() (int, int) {
 	return int(ctx.width), int(ctx.height)
 }
 
-func (this *AVFrame) BytesForPlane(i int) []byte {
-	ctx := (*C.AVFrame)(unsafe.Pointer(this))
-
-	// Return nil if data is nil
-	if ctx.data[i] == nil {
+func (this *AVFrame) Buffer(plane int) *AVBufferRef {
+	ctx := (*C.AVFrame)(this)
+	if buf := (C.av_frame_get_plane_buffer(ctx, C.int(plane))); buf == nil {
 		return nil
+	} else {
+		return (*AVBufferRef)(buf)
 	}
-
-	// Make a fake slice
-	var bytes []byte
-	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&bytes)))
-	sliceHeader.Cap = int(ctx.linesize[i] * ctx.height)
-	sliceHeader.Len = int(ctx.linesize[i] * ctx.height)
-	sliceHeader.Data = uintptr(unsafe.Pointer(ctx.data[i]))
-
-	// Return slice
-	return bytes
 }
 
 func (this *AVFrame) StrideForPlane(i int) int {
@@ -149,7 +149,35 @@ func (this *AVFrame) GetAudioBuffer(num_samples int) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// AVBufferRef
+
+func (this *AVBufferRef) Data() []byte {
+	var bytes []byte
+
+	ctx := (*C.AVBufferRef)(this)
+	if ctx.data == nil {
+		return nil
+	}
+	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&bytes)))
+	sliceHeader.Cap = int(ctx.size)
+	sliceHeader.Len = int(ctx.size)
+	sliceHeader.Data = uintptr(unsafe.Pointer(ctx.data))
+	return bytes
+}
+
+func (this *AVBufferRef) Size() int {
+	ctx := (*C.AVBufferRef)(this)
+	return int(ctx.size)
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
+
+func (this *AVBufferRef) String() string {
+	str := "<AVBufferRef"
+	str += " size=" + fmt.Sprint(this.Size())
+	return str + ">"
+}
 
 func (this *AVFrame) String() string {
 	str := "<AVFrame"
@@ -166,6 +194,9 @@ func (this *AVFrame) String() string {
 		}
 		if n := this.NumSamples(); n > 0 {
 			str += " nb_samples=" + fmt.Sprint(n)
+		}
+		if this.IsPlanar() {
+			str += " is_planar=true"
 		}
 	} else if f := this.PixelFormat(); f != AV_PIX_FMT_NONE {
 		str += " pixel_format=" + fmt.Sprint(f)
