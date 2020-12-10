@@ -3,10 +3,17 @@
 package pulse_test
 
 import (
+	"encoding/binary"
+	"io"
 	"math"
+	"os"
 	"testing"
 
 	"github.com/djthorpe/gopi/v3/pkg/sys/pulse"
+)
+
+const (
+	SAMPLE_FILE = "../../../etc/media/int16_44100_2ch_audio.raw"
 )
 
 func Test_Simple_000(t *testing.T) {
@@ -47,6 +54,35 @@ func Test_Simple_001(t *testing.T) {
 }
 
 func Test_Simple_002(t *testing.T) {
+	// Both x86 and ARM are Little Endian
+	spec := pulse.NewSampleSpec(pulse.PA_SAMPLE_S16LE, 44100, 2)
+	handle, err := pulse.PulseNewSimple("", t.Name(), pulse.PA_STREAM_PLAYBACK, "", "Sample", spec, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer handle.Free()
+	fh, err := os.Open(SAMPLE_FILE)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fh.Close()
+	buf := make([]int16, 44100*2)
+	for {
+		if err := binary.Read(fh, binary.LittleEndian, buf); err == io.EOF {
+			break
+		} else if err != nil {
+			t.Error(err)
+		} else if err := handle.WriteInt16(buf); err != nil {
+			t.Error(err)
+		}
+	}
+	// Flush
+	if err := handle.Flush(); err != nil {
+		t.Error(err)
+	}
+}
+
+func Test_Simple_003(t *testing.T) {
 	// Both x86 and ARM are Little Endian
 	spec := pulse.NewSampleSpec(pulse.PA_SAMPLE_FLOAT32LE, 44100, 1)
 	if handle, err := pulse.PulseNewSimple("", t.Name(), pulse.PA_STREAM_RECORD, "", "Record", spec, nil, nil); err != nil {
