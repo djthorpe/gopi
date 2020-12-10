@@ -15,7 +15,7 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type Manager struct {
+type manager struct {
 	gopi.Unit
 	gopi.Logger
 	sync.Mutex
@@ -26,12 +26,12 @@ type Manager struct {
 ////////////////////////////////////////////////////////////////////////////////
 // NEW
 
-func (this *Manager) New(gopi.Config) error {
+func (this *manager) New(gopi.Config) error {
 	// Return success
 	return nil
 }
 
-func (this *Manager) Dispose() error {
+func (this *manager) Dispose() error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -55,7 +55,7 @@ func (this *Manager) Dispose() error {
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *Manager) String() string {
+func (this *manager) String() string {
 	str := "<chromaprint.manager"
 	if v := chromaprint.Version(); v != "" {
 		str += " version=" + strconv.Quote(v)
@@ -69,7 +69,7 @@ func (this *Manager) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *Manager) NewStream(rate, channels int) (*stream, error) {
+func (this *manager) NewStream(rate, channels int) (Stream, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -84,14 +84,19 @@ func (this *Manager) NewStream(rate, channels int) (*stream, error) {
 	return stream, nil
 }
 
-func (this *Manager) Close(s *stream) error {
+func (this *manager) Close(s Stream) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
+	s_, ok := s.(*stream)
+	if s_ == nil || ok == false {
+		return gopi.ErrBadParameter.WithPrefix("Close")
+	}
+
 	var result error
 	for i := range this.streams {
-		if s == this.streams[i] && s != nil {
-			if err := s.Close(); err != nil {
+		if s_ == this.streams[i] {
+			if err := s_.Close(); err != nil {
 				result = multierror.Append(result, err)
 			}
 			this.streams[i] = nil
