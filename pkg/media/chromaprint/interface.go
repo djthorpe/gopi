@@ -15,7 +15,7 @@ type Manager interface {
 type Stream interface {
 	// Methods
 
-	// Write signed data into the stream, assuming Little Endian order
+	// Write signed data into the stream, assuming little endian order
 	Write(data []int16) error
 
 	// GetFingerprint calculates the fingerprint from the streamed data
