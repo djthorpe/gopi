@@ -5,20 +5,30 @@ package ffmpeg
 import "strings"
 
 ////////////////////////////////////////////////////////////////////////////////
+// CGO
+
+/*
+#cgo pkg-config: libavcodec
+#include <libavutil/samplefmt.h>
+*/
+import "C"
+
+////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type (
-	AVCodecId      int
-	AVMediaType    int
-	AVCodecCap     uint32
-	AVDisposition  int
-	AVFormatFlag   int
-	AVPacketFlag   int
-	AVPixelFormat  int
-	AVSampleFormat int
-	AVPictureType  int
-	AVIOFlag       int
-	AVLogLevel     int
+	AVCodecId       int
+	AVMediaType     int
+	AVCodecCap      uint32
+	AVDisposition   int
+	AVFormatFlag    int
+	AVPacketFlag    int
+	AVPixelFormat   C.enum_AVPixelFormat
+	AVSampleFormat  C.enum_AVSampleFormat
+	AVPictureType   int
+	AVIOFlag        int
+	AVLogLevel      int
+	AVChannelLayout uint64
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -131,6 +141,65 @@ const (
 	AVFMT_NONE          AVFormatFlag = 0
 	AVFMT_MIN                        = AVFMT_NOFILE
 	AVFMT_MAX                        = AVFMT_SEEK_TO_PTS
+)
+
+const (
+	AV_CH_FRONT_LEFT            AVChannelLayout = 0x00000001
+	AV_CH_FRONT_RIGHT           AVChannelLayout = 0x00000002
+	AV_CH_FRONT_CENTER          AVChannelLayout = 0x00000004
+	AV_CH_LOW_FREQUENCY         AVChannelLayout = 0x00000008
+	AV_CH_BACK_LEFT             AVChannelLayout = 0x00000010
+	AV_CH_BACK_RIGHT            AVChannelLayout = 0x00000020
+	AV_CH_FRONT_LEFT_OF_CENTER  AVChannelLayout = 0x00000040
+	AV_CH_FRONT_RIGHT_OF_CENTER AVChannelLayout = 0x00000080
+	AV_CH_BACK_CENTER           AVChannelLayout = 0x00000100
+	AV_CH_SIDE_LEFT             AVChannelLayout = 0x00000200
+	AV_CH_SIDE_RIGHT            AVChannelLayout = 0x00000400
+	AV_CH_TOP_CENTER            AVChannelLayout = 0x00000800
+	AV_CH_TOP_FRONT_LEFT        AVChannelLayout = 0x00001000
+	AV_CH_TOP_FRONT_CENTER      AVChannelLayout = 0x00002000
+	AV_CH_TOP_FRONT_RIGHT       AVChannelLayout = 0x00004000
+	AV_CH_TOP_BACK_LEFT         AVChannelLayout = 0x00008000
+	AV_CH_TOP_BACK_CENTER       AVChannelLayout = 0x00010000
+	AV_CH_TOP_BACK_RIGHT        AVChannelLayout = 0x00020000
+	AV_CH_STEREO_LEFT           AVChannelLayout = 0x20000000
+	AV_CH_STEREO_RIGHT          AVChannelLayout = 0x40000000
+	AV_CH_WIDE_LEFT             AVChannelLayout = 0x0000000080000000
+	AV_CH_WIDE_RIGHT            AVChannelLayout = 0x0000000100000000
+)
+
+const (
+	AV_CH_LAYOUT_NONE              AVChannelLayout = 0
+	AV_CH_LAYOUT_MIN                               = AV_CH_FRONT_LEFT
+	AV_CH_LAYOUT_MAX                               = AV_CH_STEREO_RIGHT
+	AV_CH_LAYOUT_MONO                              = (AV_CH_FRONT_CENTER)
+	AV_CH_LAYOUT_STEREO                            = (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)
+	AV_CH_LAYOUT_2POINT1                           = (AV_CH_LAYOUT_STEREO | AV_CH_LOW_FREQUENCY)
+	AV_CH_LAYOUT_2_1                               = (AV_CH_LAYOUT_STEREO | AV_CH_BACK_CENTER)
+	AV_CH_LAYOUT_SURROUND                          = (AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER)
+	AV_CH_LAYOUT_3POINT1                           = (AV_CH_LAYOUT_SURROUND | AV_CH_LOW_FREQUENCY)
+	AV_CH_LAYOUT_4POINT0                           = (AV_CH_LAYOUT_SURROUND | AV_CH_BACK_CENTER)
+	AV_CH_LAYOUT_4POINT1                           = (AV_CH_LAYOUT_4POINT0 | AV_CH_LOW_FREQUENCY)
+	AV_CH_LAYOUT_2_2                               = (AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT)
+	AV_CH_LAYOUT_QUAD                              = (AV_CH_LAYOUT_STEREO | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT)
+	AV_CH_LAYOUT_5POINT0                           = (AV_CH_LAYOUT_SURROUND | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT)
+	AV_CH_LAYOUT_5POINT1                           = (AV_CH_LAYOUT_5POINT0 | AV_CH_LOW_FREQUENCY)
+	AV_CH_LAYOUT_5POINT0_BACK                      = (AV_CH_LAYOUT_SURROUND | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT)
+	AV_CH_LAYOUT_5POINT1_BACK                      = (AV_CH_LAYOUT_5POINT0_BACK | AV_CH_LOW_FREQUENCY)
+	AV_CH_LAYOUT_6POINT0                           = (AV_CH_LAYOUT_5POINT0 | AV_CH_BACK_CENTER)
+	AV_CH_LAYOUT_6POINT0_FRONT                     = (AV_CH_LAYOUT_2_2 | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
+	AV_CH_LAYOUT_HEXAGONAL                         = (AV_CH_LAYOUT_5POINT0_BACK | AV_CH_BACK_CENTER)
+	AV_CH_LAYOUT_6POINT1                           = (AV_CH_LAYOUT_5POINT1 | AV_CH_BACK_CENTER)
+	AV_CH_LAYOUT_6POINT1_BACK                      = (AV_CH_LAYOUT_5POINT1_BACK | AV_CH_BACK_CENTER)
+	AV_CH_LAYOUT_6POINT1_FRONT                     = (AV_CH_LAYOUT_6POINT0_FRONT | AV_CH_LOW_FREQUENCY)
+	AV_CH_LAYOUT_7POINT0                           = (AV_CH_LAYOUT_5POINT0 | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT)
+	AV_CH_LAYOUT_7POINT0_FRONT                     = (AV_CH_LAYOUT_5POINT0 | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
+	AV_CH_LAYOUT_7POINT1                           = (AV_CH_LAYOUT_5POINT1 | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT)
+	AV_CH_LAYOUT_7POINT1_WIDE                      = (AV_CH_LAYOUT_5POINT1 | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
+	AV_CH_LAYOUT_7POINT1_WIDE_BACK                 = (AV_CH_LAYOUT_5POINT1_BACK | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
+	AV_CH_LAYOUT_OCTAGONAL                         = (AV_CH_LAYOUT_5POINT0 | AV_CH_BACK_LEFT | AV_CH_BACK_CENTER | AV_CH_BACK_RIGHT)
+	AV_CH_LAYOUT_HEXADECAGONAL                     = (AV_CH_LAYOUT_OCTAGONAL | AV_CH_WIDE_LEFT | AV_CH_WIDE_RIGHT | AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT | AV_CH_TOP_BACK_CENTER | AV_CH_TOP_FRONT_CENTER | AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT)
+	AV_CH_LAYOUT_STEREO_DOWNMIX                    = (AV_CH_STEREO_LEFT | AV_CH_STEREO_RIGHT)
 )
 
 const (
@@ -1825,5 +1894,65 @@ func (p AVPictureType) String() string {
 		return "AV_PICTURE_TYPE_BI"
 	default:
 		return "[?? Invalid AVPictureType value]"
+	}
+}
+
+func (c AVChannelLayout) String() string {
+	if c == AV_CH_LAYOUT_NONE {
+		return c.FlagString()
+	}
+	str := ""
+	for v := AV_CH_LAYOUT_MIN; v <= AV_CH_LAYOUT_MAX; v <<= 1 {
+		if c&v == v {
+			str += v.FlagString() + "|"
+		}
+	}
+	return strings.TrimSuffix(str, "|")
+}
+
+func (c AVChannelLayout) FlagString() string {
+	switch c {
+	case AV_CH_FRONT_LEFT:
+		return "AV_CH_FRONT_LEFT"
+	case AV_CH_FRONT_RIGHT:
+		return "AV_CH_FRONT_RIGHT"
+	case AV_CH_FRONT_CENTER:
+		return "AV_CH_FRONT_CENTER"
+	case AV_CH_LOW_FREQUENCY:
+		return "AV_CH_LOW_FREQUENCY"
+	case AV_CH_BACK_LEFT:
+		return "AV_CH_BACK_LEFT"
+	case AV_CH_BACK_RIGHT:
+		return "AV_CH_BACK_RIGHT"
+	case AV_CH_FRONT_LEFT_OF_CENTER:
+		return "AV_CH_FRONT_LEFT_OF_CENTER"
+	case AV_CH_FRONT_RIGHT_OF_CENTER:
+		return "AV_CH_FRONT_RIGHT_OF_CENTER"
+	case AV_CH_BACK_CENTER:
+		return "AV_CH_BACK_CENTER"
+	case AV_CH_SIDE_LEFT:
+		return "AV_CH_SIDE_LEFT"
+	case AV_CH_SIDE_RIGHT:
+		return "AV_CH_SIDE_RIGHT"
+	case AV_CH_TOP_CENTER:
+		return "AV_CH_TOP_CENTER"
+	case AV_CH_TOP_FRONT_LEFT:
+		return "AV_CH_TOP_FRONT_LEFT"
+	case AV_CH_TOP_FRONT_CENTER:
+		return "AV_CH_TOP_FRONT_CENTER"
+	case AV_CH_TOP_FRONT_RIGHT:
+		return "AV_CH_TOP_FRONT_RIGHT"
+	case AV_CH_TOP_BACK_LEFT:
+		return "AV_CH_TOP_BACK_LEFT"
+	case AV_CH_TOP_BACK_CENTER:
+		return "AV_CH_TOP_BACK_CENTER"
+	case AV_CH_TOP_BACK_RIGHT:
+		return "AV_CH_TOP_BACK_RIGHT"
+	case AV_CH_STEREO_LEFT:
+		return "AV_CH_STEREO_LEFT"
+	case AV_CH_STEREO_RIGHT:
+		return "AV_CH_STEREO_RIGHT"
+	default:
+		return "[?? Invalid AVChannelLayout value]"
 	}
 }

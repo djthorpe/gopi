@@ -4,6 +4,7 @@ package chromaprint_test
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -19,7 +20,7 @@ import (
 
 type App struct {
 	gopi.Unit
-	*chromaprint.Manager
+	chromaprint.Manager
 	*chromaprint.Client
 }
 
@@ -68,6 +69,8 @@ func Test_Client_003(t *testing.T) {
 				t.Fatal(err)
 			} else if err := stream.Write(buf); err != nil {
 				t.Error(err)
+			} else {
+				fmt.Println("buf=", buf)
 			}
 		}
 		if fp, err := stream.GetFingerprint(); err != nil {

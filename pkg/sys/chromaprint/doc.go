@@ -19,4 +19,7 @@ installing.
 API Documentation Sources:
 https://github.com/acoustid/chromaprint
 
+Web Service:
+https://acoustid.org/webservice
+
 */
