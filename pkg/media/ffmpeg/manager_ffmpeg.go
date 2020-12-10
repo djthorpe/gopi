@@ -123,22 +123,24 @@ func (this *Manager) CreateFile(path string) (gopi.Media, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	// Clean up the path
-	if filepath.IsAbs(path) == false {
-		if path_, err := filepath.Abs(path); err == nil {
-			path = filepath.Clean(path_)
-		}
-	}
+	return nil, gopi.ErrNotImplemented
+	/*
+			// Clean up the path
+			if filepath.IsAbs(path) == false {
+				if path_, err := filepath.Abs(path); err == nil {
+					path = filepath.Clean(path_)
+				}
+			}
 
-	/* TODO
-	if ctx, err := ffmpeg.NewAVFormatOutputContext(filename, nil); err != nil {
-		return nil, err
-	} else if out := NewOutputContext(ctx); out == nil {
-		return nil, gopi.ErrInternalAppError.WithPrefix("NewOutputContext")
-	} else {
-		this.out = append(this.out, out)
-		return out, nil
-	}
+		/* TODO
+		if ctx, err := ffmpeg.NewAVFormatOutputContext(filename, nil); err != nil {
+			return nil, err
+		} else if out := NewOutputContext(ctx); out == nil {
+			return nil, gopi.ErrInternalAppError.WithPrefix("NewOutputContext")
+		} else {
+			this.out = append(this.out, out)
+			return out, nil
+		}
 	*/
 
 	return nil, gopi.ErrNotImplemented
@@ -167,6 +169,6 @@ func (this *Manager) Close(media gopi.Media) error {
 // STRINGIFY
 
 func (this *Manager) String() string {
-	str := "<mediamanager.ffmpeg"
+	str := "<ffmpeg.manager"
 	return str + ">"
 }

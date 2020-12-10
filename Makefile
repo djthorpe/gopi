@@ -104,7 +104,7 @@ dnsregister: builddir
 rpcping: builddir protogen
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rpcping -tags "$(TAGS)" ${GOFLAGS} ./cmd/rpcping
 
-mediakit: builddir pulseaudio ffmpeg
+mediakit: builddir ffmpeg chromaprint
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit
 
 # Build rules - dependencies

@@ -27,11 +27,11 @@ type Responder struct {
 	records map[string][]gopi.ServiceRecord
 }
 
-// FuncServices returns fully-qualified service names and TTL (or zero for default)
-type FuncServices func() ([]string, uint32)
+// FuncServices returns fully-qualified service names
+type FuncServices func() []string
 
-// FuncRecordsForService returns service records for named service and TTL
-type FuncRecordsForService func(string) ([]gopi.ServiceRecord, uint32)
+// FuncRecordsForService returns service records for named service
+type FuncRecordsForService func(string) []gopi.ServiceRecord
 
 ///////////////////////////////////////////////////////////////////////////////
 // RUN
@@ -45,7 +45,7 @@ FOR_LOOP:
 	for {
 		select {
 		case evt := <-ch:
-			if s, _ := this.Services(); len(s) == 0 {
+			if s := this.Services(); len(s) == 0 {
 				// Do not process messages where no services are defined
 			} else if msg, ok := evt.(*msgevent); ok {
 				if err := this.ProcessQuestion(msg); err != nil {
@@ -67,23 +67,23 @@ FOR_LOOP:
 ///////////////////////////////////////////////////////////////////////////////
 // GET PROPERTIES
 
-func (this *Responder) Services() ([]string, uint32) {
+func (this *Responder) Services() []string {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
 	// Return the current service names with unset TTL
-	return this.names, 0
+	return this.names
 }
 
-func (this *Responder) Records(name string) ([]gopi.ServiceRecord, uint32) {
+func (this *Responder) Records(name string) []gopi.ServiceRecord {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
 	key := fqn(name)
 	if r, exists := this.records[key]; exists {
-		return r, queryDefaultTTL
+		return r
 	} else {
-		return nil, 0
+		return nil
 	}
 }
 
@@ -153,7 +153,7 @@ func (this *Responder) Serve(ctx context.Context, r []gopi.ServiceRecord) error 
 	// Set services which will be served
 	if err := this.SetServices(r); err != nil {
 		return err
-	} else if s, _ := this.Services(); len(s) == 0 {
+	} else if s := this.Services(); len(s) == 0 {
 		return gopi.ErrBadParameter.WithPrefix("Serve")
 	} else {
 		this.Debug("Serve:", this.names)
@@ -221,6 +221,9 @@ func handleQuestion(msg *dns.Msg, question dns.Question, zone string, f1 FuncSer
 	switch {
 	case questionName == fqn(queryServices):
 		return handleEnum(msg, question, zone, f1)
+	case len(f2(questionName)) > 0:
+		return handleServiceRecords(msg, question, f2(questionName))
+		return nil
 	default:
 		fmt.Println("TODO: Unhandled question:", questionName)
 		return nil
@@ -237,12 +240,9 @@ func handleEnum(req *dns.Msg, question dns.Question, zone string, fn FuncService
 		return nil
 	}
 	// Get services and the ttl
-	services, ttl := fn()
+	services := fn()
 	if len(services) == 0 {
 		return nil
-	}
-	if ttl == 0 {
-		ttl = queryDefaultTTL
 	}
 
 	// One message per service name
@@ -253,13 +253,44 @@ func handleEnum(req *dns.Msg, question dns.Question, zone string, fn FuncService
 				Name:   question.Name,
 				Rrtype: dns.TypePTR,
 				Class:  dns.ClassINET,
-				Ttl:    uint32(ttl),
+				Ttl:    uint32(queryDefaultTTL),
 			},
 			Ptr: fqn(service) + zone,
 		}
 		msgs = append(msgs, prepareResponse(req, rr))
 	}
 	return msgs
+}
+
+func handleRecords(req *dns.Msg, question dns.Question, recs []gopi.ServiceRecord) []*dns.Msg {
+	// Check incoming parameters
+	if len(recs) == 0 {
+		return nil
+	}
+	// Handle PTR and ANY
+	if question.Qtype != dns.TypeANY && question.Qtype != dns.TypePTR {
+		return nil
+	}
+
+	// Get messages for each record
+	msgs := []*dns.Msg{}
+	for _, rec := range recs {
+		if msg := this.handleRecord(req, question, rec); msg != nil {
+			msgs = append(msgs, msg)
+		}
+	}
+	return msgs
+}
+
+func (this *register) handleRecord(req *dns.Msg, question dns.Question, record gopi.RPCServiceRecord) *dns.Msg {
+	key := this.keyForRecord(record)
+	if key == "" {
+		return nil
+	}
+
+	// TODO
+
+	return prepareResponse(answers...)
 }
 
 func prepareResponse(req *dns.Msg, answers ...dns.RR) *dns.Msg {
