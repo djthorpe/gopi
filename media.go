@@ -1,6 +1,7 @@
 package gopi
 
 import (
+	"context"
 	"image"
 	"net/url"
 	"strings"
@@ -19,10 +20,17 @@ type DecodeFrameIteratorFunc func(MediaFrame) error
 
 // MediaManager for media file management
 type MediaManager interface {
-	OpenFile(path string) (Media, error)   // Open a media file
-	OpenURL(url *url.URL) (Media, error)   // Open a media stream
-	CreateFile(path string) (Media, error) // Create an output file
-	Close(Media) error                     // Close a media object
+	// OpenFile opens a local media file
+	OpenFile(path string) (Media, error)
+
+	// OpenURL opens a network-based stream
+	OpenURL(url *url.URL) (Media, error)
+
+	// CreateFile creates a local media file for output
+	CreateFile(path string) (Media, error)
+
+	// Close will release resources and close a media object
+	Close(Media) error
 }
 
 // Media is an input or output
@@ -35,9 +43,9 @@ type Media interface {
 	StreamsForFlag(MediaFlag) []int // Return stream index for flag(s)
 
 	// DecodeIterator loops over selected streams from media object
-	DecodeIterator([]int, DecodeIteratorFunc) error
+	DecodeIterator(context.Context, []int, DecodeIteratorFunc) error
 
-	// DecodeFrameIterator loops over decoded frames from media stream
+	// DecodeFrameIterator loops over data packets from media stream
 	DecodeFrameIterator(MediaDecodeContext, MediaPacket, DecodeFrameIteratorFunc) error
 }
 

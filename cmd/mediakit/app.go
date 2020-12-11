@@ -40,6 +40,7 @@ func (this *app) Define(cfg gopi.Config) error {
 	cfg.Command("streams", "Dump stream information", this.Streams)
 	cfg.Command("thumbnails", "Extract thumbnails", this.Thumbnails)
 	cfg.Command("play", "Play media", this.Play)
+	cfg.Command("stream", "Stream url", this.Stream)
 
 	// Return success
 	return nil

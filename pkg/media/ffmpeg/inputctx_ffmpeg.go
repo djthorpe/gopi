@@ -3,6 +3,7 @@
 package ffmpeg
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/url"
@@ -162,7 +163,7 @@ func (this *inputctx) StreamsForFlag(flag gopi.MediaFlag) []int {
 // PUBLIC METHODS - ITERATE OVER PACKETS
 
 // Iterate over packets in the input stream
-func (this *inputctx) DecodeIterator(streams []int, fn gopi.DecodeIteratorFunc) error {
+func (this *inputctx) DecodeIterator(ctx context.Context, streams []int, fn gopi.DecodeIteratorFunc) error {
 	// Lock for writing as ReadPacket modifies state
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
@@ -206,18 +207,23 @@ func (this *inputctx) DecodeIterator(streams []int, fn gopi.DecodeIteratorFunc) 
 	defer packet.Free()
 
 	// Iterate over incoming packets, callback when packet should
-	// be processed
+	// be processed. Return if parent context is done
 	for {
-		if err := this.ctx.ReadPacket(packet); err == io.EOF {
-			// End of stream
-			break
-		} else if err != nil {
-			return err
-		} else if ctx, exists := contextmap[packet.Stream()]; exists {
-			err := fn(ctx, packet)
-			packet.Release()
-			if err != nil {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if err := this.ctx.ReadPacket(packet); err == io.EOF {
+				// End of stream
+				break
+			} else if err != nil {
 				return err
+			} else if ctx, exists := contextmap[packet.Stream()]; exists {
+				err := fn(ctx, packet)
+				packet.Release()
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

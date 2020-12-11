@@ -16,7 +16,7 @@ func (this *app) Play(ctx context.Context) error {
 	if paths, err := GetFileArgs(this.Command.Args()); err != nil {
 		return err
 	} else if err := this.Walk(ctx, paths, &count, func(path string, info os.FileInfo) error {
-		if err := this.PlayMedia(path); err != nil {
+		if err := this.PlayMedia(ctx, path); err != nil {
 			if *this.quiet == false {
 				this.Logger.Print(filepath.Base(path), ": ", err)
 			}
@@ -30,13 +30,14 @@ func (this *app) Play(ctx context.Context) error {
 	return nil
 }
 
-func (this *app) PlayMedia(path string) error {
+func (this *app) PlayMedia(ctx context.Context, path string) error {
 	media, err := this.MediaManager.OpenFile(path)
 	if err != nil {
 		return err
 	}
 	defer this.MediaManager.Close(media)
 
+	// Play first audio stream only
 	streams := media.StreamsForFlag(gopi.MEDIA_FLAG_AUDIO)
 	if len(streams) == 0 {
 		return gopi.ErrBadParameter.WithPrefix("Missing audio stream")
@@ -44,17 +45,11 @@ func (this *app) PlayMedia(path string) error {
 		this.Logger.Debug("There are ", len(streams), " streams but only playing the first one")
 	}
 
-	// Play first stream only
-
 	// Iterate through the frames decoding them
-	media.DecodeIterator([]int{streams[0]}, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
-		media.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
+	return media.DecodeIterator(ctx, []int{streams[0]}, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
+		return media.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
 			fmt.Println("f=", frame)
 			return nil
 		})
-		return nil
 	})
-
-	fmt.Println("TODO: Play", media, "\n\n")
-	return nil
 }

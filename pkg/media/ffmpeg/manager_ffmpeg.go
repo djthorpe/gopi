@@ -3,6 +3,7 @@
 package ffmpeg
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -109,6 +110,29 @@ func (this *Manager) OpenFile(path string) (gopi.Media, error) {
 	if ctx := ffmpeg.NewAVFormatContext(); ctx == nil {
 		return nil, gopi.ErrInternalAppError.WithPrefix("NewAVFormatContext")
 	} else if err := ctx.OpenInput(path, nil); err != nil {
+		// when error is returned free is already called
+		return nil, err
+	} else if in := NewInputContext(ctx); in == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("NewInputContext")
+	} else {
+		this.in = append(this.in, in)
+		return in, nil
+	}
+}
+
+func (this *Manager) OpenURL(url *url.URL) (gopi.Media, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	// Check incoming parameters
+	if url == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("OpenURL")
+	}
+
+	// Input
+	if ctx := ffmpeg.NewAVFormatContext(); ctx == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("NewAVFormatContext")
+	} else if err := ctx.OpenInputUrl(url.String(), nil); err != nil {
 		// when error is returned free is already called
 		return nil, err
 	} else if in := NewInputContext(ctx); in == nil {

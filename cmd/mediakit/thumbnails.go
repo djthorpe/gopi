@@ -17,7 +17,7 @@ func (this *app) Thumbnails(ctx context.Context) error {
 	if paths, err := GetFileArgs(this.Command.Args()); err != nil {
 		return err
 	} else if err := this.Walk(ctx, paths, &count, func(path string, info os.FileInfo) error {
-		if err := this.ProcessThumbnails(path); err != nil {
+		if err := this.ProcessThumbnails(ctx, path); err != nil {
 			if *this.quiet == false {
 				this.Logger.Print(filepath.Base(path), ": ", err)
 			}
@@ -30,7 +30,7 @@ func (this *app) Thumbnails(ctx context.Context) error {
 	return nil
 }
 
-func (this *app) ProcessThumbnails(path string) error {
+func (this *app) ProcessThumbnails(ctx context.Context, path string) error {
 	media, err := this.MediaManager.OpenFile(path)
 	if err != nil {
 		return err
@@ -48,17 +48,12 @@ func (this *app) ProcessThumbnails(path string) error {
 		return fmt.Errorf("No video information found")
 	}
 
-	if err := media.DecodeIterator([]int{streams[0]}, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
+	return media.DecodeIterator(ctx, []int{streams[0]}, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
 		return media.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
 			num := ctx.Frame()
 			return this.ProcessFrame(path, num, frame)
 		})
-	}); err != nil {
-		return err
-	}
-
-	// Return success
-	return nil
+	})
 }
 
 func (this *app) ProcessFrame(path string, num int, frame gopi.MediaFrame) error {

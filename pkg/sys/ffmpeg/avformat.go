@@ -159,6 +159,24 @@ func (this *AVFormatContext) OpenInput(filename string, input_format *AVInputFor
 	}
 }
 
+// Open Input URL
+func (this *AVFormatContext) OpenInputUrl(url string, input_format *AVInputFormat) error {
+	url_ := C.CString(url)
+	defer C.free(unsafe.Pointer(url_))
+	ctx := (*C.AVFormatContext)(unsafe.Pointer(this))
+	dict := new(AVDictionary)
+	if err := AVError(C.avformat_open_input(
+		&ctx,
+		url_,
+		(*C.struct_AVInputFormat)(input_format),
+		(**C.struct_AVDictionary)(unsafe.Pointer(dict)),
+	)); err != 0 {
+		return err
+	} else {
+		return nil
+	}
+}
+
 // Close Input
 func (this *AVFormatContext) CloseInput() {
 	ctx := (*C.AVFormatContext)(unsafe.Pointer(this))
