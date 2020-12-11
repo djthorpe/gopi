@@ -22,7 +22,7 @@ type app struct {
 
 	offset, limit *uint   // File processing offsets
 	quiet         *bool   // Whether errors should be displayed
-	match         *string // Regular expression to match
+	match, out    *string // Regular expression to match, output template
 
 	regexp *regexp.Regexp // Regular expression for filename
 	fields *fields        // Metadata which should be displayed
@@ -34,14 +34,17 @@ func (this *app) Define(cfg gopi.Config) error {
 	this.limit = cfg.FlagUint("limit", 0, "File process limit")
 	this.quiet = cfg.FlagBool("quiet", false, "Don't display file scan errors")
 	this.match = cfg.FlagString("match", "", "Match filenames regular expression")
+	this.out = cfg.FlagString("out", "", "Output filename")
 
 	// Define commands
-	cfg.Command("codecs", "List available codecs", this.Codecs)
+	cfg.Command("list-codecs", "List available codecs", this.Codecs)
+
 	cfg.Command("metadata", "Dump metadata information", this.Metadata)
 	cfg.Command("streams", "Dump stream information", this.Streams)
 	cfg.Command("thumbnails", "Extract thumbnails", this.Thumbnails)
+	cfg.Command("remux", "Remultiplex", this.Remux)
 	cfg.Command("play", "Play media", this.Play)
-	cfg.Command("stream", "Stream url", this.Stream)
+	cfg.Command("stream", "Stream URL", this.Stream)
 
 	// Return success
 	return nil
@@ -157,4 +160,38 @@ func WalkFunc(ctx context.Context, count, offset, limit *uint, path string, info
 
 	// Return success
 	return nil
+}
+
+func OutFilename(in, out string, params map[string]string) string {
+	// Set parameters
+	if params == nil {
+		params = make(map[string]string, 10)
+	}
+
+	// Where out is empty, replace file
+	if out == "" {
+		out = in
+	}
+
+	// Normalize keys
+	for key, value := range params {
+		key = strings.TrimSpace(strings.ToUpper(key))
+		params[key] = value
+	}
+
+	// Set keys for input
+	params["PATH"] = filepath.Clean(in)
+	params["BASE"] = filepath.Base(in)
+	params["DIR"] = filepath.Dir(in)
+	params["EXT"] = filepath.Ext(in)
+
+	// Expand template
+	return os.Expand(out, func(key string) string {
+		key = strings.TrimSpace(strings.ToUpper(key))
+		if value, exists := params[key]; exists {
+			return value
+		} else {
+			return ""
+		}
+	})
 }

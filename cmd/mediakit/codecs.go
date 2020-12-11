@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/djthorpe/gopi/v3"
@@ -29,7 +28,6 @@ func (this *app) Codecs(ctx context.Context) error {
 	table.SetAutoFormatHeaders(false)
 
 	for _, codec := range codecs {
-		fmt.Println(codec)
 		table.Append([]string{
 			codec.Name(),
 			codec.Description(),
