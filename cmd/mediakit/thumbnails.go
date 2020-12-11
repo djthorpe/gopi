@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"image/png"
 	"os"
 	"path/filepath"
 
@@ -59,16 +58,17 @@ func (this *app) ProcessThumbnails(ctx context.Context, path string) error {
 func (this *app) ProcessFrame(path string, num int, frame gopi.MediaFrame) error {
 	filename := fmt.Sprintf("%06d", num) + ".thumbnail.png"
 	out := filepath.Join(os.TempDir(), filename)
-	w, err := os.Create(out)
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-	if err := png.Encode(w, frame); err != nil {
-		return err
-	} else {
-		fmt.Println(frame)
-		fmt.Println("  =>", out)
-	}
+	/*
+		w, err := os.Create(out)
+		if err != nil {
+			return err
+		}
+		defer w.Close()
+		if err := png.Encode(w, frame); err != nil {
+			return err
+		} else {
+	*/
+	fmt.Println(frame)
+	fmt.Println("  =>", out)
 	return nil
 }
