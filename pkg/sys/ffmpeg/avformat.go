@@ -178,14 +178,32 @@ func (this *AVFormatContext) OpenInputUrl(url string, input_format *AVInputForma
 
 // Close Input
 func (this *AVFormatContext) CloseInput() {
-	ctx := (*C.AVFormatContext)(unsafe.Pointer(this))
+	ctx := (*C.AVFormatContext)(this)
 	C.avformat_close_input(&ctx)
 }
 
 // Write header
 func (this *AVFormatContext) WriteHeader(dict *AVDictionary) error {
-	// TODO
-	return nil
+	ctx := (*C.AVFormatContext)(this)
+	dictctx := (**C.AVDictionary)(nil)
+	if dict != nil {
+		dictctx = &dict.ctx
+	}
+	if ret := AVError(C.avformat_write_header(ctx, dictctx)); ret != 0 {
+		return ret
+	} else {
+		return nil
+	}
+}
+
+// Write trailer
+func (this *AVFormatContext) WriteTrailer(dict *AVDictionary) error {
+	ctx := (*C.AVFormatContext)(this)
+	if ret := AVError(C.av_write_trailer(ctx)); ret != 0 {
+		return ret
+	} else {
+		return nil
+	}
 }
 
 // Return Metadata Dictionary
@@ -222,6 +240,12 @@ func (this *AVFormatContext) Url() *url.URL {
 	} else {
 		return url
 	}
+}
+
+// Return flags
+func (this *AVFormatContext) Flags() AVFormatFlag {
+	ctx := (*C.AVFormatContext)(this)
+	return AVFormatFlag(ctx.flags)
 }
 
 // Return number of streams

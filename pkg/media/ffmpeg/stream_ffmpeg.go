@@ -57,6 +57,9 @@ func (this *stream) Flags() gopi.MediaFlag {
 	// Codec flags
 	flags |= this.codec.Flags()
 
+	// Remove encoder/decoder flags
+	flags ^= (gopi.MEDIA_FLAG_ENCODER | gopi.MEDIA_FLAG_DECODER)
+
 	// Disposition flags
 	if this.ctx.Disposition()&ffmpeg.AV_DISPOSITION_ATTACHED_PIC != 0 {
 		flags |= gopi.MEDIA_FLAG_ARTWORK

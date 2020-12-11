@@ -23,13 +23,13 @@ type (
 // MediaManager for media file management
 type MediaManager interface {
 	// OpenFile opens a local media file
-	OpenFile(path string) (Media, error)
+	OpenFile(path string) (MediaInput, error)
 
 	// OpenURL opens a network-based stream
-	OpenURL(url *url.URL) (Media, error)
+	OpenURL(url *url.URL) (MediaInput, error)
 
 	// CreateFile creates a local media file for output
-	CreateFile(path string) (Media, error)
+	CreateFile(path string) (MediaOutput, error)
 
 	// Close will release resources and close a media object
 	Close(Media) error
@@ -42,18 +42,31 @@ type MediaManager interface {
 
 // Media is an input or output
 type Media interface {
-	// Properties
-	URL() *url.URL                  // Return URL for the media location
-	Metadata() MediaMetadata        // Return metadata
-	Flags() MediaFlag               // Return flags
-	Streams() []MediaStream         // Return streams
-	StreamsForFlag(MediaFlag) []int // Return stream index for flag(s)
+	URL() *url.URL           // Return URL for the media location
+	Metadata() MediaMetadata // Return metadata
+	Flags() MediaFlag        // Return flags
+	Streams() []MediaStream  // Return streams
+}
+
+type MediaInput interface {
+	Media
+
+	// StreamsForFlag returns array of stream indexes for
+	// the best streams to use according to the flags
+	StreamsForFlag(MediaFlag) []int
 
 	// DecodeIterator loops over selected streams from media object
 	DecodeIterator(context.Context, []int, DecodeIteratorFunc) error
 
 	// DecodeFrameIterator loops over data packets from media stream
 	DecodeFrameIterator(MediaDecodeContext, MediaPacket, DecodeFrameIteratorFunc) error
+}
+
+type MediaOutput interface {
+	Media
+
+	// Write packets to output
+	Write(MediaDecodeContext, MediaPacket) error
 }
 
 // MediaMetadata are key value pairs for a media object

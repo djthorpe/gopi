@@ -22,8 +22,8 @@ type Manager struct {
 	gopi.Logger
 	sync.Mutex
 
-	in []*inputctx
-	// TODO out []*outputctx
+	in  []*inputctx
+	out []*outputctx
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,6 @@ func (this *Manager) Dispose() error {
 	var result error
 
 	// Close all outputs
-	/* TODO
 	for _, out := range this.out {
 		if out != nil {
 			if err := out.Close(); err != nil {
@@ -63,7 +62,6 @@ func (this *Manager) Dispose() error {
 			}
 		}
 	}
-	*/
 
 	// Close all inputs
 	for _, in := range this.in {
@@ -82,7 +80,7 @@ func (this *Manager) Dispose() error {
 
 	// Release resources
 	this.in = nil
-	// TODO this.out = nil
+	this.out = nil
 
 	// Return success
 	return nil
@@ -91,7 +89,7 @@ func (this *Manager) Dispose() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - OPEN/CLOSE
 
-func (this *Manager) OpenFile(path string) (gopi.Media, error) {
+func (this *Manager) OpenFile(path string) (gopi.MediaInput, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -102,12 +100,14 @@ func (this *Manager) OpenFile(path string) (gopi.Media, error) {
 		}
 	}
 
-	// Create the media object and return it
+	// Check to see if path exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, gopi.ErrNotFound
 	} else if err != nil {
 		return nil, err
 	}
+
+	// Create the media object and return it
 	if ctx := ffmpeg.NewAVFormatContext(); ctx == nil {
 		return nil, gopi.ErrInternalAppError.WithPrefix("NewAVFormatContext")
 	} else if err := ctx.OpenInput(path, nil); err != nil {
@@ -121,7 +121,7 @@ func (this *Manager) OpenFile(path string) (gopi.Media, error) {
 	}
 }
 
-func (this *Manager) OpenURL(url *url.URL) (gopi.Media, error) {
+func (this *Manager) OpenURL(url *url.URL) (gopi.MediaInput, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -144,36 +144,32 @@ func (this *Manager) OpenURL(url *url.URL) (gopi.Media, error) {
 	}
 }
 
-func (this *Manager) CreateFile(path string) (gopi.Media, error) {
+func (this *Manager) CreateFile(path string) (gopi.MediaOutput, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	return nil, gopi.ErrNotImplemented
-	/*
-			// Clean up the path
-			if filepath.IsAbs(path) == false {
-				if path_, err := filepath.Abs(path); err == nil {
-					path = filepath.Clean(path_)
-				}
-			}
-
-		/* TODO
-		if ctx, err := ffmpeg.NewAVFormatOutputContext(filename, nil); err != nil {
-			return nil, err
-		} else if out := NewOutputContext(ctx); out == nil {
-			return nil, gopi.ErrInternalAppError.WithPrefix("NewOutputContext")
-		} else {
-			this.out = append(this.out, out)
-			return out, nil
+	// Clean up the path
+	if filepath.IsAbs(path) == false {
+		if path_, err := filepath.Abs(path); err == nil {
+			path = filepath.Clean(path_)
 		}
-	*/
+	}
 
-	return nil, gopi.ErrNotImplemented
+	if ctx, err := ffmpeg.NewAVFormatOutputContext(path, nil); err != nil {
+		return nil, err
+	} else if out := NewOutputContext(ctx); out == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("NewOutputContext")
+	} else {
+		this.out = append(this.out, out)
+		return out, nil
+	}
 }
 
 func (this *Manager) Close(media gopi.Media) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
+
+	// TODO OUTPUT
 
 	if in, ok := media.(*inputctx); in == nil || ok == false {
 		return gopi.ErrInternalAppError.WithPrefix("Close")

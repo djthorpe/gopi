@@ -103,7 +103,10 @@ func (this *inputctx) Flags() gopi.MediaFlag {
 	}
 
 	// Stream flags
-	flags := gopi.MEDIA_FLAG_FILE
+	flags := gopi.MEDIA_FLAG_DECODER
+	if this.ctx.Flags()&ffmpeg.AVFMT_NOFILE == 0 {
+		flags |= gopi.MEDIA_FLAG_FILE
+	}
 	for _, stream := range this.Streams() {
 		flags |= stream.Flags()
 	}
@@ -188,14 +191,19 @@ func (this *inputctx) DecodeIterator(ctx context.Context, streams []int, fn gopi
 		}
 	}()
 
+	// Create a stream map (which is used to map streams
+	// from input->output)
+	streammap := NewStreamMap()
+
 	// Create decode contexts
 	for _, index := range streams {
 		if stream, exists := this.streams[index]; exists == false {
 			return gopi.ErrInternalAppError.WithPrefix("DecodeIterator")
-		} else if decodectx := NewDecodeContext(stream); decodectx == nil {
+		} else if decodectx := NewDecodeContext(stream, streammap); decodectx == nil {
 			return gopi.ErrInternalAppError.WithPrefix("DecodeIterator")
 		} else {
 			contextmap[index] = decodectx
+			streammap.add(stream)
 		}
 	}
 
@@ -219,6 +227,7 @@ func (this *inputctx) DecodeIterator(ctx context.Context, streams []int, fn gopi
 			} else if err != nil {
 				return err
 			} else if ctx, exists := contextmap[packet.Stream()]; exists {
+				// Call decode function with packet
 				err := fn(ctx, packet)
 				packet.Release()
 				if err != nil {
@@ -277,9 +286,9 @@ func (this *inputctx) DecodeFrameIterator(ctx gopi.MediaDecodeContext, packet go
 // STRINGIFY
 
 func (this *inputctx) String() string {
-	str := "<media"
+	str := "<ffmpeg.media"
 	if url := this.URL(); url != nil {
-		str += " url=" + strconv.Quote(url.String())
+		str += " input_url=" + strconv.Quote(url.String())
 	}
 	if metadata := this.Metadata(); metadata != nil {
 		str += " metadata=" + fmt.Sprint(metadata)
