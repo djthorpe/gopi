@@ -27,7 +27,7 @@ type (
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
 
-func NewFrame() *AVFrame {
+func NewAVFrame() *AVFrame {
 	return (*AVFrame)(C.av_frame_alloc())
 }
 
@@ -42,7 +42,7 @@ func (this *AVFrame) Release() {
 }
 
 func NewAudioFrame(f AVSampleFormat, rate int, layout AVChannelLayout) *AVFrame {
-	frame := NewFrame()
+	frame := NewAVFrame()
 	if frame == nil {
 		return nil
 	}

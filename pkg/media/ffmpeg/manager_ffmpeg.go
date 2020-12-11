@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -187,6 +188,64 @@ func (this *Manager) Close(media gopi.Media) error {
 		}
 		return gopi.ErrNotFound.WithPrefix("Close")
 	}
+}
+
+func (this *Manager) ListCodecs(name string, flags gopi.MediaFlag) []gopi.MediaCodec {
+	result := []gopi.MediaCodec{}
+
+	if name != "" {
+		if codec := ffmpeg.FindCodecByName(name); codec != nil {
+			result = append(result, NewCodec(codec))
+		}
+	}
+
+	if len(result) == 0 {
+		for _, codec := range ffmpeg.AllCodecs() {
+			if name == "" || strings.Contains(codec.Name(), name) {
+				result = append(result, NewCodec(codec))
+			}
+		}
+	}
+
+	// Check for flag filtering
+	if flags == gopi.MEDIA_FLAG_NONE {
+		return result
+	}
+
+	// Filter by flags
+	dst := 0
+	for src, codec := range result {
+		codecflags := codec.Flags()
+		if flags&gopi.MEDIA_FLAG_VIDEO != 0 {
+			if codecflags&gopi.MEDIA_FLAG_VIDEO == 0 {
+				continue
+			}
+		}
+		if flags&gopi.MEDIA_FLAG_AUDIO != 0 {
+			if codecflags&gopi.MEDIA_FLAG_AUDIO == 0 {
+				continue
+			}
+		}
+		if flags&gopi.MEDIA_FLAG_SUBTITLE != 0 {
+			if codecflags&gopi.MEDIA_FLAG_SUBTITLE == 0 {
+				continue
+			}
+		}
+		if flags&gopi.MEDIA_FLAG_ENCODER != 0 {
+			if codecflags&gopi.MEDIA_FLAG_ENCODER == 0 {
+				continue
+			}
+		}
+		if flags&gopi.MEDIA_FLAG_DECODER != 0 {
+			if codecflags&gopi.MEDIA_FLAG_DECODER == 0 {
+				continue
+			}
+		}
+		result[dst] = result[src]
+		dst++
+	}
+
+	return result[:dst]
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -22,7 +22,7 @@ type frame struct {
 // INIT
 
 func NewFrame() *frame {
-	if ctx := ffmpeg.NewFrame(); ctx == nil {
+	if ctx := ffmpeg.NewAVFrame(); ctx == nil {
 		return nil
 	} else {
 		return &frame{ctx, nil}

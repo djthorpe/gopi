@@ -36,6 +36,7 @@ func (this *app) Define(cfg gopi.Config) error {
 	this.match = cfg.FlagString("match", "", "Match filenames regular expression")
 
 	// Define commands
+	cfg.Command("codecs", "List available codecs", this.Codecs)
 	cfg.Command("metadata", "Dump metadata information", this.Metadata)
 	cfg.Command("streams", "Dump stream information", this.Streams)
 	cfg.Command("thumbnails", "Extract thumbnails", this.Thumbnails)

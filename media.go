@@ -10,10 +10,12 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type MediaKey string
-type MediaFlag uint
-type DecodeIteratorFunc func(MediaDecodeContext, MediaPacket) error
-type DecodeFrameIteratorFunc func(MediaFrame) error
+type (
+	MediaKey                string
+	MediaFlag               uint64
+	DecodeIteratorFunc      func(MediaDecodeContext, MediaPacket) error
+	DecodeFrameIteratorFunc func(MediaFrame) error
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // MEDIA FILE INTERFACES
@@ -31,6 +33,11 @@ type MediaManager interface {
 
 	// Close will release resources and close a media object
 	Close(Media) error
+
+	// ListCodecs enumerates codecs for a specific name and/or
+	// audio, video, encode and decode. By default (empty name and
+	// MediaFlag) lists all codecs
+	ListCodecs(string, MediaFlag) []MediaCodec
 }
 
 // Media is an input or output
@@ -64,7 +71,14 @@ type MediaStream interface {
 
 // MediaCodec is the codec and parameters
 type MediaCodec interface {
-	Flags() MediaFlag // Flags for the codec (Audio, Video, etc)
+	// Name returns the unique name for the codec
+	Name() string
+
+	// Description returns the long description for the codec
+	Description() string
+
+	// Flags for the codec (Audio, Video, Encoder, Decoder)
+	Flags() MediaFlag
 }
 
 // MediaPacket is a packet of data from a stream
@@ -114,13 +128,16 @@ const (
 	MEDIA_FLAG_FILE                                      // Is a file
 	MEDIA_FLAG_VIDEO                                     // Contains video
 	MEDIA_FLAG_AUDIO                                     // Contains audio
+	MEDIA_FLAG_SUBTITLE                                  // Contains subtitles
 	MEDIA_FLAG_DATA                                      // Contains data stream
 	MEDIA_FLAG_ATTACHMENT                                // Contains attachment
 	MEDIA_FLAG_ARTWORK                                   // Contains artwork
 	MEDIA_FLAG_CAPTIONS                                  // Contains captions
+	MEDIA_FLAG_ENCODER                                   // Is an encoder
+	MEDIA_FLAG_DECODER                                   // Is an decoder
 	MEDIA_FLAG_NONE              MediaFlag = 0
 	MEDIA_FLAG_MIN                         = MEDIA_FLAG_ALBUM
-	MEDIA_FLAG_MAX                         = MEDIA_FLAG_CAPTIONS
+	MEDIA_FLAG_MAX                         = MEDIA_FLAG_DECODER
 )
 
 const (
@@ -200,6 +217,8 @@ func (f MediaFlag) FlagString() string {
 		return "MEDIA_FLAG_VIDEO"
 	case MEDIA_FLAG_AUDIO:
 		return "MEDIA_FLAG_AUDIO"
+	case MEDIA_FLAG_SUBTITLE:
+		return "MEDIA_FLAG_SUBTITLE"
 	case MEDIA_FLAG_DATA:
 		return "MEDIA_FLAG_DATA"
 	case MEDIA_FLAG_ATTACHMENT:
@@ -208,6 +227,10 @@ func (f MediaFlag) FlagString() string {
 		return "MEDIA_FLAG_ARTWORK"
 	case MEDIA_FLAG_CAPTIONS:
 		return "MEDIA_FLAG_CAPTIONS"
+	case MEDIA_FLAG_ENCODER:
+		return "MEDIA_FLAG_ENCODER"
+	case MEDIA_FLAG_DECODER:
+		return "MEDIA_FLAG_DECODER"
 	default:
 		return "[?? Invalid MediaFlag]"
 	}
