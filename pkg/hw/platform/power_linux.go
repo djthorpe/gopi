@@ -4,29 +4,30 @@
 package platform
 
 import (
-	"fmt"
+	gopi "github.com/djthorpe/gopi/v3"
+	dbus "github.com/godbus/dbus/v5"
+)
 
-	"github.com/godbus/dbus/v5"
+const (
+	dbusNode = "org.freedesktop.login1"
+	dbusPath = "/org/freedesktop/login1"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION
 
 func (this *Platform) SetPowerState() error {
-	conn, err := dbus.ConnectSessionBus()
+	conn, err := dbus.SystemBus()
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	var s []string
-	err = conn.BusObject().Call("org.freedesktop.DBus.ListNames", 0).Store(&s)
-	if err != nil {
-		return err
-	}
-
-	for _, v := range s {
-		fmt.Println(v)
+	askForAuth := false
+	if obj := conn.Object(dbusNode, dbusPath); obj == nil {
+		return gopi.ErrNotFound.WithPrefix(dbusNode)
+	} else if result := obj.Call("org.freedesktop.login1.Manager.Reboot", 0, askForAuth); result.Err != nil {
+		return result.Err
 	}
 
 	// Return success

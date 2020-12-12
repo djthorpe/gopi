@@ -2,14 +2,15 @@ package platform_test
 
 import (
 	"context"
-	"sync"
 	"testing"
-	"time"
 
+	// Frameworks
 	gopi "github.com/djthorpe/gopi/v3"
 	tool "github.com/djthorpe/gopi/v3/pkg/tool"
 
-	_ "github.com/djthorpe/gopi/v3/pkg/platform"
+	// Units
+	_ "github.com/djthorpe/gopi/v3/pkg/hw/platform"
+	_ "github.com/djthorpe/gopi/v3/pkg/log"
 )
 
 type App struct {

@@ -39,6 +39,9 @@ type Platform interface {
 	TemperatureZones() map[string]float32      // Return celcius values for zones
 	NumberOfDisplays() uint                    // NumberOfDisplays returns the number of possible displays for this host
 	AttachedDisplays() []uint                  // AttachedDisplays returns array of displays which are connected
+
+	// Set the power state
+	SetPowerState() error
 }
 
 // SPI implements the SPI interface for sensors, etc.
