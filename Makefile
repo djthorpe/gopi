@@ -111,11 +111,10 @@ mediakit: ffmpeg chromaprint
 nfpm:
 	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm
 
-protogen: protoc protoc-gen-go
-	$(GO) generate -x ./pkg/rpc
-
-protoc-gen-go:
-	$(GO) get github.com/golang/protobuf/protoc-gen-go
+protogen: protoc
+	$(GO) get google.golang.org/protobuf/cmd/protoc-gen-go
+	$(GO) get google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	$(GO) generate -x ./rpc
 
 protoc:
 ifeq ($(shell which protoc),)
