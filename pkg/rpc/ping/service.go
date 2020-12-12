@@ -34,6 +34,8 @@ func (this *service) New(cfg gopi.Config) error {
 
 func (this *service) CancelStreams() {}
 
+func (this *service) mustEmbedUnimplementedPingServer() {}
+
 /////////////////////////////////////////////////////////////////////
 // RPC METHODS
 

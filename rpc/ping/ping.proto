@@ -2,9 +2,9 @@ syntax = "proto3";
 package gopi.ping;
 
 option go_package = "github.com/djthorpe/gopi/v3/rpc/ping";
+
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-
 
 message VersionResponse {
     string name = 1;
