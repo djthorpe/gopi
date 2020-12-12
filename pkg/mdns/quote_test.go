@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	// Units
-	mdns "github.com/djthorpe/gopi/v2/unit/mdns"
+	mdns "github.com/djthorpe/gopi/v3/pkg/mdns"
 )
 
 var (
