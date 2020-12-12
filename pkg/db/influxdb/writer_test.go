@@ -159,3 +159,27 @@ func Test_Writer_008(t *testing.T) {
 		}
 	})
 }
+
+func Test_Writer_009(t *testing.T) {
+	tool.Test(t, []string{"-influxdb.url=https://rpi4b/metrics"}, new(WriterApp), func(app *WriterApp) {
+		if ep := app.Writer.Endpoint(); ep == nil {
+			t.Error("Unexpected nil")
+		} else if ep.String() != "https://rpi4b:8086/" {
+			t.Error("Unexpected endpoint", ep)
+		} else {
+			t.Log("endpoint=", ep)
+		}
+	})
+}
+
+func Test_Writer_010(t *testing.T) {
+	tool.Test(t, []string{"-influxdb.url=http://user:pass@rpi4:99/metrics"}, new(WriterApp), func(app *WriterApp) {
+		if ep := app.Writer.Endpoint(); ep == nil {
+			t.Error("Unexpected nil")
+		} else if ep.User.String() != "" {
+			t.Error("Unexpected username/password", ep)
+		} else {
+			t.Log("endpoint=", ep)
+		}
+	})
+}

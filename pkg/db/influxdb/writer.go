@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -54,6 +55,9 @@ const (
 	DefaultScheme   = "http"
 	DefaultEndpoint = DefaultScheme + "://localhost/metrics"
 	DefaultPort     = 8086
+
+	EnvUsername = "INFLUX_USERNAME"
+	EnvPassword = "INFLUX_PASSWORD"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -294,6 +298,8 @@ func parseUrl(value string) (endpoint, error) {
 	// Check various styles
 	if value == "" {
 		value = DefaultEndpoint
+	} else if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		// Skip
 	} else if host, port, err := net.SplitHostPort(value); err == nil {
 		value = DefaultScheme + "://" + host
 		if port != "" {
@@ -330,12 +336,14 @@ func parseUrl(value string) (endpoint, error) {
 	} else if db, err := parseDatabase(u); err != nil {
 		return endpoint{}, err
 	} else {
-		user, password := "", ""
-		if u.User != nil {
+		user := os.Getenv(EnvUsername)
+		password := os.Getenv(EnvPassword)
+		if u.User != nil && u.User.Username() != "" {
 			user = u.User.Username()
 			password, _ = u.User.Password()
 		}
 		u.Path = "/"
+		u.User = nil
 		return endpoint{*u, db, user, password}, nil
 	}
 }
