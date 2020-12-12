@@ -68,7 +68,7 @@ func (this *app) RemuxMedia(ctx context.Context, path string) error {
 	defer this.MediaManager.Close(dst)
 
 	// Read and write packets (no decoding of data)
-	return media.DecodeIterator(ctx, nil, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
+	return media.Read(ctx, nil, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
 		return dst.Write(ctx, packet)
 	})
 }

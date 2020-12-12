@@ -20,13 +20,24 @@ type stream struct {
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
 
-func NewStream(ctx *ffmpeg.AVStream) *stream {
+// NewStream returns a stream object, can optiomally copy codec
+// parameters from another stream if source is not set to nil
+func NewStream(ctx *ffmpeg.AVStream, source *stream) *stream {
 	if ctx == nil {
 		return nil
-	} else if codec := NewCodecWithParameters(ctx.CodecPar()); codec == nil {
-		return nil
+	}
+	if source == nil {
+		if codec := NewCodecWithParameters(ctx.CodecPar()); codec == nil {
+			return nil
+		} else {
+			return &stream{ctx, codec}
+		}
 	} else {
-		return &stream{ctx, codec}
+		if codec := NewCodecWithParameters(source.ctx.CodecPar()); codec == nil {
+			return nil
+		} else {
+			return &stream{ctx, codec}
+		}
 	}
 }
 

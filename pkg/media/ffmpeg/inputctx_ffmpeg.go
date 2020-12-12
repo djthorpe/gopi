@@ -42,7 +42,7 @@ func NewInputContext(ctx *ffmpeg.AVFormatContext) *inputctx {
 		this.streams = make(map[int]*stream, len(streams))
 		for _, stream := range streams {
 			key := stream.Index()
-			this.streams[key] = NewStream(stream)
+			this.streams[key] = NewStream(stream, nil)
 		}
 	}
 
@@ -166,7 +166,7 @@ func (this *inputctx) StreamsForFlag(flag gopi.MediaFlag) []int {
 // PUBLIC METHODS - ITERATE OVER PACKETS
 
 // Iterate over packets in the input stream
-func (this *inputctx) DecodeIterator(ctx context.Context, streams []int, fn gopi.DecodeIteratorFunc) error {
+func (this *inputctx) Read(ctx context.Context, streams []int, fn gopi.DecodeIteratorFunc) error {
 	// Lock for writing as ReadPacket modifies state
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
@@ -201,9 +201,10 @@ func (this *inputctx) DecodeIterator(ctx context.Context, streams []int, fn gopi
 			return gopi.ErrInternalAppError.WithPrefix("DecodeIterator")
 		} else if decodectx := NewDecodeContext(stream, streammap); decodectx == nil {
 			return gopi.ErrInternalAppError.WithPrefix("DecodeIterator")
+		} else if err := streammap.Set(stream, nil); err != nil {
+			return err
 		} else {
 			contextmap[index] = decodectx
-			streammap.add(stream)
 		}
 	}
 

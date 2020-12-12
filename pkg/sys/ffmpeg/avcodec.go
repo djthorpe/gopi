@@ -217,8 +217,8 @@ func (this *AVCodecParameters) ToContext(codecctx *AVCodecContext) error {
 }
 
 // From fill the parameters based on the values from the supplied codec parameters
-func (this *AVCodecParameters) From(codecpar *AVCodecParameters) error {
-	ctx := (*C.AVCodecParameters)(unsafe.Pointer(this))
+func (this *AVCodecParameters) CopyFrom(codecpar *AVCodecParameters) error {
+	ctx := (*C.AVCodecParameters)(this)
 	if err := AVError(C.avcodec_parameters_copy(ctx, (*C.AVCodecParameters)(codecpar))); err != 0 {
 		return err
 	} else {

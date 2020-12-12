@@ -47,7 +47,7 @@ func (this *app) ProcessThumbnails(ctx context.Context, path string) error {
 		return fmt.Errorf("No video information found")
 	}
 
-	return media.DecodeIterator(ctx, []int{streams[0]}, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
+	return media.Read(ctx, []int{streams[0]}, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
 		return media.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
 			num := ctx.Frame()
 			return this.ProcessFrame(path, num, frame)

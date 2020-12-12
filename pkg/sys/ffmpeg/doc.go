@@ -17,6 +17,6 @@ You will also need to use -tags ffmpeg when testing, building or
 installing.
 
 API Documentation Sources:
-https://ffmpeg.org/doxygen/4.1/index.html
+https://ffmpeg.org/doxygen/trunk/index.html
 
 */

@@ -55,8 +55,9 @@ type MediaInput interface {
 	// the best streams to use according to the flags
 	StreamsForFlag(MediaFlag) []int
 
-	// DecodeIterator loops over selected streams from media object
-	DecodeIterator(context.Context, []int, DecodeIteratorFunc) error
+	// Read loops over selected streams from media object, and
+	// packets are provided to a Decode function
+	Read(context.Context, []int, DecodeIteratorFunc) error
 
 	// DecodeFrameIterator loops over data packets from media stream
 	DecodeFrameIterator(MediaDecodeContext, MediaPacket, DecodeFrameIteratorFunc) error

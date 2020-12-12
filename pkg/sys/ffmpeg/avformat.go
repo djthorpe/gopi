@@ -28,7 +28,6 @@ type (
 	AVFormatContext C.struct_AVFormatContext
 	AVInputFormat   C.struct_AVInputFormat
 	AVOutputFormat  C.struct_AVOutputFormat
-	AVIOContext     C.struct_AVIOContext
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,29 +82,6 @@ func AllDemuxers() []*AVInputFormat {
 		}
 	}
 	return demuxers
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// AVIO
-
-func NewAVIOContext(url *url.URL, flags AVIOFlag) (*AVIOContext, error) {
-	url_ := C.CString(url.String())
-	defer C.free(unsafe.Pointer(url_))
-	ctx := (*C.AVIOContext)(unsafe.Pointer(nil))
-	if err := AVError(C.avio_open(
-		&ctx,
-		url_,
-		C.int(flags),
-	)); err != 0 {
-		return nil, err
-	} else {
-		return (*AVIOContext)(ctx), nil
-	}
-}
-
-func (this *AVIOContext) Free() {
-	ctx := (*C.AVIOContext)(unsafe.Pointer(this))
-	C.avio_context_free(&ctx)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

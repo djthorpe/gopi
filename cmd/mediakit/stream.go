@@ -26,7 +26,7 @@ func (this *app) Stream(ctx context.Context) error {
 
 func (this *app) StreamMedia(ctx context.Context, media gopi.MediaInput) error {
 	// Iterate through the frames decoding them
-	return media.DecodeIterator(ctx, nil, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
+	return media.Read(ctx, nil, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
 		return media.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
 			fmt.Println("f=", frame)
 			return nil
