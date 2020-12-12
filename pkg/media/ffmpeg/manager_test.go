@@ -3,6 +3,7 @@
 package ffmpeg_test
 
 import (
+	"context"
 	"testing"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -16,7 +17,7 @@ type MediaApp struct {
 }
 
 const (
-	SAMPLE_FILE = "../../../etc/sample.mp4"
+	SAMPLE_FILE = "../../../etc/media/sample.mp4"
 )
 
 func Test_MediaManager_001(t *testing.T) {
@@ -56,7 +57,10 @@ func Test_MediaManager_004(t *testing.T) {
 			t.Error(err)
 		}
 		defer app.Manager.Close(file)
-		if err := file.DecodeIterator(nil, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		if err := file.Read(ctx, nil, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
 			t.Log(ctx, packet)
 			return nil
 		}); err != nil {
@@ -72,9 +76,12 @@ func Test_MediaManager_005(t *testing.T) {
 			t.Error(err)
 		}
 		defer app.Manager.Close(file)
-		if err := file.DecodeIterator(nil, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
-			return file.DecodeFrameIterator(ctx, packet, func(ctx gopi.MediaDecodeContext, frame gopi.MediaFrame) error {
-				t.Log("=>", ctx, frame)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		if err := file.Read(ctx, nil, func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
+			return file.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
+				t.Log("=>", frame)
 				return nil
 			})
 			return nil

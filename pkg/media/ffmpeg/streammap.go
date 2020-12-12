@@ -29,9 +29,6 @@ func NewStreamMap() *streammap {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-////////////////////////////////////////////////////////////////////////////////
-// METHODS
-
 // Add an input stream to the map
 func (this *streammap) Set(in, out *stream) error {
 	this.RWMutex.Lock()
@@ -51,7 +48,20 @@ func (this *streammap) Set(in, out *stream) error {
 	return nil
 }
 
-// Map returns an output stream for an input stream
+// Get returns an output stream for an input or
+// nil otherwise
+func (this *streammap) Get(in *stream) *stream {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if out, exists := this.m[in]; exists == false {
+		return nil
+	} else {
+		return out
+	}
+}
+
+// Map returns a map of output streams for a input
 func (this *streammap) Map() map[*stream]*stream {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()

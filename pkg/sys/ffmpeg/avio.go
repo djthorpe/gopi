@@ -48,6 +48,11 @@ func (this *AVIOContext) Close() error {
 	}
 }
 
+func (this *AVIOContext) Free() {
+	ctx := (*C.AVIOContext)(this)
+	C.avio_context_free(&ctx)
+}
+
 func (this *AVIOContext) Flush() {
 	ctx := (*C.AVIOContext)(this)
 	C.avio_flush(ctx)
@@ -75,9 +80,4 @@ func (this *AVIOContext) Write(buf []byte) {
 	}
 	size := len(buf)
 	C.avio_write(ctx, (*C.uint8_t)(data), C.int(size))
-}
-
-func (this *AVIOContext) Free() {
-	ctx := (*C.AVIOContext)(this)
-	C.avio_context_free(&ctx)
 }

@@ -10,6 +10,7 @@ import (
 
 	gopi "github.com/djthorpe/gopi/v3"
 	ffmpeg "github.com/djthorpe/gopi/v3/pkg/sys/ffmpeg"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -19,6 +20,7 @@ type outputctx struct {
 	sync.RWMutex
 
 	ctx     *ffmpeg.AVFormatContext
+	avio    *ffmpeg.AVIOContext
 	streams []*stream
 }
 
@@ -42,6 +44,23 @@ func (this *outputctx) Close() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
+	var result error
+
+	// Write trailer
+	if this.ctx != nil {
+		if err := this.ctx.WriteTrailer(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	// Close files
+	if this.avio != nil {
+		this.avio.Flush()
+		if err := this.avio.Close(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
 	// Release streams
 	for _, stream := range this.streams {
 		stream.Release()
@@ -54,10 +73,11 @@ func (this *outputctx) Close() error {
 
 	// Release resources
 	this.ctx = nil
+	this.avio = nil
 	this.streams = nil
 
 	// Return success
-	return nil
+	return multierror.Flatten(result)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,6 +105,14 @@ func (this *outputctx) Metadata() gopi.MediaMetadata {
 	}
 }
 
+func (this *outputctx) IsFile() bool {
+	if this.ctx == nil {
+		return false
+	} else {
+		return this.ctx.Flags()&ffmpeg.AVFMT_NOFILE == 0
+	}
+}
+
 func (this *outputctx) Flags() gopi.MediaFlag {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
@@ -96,7 +124,7 @@ func (this *outputctx) Flags() gopi.MediaFlag {
 
 	// Stream flags
 	flags := gopi.MEDIA_FLAG_ENCODER
-	if this.ctx.Flags()&ffmpeg.AVFMT_NOFILE == 0 {
+	if this.IsFile() {
 		flags |= gopi.MEDIA_FLAG_FILE
 	}
 
@@ -125,12 +153,50 @@ func (this *outputctx) Streams() []gopi.MediaStream {
 
 // DecodeIterator loops over selected streams from media object
 func (this *outputctx) Write(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
-	// If streams have not been set up yet...
+	// If file and no avio context, then create one
+	if this.IsFile() && this.avio == nil {
+		if avio, err := ffmpeg.NewAVIOContext(this.URL(), ffmpeg.AVIO_FLAG_WRITE); err != nil {
+			return err
+		} else {
+			this.avio = avio
+			this.ctx.SetIOContext(avio)
+		}
+	}
+
+	// If streams have not been set up yet, create output streams and write
+	// file header
 	if this.streams == nil {
 		if err := this.MapStreams(ctx); err != nil {
 			return err
 		}
+		if err := this.ctx.WriteHeader(nil); err != nil {
+			return err
+		}
 	}
+
+	/*
+		in_stream  = ifmt_ctx->streams[pkt.stream_index];
+		if (pkt.stream_index >= stream_mapping_size ||
+			stream_mapping[pkt.stream_index] < 0) {
+			av_packet_unref(&pkt);
+			continue;
+		}
+		pkt.stream_index = stream_mapping[pkt.stream_index];
+		out_stream = ofmt_ctx->streams[pkt.stream_index];
+		log_packet(ifmt_ctx, &pkt, "in");
+		// copy packet
+		pkt.pts = av_rescale_q_rnd(pkt.pts, in_stream->time_base, out_stream->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+		pkt.dts = av_rescale_q_rnd(pkt.dts, in_stream->time_base, out_stream->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
+		pkt.duration = av_rescale_q(pkt.duration, in_stream->time_base, out_stream->time_base);
+		pkt.pos = -1;
+		log_packet(ofmt_ctx, &pkt, "out");
+		ret = av_interleaved_write_frame(ofmt_ctx, &pkt);
+		if (ret < 0) {
+			fprintf(stderr, "Error muxing packet\n");
+			break;
+		}
+		av_packet_unref(&pkt);
+	*/
 
 	return gopi.ErrNotImplemented
 }

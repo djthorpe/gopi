@@ -197,9 +197,9 @@ func (this *AVCodecParameters) NewDecoderContext() (*AVCodecContext, *AVCodec) {
 
 // FromContext fill the parameters based on the values from the
 // supplied codec context
-func (this *AVCodecParameters) FromContext(codecctx *AVCodecContext) error {
-	ctx := (*C.AVCodecParameters)(unsafe.Pointer(this))
-	if err := AVError(C.avcodec_parameters_from_context(ctx, (*C.AVCodecContext)(codecctx))); err != 0 {
+func (this *AVCodecParameters) FromContext(other *AVCodecContext) error {
+	ctx := (*C.AVCodecParameters)(this)
+	if err := AVError(C.avcodec_parameters_from_context(ctx, (*C.AVCodecContext)(other))); err != 0 {
 		return err
 	} else {
 		return nil
@@ -207,9 +207,9 @@ func (this *AVCodecParameters) FromContext(codecctx *AVCodecContext) error {
 }
 
 // ToContext fills the codec context based on the values
-func (this *AVCodecParameters) ToContext(codecctx *AVCodecContext) error {
-	ctx := (*C.AVCodecParameters)(unsafe.Pointer(this))
-	if err := AVError(C.avcodec_parameters_to_context((*C.AVCodecContext)(codecctx), ctx)); err != 0 {
+func (this *AVCodecParameters) ToContext(other *AVCodecContext) error {
+	ctx := (*C.AVCodecParameters)(this)
+	if err := AVError(C.avcodec_parameters_to_context((*C.AVCodecContext)(other), ctx)); err != 0 {
 		return err
 	} else {
 		return nil

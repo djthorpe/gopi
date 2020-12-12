@@ -173,7 +173,7 @@ func (this *AVFormatContext) WriteHeader(dict *AVDictionary) error {
 }
 
 // Write trailer
-func (this *AVFormatContext) WriteTrailer(dict *AVDictionary) error {
+func (this *AVFormatContext) WriteTrailer() error {
 	ctx := (*C.AVFormatContext)(this)
 	if ret := AVError(C.av_write_trailer(ctx)); ret != 0 {
 		return ret
@@ -258,6 +258,18 @@ func (this *AVFormatContext) InputFormat() *AVInputFormat {
 func (this *AVFormatContext) OutputFormat() *AVOutputFormat {
 	ctx := (*C.AVFormatContext)(unsafe.Pointer(this))
 	return (*AVOutputFormat)(ctx.oformat)
+}
+
+// IOContext returns the current IO context
+func (this *AVFormatContext) IOContext() *AVIOContext {
+	ctx := (*C.AVFormatContext)(this)
+	return (*AVIOContext)(ctx.pb)
+}
+
+// SetIOContext sets the current IO context
+func (this *AVFormatContext) SetIOContext(avio *AVIOContext) {
+	ctx := (*C.AVFormatContext)(this)
+	ctx.pb = (*C.AVIOContext)(avio)
 }
 
 func (this *AVFormatContext) String() string {
