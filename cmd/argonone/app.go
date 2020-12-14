@@ -16,6 +16,7 @@ type app struct {
 	gopi.ArgonOne
 	gopi.Command
 	gopi.ConnPool
+	gopi.InputService
 	gopi.LIRC
 	gopi.LIRCKeycodeManager
 	gopi.Logger
@@ -78,12 +79,11 @@ func (this *app) RunStream(ctx context.Context) error {
 	ch := make(chan gopi.InputEvent)
 	defer close(ch)
 
-	// Recieve events in background
+	// Receive events in background
 	go func(ch <-chan gopi.InputEvent) {
 		for evt := range ch {
-			fmt.Println("EVT=", evt)
+			fmt.Println(evt)
 		}
-		fmt.Println("FINISHED")
 	}(ch)
 
 	if stub, err := this.GetInputStub(); err != nil {
