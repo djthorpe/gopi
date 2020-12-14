@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -24,6 +25,7 @@ type server struct {
 
 	srv      *grpc.Server
 	listener net.Listener
+	cancels  []context.CancelFunc
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -110,6 +112,11 @@ func (this *server) Stop(force bool) error {
 		return nil
 	}
 
+	// Send cancels
+	for _, cancel := range this.cancels {
+		cancel()
+	}
+
 	// Perform stop
 	if force {
 		this.srv.Stop()
@@ -126,7 +133,7 @@ func (this *server) Stop(force bool) error {
 
 func (this *server) RegisterService(fn interface{}, service gopi.Service) error {
 	if this.Logger != nil {
-		this.Logger.Debug("RegisterService", reflect.TypeOf(service))
+		this.Logger.Debug("RegisterService: ", reflect.TypeOf(service))
 	}
 
 	// Check parameters
@@ -144,6 +151,15 @@ func (this *server) RegisterService(fn interface{}, service gopi.Service) error 
 
 	// Return success
 	return nil
+}
+
+func (this *server) NewStreamContext() context.Context {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	this.cancels = append(this.cancels, cancel)
+	return ctx
 }
 
 func (this *server) Addr() string {

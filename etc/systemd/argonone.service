@@ -13,5 +13,5 @@ EnvironmentFile=/opt/gopi/etc/argonone.env
 ExecStart=/opt/gopi/bin/argonone \
     -debug=${DEBUG} \
     -argonone.measurement=${MEASUREMENT} \
-    -influxdb.url=${INFLUXDB}
+    -influxdb.url=${INFLUX_DB}
 Restart=on-failure
