@@ -9,6 +9,7 @@ import (
 	graph "github.com/djthorpe/gopi/v3/pkg/graph"
 	multierror "github.com/hashicorp/go-multierror"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
 	reflection "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
@@ -123,6 +124,19 @@ func (this *conn) NewStub(service string) gopi.ServiceStub {
 	} else {
 		stub.New(this)
 		return stub
+	}
+}
+
+func (this *conn) Err(err error) error {
+	switch grpc.Code(err) {
+	case codes.Canceled:
+		return context.Canceled
+	case codes.Unavailable:
+		return gopi.ErrUnexpectedResponse
+	case codes.DeadlineExceeded:
+		return context.DeadlineExceeded
+	default:
+		return err
 	}
 }
 

@@ -3,6 +3,8 @@ package gopi
 import (
 	"context"
 	"net"
+
+	"github.com/djthorpe/gopi"
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -13,19 +15,28 @@ type ServiceFlag uint
 /////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-// Server is a generic gRPC server, which can serve registered services
+// Server is a generic RPC server, which can serve responses for
+// registered services to clients
 type Server interface {
-	RegisterService(interface{}, Service) error   // Register an RPC service
-	StartInBackground(network, addr string) error // Start server in background and return
-	Stop(bool) error                              // Stop server, when argument is true forcefully disconnects any clients
-	Addr() string                                 // Addr returns the address of the server, or empty if not connected
+	// Register an RPC service with the server
+	RegisterService(interface{}, Service) error
+
+	// Start server in background and return
+	StartInBackground(network, addr string) error
+
+	// Stop server, when argument is true forcefully disconnects any clients
+	Stop(bool) error
+
+	// Addr returns the address of the server, or empty if not connected
+	Addr() string
+
+	// NewStreamContext returns a streaming context which should be used
+	// to cancel streaming to clients when the server is shutdown
+	NewStreamContext() context.Context
 }
 
-// Service defines an RPC service, which can cancel any on-going streams
-// when server stops
-type Service interface {
-	CancelStreams()
-}
+// Service defines an RPC service
+type Service interface{}
 
 // ConnPool is a factory of client connections
 type ConnPool interface {
@@ -41,9 +52,15 @@ type Conn interface {
 	Lock()   // Lock during RPC call
 	Unlock() // Unlock at end of RPC call
 
-	// Methods
-	ListServices(context.Context) ([]string, error) // Return a list of services supported
-	NewStub(string) ServiceStub                     // Return the stub for a named service
+	// ListServices returns a list of all services supported by the
+	// remote server
+	ListServices(context.Context) ([]string, error)
+
+	// NewStub returns the stub for a named service
+	NewStub(string) ServiceStub
+
+	// Err translates service error codes to gopi error types
+	Err(error) error
 }
 
 // ServiceStub is a client-side stub used to invoke remote service methods
@@ -91,6 +108,16 @@ type PingStub interface {
 	Ping(ctx context.Context) error
 	Version(ctx context.Context) (Version, error)
 	ListServices(context.Context) ([]string, error) // Return a list of services supported
+}
+
+type InputService interface {
+	Service
+}
+
+type InputStub interface {
+	ServiceStub
+
+	Stream(ctx context.Context, ch chan<- gopi.InputEvent) error
 }
 
 /////////////////////////////////////////////////////////////////////

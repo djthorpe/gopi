@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	// Frameworks
 	gopi "github.com/djthorpe/gopi/v3"
 
 	// Units
@@ -14,6 +15,8 @@ import (
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/platform"
 	_ "github.com/djthorpe/gopi/v3/pkg/log"
 	_ "github.com/djthorpe/gopi/v3/pkg/metrics"
+	_ "github.com/djthorpe/gopi/v3/pkg/rpc/input"
+	_ "github.com/djthorpe/gopi/v3/pkg/rpc/server"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,12 +29,13 @@ type argonone struct {
 	gopi.Logger
 	gopi.Metrics
 	gopi.LIRC
+	gopi.InputService
 
 	bus         gopi.I2CBus
 	slave       uint8
 	tempzone    string
 	measurement string
-	fan         *fanValue
+	fan         *Value
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,7 +91,7 @@ func (this *argonone) New(cfg gopi.Config) error {
 	}
 
 	// Set Hysteresis to prevent flapping
-	this.fan = NewFanValue(fanDelay)
+	this.fan = NewValueWithDelta(fanDelay)
 
 	// Check platform
 	if this.Platform == nil {
@@ -228,19 +232,18 @@ func (this *argonone) getTemperature() float32 {
 
 func (this *argonone) setFanForTemperature(celcius float32) error {
 	// Obtain fan value for temperature
-	fan := fanConfig.fanForTemperature(celcius)
+	fan, changed := this.fan.Set(fanConfig.fanForTemperature(celcius))
 
 	// Report measurement
 	if this.measurement != "" {
-		if err := this.Metrics.Emit(this.measurement, celcius, fan); err != nil {
+		if err := this.Metrics.Emit(this.measurement, celcius, fan.(uint8)); err != nil {
 			return err
 		}
 	}
 
-	// Determine if we should set the fan
-	if this.fan.Set(fan) {
+	if changed {
 		this.Debugf("Setting fan => %d%%", fan)
-		if err := this.SetFan(fan); err != nil {
+		if err := this.SetFan(fan.(uint8)); err != nil {
 			return err
 		}
 	}

@@ -22,6 +22,8 @@ license: "Apache 2.0"
 files:
   build/argonone: /opt/gopi/bin/argonone
   etc/systemd/argonone.service: /opt/gopi/etc/argonone.service
+
+config_files:
   etc/systemd/argonone.env: /opt/gopi/etc/argonone.env
 
 symlinks:
