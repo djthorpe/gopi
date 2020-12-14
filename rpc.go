@@ -3,8 +3,6 @@ package gopi
 import (
 	"context"
 	"net"
-
-	"github.com/djthorpe/gopi"
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -117,7 +115,7 @@ type InputService interface {
 type InputStub interface {
 	ServiceStub
 
-	Stream(ctx context.Context, ch chan<- gopi.InputEvent) error
+	Stream(ctx context.Context, ch chan<- InputEvent) error
 }
 
 /////////////////////////////////////////////////////////////////////

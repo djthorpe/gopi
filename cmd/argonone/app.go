@@ -79,7 +79,7 @@ func (this *app) RunStream(ctx context.Context) error {
 	defer close(ch)
 
 	// Recieve events in background
-	go func(ch <-chan gopi.Event) {
+	go func(ch <-chan gopi.InputEvent) {
 		for evt := range ch {
 			fmt.Println("EVT=", evt)
 		}
