@@ -24,6 +24,7 @@ type app struct {
 	gopi.PingService
 	gopi.Publisher
 	gopi.Server
+	gopi.ServiceDiscovery
 }
 
 func (this *app) Define(cfg gopi.Config) error {

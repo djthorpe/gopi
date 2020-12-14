@@ -37,6 +37,10 @@ type FuncRecordsForService func(string) []gopi.ServiceRecord
 // RUN
 
 func (this *Responder) Run(ctx context.Context) error {
+	if this.Publisher == nil {
+		return gopi.ErrInternalAppError.WithPrefix("Missing gopi.Publisher")
+	}
+
 	// Subscribe to DNS messages
 	ch := this.Publisher.Subscribe()
 	defer this.Publisher.Unsubscribe(ch)
@@ -262,7 +266,7 @@ func handleEnum(req *dns.Msg, question dns.Question, zone string, fn FuncService
 	return msgs
 }
 
-func handleRecords(req *dns.Msg, question dns.Question, recs []gopi.ServiceRecord) []*dns.Msg {
+func handleServiceRecords(req *dns.Msg, question dns.Question, recs []gopi.ServiceRecord) []*dns.Msg {
 	// Check incoming parameters
 	if len(recs) == 0 {
 		return nil
@@ -275,22 +279,115 @@ func handleRecords(req *dns.Msg, question dns.Question, recs []gopi.ServiceRecor
 	// Get messages for each record
 	msgs := []*dns.Msg{}
 	for _, rec := range recs {
-		if msg := this.handleRecord(req, question, rec); msg != nil {
+		if msg := handleRecord(req, question, rec); msg != nil {
 			msgs = append(msgs, msg)
 		}
 	}
 	return msgs
 }
 
-func (this *register) handleRecord(req *dns.Msg, question dns.Question, record gopi.RPCServiceRecord) *dns.Msg {
-	key := this.keyForRecord(record)
-	if key == "" {
+func handleRecord(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) *dns.Msg {
+	fmt.Println("ptr=", record.Ptr())
+	// Header
+	answers := []dns.RR{&dns.PTR{
+		Hdr: dns.RR_Header{
+			Name:   question.Name,
+			Rrtype: dns.TypePTR,
+			Class:  dns.ClassINET,
+			Ttl:    queryDefaultTTL,
+		},
+		Ptr: record.Ptr(),
+	}}
+
+	// TODO Append record answers
+
+	return prepareResponse(req, answers...)
+}
+
+func handleRecordAnswers(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []dns.RR {
+	return nil
+	/*
+		switch question.Qtype {
+		case dns.TypeANY:
+			recs := handleRecordAnswers(req, dns.Question{
+				Qtype: dns.TypeSRV,
+				Name:  "i",
+			}, record)
+			return append(recs, handleRecordAnswers(req, dns.Question{
+				Qtype: dns.TypeTXT,
+				Name:  "i",
+			}, record)...)
+		case dns.TypeSRV:
+			srv := &dns.SRV{
+				Hdr: dns.RR_Header{
+					Name:   question.Name,
+					Rrtype: dns.TypeSRV,
+					Class:  dns.ClassINET,
+					Ttl:    queryDefaultTTL,
+				},
+				Priority: 10,
+				Weight:   1,
+				Port:     uint16(record.Port),
+				Target:   record.Host,
+			}
+			// Add the A record
+			recs := append([]dns.RR{srv}, handleRecordAnswers(req, dns.Question{
+				Qtype: dns.TypeA,
+				Name:  "i",
+			}, record)...)
+			// Add the AAAA record
+			return append(recs, handleRecordAnswers(req, dns.Question{
+				Qtype: dns.TypeAAAA,
+				Name:  "i",
+			}, record)...)
+		case dns.TypeA:
+			var rr []dns.RR
+			for _, ip := range record.Addrs {
+				if ip4 := ip.To4(); ip4 != nil {
+					rr = append(rr, &dns.A{
+						Hdr: dns.RR_Header{
+							Name:   record.Host,
+							Rrtype: dns.TypeA,
+							Class:  dns.ClassINET,
+							Ttl:    uint32(MDNS_DEFAULT_TTL),
+						},
+						A: ip4,
+					})
+				}
+			}
+			return rr
+		case dns.TypeAAAA:
+			var rr []dns.RR
+			for _, ip := range record.Addrs {
+				if ip6 := ip.To16(); ip6 != nil {
+					rr = append(rr, &dns.AAAA{
+						Hdr: dns.RR_Header{
+							Name:   record.Host,
+							Rrtype: dns.TypeAAAA,
+							Class:  dns.ClassINET,
+							Ttl:    uint32(MDNS_DEFAULT_TTL),
+						},
+						AAAA: ip6,
+					})
+				}
+			}
+			return rr
+		case dns.TypeTXT:
+			txt := &dns.TXT{
+				Hdr: dns.RR_Header{
+					Name:   question.Name,
+					Rrtype: dns.TypeTXT,
+					Class:  dns.ClassINET,
+					Ttl:    uint32(MDNS_DEFAULT_TTL),
+				},
+				Txt: record.Txt,
+			}
+			return []dns.RR{txt}
+		}
+
+		// Return nil
 		return nil
-	}
-
-	// TODO
-
-	return prepareResponse(answers...)
+	*/
 }
 
 func prepareResponse(req *dns.Msg, answers ...dns.RR) *dns.Msg {
@@ -298,7 +395,7 @@ func prepareResponse(req *dns.Msg, answers ...dns.RR) *dns.Msg {
 	if len(answers) == 0 {
 		return nil
 	}
-	//if unicast { queryId = msg.Id }
+	// if unicast { queryId = msg.Id }
 	return &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Id:            queryId,

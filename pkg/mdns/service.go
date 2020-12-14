@@ -59,6 +59,10 @@ func (this *service) Name() string {
 	return name
 }
 
+func (this *service) Ptr() string {
+	return fqn(this.name)
+}
+
 func (this *service) HostPort() []string {
 	hostport := make([]string, 0, len(this.host))
 	for _, target := range this.host {

@@ -34,6 +34,10 @@ const (
 // RUN
 
 func (this *Discovery) Run(ctx context.Context) error {
+	if this.Publisher == nil {
+		return gopi.ErrInternalAppError.WithPrefix("Missing gopi.Publisher")
+	}
+
 	// Subscribe to DNS messages
 	ch := this.Publisher.Subscribe()
 	defer this.Publisher.Unsubscribe(ch)
@@ -95,7 +99,7 @@ func (this *Discovery) Lookup(ctx context.Context, srv string) ([]gopi.ServiceRe
 	// Collect services in goroutine
 	var wg sync.WaitGroup
 	ch := this.Publisher.Subscribe()
-	records := make([]*service, 0, 10)
+	records := make(map[string]*service, 10)
 
 	wg.Add(1)
 	go func() {
@@ -108,7 +112,8 @@ func (this *Discovery) Lookup(ctx context.Context, srv string) ([]gopi.ServiceRe
 			case evt := <-ch:
 				if service, ok := evt.(*service); ok {
 					if service.Service() == srv && service.ttl != 0 {
-						records = append(records, service)
+						key := service.Ptr()
+						records[key] = service
 					}
 				}
 			}

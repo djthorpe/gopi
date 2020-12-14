@@ -13,6 +13,7 @@ type app struct {
 	gopi.Command
 	gopi.Server
 	gopi.PingService
+	gopi.ServiceDiscovery
 	gopi.Logger
 }
 
