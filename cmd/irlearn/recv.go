@@ -20,7 +20,7 @@ const (
 	format = "%-10s %-20s %-15s %-15s\n"
 )
 
-func FormatDevice(device gopi.InputDevice, code uint32) string {
+func FormatDevice(device gopi.InputDeviceType, code uint32) string {
 	device ^= gopi.INPUT_DEVICE_REMOTE
 	str := strings.TrimPrefix(fmt.Sprint(device), "INPUT_DEVICE_")
 	str += " " + FormatCode(code)

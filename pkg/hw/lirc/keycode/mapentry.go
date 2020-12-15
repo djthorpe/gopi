@@ -11,7 +11,7 @@ import (
 
 type mapentry struct {
 	Key     gopi.KeyCode
-	Device  gopi.InputDevice
+	Device  gopi.InputDeviceType
 	Code    uint32
 	Comment string
 	Index   int

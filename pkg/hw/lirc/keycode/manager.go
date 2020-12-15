@@ -180,7 +180,7 @@ func (this *Manager) Keycode(name string) []gopi.KeyCode {
 }
 
 // Lookup one or more keycodes for a device and scancode
-func (this *Manager) Lookup(device gopi.InputDevice, code uint32) []gopi.KeyCode {
+func (this *Manager) Lookup(device gopi.InputDeviceType, code uint32) []gopi.KeyCode {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -194,7 +194,7 @@ func (this *Manager) Lookup(device gopi.InputDevice, code uint32) []gopi.KeyCode
 }
 
 // Set keycode for name,device and scancode
-func (this *Manager) Set(device gopi.InputDevice, code uint32, key gopi.KeyCode, name string) error {
+func (this *Manager) Set(device gopi.InputDeviceType, code uint32, key gopi.KeyCode, name string) error {
 	// Set mapping in existing or new database
 	if db, err := this.DatabaseForName(name); err != nil {
 		return err

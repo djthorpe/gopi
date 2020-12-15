@@ -109,7 +109,7 @@ func (this *keycodedb) Write(cache *Cache) error {
 	return nil
 }
 
-func (this *keycodedb) Lookup(device gopi.InputDevice, code uint32) gopi.KeyCode {
+func (this *keycodedb) Lookup(device gopi.InputDeviceType, code uint32) gopi.KeyCode {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
@@ -122,7 +122,7 @@ func (this *keycodedb) Lookup(device gopi.InputDevice, code uint32) gopi.KeyCode
 	}
 }
 
-func (this *keycodedb) Set(device gopi.InputDevice, code uint32, key gopi.KeyCode) error {
+func (this *keycodedb) Set(device gopi.InputDeviceType, code uint32, key gopi.KeyCode) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
@@ -157,7 +157,7 @@ func (this *keycodedb) Set(device gopi.InputDevice, code uint32, key gopi.KeyCod
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func keyForEntry(device gopi.InputDevice, code uint32) uint64 {
+func keyForEntry(device gopi.InputDeviceType, code uint32) uint64 {
 	// Creates a lookup key for device/scancode combo or
 	// returns zero
 	if device == gopi.INPUT_DEVICE_NONE {

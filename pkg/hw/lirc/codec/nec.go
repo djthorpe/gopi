@@ -109,7 +109,7 @@ Reference:
 // TYPES
 
 type NEC struct {
-	codec  gopi.InputDevice
+	codec  gopi.InputDeviceType
 	length uint
 	state  necstate
 	bits   []bool
@@ -150,7 +150,7 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
 
-func NewNEC(codec gopi.InputDevice) *NEC {
+func NewNEC(codec gopi.InputDeviceType) *NEC {
 	this := new(NEC)
 	if length := bitLengthForCodec(codec); length == 0 {
 		return nil
@@ -166,7 +166,7 @@ func NewNEC(codec gopi.InputDevice) *NEC {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func bitLengthForCodec(codec gopi.InputDevice) uint {
+func bitLengthForCodec(codec gopi.InputDeviceType) uint {
 	switch codec {
 	case gopi.INPUT_DEVICE_NEC_32:
 		return 32
@@ -244,7 +244,7 @@ func valueFromBits(bits []bool) uint32 {
 	return value
 }
 
-func codeForCodec(codec gopi.InputDevice, value uint32) uint32 {
+func codeForCodec(codec gopi.InputDeviceType, value uint32) uint32 {
 	switch codec {
 	case gopi.INPUT_DEVICE_APPLETV_32:
 		if addr := value & 0xFFFF0000 >> 16; addr != APPLETV_CODE {

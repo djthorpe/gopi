@@ -39,7 +39,7 @@ func (this *event) Key() gopi.KeyCode {
 	return this.KeyCode
 }
 
-func (this *event) Device() (gopi.InputDevice, uint32) {
+func (this *event) Device() (gopi.InputDeviceType, uint32) {
 	return this.CodecEvent.Device | gopi.INPUT_DEVICE_REMOTE, this.CodecEvent.Code
 }
 

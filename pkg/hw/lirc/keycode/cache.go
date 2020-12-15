@@ -21,7 +21,7 @@ type Cache struct {
 	sync.RWMutex
 
 	lookup  map[string][]gopi.KeyCode
-	device  map[string]gopi.InputDevice
+	device  map[string]gopi.InputDeviceType
 	keycode map[string]gopi.KeyCode
 }
 
@@ -30,7 +30,7 @@ type Cache struct {
 
 func (this *Cache) New(gopi.Config) error {
 	this.lookup = make(map[string][]gopi.KeyCode, gopi.KEYCODE_MAX*2)
-	this.device = make(map[string]gopi.InputDevice)
+	this.device = make(map[string]gopi.InputDeviceType)
 	this.keycode = make(map[string]gopi.KeyCode, gopi.KEYCODE_MAX)
 
 	// Index
@@ -106,7 +106,7 @@ func (this *Cache) KeycodeName(k gopi.KeyCode) string {
 	return fmt.Sprint(k)
 }
 
-func (this *Cache) DeviceName(d gopi.InputDevice) string {
+func (this *Cache) DeviceName(d gopi.InputDeviceType) string {
 	return strings.TrimPrefix(fmt.Sprint(d), "INPUT_DEVICE_")
 }
 
@@ -141,7 +141,7 @@ func (this *Cache) SearchKeycode(name string) []gopi.KeyCode {
 	return result
 }
 
-func (this *Cache) LookupDevice(name string) gopi.InputDevice {
+func (this *Cache) LookupDevice(name string) gopi.InputDeviceType {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 

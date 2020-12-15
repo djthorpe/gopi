@@ -18,7 +18,7 @@ type Codec interface {
 
 type CodecEvent struct {
 	Type   gopi.InputType
-	Device gopi.InputDevice
+	Device gopi.InputDeviceType
 	Code   uint32
 }
 

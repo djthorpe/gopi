@@ -40,7 +40,7 @@ Reference:
 // TYPES
 
 type RC5 struct {
-	codec  gopi.InputDevice
+	codec  gopi.InputDeviceType
 	length uint
 	state  rc5state
 	bits   []bool
@@ -73,7 +73,7 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
 
-func NewRC5(codec gopi.InputDevice) *RC5 {
+func NewRC5(codec gopi.InputDeviceType) *RC5 {
 	this := new(RC5)
 	if codec != gopi.INPUT_DEVICE_RC5_14 {
 		return nil

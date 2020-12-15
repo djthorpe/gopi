@@ -6,10 +6,23 @@ import "strings"
 // TYPES
 
 type InputType uint
-type InputDevice uint16
+type InputDeviceType uint16
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
+
+// InputManager provides information on registered devices
+type InputManager interface {
+	Devices() []InputDevice
+
+	RegisterDevice(InputDevice) error
+}
+
+// InputDevice provides information about an input device
+type InputDevice interface {
+	Name() string
+	Type() InputDeviceType
+}
 
 // InputEvent is a key press, mouse move, etc.
 type InputEvent interface {
@@ -23,21 +36,21 @@ type InputEvent interface {
 // CONSTANTS
 
 const (
-	INPUT_DEVICE_NONE        InputDevice = 0x0000
-	INPUT_DEVICE_KEYBOARD    InputDevice = 0x0001
-	INPUT_DEVICE_MOUSE       InputDevice = 0x0002
-	INPUT_DEVICE_TOUCHSCREEN InputDevice = 0x0004
-	INPUT_DEVICE_JOYSTICK    InputDevice = 0x0008
-	INPUT_DEVICE_REMOTE      InputDevice = 0x0010 // IR Remote
-	INPUT_DEVICE_SONY_12     InputDevice = 0x0020 // 12-bit Sony IR codes
-	INPUT_DEVICE_SONY_15     InputDevice = 0x0040 // 15-bit Sony IR codes
-	INPUT_DEVICE_SONY_20     InputDevice = 0x0080 // 20-bit Sony IR codes
-	INPUT_DEVICE_RC5_14      InputDevice = 0x0100 // 14-bit RC5 IR codes
-	INPUT_DEVICE_NEC_32      InputDevice = 0x0200 // 32-bit NEC IR codes
-	INPUT_DEVICE_APPLETV_32  InputDevice = 0x0400 // 32-bit Apple TV IR codes
-	INPUT_DEVICE_ANY         InputDevice = 0xFFFF
-	INPUT_DEVICE_MIN                     = INPUT_DEVICE_KEYBOARD
-	INPUT_DEVICE_MAX                     = INPUT_DEVICE_APPLETV_32
+	INPUT_DEVICE_NONE        InputDeviceType = 0x0000
+	INPUT_DEVICE_KEYBOARD    InputDeviceType = 0x0001
+	INPUT_DEVICE_MOUSE       InputDeviceType = 0x0002
+	INPUT_DEVICE_TOUCHSCREEN InputDeviceType = 0x0004
+	INPUT_DEVICE_JOYSTICK    InputDeviceType = 0x0008
+	INPUT_DEVICE_REMOTE      InputDeviceType = 0x0010 // IR Remote
+	INPUT_DEVICE_SONY_12     InputDeviceType = 0x0020 // 12-bit Sony IR codes
+	INPUT_DEVICE_SONY_15     InputDeviceType = 0x0040 // 15-bit Sony IR codes
+	INPUT_DEVICE_SONY_20     InputDeviceType = 0x0080 // 20-bit Sony IR codes
+	INPUT_DEVICE_RC5_14      InputDeviceType = 0x0100 // 14-bit RC5 IR codes
+	INPUT_DEVICE_NEC_32      InputDeviceType = 0x0200 // 32-bit NEC IR codes
+	INPUT_DEVICE_APPLETV_32  InputDeviceType = 0x0400 // 32-bit Apple TV IR codes
+	INPUT_DEVICE_ANY         InputDeviceType = 0xFFFF
+	INPUT_DEVICE_MIN                         = INPUT_DEVICE_KEYBOARD
+	INPUT_DEVICE_MAX                         = INPUT_DEVICE_APPLETV_32
 )
 
 const (
@@ -86,7 +99,7 @@ func (e InputType) String() string {
 	}
 }
 
-func (d InputDevice) FlagString() string {
+func (d InputDeviceType) FlagString() string {
 	switch d {
 	case INPUT_DEVICE_NONE:
 		return "INPUT_DEVICE_NONE"
@@ -115,11 +128,11 @@ func (d InputDevice) FlagString() string {
 	case INPUT_DEVICE_ANY:
 		return "INPUT_DEVICE_ANY"
 	default:
-		return "[?? Invalid InputDevice value]"
+		return "[?? Invalid InputDeviceType value]"
 	}
 }
 
-func (d InputDevice) String() string {
+func (d InputDeviceType) String() string {
 	if d == INPUT_DEVICE_NONE || d == INPUT_DEVICE_ANY {
 		return d.FlagString()
 	}
