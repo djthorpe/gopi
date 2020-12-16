@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	CSV_PATH = "../../etc/csv/time_series_covid19_confirmed_global.csv"
+	CSV_PATH  = "../../etc/csv/time_series_covid19_confirmed_global.csv"
+	CSV2_PATH = "../../etc/csv/12-15-2020.csv"
 )
 
 func Test_Table_001(t *testing.T) {
@@ -78,7 +79,6 @@ func Test_Table_005(t *testing.T) {
 		table.Render(&buf)
 		t.Log(buf.String())
 	}
-
 }
 
 func Test_Table_006(t *testing.T) {
@@ -100,4 +100,19 @@ func Test_Table_006(t *testing.T) {
 	var buf bytes.Buffer
 	v.Render(&buf, table.WithHeader(false), table.WithOffsetLimit(1, 2))
 	t.Log(buf.String())
+}
+
+func Test_Table_007(t *testing.T) {
+	fh, err := os.Open(CSV2_PATH)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fh.Close()
+	if data, err := table.ReadCSV(fh); err != nil {
+		t.Fatal(err)
+	} else {
+		var buf bytes.Buffer
+		data.Render(&buf, table.WithHeader(true))
+		t.Log(buf.String())
+	}
 }
