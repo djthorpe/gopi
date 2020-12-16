@@ -104,8 +104,6 @@ func (t *Table) Append(row ...interface{}) {
 		t.types[i].Parse(row[i])
 	}
 
-	fmt.Println("types=", t.types)
-
 	// Append row
 	t.rows = append(t.rows, row_)
 
