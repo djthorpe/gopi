@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/table"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -28,6 +29,14 @@ type app struct {
 	fontdir *string
 	i2cbus  *uint
 	timeout *time.Duration
+}
+
+type header struct {
+	string
+}
+
+func (h header) Format() (string, table.Alignment, table.Color) {
+	return "[" + h.string + "]", table.Auto, table.White | table.Inverse
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,39 +94,24 @@ func (this *app) Run(ctx context.Context) error {
 
 func (this *app) RunHardware(context.Context) error {
 	// Display platform information
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAutoMergeCells(true)
-	table.Append([]string{
-		"Product", this.Platform.Product(), fmt.Sprint(this.Platform.Type()),
-	})
-	table.Append([]string{
-		"Serial Number", "", this.Platform.SerialNumber(),
-	})
-	table.Append([]string{
-		"Uptime", "", this.Platform.Uptime().Truncate(time.Second).String(),
-	})
+	table := table.New(table.WithHeader(false), table.WithMergeCells())
+
+	table.Append(header{"Product"}, this.Platform.Product(), fmt.Sprint(this.Platform.Type()))
+	table.Append("Serial Number", "", this.Platform.SerialNumber())
+	table.Append("Uptime", "", this.Platform.Uptime().Truncate(time.Second).String())
 	if l1, l5, l15 := this.Platform.LoadAverages(); l1 != 0 && l5 != 0 && l15 != 0 {
-		table.AppendBulk([][]string{
-			{"Load Averages", "1m", fmt.Sprintf("%.2f", l1)},
-			{"Load Averages", "5m", fmt.Sprintf("%.2f", l5)},
-			{"Load Averages", "15m", fmt.Sprintf("%.2f", l15)},
-		})
+		table.Append("Load Averages", "1m", fmt.Sprintf("%.2f", l1))
+		table.Append("Load Averages", "5m", fmt.Sprintf("%.2f", l5))
+		table.Append("Load Averages", "15m", fmt.Sprintf("%.2f", l15))
 	}
 	if zones := this.Platform.TemperatureZones(); len(zones) > 0 {
 		for k, v := range zones {
-			table.Append([]string{
-				"Temperature Zones", k, fmt.Sprintf("%.2fC", v),
-			})
+			table.Append("Temperature Zones", k, fmt.Sprintf("%.2fC", v))
 		}
 	}
-	table.Append([]string{
-		"Number of Displays", "", fmt.Sprint(this.Platform.NumberOfDisplays()),
-	})
-	table.Append([]string{
-		"Attached Displays", "", fmt.Sprint(this.Platform.AttachedDisplays()),
-	})
-	table.Render()
+	table.Append("Number of Displays", "", fmt.Sprint(this.Platform.NumberOfDisplays()))
+	table.Append("Attached Displays", "", fmt.Sprint(this.Platform.AttachedDisplays()))
+	table.Render(os.Stdout)
 
 	// Return success
 	return nil
