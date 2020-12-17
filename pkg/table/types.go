@@ -28,7 +28,27 @@ const (
 	Duration
 	Nil
 	kindMin = String
-	kindMax = Duration
+	kindMax = Nil
+)
+
+/////////////////////////////////////////////////////////////////////
+// DATE FORMATS
+
+var (
+	dateFmts = []string{
+		time.RFC3339,
+		time.RFC3339Nano,
+		time.ANSIC,
+		time.StampMicro,
+		time.StampMilli,
+		time.Stamp,
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
+		"2006-01-02",
+		"2006/01/02",
+		"02-01-2006",
+		"02/01/2006",
+	}
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -107,6 +127,15 @@ func (k Kind) String() string {
 
 /////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
+
+func alignmentForKind(k Kind) Alignment {
+	switch k {
+	case Uint, Int, Float, Bool, Time, Duration:
+		return Right
+	default:
+		return Left
+	}
+}
 
 func isKind(rv reflect.Value, k Kind) bool {
 	switch k {
@@ -209,9 +238,15 @@ func isTime(rv reflect.Value) bool {
 	switch rv.Kind() {
 	case reflect.Struct:
 		return rv.Type() == reflect.TypeOf(time.Time{})
-	default:
-		return false
+	case reflect.String:
+		str := rv.String()
+		for _, dateFmt := range dateFmts {
+			if _, err := time.Parse(dateFmt, str); err == nil {
+				return true
+			}
+		}
 	}
+	return false
 }
 
 func isDuration(rv reflect.Value) bool {

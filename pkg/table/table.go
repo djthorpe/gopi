@@ -13,7 +13,7 @@ import (
 /////////////////////////////////////////////////////////////////////
 // TYPES
 
-// Table represents a data table with a header of columns
+// Table represents a data table with a header & footer
 type Table struct {
 	cols          []cell
 	types         []Types
@@ -151,14 +151,34 @@ func (t *Table) Render(w io.Writer, opts ...Option) {
 	for _, opt := range opts {
 		opt(t)
 	}
+
 	// Write table
 	table := tablewriter.NewWriter(w)
 	if t.header {
 		table.SetHeader(stringArray(t.cols))
 	}
 
-	// Set merge
+	// Set column alignment and colour
+	align := make([]int, len(t.cols))
+	for i, col := range t.cols {
+		colalign := col.align
+		if colalign == Auto {
+			colalign = alignmentForKind(t.types[i].Kind())
+		}
+		switch colalign {
+		case Left:
+			align[i] = tablewriter.ALIGN_LEFT
+		case Right:
+			align[i] = tablewriter.ALIGN_RIGHT
+		case Center:
+			align[i] = tablewriter.ALIGN_CENTER
+		}
+	}
+
+	// Set options
 	table.SetAutoMergeCells(t.merge)
+	table.SetColumnAlignment(align)
+	table.SetAutoFormatHeaders(false)
 
 	// Output rows
 	c := uint(0)

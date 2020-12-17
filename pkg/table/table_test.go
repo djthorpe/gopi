@@ -116,3 +116,13 @@ func Test_Table_007(t *testing.T) {
 		t.Log(buf.String())
 	}
 }
+
+func Test_Table_008(t *testing.T) {
+	data := table.New()
+	data.Append("")
+	data.Append("")
+
+	var buf bytes.Buffer
+	data.Render(&buf, table.WithHeader(true))
+	t.Log(buf.String())
+}
