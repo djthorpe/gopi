@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 
 	"github.com/djthorpe/gopi/v3"
@@ -21,19 +20,11 @@ func (this *app) RunI2C(ctx context.Context) error {
 	bus, err := this.OpenI2C()
 	if err != nil {
 		return err
+	} else {
+		fmt.Println(bus)
 	}
 
-	args := this.Args()
-	if len(args) == 0 {
-		return this.I2CDetectSlave(ctx, bus)
-	}
-
-	switch args[0] {
-	case "write":
-		return this.I2CWrite(ctx, bus, args[1:])
-	default:
-		return gopi.ErrBadParameter.WithPrefix(args[0])
-	}
+	return nil
 }
 
 func (this *app) OpenI2C() (gopi.I2CBus, error) {
@@ -50,6 +41,21 @@ func (this *app) OpenI2C() (gopi.I2CBus, error) {
 	}
 	// Bus not found
 	return 0, gopi.ErrBadParameter.WithPrefix("-i2c.bus")
+}
+
+/*
+
+	args := this.Args()
+	if len(args) == 0 {
+		return this.I2CDetectSlave(ctx, bus)
+	}
+
+	switch args[0] {
+	case "write":
+		return this.I2CWrite(ctx, bus, args[1:])
+	default:
+		return gopi.ErrBadParameter.WithPrefix(args[0])
+	}
 }
 
 func (this *app) I2CDetectSlave(ctx context.Context, bus gopi.I2CBus) error {
@@ -93,3 +99,4 @@ func (this *app) I2CWrite(ctx context.Context, bus gopi.I2CBus, args []string) e
 	}
 	return nil
 }
+*/

@@ -44,7 +44,7 @@ func (h header) Format() (string, table.Alignment, table.Color) {
 
 func (this *app) Define(cfg gopi.Config) error {
 	// Define flags
-	this.fontdir = cfg.FlagString("fontdir", "", "Font directory", "fonts")
+	//this.fontdir = cfg.FlagString("fontdir", "", "Font directory", "fonts")
 	this.i2cbus = cfg.FlagUint("bus", 0, "I2C Bus", "i2c")
 	this.timeout = cfg.FlagDuration("timeout", time.Second, "Discovery timeout", "mdns")
 
@@ -54,12 +54,12 @@ func (this *app) Define(cfg gopi.Config) error {
 		return this.PrintVersion(cfg)
 	})
 	cfg.Command("mdns", "mDNS Service Discovery", this.RunDiscovery)
+	cfg.Command("i2c", "Detect I2C devices", this.RunI2C)
 
 	/*
-		// TODO Define other commands
-		cfg.Command("i2c", "Return I2C interface parameters", this.RunI2C)
+			// TODO Define other commands
 		cfg.Command("gpio", "Control GPIO interface", this.RunGPIO)
-		cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
+			cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
 	*/
 
 	// Return success
