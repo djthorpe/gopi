@@ -36,7 +36,7 @@ type header struct {
 }
 
 func (h header) Format() (string, table.Alignment, table.Color) {
-	return "[" + h.string + "]", table.Auto, table.White | table.Inverse
+	return h.string, table.Auto, table.Bold
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -49,26 +49,14 @@ func (this *app) Define(cfg gopi.Config) error {
 	this.timeout = cfg.FlagDuration("timeout", time.Second, "Discovery timeout", "mdns")
 
 	// Define commands
-	cfg.Command("version", "Return information about the command", func(context.Context) error {
-		if err := this.PrintVersion(cfg); err != nil {
-			return err
-		} else {
-			return gopi.ErrHelp
-		}
+	cfg.Command("info", "Hardware information", this.RunInfo)
+	cfg.Command("version", "Version information", func(context.Context) error {
+		return this.PrintVersion(cfg)
 	})
-	cfg.Command("lirc", "IR sending and receiving control", func(ctx context.Context) error {
-		return this.RunLIRC(ctx, cfg)
-	})
-	cfg.Command("lirc print", "Print LIRC Parameters", func(ctx context.Context) error {
-		return nil
-	})
+	cfg.Command("mdns", "mDNS Service Discovery", this.RunDiscovery)
 
 	/*
-		// Define mDNS command
-		cfg.Command("mdns", "Service discovery", this.RunDiscovery)
-
-		// Define other commands
-		cfg.Command("hw", "Return hardware platform information", this.RunHardware)
+		// TODO Define other commands
 		cfg.Command("i2c", "Return I2C interface parameters", this.RunI2C)
 		cfg.Command("gpio", "Control GPIO interface", this.RunGPIO)
 		cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
@@ -94,31 +82,6 @@ func (this *app) New(cfg gopi.Config) error {
 
 func (this *app) Run(ctx context.Context) error {
 	return this.Command.Run(ctx)
-}
-
-func (this *app) RunHardware(context.Context) error {
-	// Display platform information
-	table := table.New(table.WithHeader(false), table.WithMergeCells())
-
-	table.Append(header{"Product"}, this.Platform.Product(), fmt.Sprint(this.Platform.Type()))
-	table.Append("Serial Number", "", this.Platform.SerialNumber())
-	table.Append("Uptime", "", this.Platform.Uptime().Truncate(time.Second).String())
-	if l1, l5, l15 := this.Platform.LoadAverages(); l1 != 0 && l5 != 0 && l15 != 0 {
-		table.Append("Load Averages", "1m", fmt.Sprintf("%.2f", l1))
-		table.Append("Load Averages", "5m", fmt.Sprintf("%.2f", l5))
-		table.Append("Load Averages", "15m", fmt.Sprintf("%.2f", l15))
-	}
-	if zones := this.Platform.TemperatureZones(); len(zones) > 0 {
-		for k, v := range zones {
-			table.Append("Temperature Zones", k, fmt.Sprintf("%.2fC", v))
-		}
-	}
-	table.Append("Number of Displays", "", fmt.Sprint(this.Platform.NumberOfDisplays()))
-	table.Append("Attached Displays", "", fmt.Sprint(this.Platform.AttachedDisplays()))
-	table.Render(os.Stdout)
-
-	// Return success
-	return nil
 }
 
 func (this *app) RunFonts(context.Context) error {

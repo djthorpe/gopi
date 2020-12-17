@@ -15,13 +15,13 @@ import (
 
 // Table represents a data table with a header & footer
 type Table struct {
-	cols          []cell
-	types         []Types
-	fields        map[string]int
-	rows          [][]interface{}
-	header        bool
-	offset, limit uint
-	merge         bool
+	cols           []cell
+	types          []Types
+	fields         map[string]int
+	rows           [][]interface{}
+	header, footer bool
+	offset, limit  uint
+	merge          bool
 }
 
 // Formatter interface converts internal format to
@@ -194,11 +194,15 @@ func (t *Table) Render(w io.Writer, opts ...Option) {
 	}
 
 	// Set footer
-	foot := []string{}
-	for _, col := range t.types {
-		foot = append(foot, fmt.Sprint(col.Kind()))
+	if t.footer {
+		foot := []string{}
+		for _, col := range t.types {
+			foot = append(foot, fmt.Sprint(col.Kind()))
+		}
+		table.SetFooter(foot)
 	}
-	table.SetFooter(foot)
+
+	// Render table
 	table.Render()
 }
 

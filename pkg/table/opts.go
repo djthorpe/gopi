@@ -9,6 +9,12 @@ func WithHeader(value bool) Option {
 	}
 }
 
+func WithFooter(value bool) Option {
+	return func(t *Table) {
+		t.footer = value
+	}
+}
+
 func WithOffsetLimit(offset, limit uint) Option {
 	return func(t *Table) {
 		t.offset, t.limit = offset, limit

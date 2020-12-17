@@ -2,20 +2,72 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/djthorpe/gopi/v3"
-	"github.com/olekukonko/tablewriter"
+	"github.com/djthorpe/gopi/v3/pkg/table"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+
+type hosts struct {
+	gopi.ServiceRecord
+}
+
+type addrs struct {
+	gopi.ServiceRecord
+}
+
+type txt struct {
+	gopi.ServiceRecord
+}
+
+func (h hosts) Format() (string, table.Alignment, table.Color) {
+	str := ""
+	for i, h := range h.HostPort() {
+		if i > 0 {
+			str += " "
+		}
+		str += h
+	}
+	return str, table.Auto, table.None
+}
+
+func (a addrs) Format() (string, table.Alignment, table.Color) {
+	str := ""
+	for i, a := range a.Addrs() {
+		if i > 0 {
+			str += " "
+		}
+		str += a.String()
+	}
+	return str, table.Auto, table.None
+}
+
+func (t txt) Format() (string, table.Alignment, table.Color) {
+	str := ""
+	for i, t := range t.Txt() {
+		if i > 0 {
+			str += " "
+		}
+		str += t
+	}
+	return str, table.Auto, table.None
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 func (this *app) RunDiscovery(ctx context.Context) error {
+	args := this.Command.Args()
 	ctx, cancel := context.WithTimeout(ctx, *this.timeout)
 	defer cancel()
 
-	args := this.Command.Args()
+	if this.ServiceDiscovery == nil {
+		return gopi.ErrInternalAppError.WithPrefix("ServiceDiscovery")
+	}
+
 	if len(args) == 0 {
-		return this.RunDiscoveryServices(ctx)
+		return this.RunDiscoveryEnumerate(ctx)
 	} else if len(args) == 1 {
 		return this.RunDiscoveryLookup(ctx, args[0])
 	} else {
@@ -23,7 +75,8 @@ func (this *app) RunDiscovery(ctx context.Context) error {
 	}
 }
 
-func (this *app) RunDiscoveryServices(ctx context.Context) error {
+func (this *app) RunDiscoveryEnumerate(ctx context.Context) error {
+
 	// Enumerate services
 	services, err := this.ServiceDiscovery.EnumerateServices(ctx)
 	if err != nil {
@@ -31,16 +84,12 @@ func (this *app) RunDiscoveryServices(ctx context.Context) error {
 	}
 
 	// Display platform information
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAutoMergeCells(true)
-	table.SetHeader([]string{"Service"})
+	table := table.New()
+	table.SetHeader(header{"Service"})
 	for _, service := range services {
-		table.Append([]string{
-			service,
-		})
+		table.Append(service)
 	}
-	table.Render()
+	table.Render(os.Stdout)
 
 	// Return success
 	return nil
@@ -54,18 +103,12 @@ func (this *app) RunDiscoveryLookup(ctx context.Context, name string) error {
 	}
 
 	// Display platform information
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAutoMergeCells(true)
-	table.SetHeader([]string{"Service", "Name", "Record"})
+	table := table.New()
+	table.SetHeader(header{"Service"}, header{"Name"}, header{"Host"}, header{"Addr"}, header{"Txt"})
 	for _, record := range records {
-		table.Append([]string{
-			record.Service(),
-			record.Name(),
-			fmt.Sprint(record),
-		})
+		table.Append(record.Service(), record.Name(), hosts{record}, addrs{record}, txt{record})
 	}
-	table.Render()
+	table.Render(os.Stdout)
 
 	// Return success
 	return nil

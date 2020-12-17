@@ -5,41 +5,29 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
-	"github.com/olekukonko/tablewriter"
+	"github.com/djthorpe/gopi/v3/pkg/table"
 )
 
 func (this *app) PrintVersion(cfg gopi.Config) error {
 	version := cfg.Version()
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.Append([]string{
-		"Name", version.Name(),
-	})
+	table := table.New(table.WithHeader(false))
 	tag, branch, hash := version.Version()
+
+	table.Append(header{"Name"}, version.Name())
 	if tag != "" {
-		table.Append([]string{
-			"Tag", tag,
-		})
+		table.Append(header{"Tag"}, tag)
 	}
 	if branch != "" {
-		table.Append([]string{
-			"Branch", branch,
-		})
+		table.Append(header{"Branch"}, branch)
 	}
 	if hash != "" {
-		table.Append([]string{
-			"Hash", hash,
-		})
+		table.Append(header{"Hash"}, hash)
 	}
-	table.Append([]string{
-		"Go version", version.GoVersion(),
-	})
+	table.Append(header{"GoVersion"}, version.GoVersion())
 	if t := version.BuildTime(); t.IsZero() == false {
-		table.Append([]string{
-			"Build time", t.Format(time.RFC3339),
-		})
+		table.Append(header{"BuildTime"}, t.Format(time.RFC3339))
 	}
-	table.Render()
+	table.Render(os.Stdout)
 
 	// Return success
 	return nil
