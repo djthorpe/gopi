@@ -12,19 +12,17 @@ import (
 // TYPES
 
 type command struct {
-	name, usage string
-	args        []string
-	fn          gopi.CommandFunc
-	cmds        []string
+	name, usage, syntax string           // The name, usage and syntax information for the command
+	args                []string         // The arguments for the command
+	fn                  gopi.CommandFunc // The function called
+	commands            []*command       // Subcommands
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // NEW
 
-func NewCommand(name, usage string, args []string, fn gopi.CommandFunc, cmds ...string) gopi.Command {
-	return &command{
-		name, usage, args, fn, cmds,
-	}
+func NewCommand(name, usage, syntax string, args []string, fn gopi.CommandFunc) *command {
+	return &command{name, usage, syntax, args, fn, make([]*command, 0)}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,6 +34,10 @@ func (this *command) Name() string {
 
 func (this *command) Usage() string {
 	return this.usage
+}
+
+func (this *command) Syntax() string {
+	return this.syntax
 }
 
 func (this *command) Args() []string {
@@ -59,11 +61,20 @@ func (this *command) String() string {
 	if this.usage != "" {
 		str += " usage=" + strconv.Quote(this.usage)
 	}
+	if this.syntax != "" {
+		str += " syntax=" + strconv.Quote(this.syntax)
+	}
 	if len(this.args) > 0 {
 		str += " args=" + fmt.Sprint(this.args)
 	}
-	if len(this.cmds) > 0 {
-		str += " cmds=" + fmt.Sprint(this.cmds)
+	if len(this.commands) > 0 {
+		str += " subcommands="
+		for i, cmd := range this.commands {
+			if i > 0 {
+				str += ","
+			}
+			str += strconv.Quote(cmd.name)
+		}
 	}
 	return str + ">"
 }

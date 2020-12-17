@@ -7,7 +7,7 @@ import (
 )
 
 func Test_Command_000(t *testing.T) {
-	if cmd := config.NewCommand("name", "usage", nil, nil); cmd == nil {
+	if cmd := config.NewCommand("name", "usage", "syntax", nil, nil); cmd == nil {
 		t.Error("Unexpected nil return")
 	} else {
 		t.Log(cmd)
