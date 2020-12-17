@@ -48,7 +48,7 @@ func (this *app) Define(cfg gopi.Config) error {
 	this.i2cbus = cfg.FlagUint("bus", 0, "I2C Bus", "i2c")
 	this.timeout = cfg.FlagDuration("timeout", time.Second, "Discovery timeout", "mdns")
 
-	// Define version command
+	// Define commands
 	cfg.Command("version", "Return information about the command", func(context.Context) error {
 		if err := this.PrintVersion(cfg); err != nil {
 			return err
@@ -56,8 +56,6 @@ func (this *app) Define(cfg gopi.Config) error {
 			return gopi.ErrHelp
 		}
 	})
-
-	// Define LIRC command
 	cfg.Command("lirc", "IR sending and receiving control", func(ctx context.Context) error {
 		return this.RunLIRC(ctx, cfg)
 	})
@@ -65,14 +63,16 @@ func (this *app) Define(cfg gopi.Config) error {
 		return nil
 	})
 
-	// Define mDNS command
-	cfg.Command("mdns", "Service discovery", this.RunDiscovery)
+	/*
+		// Define mDNS command
+		cfg.Command("mdns", "Service discovery", this.RunDiscovery)
 
-	// Define other commands
-	cfg.Command("hw", "Return hardware platform information", this.RunHardware)
-	cfg.Command("i2c", "Return I2C interface parameters", this.RunI2C)
-	cfg.Command("gpio", "Control GPIO interface", this.RunGPIO)
-	cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
+		// Define other commands
+		cfg.Command("hw", "Return hardware platform information", this.RunHardware)
+		cfg.Command("i2c", "Return I2C interface parameters", this.RunI2C)
+		cfg.Command("gpio", "Control GPIO interface", this.RunGPIO)
+		cfg.Command("fonts", "Return Font faces", this.RunFonts) // Not yet implemented
+	*/
 
 	// Return success
 	return nil
@@ -80,8 +80,12 @@ func (this *app) Define(cfg gopi.Config) error {
 
 func (this *app) New(cfg gopi.Config) error {
 	// Set the command to run
-	if this.Command = cfg.GetCommand(nil); this.Command == nil {
+	if cmd, err := cfg.GetCommand(nil); err != nil {
+		return err
+	} else if cmd == nil {
 		return gopi.ErrHelp
+	} else {
+		this.Command = cmd
 	}
 
 	// Return success

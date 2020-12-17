@@ -30,13 +30,16 @@ type app struct {
 func (this *app) Define(cfg gopi.Config) error {
 	cfg.Command("daemon", "Start daemon", this.RunServe)
 	cfg.Command("version", "Server version", this.RunVersion)
-	cfg.Command("stream", "Stream events from Argonone", this.RunStream)
 	return nil
 }
 
 func (this *app) New(cfg gopi.Config) error {
-	if this.Command = cfg.GetCommand(cfg.Args()); this.Command == nil {
+	if cmd, err := cfg.GetCommand(nil); err != nil {
+		return err
+	} else if cmd == nil {
 		return gopi.ErrHelp
+	} else {
+		this.Command = cmd
 	}
 	return nil
 }

@@ -254,9 +254,12 @@ func (this *config) usageAll() {
 	name := this.FlagSet.Name()
 
 	fmt.Fprintln(w, "Syntax:")
-	fmt.Fprintf(w, "  %v (<flags>) <command> (<args>)\n", name)
-	fmt.Fprintf(w, "  %v -help (<command>)\n", name)
-	if len(this.commands.commands) > 0 {
+	if len(this.commands.commands) == 0 {
+		fmt.Fprintf(w, "  %v (<flags>) (<args>)\n", name)
+		fmt.Fprintf(w, "  %v -help\n", name)
+	} else {
+		fmt.Fprintf(w, "  %v (<flags>) <command> (<args>)\n", name)
+		fmt.Fprintf(w, "  %v -help (<command>)\n", name)
 		fmt.Fprintln(w, "\nCommands:")
 	}
 	usageCommand(w, this.commands, nil)
