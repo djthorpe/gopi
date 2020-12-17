@@ -90,16 +90,16 @@ func Test_Config_006(t *testing.T) {
 		t.Error("Unexpected error result")
 	}
 
-	if cmd := cfg.GetCommand([]string{"a", "b", "c"}); cmd == nil {
-		t.Error("Unexpected nil result")
+	if cmd, err := cfg.GetCommand([]string{"a", "b", "c"}); err != nil {
+		t.Error(err)
 	} else if cmd.Name() != "a b c" {
 		t.Error("Wrong command returned", cmd)
 	} else if len(cmd.Args()) != 0 {
 		t.Error("Unexpected number of arguments returned", cmd)
 	}
 
-	if cmd := cfg.GetCommand([]string{"a", "b", "c", "1", "2", "3"}); cmd == nil {
-		t.Error("Unexpected nil result")
+	if cmd, err := cfg.GetCommand([]string{"a", "b", "c", "1", "2", "3"}); err != nil {
+		t.Error(err)
 	} else if cmd.Name() != "a b c" {
 		t.Error("Wrong command returned", cmd)
 	} else if len(cmd.Args()) != 3 {
@@ -107,15 +107,15 @@ func Test_Config_006(t *testing.T) {
 	} else {
 		t.Log(cmd)
 	}
-	if cmd := cfg.GetCommand([]string{"a", "b"}); cmd == nil {
-		t.Error("Unexpected nil result")
+	if cmd, err := cfg.GetCommand([]string{"a", "b"}); err != nil {
+		t.Error(err)
 	} else if cmd.Name() != "a b" {
 		t.Error("Wrong command returned", cmd)
 	} else if len(cmd.Args()) != 0 {
 		t.Error("Unexpected number of arguments returned", cmd)
 	}
-	if cmd := cfg.GetCommand([]string{"a", "b", "1", "2", "3"}); cmd == nil {
-		t.Error("Unexpected nil result")
+	if cmd, err := cfg.GetCommand([]string{"a", "b", "1", "2", "3"}); err != nil {
+		t.Error(err)
 	} else if cmd.Name() != "a b" {
 		t.Error("Wrong command returned", cmd)
 	} else if len(cmd.Args()) != 3 {
@@ -124,16 +124,16 @@ func Test_Config_006(t *testing.T) {
 		t.Log(cmd)
 	}
 
-	if cmd := cfg.GetCommand([]string{"a"}); cmd == nil {
-		t.Error("Unexpected nil result")
+	if cmd, err := cfg.GetCommand([]string{"a"}); err != nil {
+		t.Error(err)
 	} else if cmd.Name() != "a" {
 		t.Error("Wrong command returned", cmd)
 	} else if len(cmd.Args()) != 0 {
 		t.Error("Unexpected number of arguments returned", cmd)
 	}
 
-	if cmd := cfg.GetCommand([]string{"a", "1", "2", "3"}); cmd == nil {
-		t.Error("Unexpected nil result")
+	if cmd, err := cfg.GetCommand([]string{"a", "1", "2", "3"}); err != nil {
+		t.Error(err)
 	} else if cmd.Name() != "a" {
 		t.Error("Wrong command returned", cmd)
 	} else if len(cmd.Args()) != 3 {
@@ -142,16 +142,16 @@ func Test_Config_006(t *testing.T) {
 		t.Log(cmd)
 	}
 
-	if cmd := cfg.GetCommand([]string{}); cmd == nil {
-		t.Error("Unexpected nil result")
+	if cmd, err := cfg.GetCommand([]string{}); err != nil {
+		t.Error(err)
 	} else if cmd.Name() != "a" {
 		t.Error("Wrong command returned", cmd)
 	} else if len(cmd.Args()) != 0 {
 		t.Error("Unexpected number of arguments returned", cmd)
 	}
 
-	if cmd := cfg.GetCommand([]string{"1", "2", "3"}); cmd == nil {
-		t.Error("Unexpected nil result")
+	if cmd, err := cfg.GetCommand([]string{"1", "2", "3"}); err != nil {
+		t.Error(err)
 	} else if cmd.Name() != "a" {
 		t.Error("Wrong command returned", cmd)
 	} else if len(cmd.Args()) != 3 {
@@ -160,7 +160,7 @@ func Test_Config_006(t *testing.T) {
 }
 
 func Test_Config_007(t *testing.T) {
-	cfg := config.New(t.Name(), nil)
+	cfg := config.New(t.Name(), []string{"-help", "a", "h"})
 	cfg.Command("a", "Command A", nil)
 	cfg.Command("a b", "Command A B", nil)
 	cfg.Command("a b c", "Command A B C", nil)
@@ -169,6 +169,27 @@ func Test_Config_007(t *testing.T) {
 	cfg.FlagBool("b", false, "Flag b", "a b", "a")
 	cfg.FlagBool("c", false, "Flag c", "a b c", "a b", "a")
 
-	cfg.Usage("")
-	cfg.Usage("a")
+	if err := cfg.Parse(); errors.Is(err, gopi.ErrHelp) == false {
+		t.Error("Expected gopi.ErrHelp returned", err)
+	}
+}
+
+func Test_Config_008(t *testing.T) {
+	cfg := config.New(t.Name(), []string{"-g", "-a", "a", "b"})
+	cfg.Command("a", "Command A", nil)
+	cfg.Command("a b", "Command A B", nil)
+	cfg.Command("a b c", "Command A B C", nil)
+	cfg.FlagBool("g", false, "Flag g")
+	cfg.FlagBool("a", false, "Flag a", "a")
+	cfg.FlagBool("b", false, "Flag b", "a b", "a")
+	cfg.FlagBool("c", false, "Flag c", "a b c", "a b", "a")
+
+	if err := cfg.Parse(); err != nil {
+		t.Error(err)
+	}
+	if cmd, err := cfg.GetCommand(nil); err != nil {
+		t.Error(err)
+	} else {
+		t.Log(cmd)
+	}
 }

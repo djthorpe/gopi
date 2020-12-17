@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
+	"github.com/hashicorp/go-multierror"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,7 +28,13 @@ type config struct {
 func New(name string, args []string) gopi.Config {
 	this := new(config)
 	this.FlagSet = flag.NewFlagSet(name, flag.ContinueOnError)
-	this.FlagSet.Usage = this.usageAll
+	this.FlagSet.Usage = func() {
+		if cmd, _ := this.GetCommand(nil); cmd == nil {
+			this.usageAll()
+		} else {
+			this.usageOne(cmd)
+		}
+	}
 	this.args = args
 	this.flags = make(map[string][]string)
 	this.commands = NewCommand(name, "", "", args, nil)
@@ -46,19 +53,29 @@ func (this *config) Parse() error {
 	if this.FlagSet.Parsed() {
 		return nil
 	}
-	// Perform parse
-	if err := this.FlagSet.Parse(this.args); err != nil {
+
+	// Perform parse and translate error
+	if err := this.FlagSet.Parse(this.args); err == flag.ErrHelp {
+		return gopi.ErrHelp
+	} else if err != nil {
 		return err
 	}
+
 	// Return success
 	return nil
 }
 
+// Usage prints out the command usage instructions for all
+// commands or for a specific command
 func (this *config) Usage(name string) {
-	if name == "" {
+	name = strings.ToLower(strings.TrimSpace(name))
+	parts := strings.Fields(name)
+	if len(parts) == 0 {
 		this.usageAll()
-	} else if cmd := this.GetCommand([]string{name}); cmd != nil {
+	} else if cmd, _ := this.GetCommand(parts); cmd != nil {
 		this.usageOne(cmd)
+	} else {
+		this.usageAll()
 	}
 }
 
@@ -89,12 +106,13 @@ func (this *config) Command(name, usage string, fn gopi.CommandFunc) error {
 }
 
 // GetCommand returns command with arguments or nil if
-// a command was not registered which matches the signature.
+// a command was not registered which matches the signature,
+// or if the wrong flags have been set for the command.
 // When the arguments parameter is nil, the arguments from
 // the FlagSet are used.
-func (this *config) GetCommand(args []string) gopi.Command {
+func (this *config) GetCommand(args []string) (gopi.Command, error) {
 	if len(this.commands.commands) == 0 {
-		return nil
+		return nil, gopi.ErrNotFound.WithPrefix("GetCommand")
 	}
 	if args == nil {
 		args = this.FlagSet.Args()
@@ -117,8 +135,24 @@ func (this *config) GetCommand(args []string) gopi.Command {
 		cmd = this.commands.commands[0]
 		args = append([]string{cmd.name}, args...)
 	}
+
 	// Create a new command from the existing one, setting arguments
-	return NewCommand(strings.Join(args[:i+1], " "), cmd.usage, cmd.syntax, args[i+1:], cmd.fn)
+	cmd = NewCommand(strings.Join(args[:i+1], " "), cmd.usage, cmd.syntax, args[i+1:], cmd.fn)
+
+	// Iterate through set flags
+	var result error
+	this.FlagSet.Visit(func(f *flag.Flag) {
+		if this.flagIsGlobal(f) {
+			cmd.flags[f.Name] = f
+		} else if this.flagIsLocal(f, cmd.Name()) {
+			cmd.flags[f.Name] = f
+		} else {
+			result = multierror.Append(result, fmt.Errorf("%w: Flag set but not defined: -%v", gopi.ErrBadParameter, f.Name))
+		}
+	})
+
+	// Success
+	return cmd, multierror.Flatten(result)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -241,29 +275,45 @@ func usageCommand(w io.Writer, cmd *command, path []string) {
 func (this *config) usageOne(cmd gopi.Command) {
 	w := this.Output()
 	name := this.FlagSet.Name()
+	syntax, description := cmd.Usage()
 
-	fmt.Fprintln(w, "Syntax:")
-	fmt.Fprintf(w, "  %v (<flags>) %v\n", name, cmd.Name())
+	fmt.Fprintln(w, description)
+	fmt.Fprintln(w, "\nSyntax:")
+	fmt.Fprintf(w, "  %v (<flags>) %v %v\n", name, cmd.Name(), syntax)
 	this.usageFlags(cmd.Name())
 	this.usageFlags("")
 }
 
 func (this *config) usageFlags(name string) {
 	w := this.FlagSet.Output()
+
+	// Gather the relevant flags
+	flags := []*flag.Flag{}
+	this.FlagSet.VisitAll(func(flag *flag.Flag) {
+		if name == "" && this.flagIsGlobal(flag) {
+			flags = append(flags, flag)
+		} else if name != "" && this.flagIsLocal(flag, name) {
+			flags = append(flags, flag)
+		}
+	})
+
+	// Don't output if no flags
+	if len(flags) == 0 {
+		return
+	}
+
+	// Print header
 	if name == "" {
 		fmt.Fprintf(w, "\nGlobal Flags:\n")
 	} else {
 		fmt.Fprintf(w, "\nFlags for %q:\n", name)
 	}
-	this.FlagSet.VisitAll(func(flag *flag.Flag) {
-		if name == "" && this.flagIsGlobal(flag) {
-			arg, usage, def := flagUsage(flag)
-			fmt.Fprintf(w, "  -%v %v\n  \t%v %v\n", flag.Name, arg, usage, def)
-		} else if name != "" && this.flagIsLocal(flag, name) {
-			arg, usage, def := flagUsage(flag)
-			fmt.Fprintf(w, "  -%v %v\n  \t%v %v\n", flag.Name, arg, usage, def)
-		}
-	})
+
+	// Print flags
+	for _, flag := range flags {
+		arg, usage, def := flagUsage(flag)
+		fmt.Fprintf(w, "  -%v %v\n  \t%v %v\n", flag.Name, arg, usage, def)
+	}
 }
 
 func (this *config) flagIsGlobal(f *flag.Flag) bool {
@@ -272,6 +322,17 @@ func (this *config) flagIsGlobal(f *flag.Flag) bool {
 	} else {
 		return len(cmds) == 0
 	}
+}
+
+func (this *config) flagIsLocal(f *flag.Flag, name string) bool {
+	if cmds, exists := this.flags[f.Name]; exists {
+		for _, cmd := range cmds {
+			if name == cmd {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Get type and defaults to print in defaults

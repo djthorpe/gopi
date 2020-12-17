@@ -25,13 +25,15 @@ type Config interface {
 	// Define a command with name, description, calling function
 	Command(string, string, CommandFunc) error
 
-	// Get values
+	// Get command from provided arguments
+	GetCommand([]string) (Command, error)
+
+	// Get flag values
 	GetString(string) string
 	GetBool(string) bool
 	GetUint(string) uint
 	GetInt(string) int
 	GetDuration(string) time.Duration
-	GetCommand([]string) Command // Get command from provided arguments
 }
 
 // CommandFunc is the function signature for running a command
@@ -40,7 +42,7 @@ type CommandFunc func(context.Context) error
 // Command is determined from parsed arguments
 type Command interface {
 	Name() string              // Return command name
-	Usage() string             // Return usage information
+	Usage() (string, string)   // Return command syntax and description
 	Args() []string            // Return command arguments
 	Run(context.Context) error // Run the command
 }

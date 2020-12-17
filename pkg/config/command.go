@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"strconv"
 
@@ -12,17 +13,18 @@ import (
 // TYPES
 
 type command struct {
-	name, usage, syntax string           // The name, usage and syntax information for the command
-	args                []string         // The arguments for the command
-	fn                  gopi.CommandFunc // The function called
-	commands            []*command       // Subcommands
+	name, usage, syntax string                // The name, usage and syntax information for the command
+	args                []string              // The arguments for the command
+	fn                  gopi.CommandFunc      // The function called
+	commands            []*command            // Subcommands
+	flags               map[string]*flag.Flag // Flags for command
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // NEW
 
 func NewCommand(name, usage, syntax string, args []string, fn gopi.CommandFunc) *command {
-	return &command{name, usage, syntax, args, fn, make([]*command, 0)}
+	return &command{name, usage, syntax, args, fn, make([]*command, 0), make(map[string]*flag.Flag)}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,8 +34,8 @@ func (this *command) Name() string {
 	return this.name
 }
 
-func (this *command) Usage() string {
-	return this.usage
+func (this *command) Usage() (string, string) {
+	return this.syntax, this.usage
 }
 
 func (this *command) Syntax() string {
