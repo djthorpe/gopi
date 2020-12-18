@@ -1,5 +1,10 @@
 package gopi
 
+import (
+	"context"
+	"image"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // ARGON ONE CASE
 
@@ -38,4 +43,21 @@ func (v ArgonOnePowerMode) String() string {
 	default:
 		return "[?? Invalid ArgonOnePowerMode value]"
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// WAVESHARE E-PAPER DISPLAY (EPD)
+
+type EPD interface {
+	// Return screen size
+	Size() Size
+
+	// Clear display
+	Clear(context.Context) error
+
+	// Draw image on the display
+	Draw(context.Context, image.Image) error
+
+	// Sleep display
+	Sleep() error
 }

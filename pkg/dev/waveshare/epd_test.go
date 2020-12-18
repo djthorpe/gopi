@@ -60,7 +60,7 @@ func Test_EPD_003(t *testing.T) {
 		defer fh.Close()
 		if img, _, err := image.Decode(fh); err != nil {
 			t.Fatal(err)
-		} else if err := app.EPD.Display(context.Background(), img); err != nil {
+		} else if err := app.EPD.Draw(context.Background(), img); err != nil {
 			t.Error(err)
 		}
 	})

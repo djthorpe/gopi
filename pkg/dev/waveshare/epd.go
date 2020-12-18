@@ -29,6 +29,8 @@ const (
 	EPD_SPI_BUS   = 0
 	EPD_SPI_SLAVE = 0
 	EPD_SPI_MODE  = gopi.SPI_MODE_0
+
+	blackThreshold = 0.39
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +54,8 @@ func (this *EPD) New(gopi.Config) error {
 	// Set SPI bus
 	this.bus = gopi.SPIBus{EPD_SPI_BUS, EPD_SPI_SLAVE}
 
-	if err := this.Init(); err != nil {
+	// Initialise the interfaces
+	if err := this.init(); err != nil {
 		return err
 	}
 
@@ -67,7 +70,97 @@ func (this *EPD) Dispose() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *EPD) Init() error {
+func (this *EPD) Size() gopi.Size {
+	return gopi.Size{float32(*this.w), float32(*this.h)}
+}
+
+func (this *EPD) Clear(ctx context.Context) error {
+	width := *this.w
+	height := *this.h
+
+	// Set RAM x address count to 0
+	this.send(0x4F, []byte{0x00, 0x00})
+
+	// Send data - one bit per pixel
+	buf := make([]byte, (width>>3)*height)
+	for i := range buf {
+		buf[i] = 0xFF
+	}
+	this.send(0x24, buf)
+	this.send(0x26, buf)
+
+	// Load LUT from MCU(0x32)
+	this.send(0x22, []byte{0xF7})
+	this.send(0x20, nil)
+	time.Sleep(10 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	if err := this.waitUntilIdle(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (this *EPD) Draw(ctx context.Context, img image.Image) error {
+	width := *this.w
+	height := *this.h
+	stride := width >> 3 // bytes per row
+
+	// Set RAM x address count to 0
+	this.send(0x4F, []byte{0x00, 0x00})
+
+	// Construct bit-per-pixel image
+	buf := make([]byte, stride*height)
+	for y := uint(0); y < height; y++ {
+		for x := uint(0); x < stride; x++ {
+			data := uint8(0)
+			for bit := uint(0); bit < 8; bit++ {
+				data <<= 1
+				// Use luminosity conversion
+				r, g, b, _ := img.At(int(x*8+bit), int(y)).RGBA()
+				p1 := float64(0.21) * float64(r) / float64(0xFFFF)
+				p2 := float64(0.72) * float64(g) / float64(0xFFFF)
+				p3 := float64(0.07) * float64(b) / float64(0xFFFF)
+				if (p1 + p2 + p3) >= blackThreshold {
+					data |= 1
+				}
+			}
+			buf[x+y*stride] = data
+		}
+	}
+	this.send(0x24, buf)
+
+	for i := range buf {
+		buf[i] = 0xFF
+	}
+	this.send(0x26, buf)
+
+	// Load LUT from MCU(0x32)
+	this.send(0x22, []byte{0xF7})
+	this.send(0x20, nil)
+	time.Sleep(10 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	if err := this.waitUntilIdle(ctx); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *EPD) Sleep() error {
+	return this.send(0x10, []byte{0x01})
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+// initialise the interface
+func (this *EPD) init() error {
 	// GPIO Init
 	this.GPIO.SetPinMode(EPD_PIN_RESET, gopi.GPIO_OUTPUT)
 	this.GPIO.SetPinMode(EPD_PIN_DC, gopi.GPIO_OUTPUT)
@@ -134,88 +227,6 @@ func (this *EPD) Init() error {
 	return nil
 }
 
-func (this *EPD) Clear(ctx context.Context) error {
-	width := *this.w
-	height := *this.h
-
-	// Set RAM x address count to 0
-	this.send(0x4F, []byte{0x00, 0x00})
-
-	// Send data - one bit per pixel
-	buf := make([]byte, (width>>3)*height)
-	for i := range buf {
-		buf[i] = 0xFF
-	}
-	this.send(0x24, buf)
-	this.send(0x26, buf)
-
-	// Load LUT from MCU(0x32)
-	this.send(0x22, []byte{0xF7})
-	this.send(0x20, nil)
-	time.Sleep(10 * time.Millisecond)
-
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	if err := this.waitUntilIdle(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (this *EPD) Display(ctx context.Context, img image.Image) error {
-	width := *this.w
-	height := *this.h
-	stride := width >> 3 // bytes per row
-
-	// Set RAM x address count to 0
-	this.send(0x4F, []byte{0x00, 0x00})
-
-	// Construct bit-per-pixel image
-	buf := make([]byte, stride*height)
-	for y := uint(0); y < height; y++ {
-		for x := uint(0); x < stride; x++ {
-			data := uint8(0)
-			for bit := uint(0); bit < 8; bit++ {
-				data <<= 1
-				r, _, _, _ := img.At(int(x*8+bit), int(y)).RGBA()
-				if (r&0xFFFF)>>15 != 0 {
-					data |= 1
-				}
-			}
-			buf[x+y*stride] = data
-		}
-	}
-	this.send(0x24, buf)
-
-	for i := range buf {
-		buf[i] = 0xFF
-	}
-	this.send(0x26, buf)
-
-	// Load LUT from MCU(0x32)
-	this.send(0x22, []byte{0xF7})
-	this.send(0x20, nil)
-	time.Sleep(10 * time.Millisecond)
-
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	if err := this.waitUntilIdle(ctx); err != nil {
-		return err
-	}
-
-	// Return success
-	return nil
-}
-
-func (this *EPD) Sleep() {
-	this.sendCommand(0x10)
-	this.sendData(0x01)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-
 // waitUntilIdle waits until busy pin goes low
 func (this *EPD) waitUntilIdle(ctx context.Context) error {
 	ticker := time.NewTimer(time.Millisecond)
@@ -263,22 +274,6 @@ func (this *EPD) send(reg uint8, data []byte) error {
 	return nil
 }
 
-// sendCommand sends a command byte
-func (this *EPD) sendCommand(reg uint8) {
-	this.GPIO.WritePin(EPD_PIN_DC, gopi.GPIO_LOW)
-	this.GPIO.WritePin(EPD_PIN_CS, gopi.GPIO_LOW)
-	this.SPI.Write(this.bus, []byte{reg})
-	this.GPIO.WritePin(EPD_PIN_CS, gopi.GPIO_HIGH)
-}
-
-// sendData sends a data byte
-func (this *EPD) sendData(data uint8) {
-	this.GPIO.WritePin(EPD_PIN_DC, gopi.GPIO_HIGH)
-	this.GPIO.WritePin(EPD_PIN_CS, gopi.GPIO_LOW)
-	this.SPI.Write(this.bus, []byte{data})
-	this.GPIO.WritePin(EPD_PIN_CS, gopi.GPIO_HIGH)
-}
-
 // reset toggles the reset pin
 func (this *EPD) reset() {
 	this.GPIO.WritePin(EPD_PIN_RESET, gopi.GPIO_HIGH)
@@ -294,6 +289,7 @@ func (this *EPD) reset() {
 
 func (this *EPD) String() string {
 	str := "<epd"
+	str += " size=" + fmt.Sprint(this.Size())
 	str += " gpio=" + fmt.Sprint(this.GPIO)
 	str += " spi=" + fmt.Sprint(this.SPI)
 	return str + ">"

@@ -11,6 +11,7 @@ require (
 	github.com/miekg/dns v1.1.35
 	github.com/olekukonko/tablewriter v0.0.4
 	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9 // indirect
+	golang.org/x/image v0.0.0-20201208152932-35266b937fa6
 	golang.org/x/net v0.0.0-20201209123823-ac852fbbde11
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a // indirect
 	golang.org/x/sys v0.0.0-20201211090839-8ad439b19e0f

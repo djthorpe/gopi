@@ -98,6 +98,9 @@ hw: rpi darwin freetype
 argonone: builddir protogen rpi
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/argonone -tags "$(TAGS)" ${GOFLAGS} ./cmd/argonone
 
+douglas: builddir rpi
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/douglas -tags "$(TAGS)" ${GOFLAGS} ./cmd/douglas
+
 dnsregister: builddir
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/dnsregister -tags "$(TAGS)" ${GOFLAGS} ./cmd/dnsregister
 
