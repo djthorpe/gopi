@@ -21,24 +21,24 @@ type app struct {
 	gopi.Command
 
 	offset, limit *uint   // File processing offsets
-	quiet         *bool   // Whether errors should be displayed
+	quiet, csv    *bool   // Whether errors should be displayed
 	match         *string // Regular expression to match
 
 	regexp *regexp.Regexp // Regular expression for filename
-	fields *fields        // Metadata which should be displayed
 }
 
 func (this *app) Define(cfg gopi.Config) error {
 	// Set command-line flags
-	this.offset = cfg.FlagUint("offset", 0, "File process offset")
-	this.limit = cfg.FlagUint("limit", 0, "File process limit")
-	this.quiet = cfg.FlagBool("quiet", false, "Don't display file scan errors")
-	this.match = cfg.FlagString("match", "", "Match filenames regular expression")
+	this.offset = cfg.FlagUint("offset", 0, "File process offset", "metadata")
+	this.limit = cfg.FlagUint("limit", 0, "File process limit", "metadata")
+	this.quiet = cfg.FlagBool("quiet", false, "Don't display file scan errors", "metadata")
+	this.match = cfg.FlagString("match", "", "Match filenames regular expression", "metadata")
+	this.csv = cfg.FlagBool("csv", false, "Output as CSV format", "metadata")
 
 	// Define commands
 	cfg.Command("metadata", "Dump metadata information", this.Metadata)
-	cfg.Command("streams", "Dump stream information", this.Streams)
-	cfg.Command("thumbnails", "Extract thumbnails", this.Thumbnails)
+	//cfg.Command("streams", "Dump stream information", this.Streams)
+	//cfg.Command("thumbnails", "Extract thumbnails", this.Thumbnails)
 
 	// Return success
 	return nil
@@ -46,12 +46,13 @@ func (this *app) Define(cfg gopi.Config) error {
 
 func (this *app) New(cfg gopi.Config) error {
 	// Set the command
-	if this.Command = cfg.GetCommand(nil); this.Command == nil {
+	if cmd, err := cfg.GetCommand(nil); err != nil {
+		return err
+	} else if len(cmd.Args()) == 0 {
 		return gopi.ErrHelp
+	} else {
+		this.Command = cmd
 	}
-
-	// Set up fields
-	this.fields = NewFields()
 
 	// Set up regular expression for matching filenames
 	if *this.match != "" {

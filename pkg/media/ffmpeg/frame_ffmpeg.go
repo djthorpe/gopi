@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/color"
 
+	gopi "github.com/djthorpe/gopi/v3"
 	ffmpeg "github.com/djthorpe/gopi/v3/pkg/sys/ffmpeg"
 )
 
@@ -30,20 +31,7 @@ func NewFrame() *frame {
 }
 
 func (this *frame) Retain() error {
-	// To retain the frame, create the arrays of planes of data
-	this.planes = nil
-	i := 0
-	for {
-		bytes := this.ctx.BytesForPlane(i)
-		if len(bytes) == 0 {
-			break
-		}
-		this.planes = append(this.planes, bytes)
-		i++
-	}
-
-	// Return success
-	return nil
+	return gopi.ErrNotImplemented
 }
 
 func (this *frame) Release() {

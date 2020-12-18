@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/olekukonko/tablewriter"
+	"github.com/djthorpe/gopi/v3/pkg/table"
 )
 
 func (this *app) Streams(ctx context.Context) error {
@@ -16,7 +16,7 @@ func (this *app) Streams(ctx context.Context) error {
 	if paths, err := GetFileArgs(this.Command.Args()); err != nil {
 		return err
 	} else if err := this.Walk(ctx, paths, &count, func(path string, info os.FileInfo) error {
-		if media, err := this.ProcessStreams(path); err != nil {
+		if media, err := this.ProcessStreams(path, info); err != nil {
 			if *this.quiet == false {
 				this.Logger.Print(filepath.Base(path), ": ", err)
 			}
@@ -29,18 +29,21 @@ func (this *app) Streams(ctx context.Context) error {
 	}
 
 	// Print out stream information
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Stream", "Type"})
-	table.SetAutoFormatHeaders(false)
+	t := table.New()
 	for _, file := range files {
-		table.AppendBulk(FormatStreams(file))
+		t.Add(file.Dict())
 	}
-	table.Render()
+	if *this.csv {
+		t.RenderCSV(os.Stdout)
+	} else {
+		t.Render(os.Stdout, table.WithFooter(true))
+	}
 
+	// Return success
 	return nil
 }
 
-func (this *app) ProcessStreams(path string) (*media, error) {
+func (this *app) ProcessStreams(path string, info os.FileInfo) (*media, error) {
 	media, err := this.MediaManager.OpenFile(path)
 	if err != nil {
 		return nil, err
@@ -48,7 +51,7 @@ func (this *app) ProcessStreams(path string) (*media, error) {
 	defer this.MediaManager.Close(media)
 
 	// Create obj
-	m := NewMedia(media)
+	m := NewMedia(media, info)
 
 	// Append streams
 	for _, stream := range media.Streams() {

@@ -5,8 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/olekukonko/tablewriter"
+	"github.com/djthorpe/gopi/v3/pkg/table"
 )
+
+/////////////////////////////////////////////////////////////////////
 
 func (this *app) Metadata(ctx context.Context) error {
 	count := uint(0)
@@ -16,7 +18,7 @@ func (this *app) Metadata(ctx context.Context) error {
 	if paths, err := GetFileArgs(this.Command.Args()); err != nil {
 		return err
 	} else if err := this.Walk(ctx, paths, &count, func(path string, info os.FileInfo) error {
-		if media, err := this.ProcessMetadata(path); err != nil {
+		if media, err := this.ProcessMetadata(path, info); err != nil {
 			if *this.quiet == false {
 				this.Logger.Print(filepath.Base(path), ": ", err)
 			}
@@ -29,20 +31,20 @@ func (this *app) Metadata(ctx context.Context) error {
 	}
 
 	// Print out stream information
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(append([]string{"Name", "Type"}, this.fields.Names()...))
-	table.SetAutoFormatHeaders(false)
+	t := table.New()
 	for _, file := range files {
-		row := []string{filepath.Base(file.URL.Path), FormatFlags(file.Flags)}
-		row = append(row, FormatMetadata(file, this.fields.Keys())...)
-		table.Append(row)
+		t.Add(file.Dict())
 	}
-	table.Render()
+	if *this.csv {
+		t.RenderCSV(os.Stdout)
+	} else {
+		t.Render(os.Stdout, table.WithFooter(true))
+	}
 
 	return nil
 }
 
-func (this *app) ProcessMetadata(path string) (*media, error) {
+func (this *app) ProcessMetadata(path string, info os.FileInfo) (*media, error) {
 	media, err := this.MediaManager.OpenFile(path)
 	if err != nil {
 		return nil, err
@@ -50,15 +52,14 @@ func (this *app) ProcessMetadata(path string) (*media, error) {
 	defer this.MediaManager.Close(media)
 
 	// Create obj
-	m := NewMedia(media)
+	file := NewMedia(media, info)
 
 	// Append metadata
 	meta := media.Metadata()
 	for _, key := range meta.Keys() {
-		this.fields.Add(key)
-		m.Meta[key] = meta.Value(key)
+		file.Meta[key] = meta.Value(key)
 	}
 
 	// Return success
-	return m, nil
+	return file, nil
 }
