@@ -54,8 +54,10 @@ func (this *app) Define(cfg gopi.Config) error {
 }
 
 func (this *app) New(cfg gopi.Config) error {
-	if this.Command = cfg.GetCommand(cfg.Args()); this.Command == nil {
+	if command, err := cfg.GetCommand(cfg.Args()); err != nil {
 		return gopi.ErrHelp
+	} else {
+		this.Command = command
 	}
 
 	// Set HTTP client

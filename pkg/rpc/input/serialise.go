@@ -27,7 +27,7 @@ func (e *event) Key() gopi.KeyCode {
 }
 
 func (e *event) Device() (gopi.InputDeviceType, uint32) {
-	return gopi.InputDevice(e.GetDevice()), e.GetScancode()
+	return gopi.InputDeviceType(e.GetDevice()), e.GetScancode()
 }
 
 func (e *event) String() string {

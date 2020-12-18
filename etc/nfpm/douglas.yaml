@@ -1,0 +1,31 @@
+
+# nfpm file to create debian package for douglas
+name: "douglas"
+
+# arch, platform and version are replaced with GOARCH, GOOS and git tag
+arch: "arm"
+platform: "linux"
+version: "v0.0.0"
+
+replaces:
+  - douglas
+provides:
+  - douglas
+maintainer: "David Thorpe <djt@mutablelogic.com>"
+description: |
+  Displays content on an ePaper device
+vendor: "mutablelogic.com"
+homepage: "http://github.com/djthorpe/gopi/cmd/douglas"
+license: "Apache 2.0"
+
+files:
+  build/douglas: /opt/gopi/bin/douglas
+  etc/systemd/douglas.service: /opt/gopi/etc/douglas.service
+
+symlinks:
+  /etc/systemd/system/douglas.service: /opt/gopi/etc/douglas.service
+
+scripts:
+  postinstall: etc/nfpm/douglas-postinstall.sh
+  preremove: etc/nfpm/douglas-preremove.sh
+

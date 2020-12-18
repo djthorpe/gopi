@@ -140,6 +140,11 @@ func (this *GPIO) New(gopi.Config) error {
 		this.mem32 = *(*[]uint32)(unsafe.Pointer(&header))
 	}
 
+	// Check length of arrays
+	if len(this.mem8) == 0 || len(this.mem32) == 0 {
+		return gopi.ErrInternalAppError.WithPrefix("New")
+	}
+
 	// Set up pin watching
 	this.watch = make(map[gopi.GPIOPin]gopi.GPIOState)
 

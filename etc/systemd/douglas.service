@@ -1,0 +1,13 @@
+[Unit]
+Description=Douglas Service
+Documentation=http://github.com/djthorpe/gopi/cmd/douglas
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=gopi
+Group=gopi
+ExecStart=/opt/gopi/bin/douglas -loop -interval=5m /opt/gopi/var/images
+Restart=on-failure

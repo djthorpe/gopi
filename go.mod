@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-cmp v0.5.4 // indirect
+	github.com/goreleaser/nfpm v1.10.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/mattn/go-runewidth v0.0.9 // indirect
