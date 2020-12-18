@@ -29,7 +29,6 @@ type (
 	AVInputFormat   C.struct_AVInputFormat
 	AVOutputFormat  C.struct_AVOutputFormat
 	AVStream        C.struct_AVStream
-	AVIOContext     C.struct_AVIOContext
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,29 +83,6 @@ func AllDemuxers() []*AVInputFormat {
 		}
 	}
 	return demuxers
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// AVIO
-
-func NewAVIOContext(url *url.URL, flags AVIOFlag) (*AVIOContext, error) {
-	url_ := C.CString(url.String())
-	defer C.free(unsafe.Pointer(url_))
-	ctx := (*C.AVIOContext)(unsafe.Pointer(nil))
-	if err := AVError(C.avio_open(
-		&ctx,
-		url_,
-		C.int(flags),
-	)); err != 0 {
-		return nil, err
-	} else {
-		return (*AVIOContext)(ctx), nil
-	}
-}
-
-func (this *AVIOContext) Free() {
-	ctx := (*C.AVIOContext)(unsafe.Pointer(this))
-	C.avio_context_free(&ctx)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -167,10 +143,6 @@ func (this *AVFormatContext) CloseInput() {
 
 // Write header
 func (this *AVFormatContext) WriteHeader(dict *AVDictionary) error {
-<<<<<<< HEAD
-	// TODO
-	return nil
-=======
 	ctx := (*C.AVFormatContext)(this)
 	dictctx := (**C.AVDictionary)(nil)
 	if dict != nil {
@@ -191,7 +163,6 @@ func (this *AVFormatContext) WriteTrailer() error {
 	} else {
 		return nil
 	}
->>>>>>> d38a319... Updated ffmpeg
 }
 
 // Return Metadata Dictionary
