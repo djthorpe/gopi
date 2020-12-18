@@ -3,11 +3,16 @@
 package waveshare_test
 
 import (
+	"context"
+	"image"
+	"os"
 	"testing"
 
 	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/dev/waveshare"
 	"github.com/djthorpe/gopi/v3/pkg/tool"
+
+	_ "image/png"
 
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/gpio"
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/spi"
@@ -21,6 +26,10 @@ type App struct {
 	*waveshare.EPD
 }
 
+const (
+	SAMPLE_IMAGE = "../../../etc/images/gopi-800x388.png"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // TESTS
 
@@ -30,6 +39,29 @@ func Test_EPD_001(t *testing.T) {
 			t.Error("nil EPD unit")
 		} else {
 			t.Log(app.EPD)
+		}
+	})
+}
+
+func Test_EPD_002(t *testing.T) {
+	tool.Test(t, nil, new(App), func(app *App) {
+		if err := app.EPD.Clear(context.Background()); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func Test_EPD_003(t *testing.T) {
+	tool.Test(t, nil, new(App), func(app *App) {
+		fh, err := os.Open(SAMPLE_IMAGE)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer fh.Close()
+		if img, _, err := image.Decode(fh); err != nil {
+			t.Fatal(err)
+		} else if err := app.EPD.Display(context.Background(), img); err != nil {
+			t.Error(err)
 		}
 	})
 }
