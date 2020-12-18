@@ -37,6 +37,7 @@ func (this *app) Define(cfg gopi.Config) error {
 
 	// Define commands
 	cfg.Command("metadata", "Dump metadata information", this.Metadata)
+	cfg.Command("remux", "Remultiplex from source to destination", this.Remux)
 	//cfg.Command("streams", "Dump stream information", this.Streams)
 	//cfg.Command("thumbnails", "Extract thumbnails", this.Thumbnails)
 
@@ -45,6 +46,11 @@ func (this *app) Define(cfg gopi.Config) error {
 }
 
 func (this *app) New(cfg gopi.Config) error {
+	// Check media manager
+	if this.MediaManager == nil {
+		return gopi.ErrInternalAppError.WithPrefix("MediaManager")
+	}
+
 	// Set the command
 	if cmd, err := cfg.GetCommand(nil); err != nil {
 		return err
