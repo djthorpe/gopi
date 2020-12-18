@@ -40,6 +40,15 @@ In order to use the library, you'll need to have a working version of Go on your
 go get github.com/djthorpe/gopi/v3
 ```
 
+Some libraries will need to be installed for building, RPC and Media services.
+In order to satisfy these dependencies,
+
+```bash
+sudo apt install make protobuf-compiler libprotobuf-dev
+```
+
+Other dependencies will be satisfied when running the `make` command.
+
 ## Getting Started
 
 In order to get started, build some of the examples in the "cmd" folder. They can be built with the makefile.
@@ -59,5 +68,5 @@ framework will be available in [documentation](https://gopi.mutablelogic.com/).
 > Redistribution and use in source and binary forms, with or without 
 > modification, are permitted with some conditions. 
 
-This repository is released under the BSD License. Please see the file [LICENSE.md] for a copy of this license and for a list of the conditions for redistribution and use.
+This repository is released under the BSD License. Please see the file [LICENSE.md](LICENSE.md) for a copy of this license and for a list of the conditions for redistribution and use.
 
