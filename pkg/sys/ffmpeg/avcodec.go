@@ -57,6 +57,7 @@ func FindCodecById(id AVCodecId) *AVCodec {
 func FindCodecByName(name string) *AVCodec {
 	name_ := C.CString(name)
 	defer C.free(unsafe.Pointer(name_))
+
 	ptr := unsafe.Pointer(nil)
 	for {
 		if codec := C.av_codec_iterate(&ptr); codec == nil {
@@ -79,6 +80,7 @@ func FindDecoderById(id AVCodecId) *AVCodec {
 func FindDecoderByName(name string) *AVCodec {
 	name_ := C.CString(name)
 	defer C.free(unsafe.Pointer(name_))
+
 	if codec := C.avcodec_find_decoder_by_name(name_); codec == nil {
 		return nil
 	} else {
@@ -97,6 +99,7 @@ func FindEncoderById(id AVCodecId) *AVCodec {
 func FindEncoderByName(name string) *AVCodec {
 	name_ := C.CString(name)
 	defer C.free(unsafe.Pointer(name_))
+
 	if codec := C.avcodec_find_encoder_by_name(name_); codec == nil {
 		return nil
 	} else {
