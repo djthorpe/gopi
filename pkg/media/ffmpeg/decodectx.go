@@ -17,22 +17,25 @@ import (
 
 type decodectx struct {
 	sync.RWMutex
-	stream *stream
-	frame  *frame
-	ctx    *ffmpeg.AVCodecContext
+
+	stream    *stream
+	frame     *frame
+	ctx       *ffmpeg.AVCodecContext
+	streammap *streammap
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // INIT
 
-func NewDecodeContext(stream *stream) *decodectx {
+func NewDecodeContext(s *stream, m *streammap) *decodectx {
 	this := new(decodectx)
 
 	// Check parameters
-	if stream == nil {
+	if s == nil || m == nil {
 		return nil
 	} else {
-		this.stream = stream
+		this.stream = s
+		this.streammap = m
 	}
 
 	// Create frame
@@ -63,6 +66,7 @@ func (this *decodectx) Close() error {
 
 	// Release resources
 	this.stream = nil
+	this.streammap = nil
 	this.ctx = nil
 	this.frame = nil
 

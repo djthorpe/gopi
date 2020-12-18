@@ -1,6 +1,7 @@
 package gopi
 
 import (
+	"context"
 	"image"
 	"net/url"
 	"strings"
@@ -9,35 +10,64 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type MediaKey string
-type MediaFlag uint
-type DecodeIteratorFunc func(MediaDecodeContext, MediaPacket) error
-type DecodeFrameIteratorFunc func(MediaDecodeContext, MediaFrame) error
+type (
+	MediaKey                string
+	MediaFlag               uint64
+	DecodeIteratorFunc      func(MediaDecodeContext, MediaPacket) error
+	DecodeFrameIteratorFunc func(MediaFrame) error
+)
 
 ////////////////////////////////////////////////////////////////////////////////
-// INTERFACES
+// MEDIA FILE INTERFACES
 
 // MediaManager for media file management
 type MediaManager interface {
-	OpenFile(path string) (Media, error)   // Open a media file
-	CreateFile(path string) (Media, error) // Create an output file
-	Close(Media) error                     // Close a media object
+	// OpenFile opens a local media file
+	OpenFile(path string) (MediaInput, error)
+
+	// OpenURL opens a network-based stream
+	OpenURL(url *url.URL) (MediaInput, error)
+
+	// CreateFile creates a local media file for output
+	CreateFile(path string) (MediaOutput, error)
+
+	// Close will release resources and close a media object
+	Close(Media) error
+
+	// ListCodecs enumerates codecs for a specific name and/or
+	// audio, video, encode and decode. By default (empty name and
+	// MediaFlag) lists all codecs
+	ListCodecs(string, MediaFlag) []MediaCodec
 }
 
 // Media is an input or output
 type Media interface {
-	// Properties
-	URL() *url.URL                  // Return URL for the media location
-	Metadata() MediaMetadata        // Return metadata
-	Flags() MediaFlag               // Return flags
-	Streams() []MediaStream         // Return streams
-	StreamsForFlag(MediaFlag) []int // Return stream index for flag(s)
+	URL() *url.URL           // Return URL for the media location
+	Metadata() MediaMetadata // Return metadata
+	Flags() MediaFlag        // Return flags
+	Streams() []MediaStream  // Return streams
+}
 
-	// DecodeIterator loops over selected streams from media object
-	DecodeIterator([]int, DecodeIteratorFunc) error
+type MediaInput interface {
+	Media
 
-	// DecodeFrameIterator loops over decoded frames from media stream
+	// StreamsForFlag returns array of stream indexes for
+	// the best streams to use according to the flags
+	StreamsForFlag(MediaFlag) []int
+
+	// Read loops over selected streams from media object, and
+	// packets are provided to a Decode function
+	Read(context.Context, []int, DecodeIteratorFunc) error
+
+	// DecodeFrameIterator loops over data packets from media stream
 	DecodeFrameIterator(MediaDecodeContext, MediaPacket, DecodeFrameIteratorFunc) error
+}
+
+type MediaOutput interface {
+	Media
+
+	// Write packets to output
+	Write(MediaDecodeContext, MediaPacket) error
 }
 
 // MediaMetadata are key value pairs for a media object
@@ -55,7 +85,14 @@ type MediaStream interface {
 
 // MediaCodec is the codec and parameters
 type MediaCodec interface {
-	Flags() MediaFlag // Flags for the codec (Audio, Video, etc)
+	// Name returns the unique name for the codec
+	Name() string
+
+	// Description returns the long description for the codec
+	Description() string
+
+	// Flags for the codec (Audio, Video, Encoder, Decoder)
+	Flags() MediaFlag
 }
 
 // MediaPacket is a packet of data from a stream
@@ -75,6 +112,22 @@ type MediaFrame interface {
 type MediaDecodeContext interface {
 	Stream() MediaStream // Origin of the packet
 	Frame() int          // Frame counter
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// AUDIO INTERFACES
+
+type AudioManager interface {
+	// OpenDefaultSink opens default output device
+	OpenDefaultSink() (AudioContext, error)
+
+	// Close audio stream
+	Close(AudioContext) error
+}
+
+type AudioContext interface {
+	// Write data to audio output device
+	Write(MediaFrame) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////

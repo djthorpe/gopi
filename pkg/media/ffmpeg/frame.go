@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/color"
 
-	gopi "github.com/djthorpe/gopi/v3"
 	ffmpeg "github.com/djthorpe/gopi/v3/pkg/sys/ffmpeg"
 )
 
@@ -23,7 +22,7 @@ type frame struct {
 // INIT
 
 func NewFrame() *frame {
-	if ctx := ffmpeg.NewFrame(); ctx == nil {
+	if ctx := ffmpeg.NewAVFrame(); ctx == nil {
 		return nil
 	} else {
 		return &frame{ctx, nil}
@@ -31,7 +30,20 @@ func NewFrame() *frame {
 }
 
 func (this *frame) Retain() error {
-	return gopi.ErrNotImplemented
+	// To retain the frame, create the arrays of planes of data
+	this.planes = nil
+	i := 0
+	for {
+		if buf := this.ctx.Buffer(i); buf == nil {
+			break
+		} else {
+			this.planes = append(this.planes, buf.Data())
+		}
+		i++
+	}
+
+	// Return success
+	return nil
 }
 
 func (this *frame) Release() {

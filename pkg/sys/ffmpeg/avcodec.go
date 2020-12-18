@@ -4,9 +4,7 @@ package ffmpeg
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
-	"syscall"
 	"unsafe"
 )
 
@@ -25,8 +23,6 @@ import "C"
 type (
 	AVCodec           C.struct_AVCodec
 	AVCodecParameters C.struct_AVCodecParameters
-	AVCodecContext    C.struct_AVCodecContext
-	AVPacket          C.struct_AVPacket
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,6 +40,32 @@ func AllCodecs() []*AVCodec {
 		}
 	}
 	return codecs
+}
+
+func FindCodecById(id AVCodecId) *AVCodec {
+	ptr := unsafe.Pointer(nil)
+	for {
+		if codec := C.av_codec_iterate(&ptr); codec == nil {
+			break
+		} else if AVCodecId(codec.id) == id {
+			return (*AVCodec)(codec)
+		}
+	}
+	return nil
+}
+
+func FindCodecByName(name string) *AVCodec {
+	name_ := C.CString(name)
+	defer C.free(unsafe.Pointer(name_))
+	ptr := unsafe.Pointer(nil)
+	for {
+		if codec := C.av_codec_iterate(&ptr); codec == nil {
+			break
+		} else if C.strcmp(name_, codec.name) == 0 {
+			return (*AVCodec)(codec)
+		}
+	}
+	return nil
 }
 
 func FindDecoderById(id AVCodecId) *AVCodec {
@@ -83,7 +105,7 @@ func FindEncoderByName(name string) *AVCodec {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// AVCODEC
+// AVCodec
 
 func (this *AVCodec) Name() string {
 	return C.GoString(this.name)
@@ -148,118 +170,6 @@ func (this *AVCodec) String() string {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// AVCODECCONTEXT
-
-// NewAVCodecContext allocates an AVCodecContext and set its fields to
-// default values
-func NewAVCodecContext(codec *AVCodec) *AVCodecContext {
-	return (*AVCodecContext)(C.avcodec_alloc_context3((*C.AVCodec)(codec)))
-}
-
-// Free AVCodecContext
-func (this *AVCodecContext) Free() {
-	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	C.avcodec_free_context(&ctx)
-}
-
-// Open will initialize the AVCodecContext to use the given AVCodec
-func (this *AVCodecContext) Open(codec *AVCodec, options *AVDictionary) error {
-	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	if err := AVError(C.avcodec_open2(ctx, (*C.AVCodec)(codec), (**C.struct_AVDictionary)(unsafe.Pointer(options)))); err != 0 {
-		return err
-	} else {
-		return nil
-	}
-}
-
-// Close a given AVCodecContext and free all the data associated with it, but
-// not the AVCodecContext itself
-func (this *AVCodecContext) Close() error {
-	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	if err := AVError(C.avcodec_close(ctx)); err != 0 {
-		return err
-	} else {
-		return nil
-	}
-}
-
-// DecodePacket does the packet decode
-func (this *AVCodecContext) DecodePacket(packet *AVPacket) error {
-	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	if err := AVError(C.avcodec_send_packet(ctx, (*C.AVPacket)(packet))); err != 0 {
-		return err
-	} else {
-		return nil
-	}
-}
-
-// DecodeFrame does the frame decoding
-func (this *AVCodecContext) DecodeFrame(frame *AVFrame) error {
-	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	if err := AVError(C.avcodec_receive_frame(ctx, (*C.AVFrame)(frame))); err != 0 {
-		if err.IsErrno(syscall.EAGAIN) {
-			return syscall.EAGAIN
-		} else if err.IsErrno(syscall.EINVAL) {
-			return syscall.EINVAL
-		} else {
-			return err
-		}
-	} else {
-		return nil
-	}
-}
-
-func (this *AVCodecContext) Type() AVMediaType {
-	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	return AVMediaType(ctx.codec_type)
-}
-
-func (this *AVCodecContext) Frame() int {
-	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	return int(ctx.frame_number)
-}
-
-func (this *AVCodecContext) PixelFormat() AVPixelFormat {
-	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	if pix_fmt := AVPixelFormat(ctx.pix_fmt); pix_fmt <= AV_PIX_FMT_NONE {
-		return AV_PIX_FMT_NONE
-	} else {
-		return pix_fmt
-	}
-}
-
-func (this *AVCodecContext) SampleFormat() AVSampleFormat {
-	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	if sample_format := AVSampleFormat(ctx.sample_fmt); sample_format <= AV_SAMPLE_FMT_NONE {
-		return AV_SAMPLE_FMT_NONE
-	} else {
-		return sample_format
-	}
-}
-
-func (this *AVCodecContext) String() string {
-	str := "<AVCodecContext"
-	media_type := this.Type()
-	if media_type != AVMEDIA_TYPE_UNKNOWN {
-		str += " type=" + fmt.Sprint(media_type)
-	}
-	if media_type == AVMEDIA_TYPE_VIDEO {
-		if pix_fmt := this.PixelFormat(); pix_fmt != AV_PIX_FMT_NONE {
-			str += " pix_fmt=" + fmt.Sprint(pix_fmt)
-		}
-	}
-	if media_type == AVMEDIA_TYPE_AUDIO {
-		if sample_fmt := this.SampleFormat(); sample_fmt != AV_SAMPLE_FMT_NONE {
-			str += " sample_fmt=" + fmt.Sprint(sample_fmt)
-		}
-	}
-	if frame_number := this.Frame(); frame_number >= 0 {
-		str += " frame_number=" + fmt.Sprint(frame_number)
-	}
-	return str + ">"
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // AVCODECPARAMETERS
 
 // NewAVCodecParameters allocates a new AVCodecParameters and set
@@ -307,8 +217,8 @@ func (this *AVCodecParameters) ToContext(other *AVCodecContext) error {
 }
 
 // From fill the parameters based on the values from the supplied codec parameters
-func (this *AVCodecParameters) From(codecpar *AVCodecParameters) error {
-	ctx := (*C.AVCodecParameters)(unsafe.Pointer(this))
+func (this *AVCodecParameters) CopyFrom(codecpar *AVCodecParameters) error {
+	ctx := (*C.AVCodecParameters)(this)
 	if err := AVError(C.avcodec_parameters_copy(ctx, (*C.AVCodecParameters)(codecpar))); err != 0 {
 		return err
 	} else {
@@ -350,97 +260,6 @@ func (this *AVCodecParameters) String() string {
 	}
 	if w, h := this.Width(), this.Height(); w != 0 && h != 0 {
 		str += " w,h={ " + fmt.Sprint(w, ",", h) + " }"
-	}
-	return str + ">"
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// AVPACKET
-
-// NewAVPacket allocates an AVPacket and set its fields to default values
-func NewAVPacket() *AVPacket {
-	return (*AVPacket)(C.av_packet_alloc())
-}
-
-// Free AVPacket, if the packet is reference counted, it will be unreferenced first
-func (this *AVPacket) Free() {
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-	C.av_packet_free(&ctx)
-}
-
-// Release AVPacket, wiping packet data
-func (this *AVPacket) Release() {
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-	C.av_packet_unref(ctx)
-}
-
-// Init optional fields of a packet with default values
-func (this *AVPacket) Init() {
-	C.av_init_packet((*C.AVPacket)(this))
-}
-
-func (this *AVPacket) Size() int {
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-	return int(ctx.size)
-}
-
-// Returns bytes for a packet
-func (this *AVPacket) Bytes() []byte {
-	var bytes []byte
-
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-
-	// Make a fake slice
-	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&bytes)))
-	sliceHeader.Cap = int(ctx.size)
-	sliceHeader.Len = int(ctx.size)
-	sliceHeader.Data = uintptr(unsafe.Pointer(ctx.data))
-
-	// Return slice
-	return bytes
-}
-
-func (this *AVPacket) Stream() int {
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-	return int(ctx.stream_index)
-}
-
-func (this *AVPacket) Flags() AVPacketFlag {
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-	return AVPacketFlag(ctx.flags)
-}
-
-func (this *AVPacket) Pos() int64 {
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-	return int64(ctx.pos)
-}
-
-func (this *AVPacket) Duration() int64 {
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-	return int64(ctx.duration)
-}
-
-func (this *AVPacket) Pts() int64 {
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-	return int64(ctx.pts)
-}
-
-func (this *AVPacket) Dts() int64 {
-	ctx := (*C.AVPacket)(unsafe.Pointer(this))
-	return int64(ctx.dts)
-}
-
-func (this *AVPacket) String() string {
-	str := "<AVPacket"
-	str += " size=" + fmt.Sprint(this.Size())
-	if stream := this.Stream(); stream >= 0 {
-		str += " stream=" + fmt.Sprint(stream)
-	}
-	if flags := this.Flags(); flags != 0 {
-		str += " flags=" + fmt.Sprint(flags)
-	}
-	if pos := this.Pos(); pos >= 0 {
-		str += " pos=" + fmt.Sprint(pos)
 	}
 	return str + ">"
 }

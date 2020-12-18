@@ -10,6 +10,7 @@ import "strings"
 /*
 #cgo pkg-config: libavcodec
 #include <libavutil/samplefmt.h>
+#include <libavcodec/avcodec.h>
 */
 import "C"
 
@@ -17,7 +18,7 @@ import "C"
 // TYPES
 
 type (
-	AVCodecId       int
+	AVCodecId       C.enum_AVCodecID
 	AVMediaType     int
 	AVCodecCap      uint32
 	AVDisposition   int

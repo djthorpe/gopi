@@ -28,7 +28,6 @@ type (
 	AVFormatContext C.struct_AVFormatContext
 	AVInputFormat   C.struct_AVInputFormat
 	AVOutputFormat  C.struct_AVOutputFormat
-	AVStream        C.struct_AVStream
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -135,9 +134,27 @@ func (this *AVFormatContext) OpenInput(filename string, input_format *AVInputFor
 	}
 }
 
+// Open Input URL
+func (this *AVFormatContext) OpenInputUrl(url string, input_format *AVInputFormat) error {
+	url_ := C.CString(url)
+	defer C.free(unsafe.Pointer(url_))
+	ctx := (*C.AVFormatContext)(unsafe.Pointer(this))
+	dict := new(AVDictionary)
+	if err := AVError(C.avformat_open_input(
+		&ctx,
+		url_,
+		(*C.struct_AVInputFormat)(input_format),
+		(**C.struct_AVDictionary)(unsafe.Pointer(dict)),
+	)); err != 0 {
+		return err
+	} else {
+		return nil
+	}
+}
+
 // Close Input
 func (this *AVFormatContext) CloseInput() {
-	ctx := (*C.AVFormatContext)(unsafe.Pointer(this))
+	ctx := (*C.AVFormatContext)(this)
 	C.avformat_close_input(&ctx)
 }
 
@@ -199,6 +216,12 @@ func (this *AVFormatContext) Url() *url.URL {
 	} else {
 		return url
 	}
+}
+
+// Return flags
+func (this *AVFormatContext) Flags() AVFormatFlag {
+	ctx := (*C.AVFormatContext)(this)
+	return AVFormatFlag(ctx.flags)
 }
 
 // Return number of streams
@@ -281,6 +304,29 @@ func (this *AVFormatContext) ReadPacket(packet *AVPacket) error {
 		return nil
 	} else {
 		return io.EOF
+	}
+}
+
+func (this *AVFormatContext) WritePacket(packet *AVPacket, out *AVFormatContext) error {
+	i := (*C.AVFormatContext)(unsafe.Pointer(this))
+	o := (*C.AVFormatContext)(unsafe.Pointer(out))
+	p := (*C.AVPacket)(packet)
+
+	/* Get streams */
+	in_stream := *(i.streams)  // TODO
+	out_stream := *(o.streams) // TODO
+
+	/* Adjust packet params for output */
+	p.pts = C.av_rescale_q_rnd(p.pts, in_stream.time_base, out_stream.time_base, C.AV_ROUND_NEAR_INF|C.AV_ROUND_PASS_MINMAX)
+	p.dts = C.av_rescale_q_rnd(p.dts, in_stream.time_base, out_stream.time_base, C.AV_ROUND_NEAR_INF|C.AV_ROUND_PASS_MINMAX)
+	p.duration = C.av_rescale_q(p.duration, in_stream.time_base, out_stream.time_base)
+	p.pos = -1
+
+	/* Write packet */
+	if ret := AVError(C.av_interleaved_write_frame(o, p)); ret == 0 {
+		return nil
+	} else {
+		return ret
 	}
 }
 
@@ -372,86 +418,6 @@ func (this *AVOutputFormat) String() string {
 	str += " ext=" + strconv.Quote(this.Ext())
 	str += " mime_type=" + strconv.Quote(this.MimeType())
 	str += " flags=" + fmt.Sprint(this.Flags())
-	return str + ">"
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// AVStream
-
-func NewStream(ctx *AVFormatContext, codec *AVCodec) *AVStream {
-	return (*AVStream)(C.avformat_new_stream(
-		(*C.AVFormatContext)(ctx),
-		(*C.AVCodec)(codec),
-	))
-}
-
-func (this *AVStream) Index() int {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	return int(ctx.index)
-}
-
-func (this *AVStream) Id() int {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	return int(ctx.id)
-}
-
-func (this *AVStream) Metadata() *AVDictionary {
-	return &AVDictionary{ctx: this.metadata}
-}
-
-func (this *AVStream) CodecPar() *AVCodecParameters {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	return (*AVCodecParameters)(ctx.codecpar)
-}
-
-func (this *AVStream) Disposition() AVDisposition {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	return AVDisposition(ctx.disposition)
-}
-
-func (this *AVStream) AttachedPicture() *AVPacket {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	if AVDisposition(ctx.disposition)&AV_DISPOSITION_ATTACHED_PIC == 0 {
-		return nil
-	} else {
-		return (*AVPacket)(&this.attached_pic)
-	}
-}
-
-func (this *AVStream) Duration() int64 {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	return int64(ctx.duration)
-}
-
-func (this *AVStream) NumFrames() int64 {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	return int64(ctx.nb_frames)
-}
-
-func (this *AVStream) StartTime() int64 {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	return int64(ctx.start_time)
-}
-
-func (this *AVStream) TimeBase() AVRational {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	return AVRational(ctx.time_base)
-}
-
-func (this *AVStream) MeanFrameRate() AVRational {
-	ctx := (*C.AVStream)(unsafe.Pointer(this))
-	return AVRational(ctx.avg_frame_rate)
-}
-
-func (this *AVStream) String() string {
-	str := "<AVStream"
-	str += " index=" + fmt.Sprint(this.Index())
-	str += " id=" + fmt.Sprint(this.Id())
-	str += " metadata=" + fmt.Sprint(this.Metadata())
-	str += " codecpar=" + fmt.Sprint(this.CodecPar())
-	if d := this.Disposition(); d != AV_DISPOSITION_NONE {
-		str += " disposition=" + fmt.Sprint(this.Disposition())
-	}
 	return str + ">"
 }
 

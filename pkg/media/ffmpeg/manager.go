@@ -3,8 +3,10 @@
 package ffmpeg
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -20,8 +22,8 @@ type Manager struct {
 	gopi.Logger
 	sync.Mutex
 
-	in []*inputctx
-	//	out []*outputctx
+	in  []*inputctx
+	out []*outputctx
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,13 +55,13 @@ func (this *Manager) Dispose() error {
 	var result error
 
 	// Close all outputs
-	/*for _, out := range this.out {
+	for _, out := range this.out {
 		if out != nil {
 			if err := out.Close(); err != nil {
 				result = multierror.Append(result, err)
 			}
 		}
-	}*/
+	}
 
 	// Close all inputs
 	for _, in := range this.in {
@@ -78,7 +80,7 @@ func (this *Manager) Dispose() error {
 
 	// Release resources
 	this.in = nil
-	//this.out = nil
+	this.out = nil
 
 	// Return success
 	return nil
@@ -87,7 +89,7 @@ func (this *Manager) Dispose() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - OPEN/CLOSE
 
-func (this *Manager) OpenFile(path string) (gopi.Media, error) {
+func (this *Manager) OpenFile(path string) (gopi.MediaInput, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -98,12 +100,14 @@ func (this *Manager) OpenFile(path string) (gopi.Media, error) {
 		}
 	}
 
-	// Create the media object and return it
+	// Check to see if path exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, gopi.ErrNotFound
 	} else if err != nil {
 		return nil, err
 	}
+
+	// Create the media object and return it
 	if ctx := ffmpeg.NewAVFormatContext(); ctx == nil {
 		return nil, gopi.ErrInternalAppError.WithPrefix("NewAVFormatContext")
 	} else if err := ctx.OpenInput(path, nil); err != nil {
@@ -117,32 +121,55 @@ func (this *Manager) OpenFile(path string) (gopi.Media, error) {
 	}
 }
 
-func (this *Manager) CreateFile(path string) (gopi.Media, error) {
+func (this *Manager) OpenURL(url *url.URL) (gopi.MediaInput, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	return nil, gopi.ErrNotImplemented
-	/*
-		// Clean up the path
-		if filepath.IsAbs(path) == false {
-			if path_, err := filepath.Abs(path); err == nil {
-				path = filepath.Clean(path_)
-			}
-		}
+	// Check incoming parameters
+	if url == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("OpenURL")
+	}
 
-		if ctx, err := ffmpeg.NewAVFormatOutputContext(filename, nil); err != nil {
-			return nil, err
-		} else if out := NewOutputContext(ctx); out == nil {
-			return nil, gopi.ErrInternalAppError.WithPrefix("NewOutputContext")
-		} else {
-			this.out = append(this.out, out)
-			return out, nil
-		}*/
+	// Input
+	if ctx := ffmpeg.NewAVFormatContext(); ctx == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("NewAVFormatContext")
+	} else if err := ctx.OpenInputUrl(url.String(), nil); err != nil {
+		// when error is returned free is already called
+		return nil, err
+	} else if in := NewInputContext(ctx); in == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("NewInputContext")
+	} else {
+		this.in = append(this.in, in)
+		return in, nil
+	}
+}
+
+func (this *Manager) CreateFile(path string) (gopi.MediaOutput, error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	// Clean up the path
+	if filepath.IsAbs(path) == false {
+		if path_, err := filepath.Abs(path); err == nil {
+			path = filepath.Clean(path_)
+		}
+	}
+
+	if ctx, err := ffmpeg.NewAVFormatOutputContext(path, nil); err != nil {
+		return nil, err
+	} else if out := NewOutputContext(ctx); out == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("NewOutputContext")
+	} else {
+		this.out = append(this.out, out)
+		return out, nil
+	}
 }
 
 func (this *Manager) Close(media gopi.Media) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
+
+	// TODO OUTPUT
 
 	if in, ok := media.(*inputctx); in == nil || ok == false {
 		return gopi.ErrInternalAppError.WithPrefix("Close")
@@ -159,10 +186,68 @@ func (this *Manager) Close(media gopi.Media) error {
 	}
 }
 
+func (this *Manager) ListCodecs(name string, flags gopi.MediaFlag) []gopi.MediaCodec {
+	result := []gopi.MediaCodec{}
+
+	if name != "" {
+		if codec := ffmpeg.FindCodecByName(name); codec != nil {
+			result = append(result, NewCodec(codec))
+		}
+	}
+
+	if len(result) == 0 {
+		for _, codec := range ffmpeg.AllCodecs() {
+			if name == "" || strings.Contains(codec.Name(), name) {
+				result = append(result, NewCodec(codec))
+			}
+		}
+	}
+
+	// Check for flag filtering
+	if flags == gopi.MEDIA_FLAG_NONE {
+		return result
+	}
+
+	// Filter by flags
+	dst := 0
+	for src, codec := range result {
+		codecflags := codec.Flags()
+		if flags&gopi.MEDIA_FLAG_VIDEO != 0 {
+			if codecflags&gopi.MEDIA_FLAG_VIDEO == 0 {
+				continue
+			}
+		}
+		if flags&gopi.MEDIA_FLAG_AUDIO != 0 {
+			if codecflags&gopi.MEDIA_FLAG_AUDIO == 0 {
+				continue
+			}
+		}
+		if flags&gopi.MEDIA_FLAG_SUBTITLE != 0 {
+			if codecflags&gopi.MEDIA_FLAG_SUBTITLE == 0 {
+				continue
+			}
+		}
+		if flags&gopi.MEDIA_FLAG_ENCODER != 0 {
+			if codecflags&gopi.MEDIA_FLAG_ENCODER == 0 {
+				continue
+			}
+		}
+		if flags&gopi.MEDIA_FLAG_DECODER != 0 {
+			if codecflags&gopi.MEDIA_FLAG_DECODER == 0 {
+				continue
+			}
+		}
+		result[dst] = result[src]
+		dst++
+	}
+
+	return result[:dst]
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *Manager) String() string {
-	str := "<manager.ffmpeg"
+	str := "<ffmpeg.manager"
 	return str + ">"
 }
