@@ -162,23 +162,22 @@ func SPITransfer(fd uintptr, send []byte, speed uint32, delay uint16, bits uint8
 	}
 }
 
-func SPIRead(fd uintptr, size, speed uint32, delay uint16, bits uint8) ([]byte, error) {
-	if size == 0 {
-		return []byte{}, nil
+func SPIRead(fd uintptr, recv []byte, speed uint32, delay uint16, bits uint8) error {
+	if len(recv) == 0 {
+		return nil
 	}
-	recv := make([]byte, size)
 	message := spi_message{
 		tx_buf:        0,
 		rx_buf:        uint64(uintptr(unsafe.Pointer(&recv[0]))),
-		len:           size,
+		len:           uint32(len(recv)),
 		speed_hz:      speed,
 		delay_usecs:   delay,
 		bits_per_word: bits,
 	}
 	if err := spi_ioctl(fd, uintptr(C._SPI_IOC_MESSAGE(C.int(1))), unsafe.Pointer(&message)); err != 0 {
-		return nil, os.NewSyscallError("spi_ioctl", err)
+		return os.NewSyscallError("spi_ioctl", err)
 	} else {
-		return recv, nil
+		return nil
 	}
 }
 

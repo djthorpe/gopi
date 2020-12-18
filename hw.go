@@ -21,7 +21,7 @@ type (
 	LIRCType     uint32 // LIRCType is the LIRC Type
 )
 
-type SPIDevice struct {
+type SPIBus struct {
 	Bus, Slave uint
 }
 
@@ -43,15 +43,35 @@ type Platform interface {
 
 // SPI implements the SPI interface for sensors, etc.
 type SPI interface {
-	Mode() SPIMode                        // Get SPI mode
-	MaxSpeedHz() uint32                   // Get SPI speed
-	BitsPerWord() uint8                   // Get Bits Per Word
-	SetMode(SPIMode) error                // Set SPI mode
-	SetMaxSpeedHz(uint32) error           // Set SPI speed
-	SetBitsPerWord(uint8) error           // Set Bits Per Word
-	Transfer(send []byte) ([]byte, error) // Read/Write
-	Read(len uint32) ([]byte, error)      // Read
-	Write(send []byte) error              // Write
+	// Return all valid devices
+	Devices() []SPIBus
+
+	// Mode returns the current SPI mode
+	Mode(SPIBus) SPIMode
+
+	// SetMode sets the current SPI mode
+	SetMode(SPIBus, SPIMode) error
+
+	// MaxSpeedHz returns the current data transfer speed
+	MaxSpeedHz(SPIBus) uint32
+
+	// SetMaxSpeedHz sets the current data transfer speed
+	SetMaxSpeedHz(SPIBus, uint32) error
+
+	// BitsPerWord returns current configuration
+	BitsPerWord(SPIBus) uint8
+
+	// SetBitsPerWord updates the current configuration
+	SetBitsPerWord(SPIBus, uint8) error
+
+	// Transfer reads and writes on the SPI bus
+	Transfer(SPIBus, []byte) ([]byte, error)
+
+	// Read bytes into a buffer
+	Read(SPIBus, []byte) error
+
+	// Write bytes from the buffer
+	Write(SPIBus, []byte) error
 }
 
 // I2C implements the I2C interface for sensors, etc.
@@ -318,6 +338,8 @@ func (p PlatformType) FlagString() string {
 
 func (m SPIMode) String() string {
 	switch m {
+	case SPI_MODE_NONE:
+		return "SPI_MODE_NONE"
 	case SPI_MODE_0:
 		return "SPI_MODE_0"
 	case SPI_MODE_1:
