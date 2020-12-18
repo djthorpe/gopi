@@ -12,7 +12,7 @@ import (
 	"github.com/djthorpe/gopi/v3/pkg/dev/waveshare"
 	"github.com/djthorpe/gopi/v3/pkg/tool"
 
-	_ "image/png"
+	_ "image/jpeg"
 
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/gpio"
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/spi"
@@ -27,7 +27,7 @@ type App struct {
 }
 
 const (
-	SAMPLE_IMAGE = "../../../etc/images/gopi-800x388.png"
+	SAMPLE_IMAGE = "../../../etc/images/gopi-880x528.jpg"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

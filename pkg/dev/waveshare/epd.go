@@ -25,7 +25,7 @@ const (
 	EPD_PIN_DC    = gopi.GPIOPin(25)
 	EPD_PIN_BUSY  = gopi.GPIOPin(24)
 
-	EPD_SPI_SPEED = 10000000
+	EPD_SPI_SPEED = 4000000
 	EPD_SPI_BUS   = 0
 	EPD_SPI_SLAVE = 0
 	EPD_SPI_MODE  = gopi.SPI_MODE_0
@@ -50,7 +50,7 @@ func (this *EPD) New(gopi.Config) error {
 	}
 
 	// Set SPI bus
-	this.bus = gopi.SPIBus{0, 0}
+	this.bus = gopi.SPIBus{EPD_SPI_BUS, EPD_SPI_SLAVE}
 
 	if err := this.Init(); err != nil {
 		return err
@@ -75,9 +75,8 @@ func (this *EPD) Init() error {
 	this.GPIO.SetPinMode(EPD_PIN_BUSY, gopi.GPIO_INPUT)
 
 	// SPI Init
-	this.SPI.SetMode(this.bus, gopi.SPI_MODE_0)
-	this.SPI.SetMaxSpeedHz(this.bus, 4000000)
-	// TODO: Endian, Polarity
+	this.SPI.SetMode(this.bus, EPD_SPI_MODE)
+	this.SPI.SetMaxSpeedHz(this.bus, EPD_SPI_SPEED)
 
 	// Toggle reset pin and wait until idle
 	this.reset()
@@ -92,13 +91,13 @@ func (this *EPD) Init() error {
 	}
 
 	// Auto Write Red RAM
-	this.send(0x46, []byte{0xf7})
+	this.send(0x46, []byte{0xF7})
 	if err := this.waitUntilIdleTimeout(time.Second); err != nil {
 		return err
 	}
 
 	// Auto Write B/W RAM
-	this.send(0x47, []byte{0xf7})
+	this.send(0x47, []byte{0xF7})
 	if err := this.waitUntilIdleTimeout(time.Second); err != nil {
 		return err
 	}
@@ -136,14 +135,14 @@ func (this *EPD) Init() error {
 }
 
 func (this *EPD) Clear(ctx context.Context) error {
-	width := *this.w >> 3 // Divide by eight
+	width := *this.w
 	height := *this.h
 
 	// Set RAM x address count to 0
 	this.send(0x4F, []byte{0x00, 0x00})
 
-	// Send data
-	buf := make([]byte, width*height)
+	// Send data - one bit per pixel
+	buf := make([]byte, (width>>3)*height)
 	for i := range buf {
 		buf[i] = 0xFF
 	}
@@ -165,21 +164,30 @@ func (this *EPD) Clear(ctx context.Context) error {
 }
 
 func (this *EPD) Display(ctx context.Context, img image.Image) error {
-	width := *this.w >> 3 // Divide by eight
+	width := *this.w
 	height := *this.h
+	stride := width >> 3 // bytes per row
 
 	// Set RAM x address count to 0
 	this.send(0x4F, []byte{0x00, 0x00})
 
-	buf := make([]byte, width*height)
+	// Construct bit-per-pixel image
+	buf := make([]byte, stride*height)
 	for y := uint(0); y < height; y++ {
-		for x := uint(0); x < width; x++ {
-			//r, g, b, _ := img.At(int(x), int(y)).RGBA()
-			r, _, _, _ := img.At(int(x), int(y)).RGBA()
-			buf[x+y*width] = uint8(r) //uint8((uint32(r>>24) + uint32(g>>24) + uint32(b>>24)) / 3)
+		for x := uint(0); x < stride; x++ {
+			data := uint8(0)
+			for bit := uint(0); bit < 8; bit++ {
+				data <<= 1
+				r, _, _, _ := img.At(int(x*8+bit), int(y)).RGBA()
+				if (r&0xFFFF)>>15 != 0 {
+					data |= 1
+				}
+			}
+			buf[x+y*stride] = data
 		}
 	}
 	this.send(0x24, buf)
+
 	for i := range buf {
 		buf[i] = 0xFF
 	}
