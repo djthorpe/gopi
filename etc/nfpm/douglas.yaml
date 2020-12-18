@@ -21,6 +21,7 @@ license: "Apache 2.0"
 files:
   build/douglas: /opt/gopi/bin/douglas
   etc/systemd/douglas.service: /opt/gopi/etc/douglas.service
+  etc/images/gopi-880x528.jpg: /opt/gopi/var/images/gopi-880x528.jpg
 
 symlinks:
   /etc/systemd/system/douglas.service: /opt/gopi/etc/douglas.service
