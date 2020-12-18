@@ -11,7 +11,7 @@ import (
 
 type (
 	PlatformType uint32
-	SPIMode      uint8  // SPIMode is the SPI Mode
+	SPIMode      uint32 // SPIMode is the SPI Mode
 	GPIOPin      uint8  // GPIOPin is the logical GPIO pin
 	GPIOState    uint8  // GPIOState is the GPIO Pin state
 	GPIOMode     uint8  // GPIOMode is the GPIO Pin mode
@@ -240,6 +240,7 @@ const (
 	SPI_MODE_2    SPIMode = (SPI_MODE_CPOL | 0x00)
 	SPI_MODE_3    SPIMode = (SPI_MODE_CPOL | SPI_MODE_CPHA)
 	SPI_MODE_NONE SPIMode = 0xFF
+	SPI_MODE_MASK SPIMode = 0x03
 )
 
 const (

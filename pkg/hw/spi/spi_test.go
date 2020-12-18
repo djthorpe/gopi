@@ -32,11 +32,13 @@ func Test_SPI_001(t *testing.T) {
 
 func Test_SPI_002(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		for _, dev := range app.SPI.Devices() {
-			if err := app.SPI.SetMode(dev, gopi.SPI_MODE_0); err != nil {
+		for _, bus := range app.SPI.Devices() {
+			if err := app.SPI.SetMode(bus, gopi.SPI_MODE_1); err != nil {
 				t.Error(err)
-			} else {
-				t.Log(dev)
+			} else if err := app.SPI.SetBitsPerWord(bus, 8); err != nil {
+				t.Error(err)
+			} else if err := app.SPI.SetMaxSpeedHz(bus, 125000000); err != nil {
+				t.Error(err)
 			}
 		}
 		t.Log(app.SPI)

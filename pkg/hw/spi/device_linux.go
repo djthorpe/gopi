@@ -75,8 +75,8 @@ func (dev *device) Close() error {
 
 func (dev *device) String() string {
 	str := "<spi"
-	if dev.mode != gopi.SPI_MODE_NONE {
-		str += " mode=" + fmt.Sprint(dev.mode)
+	if mode := dev.Mode(); mode != gopi.SPI_MODE_NONE {
+		str += " mode=" + fmt.Sprint(mode)
 	}
 	if dev.speed_hz != 0 {
 		str += " max_speed=" + fmt.Sprint(dev.speed_hz) + "Hz"
@@ -94,7 +94,7 @@ func (dev *device) String() string {
 // PUBLIC METHODS
 
 func (this *device) Mode() gopi.SPIMode {
-	return this.mode
+	return this.mode & gopi.SPI_MODE_MASK
 }
 
 func (this *device) MaxSpeedHz() uint32 {
@@ -109,12 +109,15 @@ func (this *device) SetMode(mode gopi.SPIMode) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
+	mode = mode & gopi.SPI_MODE_MASK                        // Mask off mode
+	mode = this.mode&(0xFFFFFFFF^gopi.SPI_MODE_MASK) | mode // Or with current mode
+
 	if err := linux.SPISetMode(this.fd.Fd(), mode); err != nil {
 		return err
 	} else if mode_, err := linux.SPIMode(this.fd.Fd()); err != nil {
 		return err
 	} else if mode != mode_ {
-		return gopi.ErrUnexpectedResponse.WithPrefix("SetMode")
+		return gopi.ErrUnexpectedResponse.WithPrefix("SetMode: ", mode_)
 	} else {
 		this.mode = mode
 		return nil
