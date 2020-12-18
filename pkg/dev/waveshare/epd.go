@@ -33,6 +33,16 @@ const (
 	blackThreshold = 0.39
 )
 
+const (
+	EPD_CMD_SLEEP_MODE      = 0x10
+	EPD_CMD_SWRESET         = 0x12
+	EPD_CMD_RAM_WRITE_BLACK = 0x24
+	EPD_CMD_RAM_WRITE_RED   = 0x26
+	EPD_CMD_RAM_XADDRESS    = 0x4E
+	EPD_CMD_RAM_YADDRESS    = 0x4F
+	EPD_CMD_UPDATE          = 0x20
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION
 
@@ -64,6 +74,12 @@ func (this *EPD) New(gopi.Config) error {
 }
 
 func (this *EPD) Dispose() error {
+	// Put EPD into sleep mode
+	if err := this.Sleep(); err != nil {
+		return err
+	}
+
+	// Return success
 	return nil
 }
 
@@ -78,20 +94,20 @@ func (this *EPD) Clear(ctx context.Context) error {
 	width := *this.w
 	height := *this.h
 
-	// Set RAM x address count to 0
-	this.send(0x4F, []byte{0x00, 0x00})
+	// Set RAM Y Address counter to zero
+	this.send(EPD_CMD_RAM_YADDRESS, []byte{0x00, 0x00})
 
 	// Send data - one bit per pixel
 	buf := make([]byte, (width>>3)*height)
 	for i := range buf {
 		buf[i] = 0xFF
 	}
-	this.send(0x24, buf)
-	this.send(0x26, buf)
+	this.send(EPD_CMD_RAM_WRITE_BLACK, buf)
+	this.send(EPD_CMD_RAM_WRITE_RED, buf)
 
 	// Load LUT from MCU(0x32)
 	this.send(0x22, []byte{0xF7})
-	this.send(0x20, nil)
+	this.send(EPD_CMD_UPDATE, nil)
 	time.Sleep(10 * time.Millisecond)
 
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -108,8 +124,8 @@ func (this *EPD) Draw(ctx context.Context, img image.Image) error {
 	height := *this.h
 	stride := width >> 3 // bytes per row
 
-	// Set RAM x address count to 0
-	this.send(0x4F, []byte{0x00, 0x00})
+	// Set RAM Y Address counter to zero
+	this.send(EPD_CMD_RAM_YADDRESS, []byte{0x00, 0x00})
 
 	// Construct bit-per-pixel image
 	buf := make([]byte, stride*height)
@@ -130,16 +146,16 @@ func (this *EPD) Draw(ctx context.Context, img image.Image) error {
 			buf[x+y*stride] = data
 		}
 	}
-	this.send(0x24, buf)
+	this.send(EPD_CMD_RAM_WRITE_BLACK, buf)
 
 	for i := range buf {
 		buf[i] = 0xFF
 	}
-	this.send(0x26, buf)
+	this.send(EPD_CMD_RAM_WRITE_RED, buf)
 
 	// Load LUT from MCU(0x32)
 	this.send(0x22, []byte{0xF7})
-	this.send(0x20, nil)
+	this.send(EPD_CMD_UPDATE, nil)
 	time.Sleep(10 * time.Millisecond)
 
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -153,7 +169,8 @@ func (this *EPD) Draw(ctx context.Context, img image.Image) error {
 }
 
 func (this *EPD) Sleep() error {
-	return this.send(0x10, []byte{0x01})
+	// Sleep mode 1. To wake up, hardware reset is required
+	return this.send(EPD_CMD_SLEEP_MODE, []byte{0x01})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -178,7 +195,7 @@ func (this *EPD) init() error {
 	}
 
 	// Software reset
-	this.send(0x12, nil)
+	this.send(EPD_CMD_SWRESET, nil)
 	if err := this.waitUntilIdleTimeout(time.Second); err != nil {
 		return err
 	}
@@ -212,16 +229,16 @@ func (this *EPD) init() error {
 	this.send(0x3C, []byte{0x05})
 	this.send(0x18, []byte{0x80})
 
-	// Load Temperature and waveform setting
+	// Load Temperature and Waveform setting
 	this.send(0x22, []byte{0xB1})
 	this.send(0x20, nil)
 	if err := this.waitUntilIdleTimeout(time.Second); err != nil {
 		return err
 	}
 
-	// Set RAM x address count to 0
-	this.send(0x4E, []byte{0x00, 0x00})
-	this.send(0x4F, []byte{0x00, 0x00})
+	// Set XY Counters to zero
+	this.send(EPD_CMD_RAM_XADDRESS, []byte{0x00, 0x00})
+	this.send(EPD_CMD_RAM_YADDRESS, []byte{0x00, 0x00})
 
 	// Return sucess
 	return nil
