@@ -16,9 +16,7 @@ This repository contains an application framework for the Go language, which wil
 It would also be great to support the following features in the future:
 
 * Image and video encoding/decoding, including utilizing hardware
-
   acceleration
-
 * GPU acceleration for 2D graphics
 * 3D graphics
 * Audio devices
@@ -46,7 +44,10 @@ go get github.com/djthorpe/gopi/v3
 
 In order to get started, build some of the examples in the "cmd" folder. They can be built with the makefile.
 
-* `make rpi` will run the tests and install the examples
+* `make all` will build the example commands into the `build` folder;
+* `make test` runs all tests for the `pkg` folder;
+* `make debian` will create `.deb` packages which can be distributed;
+* `make clean` removes build intermediate files.
 
 Fuller documentation of the examples and developing your own code against this 
 framework will be available in [documentation](https://gopi.mutablelogic.com/).
@@ -58,5 +59,5 @@ framework will be available in [documentation](https://gopi.mutablelogic.com/).
 > Redistribution and use in source and binary forms, with or without 
 > modification, are permitted with some conditions. 
 
-This repository is released under the BSD License. Please see the file [LICENSE]() for a copy of this license and for a list of the conditions for redistribution and use.
+This repository is released under the BSD License. Please see the file [LICENSE.md] for a copy of this license and for a list of the conditions for redistribution and use.
 
