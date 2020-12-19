@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"image/color"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/gpio/broadcom"
+	"golang.org/x/image/draw"
+	"golang.org/x/image/math/f64"
 )
 
 type EPD struct {
@@ -15,8 +18,9 @@ type EPD struct {
 	gopi.GPIO
 	gopi.SPI
 
-	bus  gopi.SPIBus
-	w, h *uint
+	bus    gopi.SPIBus
+	w, h   *uint
+	rotate *int
 }
 
 const (
@@ -29,8 +33,6 @@ const (
 	EPD_SPI_BUS   = 0
 	EPD_SPI_SLAVE = 0
 	EPD_SPI_MODE  = gopi.SPI_MODE_0
-
-	blackThreshold = 0.39
 )
 
 const (
@@ -49,6 +51,7 @@ const (
 func (this *EPD) Define(cfg gopi.Config) {
 	this.w = cfg.FlagUint("epd.width", 880, "Width of display")
 	this.h = cfg.FlagUint("epd.height", 528, "Height of display")
+	this.rotate = cfg.FlagInt("epd.rotate", 0, "Image rotation in degrees")
 }
 
 func (this *EPD) New(gopi.Config) error {
@@ -93,12 +96,14 @@ func (this *EPD) Size() gopi.Size {
 func (this *EPD) Clear(ctx context.Context) error {
 	width := *this.w
 	height := *this.h
+	stride := width >> 3 // bytes per row
 
-	// Set RAM Y Address counter to zero
+	// Set RAM X,Y Addresses to zero
+	this.send(EPD_CMD_RAM_XADDRESS, []byte{0x00, 0x00})
 	this.send(EPD_CMD_RAM_YADDRESS, []byte{0x00, 0x00})
 
-	// Send data - one bit per pixel
-	buf := make([]byte, (width>>3)*height)
+	// Send data
+	buf := make([]byte, stride*height)
 	for i := range buf {
 		buf[i] = 0xFF
 	}
@@ -119,12 +124,15 @@ func (this *EPD) Clear(ctx context.Context) error {
 	return nil
 }
 
-func (this *EPD) Draw(ctx context.Context, img image.Image) error {
+// DrawMono assumes image is already coded as black and white
+// pixels and that the image is the correct size
+func (this *EPD) DrawMono(ctx context.Context, img image.Image) error {
 	width := *this.w
 	height := *this.h
 	stride := width >> 3 // bytes per row
 
-	// Set RAM Y Address counter to zero
+	// Set RAM X,Y Addresses to zero
+	this.send(EPD_CMD_RAM_XADDRESS, []byte{0x00, 0x00})
 	this.send(EPD_CMD_RAM_YADDRESS, []byte{0x00, 0x00})
 
 	// Construct bit-per-pixel image
@@ -134,24 +142,23 @@ func (this *EPD) Draw(ctx context.Context, img image.Image) error {
 			data := uint8(0)
 			for bit := uint(0); bit < 8; bit++ {
 				data <<= 1
-				// Use luminosity conversion
-				r, g, b, _ := img.At(int(x*8+bit), int(y)).RGBA()
-				p1 := float64(0.21) * float64(r) / float64(0xFFFF)
-				p2 := float64(0.72) * float64(g) / float64(0xFFFF)
-				p3 := float64(0.07) * float64(b) / float64(0xFFFF)
-				if (p1 + p2 + p3) >= blackThreshold {
+				if img.At(int(x*8+bit), int(y)) != color.Black {
 					data |= 1
 				}
 			}
 			buf[x+y*stride] = data
 		}
 	}
+	// Write blacks
 	this.send(EPD_CMD_RAM_WRITE_BLACK, buf)
 
-	for i := range buf {
-		buf[i] = 0xFF
-	}
-	this.send(EPD_CMD_RAM_WRITE_RED, buf)
+	// Write reds
+	/*
+		for i := range buf {
+			buf[i] = 0xFF
+		}
+		this.send(EPD_CMD_RAM_WRITE_RED, buf)
+	*/
 
 	// Load LUT from MCU(0x32)
 	this.send(0x22, []byte{0xF7})
@@ -166,6 +173,27 @@ func (this *EPD) Draw(ctx context.Context, img image.Image) error {
 
 	// Return success
 	return nil
+}
+
+func (this *EPD) Draw(ctx context.Context, src image.Image) error {
+	bounds := image.Rectangle{image.ZP, image.Pt(int(*this.w), int(*this.h))}
+
+	// Resize image into 'scaled'
+	scaled := image.NewRGBA(bounds)
+	transform := NewAffineTransform().Scale(
+		float64(scaled.Bounds().Dx())/float64(src.Bounds().Dx()),
+		float64(scaled.Bounds().Dy())/float64(src.Bounds().Dy()),
+	)
+	draw.ApproxBiLinear.Transform(scaled, f64.Aff3(transform), src, src.Bounds(), draw.Over, nil)
+
+	// Convert to BW using dithering
+	dst := image.NewPaletted(scaled.Bounds(), []color.Color{
+		color.Gray{Y: 255},
+		color.Gray{Y: 0},
+	})
+	draw.FloydSteinberg.Draw(dst, dst.Bounds(), scaled, image.ZP)
+
+	return this.DrawMono(ctx, dst)
 }
 
 func (this *EPD) Sleep() error {

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
-	"golang.org/x/image/draw"
 
 	_ "image/gif"
 	_ "image/jpeg"
@@ -161,8 +160,5 @@ func (this *app) Draw(ctx context.Context, path string) error {
 }
 
 func (this *app) DrawImage(ctx context.Context, src image.Image) error {
-	size := this.EPD.Size()
-	dst := image.NewRGBA(image.Rect(0, 0, int(size.W), int(size.H)))
-	draw.ApproxBiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Over, nil)
-	return this.EPD.Draw(ctx, dst)
+	return this.EPD.Draw(ctx, src)
 }
