@@ -16,17 +16,12 @@ type service struct {
 	service string
 	zone    string
 	name    string
-	ttl     time.Duration
-	host    []target
+	host    string
+	port    uint16
 	a       []net.IP
 	aaaa    []net.IP
 	txt     []string
-}
-
-type target struct {
-	target   string
-	port     uint16
-	priority uint16
+	ttl     time.Duration
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,6 +35,10 @@ func NewService(zone string) *service {
 
 ///////////////////////////////////////////////////////////////////////////////
 // GET PROPERTIES
+
+func (this *service) Instance() string {
+	return strings.TrimSuffix(this.name, this.zone)
+}
 
 func (this *service) Service() string {
 	return strings.TrimSuffix(this.service, this.zone)
@@ -59,16 +58,12 @@ func (this *service) Name() string {
 	return name
 }
 
-func (this *service) Instance() string {
-	return fqn(this.name)
+func (this *service) Host() string {
+	return this.host
 }
 
-func (this *service) HostPort() []string {
-	hostport := make([]string, 0, len(this.host))
-	for _, target := range this.host {
-		hostport = append(hostport, net.JoinHostPort(target.target, fmt.Sprint(target.port)))
-	}
-	return hostport
+func (this *service) Port() uint16 {
+	return this.port
 }
 
 func (this *service) Addrs() []net.IP {
@@ -92,7 +87,8 @@ func (this *service) SetPTR(ptr *dns.PTR) {
 }
 
 func (this *service) SetSRV(host string, port uint16, priority uint16) {
-	this.host = append(this.host, target{host, port, priority})
+	this.host = host
+	this.port = port
 }
 
 func (this *service) SetTXT(txt []string) {
@@ -118,8 +114,8 @@ func (this *service) String() string {
 	if name := this.Name(); name != "" {
 		str += fmt.Sprintf(" name=%q", name)
 	}
-	if hostport := this.HostPort(); len(hostport) > 0 {
-		str += fmt.Sprintf(" host=%v", hostport)
+	if host, port := this.Host(), this.Port(); host != "" {
+		str += fmt.Sprintf(" host=%v", net.JoinHostPort(host, fmt.Sprint(port)))
 	}
 	if ips := this.Addrs(); len(ips) > 0 {
 		str += fmt.Sprintf(" addrs=%v", ips)

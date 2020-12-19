@@ -3,9 +3,7 @@ package mdns
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -104,18 +102,13 @@ func (this *Responder) SetServices(r []gopi.ServiceRecord) error {
 	this.names = make([]string, 0, len(r))
 	this.records = make(map[string][]gopi.ServiceRecord, len(r))
 	for _, record := range r {
-		key := fqn(record.Service())
-		// Validate key
-		if key == "." {
-			continue
+		serviceKey := fqn(record.Service())
+		instanceKey := fqn(record.Instance())
+		if _, exists := this.records[serviceKey]; exists == false {
+			this.names = append(this.names, serviceKey)
 		}
-		// Deal with new key
-		if _, exists := this.records[key]; exists == false {
-			this.records[key] = []gopi.ServiceRecord{}
-			this.names = append(this.names, key)
-		}
-		// Append record to existing set
-		this.records[key] = append(this.records[key], record)
+		this.records[serviceKey] = append(this.records[serviceKey], record)
+		this.records[instanceKey] = append(this.records[instanceKey], record)
 	}
 
 	// Return success
@@ -190,7 +183,8 @@ func (this *Responder) NewServiceRecord(service string, name string, port uint16
 		if strings.HasSuffix(host, r.zone) == false {
 			host = host + r.zone
 		}
-		r.host = append(r.host, target{host, port, 1})
+		r.host = host
+		r.port = port
 	}
 
 	// Addr
@@ -229,7 +223,6 @@ func handleQuestion(msg *dns.Msg, question dns.Question, zone string, f1 FuncSer
 		return handleEnum(msg, question, zone, f1)
 	case len(f2(questionName)) > 0:
 		return handleServiceRecords(msg, question, f2(questionName))
-		return nil
 	default:
 		fmt.Println("TODO: Unhandled question:", questionName)
 		return nil
@@ -237,7 +230,7 @@ func handleQuestion(msg *dns.Msg, question dns.Question, zone string, f1 FuncSer
 }
 
 func handleEnum(req *dns.Msg, question dns.Question, zone string, fn FuncServices) []*dns.Msg {
-	// Check incoming parameters
+	// Check incoming parametersf2(questionName)
 	if req == nil || fn == nil {
 		return nil
 	}
@@ -274,11 +267,6 @@ func handleServiceRecords(req *dns.Msg, question dns.Question, recs []gopi.Servi
 		return nil
 	}
 
-	// Handle PTR and ANY
-	if question.Qtype != dns.TypeANY && question.Qtype != dns.TypePTR {
-		return nil
-	}
-
 	// Get messages for each record
 	msgs := []*dns.Msg{}
 	for _, rec := range recs {
@@ -301,42 +289,33 @@ func handleRecord(req *dns.Msg, question dns.Question, record gopi.ServiceRecord
 		Ptr: record.Instance(),
 	}}
 
-	if question.Qtype == dns.TypeANY || question.Qtype == dns.TypePTR {
-		// Append SRV, A, AAAA, TXT
-		answers = append(answers, handleSRV(req, question, record)...)
-		answers = append(answers, handleA(req, question, record)...)
-		answers = append(answers, handleAAAA(req, question, record)...)
-		answers = append(answers, handleTxt(req, question, record))
+	fmt.Println("Question", question.Name, question.Qtype)
+	if question.Qtype == dns.TypePTR || question.Qtype == dns.TypeANY {
+		answers = append(answers, handleSRV(question, record))
+		answers = append(answers, handleA(question, record)...)
+		answers = append(answers, handleAAAA(question, record)...)
+		answers = append(answers, handleTxt(question, record))
 	}
 
 	return prepareResponse(req, answers...)
 }
 
-func handleSRV(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []dns.RR {
-	answers := []dns.RR{}
-	for _, hostport := range record.HostPort() {
-		host, port, err := net.SplitHostPort(hostport)
-		if err != nil {
-			return nil
-		}
-		portN, _ := strconv.Atoi(port)
-		answers = append(answers, &dns.SRV{
-			Hdr: dns.RR_Header{
-				Name:   question.Name,
-				Rrtype: dns.TypeSRV,
-				Class:  dns.ClassINET,
-				Ttl:    queryDefaultTTL,
-			},
-			Priority: 10,
-			Weight:   1,
-			Port:     uint16(portN),
-			Target:   host,
-		})
+func handleSRV(question dns.Question, record gopi.ServiceRecord) dns.RR {
+	return &dns.SRV{
+		Hdr: dns.RR_Header{
+			Name:   question.Name,
+			Rrtype: dns.TypeSRV,
+			Class:  dns.ClassINET,
+			Ttl:    queryDefaultTTL,
+		},
+		Priority: 10,
+		Weight:   1,
+		Port:     record.Port(),
+		Target:   record.Host(),
 	}
-	return answers
 }
 
-func handleA(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []dns.RR {
+func handleA(question dns.Question, record gopi.ServiceRecord) []dns.RR {
 	answers := []dns.RR{}
 	for _, ip := range record.Addrs() {
 		ip4 := ip.To4()
@@ -345,7 +324,7 @@ func handleA(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []d
 		}
 		answers = append(answers, &dns.A{
 			Hdr: dns.RR_Header{
-				Name:   record.Host,
+				Name:   record.Host(),
 				Rrtype: dns.TypeA,
 				Class:  dns.ClassINET,
 				Ttl:    queryDefaultTTL,
@@ -356,16 +335,19 @@ func handleA(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []d
 	return answers
 }
 
-func handleAAAA(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []dns.RR {
+func handleAAAA(question dns.Question, record gopi.ServiceRecord) []dns.RR {
 	answers := []dns.RR{}
 	for _, ip := range record.Addrs() {
+		if ip.To4() != nil {
+			continue
+		}
 		ip6 := ip.To16()
 		if ip6 == nil {
 			continue
 		}
 		answers = append(answers, &dns.A{
 			Hdr: dns.RR_Header{
-				Name:   record.Host,
+				Name:   record.Host(),
 				Rrtype: dns.TypeAAAA,
 				Class:  dns.ClassINET,
 				Ttl:    queryDefaultTTL,
@@ -376,7 +358,7 @@ func handleAAAA(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) 
 	return answers
 }
 
-func handleTxt(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) dns.RR {
+func handleTxt(question dns.Question, record gopi.ServiceRecord) dns.RR {
 	return &dns.TXT{
 		Hdr: dns.RR_Header{
 			Name:   question.Name,

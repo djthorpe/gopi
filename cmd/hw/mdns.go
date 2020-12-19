@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 
@@ -25,13 +26,7 @@ type txt struct {
 }
 
 func (h hosts) Format() (string, table.Alignment, table.Color) {
-	str := ""
-	for i, h := range h.HostPort() {
-		if i > 0 {
-			str += " "
-		}
-		str += h
-	}
+	str := net.JoinHostPort(h.Host(), fmt.Sprint(h.Port()))
 	return str, table.Auto, table.None
 }
 
