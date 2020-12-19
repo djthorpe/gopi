@@ -58,6 +58,10 @@ type EPD interface {
 	// Draw image on the display
 	Draw(context.Context, image.Image) error
 
+	// Size image and draw on the display. A size value of
+	// 1.0 is equivalent to calling Draw
+	DrawSized(context.Context, float64, image.Image) error
+
 	// Sleep display
 	Sleep() error
 }

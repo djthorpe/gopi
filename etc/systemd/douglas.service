@@ -9,5 +9,6 @@ WantedBy=multi-user.target
 [Service]
 User=gopi
 Group=gopi
-ExecStart=/opt/gopi/bin/douglas -loop -interval=5m /opt/gopi/var/images/*
+EnvironmentFile=/opt/gopi/etc/douglas.env
+ExecStart=/opt/gopi/bin/douglas -loop ${FLAGS} /opt/gopi/var/images/*
 Restart=on-failure

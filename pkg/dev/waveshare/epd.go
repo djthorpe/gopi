@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -142,7 +143,8 @@ func (this *EPD) DrawMono(ctx context.Context, img image.Image) error {
 			data := uint8(0)
 			for bit := uint(0); bit < 8; bit++ {
 				data <<= 1
-				if img.At(int(x*8+bit), int(y)) != color.Black {
+				c := img.At(int(x*8+bit), int(y))
+				if y, ok := c.(color.Gray); ok && y.Y != 0 {
 					data |= 1
 				}
 			}
@@ -151,14 +153,6 @@ func (this *EPD) DrawMono(ctx context.Context, img image.Image) error {
 	}
 	// Write blacks
 	this.send(EPD_CMD_RAM_WRITE_BLACK, buf)
-
-	// Write reds
-	/*
-		for i := range buf {
-			buf[i] = 0xFF
-		}
-		this.send(EPD_CMD_RAM_WRITE_RED, buf)
-	*/
 
 	// Load LUT from MCU(0x32)
 	this.send(0x22, []byte{0xF7})
@@ -176,15 +170,42 @@ func (this *EPD) DrawMono(ctx context.Context, img image.Image) error {
 }
 
 func (this *EPD) Draw(ctx context.Context, src image.Image) error {
+	return this.DrawSized(ctx, 1.0, src)
+}
+
+func (this *EPD) DrawSized(ctx context.Context, scale float64, src image.Image) error {
 	bounds := image.Rectangle{image.ZP, image.Pt(int(*this.w), int(*this.h))}
 
-	// Resize image into 'scaled'
+	// Create image for the framesize
 	scaled := image.NewRGBA(bounds)
-	transform := NewAffineTransform().Scale(
-		float64(scaled.Bounds().Dx())/float64(src.Bounds().Dx()),
-		float64(scaled.Bounds().Dy())/float64(src.Bounds().Dy()),
-	)
+
+	// Determine the best way to fit the image into the frame. We prefer full
+	// height images
+	rsrc := float64(src.Bounds().Dx()) / float64(src.Bounds().Dy())
+	rdst := float64(scaled.Bounds().Dx()) / float64(scaled.Bounds().Dy())
+	if rdst > rsrc {
+		scale = scale * float64(scaled.Bounds().Dy()) / float64(src.Bounds().Dy())
+	} else {
+		scale = scale * float64(scaled.Bounds().Dx()) / float64(src.Bounds().Dx())
+	}
+	transform := NewAffineTransform().Scale(scale, scale)
 	draw.ApproxBiLinear.Transform(scaled, f64.Aff3(transform), src, src.Bounds(), draw.Over, nil)
+
+	// Shift image into the middle of the frame
+	xdiff := float64(scaled.Bounds().Dx()) - float64(src.Bounds().Dx())*scale
+	ydiff := float64(scaled.Bounds().Dy()) - float64(src.Bounds().Dy())*scale
+	transform = NewAffineTransform().Translate(xdiff/2, ydiff/2)
+	shifted := image.NewRGBA(scaled.Bounds())
+	draw.ApproxBiLinear.Transform(shifted, f64.Aff3(transform), scaled, scaled.Bounds(), draw.Over, nil)
+	scaled = shifted
+
+	// Perform rotations
+	if theta, cx, cy := getRotation(*this.rotate, scaled); theta != 0 {
+		transform := NewAffineTransform().Rotate(theta, cx, cy)
+		rotated := image.NewRGBA(bounds)
+		draw.ApproxBiLinear.Transform(rotated, f64.Aff3(transform), scaled, scaled.Bounds(), draw.Over, nil)
+		scaled = rotated
+	}
 
 	// Convert to BW using dithering
 	dst := image.NewPaletted(scaled.Bounds(), []color.Color{
@@ -204,7 +225,6 @@ func (this *EPD) Sleep() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-// initialise the interface
 func (this *EPD) init() error {
 	// GPIO Init
 	this.GPIO.SetPinMode(EPD_PIN_RESET, gopi.GPIO_OUTPUT)
@@ -306,20 +326,20 @@ func (this *EPD) send(reg uint8, data []byte) error {
 	}
 	this.GPIO.WritePin(EPD_PIN_CS, gopi.GPIO_HIGH)
 
+	this.GPIO.WritePin(EPD_PIN_DC, gopi.GPIO_HIGH)
+	this.GPIO.WritePin(EPD_PIN_CS, gopi.GPIO_LOW)
+	defer this.GPIO.WritePin(EPD_PIN_CS, gopi.GPIO_HIGH)
 	for _, b := range data {
-		this.GPIO.WritePin(EPD_PIN_DC, gopi.GPIO_HIGH)
-		this.GPIO.WritePin(EPD_PIN_CS, gopi.GPIO_LOW)
 		if err := this.SPI.Write(this.bus, []byte{b}); err != nil {
 			return err
 		}
-		this.GPIO.WritePin(EPD_PIN_CS, gopi.GPIO_HIGH)
 	}
 
-	// Return sucess
+	// Return success
 	return nil
 }
 
-// reset toggles the reset pin
+// Toggle the hardware reset pin
 func (this *EPD) reset() {
 	this.GPIO.WritePin(EPD_PIN_RESET, gopi.GPIO_HIGH)
 	time.Sleep(200 * time.Millisecond)
@@ -327,6 +347,13 @@ func (this *EPD) reset() {
 	time.Sleep(2 * time.Millisecond)
 	this.GPIO.WritePin(EPD_PIN_RESET, gopi.GPIO_HIGH)
 	time.Sleep(200 * time.Millisecond)
+}
+
+func getRotation(deg int, src image.Image) (float64, float64, float64) {
+	theta := math.Pi * float64(deg) / 180
+	cx := float64(src.Bounds().Max.X+src.Bounds().Min.X) / 2.0
+	cy := float64(src.Bounds().Max.Y+src.Bounds().Min.Y) / 2.0
+	return theta, cx, cy
 }
 
 ////////////////////////////////////////////////////////////////////////////////

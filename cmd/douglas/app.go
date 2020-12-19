@@ -28,11 +28,13 @@ type app struct {
 	files    []string
 	loop     *bool
 	interval *time.Duration
+	scale    *float64
 }
 
 func (this *app) Define(cfg gopi.Config) error {
 	this.loop = cfg.FlagBool("loop", false, "Loop display")
 	this.interval = cfg.FlagDuration("interval", 60*time.Second, "Display change interval")
+	this.scale = cfg.FlagFloat("scale", 1.0, "Scale image in frame")
 	return nil
 }
 
@@ -160,5 +162,5 @@ func (this *app) Draw(ctx context.Context, path string) error {
 }
 
 func (this *app) DrawImage(ctx context.Context, src image.Image) error {
-	return this.EPD.Draw(ctx, src)
+	return this.EPD.DrawSized(ctx, *this.scale, src)
 }

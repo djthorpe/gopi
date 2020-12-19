@@ -21,6 +21,7 @@ type Config interface {
 	FlagUint(string, uint, string, ...string) *uint
 	FlagInt(string, int, string, ...string) *int
 	FlagDuration(string, time.Duration, string, ...string) *time.Duration
+	FlagFloat(string, float64, string, ...string) *float64
 
 	// Define a command with name, description, calling function
 	Command(string, string, CommandFunc) error
@@ -34,6 +35,7 @@ type Config interface {
 	GetUint(string) uint
 	GetInt(string) int
 	GetDuration(string) time.Duration
+	GetFloat(string) float64
 }
 
 // CommandFunc is the function signature for running a command

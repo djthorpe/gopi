@@ -13,7 +13,7 @@ provides:
   - douglas
 maintainer: "David Thorpe <djt@mutablelogic.com>"
 description: |
-  Displays content on an ePaper device
+  Displays content on an ePaper display (EPD)
 vendor: "mutablelogic.com"
 homepage: "http://github.com/djthorpe/gopi/cmd/douglas"
 license: "Apache 2.0"
@@ -25,6 +25,9 @@ files:
 
 symlinks:
   /etc/systemd/system/douglas.service: /opt/gopi/etc/douglas.service
+
+config_files:
+  etc/systemd/douglas.env: /opt/gopi/etc/douglas.env
 
 scripts:
   postinstall: etc/nfpm/douglas-postinstall.sh

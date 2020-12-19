@@ -183,6 +183,11 @@ func (this *config) FlagDuration(name string, value time.Duration, usage string,
 	return this.FlagSet.Duration(name, value, usage)
 }
 
+func (this *config) FlagFloat(name string, value float64, usage string, cmds ...string) *float64 {
+	this.flags[name] = cmds
+	return this.FlagSet.Float64(name, value, usage)
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // GET PROPERTIES
 
@@ -211,6 +216,16 @@ func (this *config) GetUint(name string) uint {
 		return 0
 	} else {
 		return uint(value_)
+	}
+}
+
+func (this *config) GetFloat(name string) float64 {
+	if flag := this.FlagSet.Lookup(name); flag == nil {
+		return 0
+	} else if value_, err := strconv.ParseFloat(flag.Value.String(), 64); err != nil {
+		return 0
+	} else {
+		return float64(value_)
 	}
 }
 
