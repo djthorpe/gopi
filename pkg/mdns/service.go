@@ -37,11 +37,11 @@ func NewService(zone string) *service {
 // GET PROPERTIES
 
 func (this *service) Instance() string {
-	return strings.TrimSuffix(this.name, this.zone)
+	return fqn(this.name)
 }
 
 func (this *service) Service() string {
-	return strings.TrimSuffix(this.service, this.zone)
+	return fqn(this.service)
 }
 
 func (this *service) Name() string {

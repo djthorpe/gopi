@@ -146,6 +146,7 @@ func (this *Discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 	// Collect names in goroutine
 	var wg sync.WaitGroup
 	names := make(map[string]bool)
+	query := msgQueryServices(this.Listener.Zone())
 	ch := this.Publisher.Subscribe()
 	wg.Add(1)
 	go func() {
@@ -157,8 +158,8 @@ func (this *Discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 				return
 			case evt := <-ch:
 				if srv, ok := evt.(*service); ok {
-					if srv.Service() == fqn(queryServices) && srv.ttl != 0 {
-						key := srv.Name()
+					if srv.Service() == query.Question[0].Name && srv.ttl != 0 {
+						key := fqn(srv.Name())
 						names[key] = true
 					}
 				}
@@ -167,8 +168,7 @@ func (this *Discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 	}()
 
 	// Query for services on all interfaces
-	zone := this.Listener.Zone()
-	if err := this.query(ctx, msgQueryServices(zone), 0); err != nil {
+	if err := this.query(ctx, query, 0); err != nil {
 		return nil, err
 	}
 

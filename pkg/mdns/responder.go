@@ -133,7 +133,15 @@ func (this *Responder) ProcessQuestion(msg *msgevent) error {
 	}
 
 	// Handle each question with responses
+	zone := this.Zone()
 	for _, q := range msg.Question {
+
+		// Only answer questions for this zone
+		if strings.HasSuffix(q.Name, zone) == false {
+			continue
+		}
+
+		// Process responses to question
 		responses := handleQuestion(msg.Msg, q, this.Listener.Zone(), this.Services, this.Records)
 		for _, response := range responses {
 			// Ignore errors on send
@@ -217,7 +225,7 @@ func handleQuestion(msg *dns.Msg, question dns.Question, zone string, f1 FuncSer
 	}
 
 	// Remove the zone from the question
-	questionName := strings.TrimSuffix(question.Name, zone)
+	questionName := fqn(question.Name)
 	switch {
 	case questionName == fqn(queryServices):
 		return handleEnum(msg, question, zone, f1)
@@ -286,10 +294,10 @@ func handleRecord(req *dns.Msg, question dns.Question, record gopi.ServiceRecord
 			Class:  dns.ClassINET,
 			Ttl:    queryDefaultTTL,
 		},
-		Ptr: record.Instance(),
+		Ptr: record.Instance() + "local.",
 	}}
 
-	fmt.Println("Question", question.Name, question.Qtype)
+	fmt.Println("Question", question.Name, question.Qtype, "ptr", record.Instance()+"local.")
 	if question.Qtype == dns.TypePTR || question.Qtype == dns.TypeANY {
 		answers = append(answers, handleSRV(question, record))
 		answers = append(answers, handleA(question, record)...)
@@ -303,7 +311,7 @@ func handleRecord(req *dns.Msg, question dns.Question, record gopi.ServiceRecord
 func handleSRV(question dns.Question, record gopi.ServiceRecord) dns.RR {
 	return &dns.SRV{
 		Hdr: dns.RR_Header{
-			Name:   question.Name,
+			Name:   record.Instance() + "local.",
 			Rrtype: dns.TypeSRV,
 			Class:  dns.ClassINET,
 			Ttl:    queryDefaultTTL,
