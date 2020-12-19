@@ -26,9 +26,9 @@ type app struct {
 	gopi.FontManager
 	gopi.Command
 
-	fontdir *string
-	i2cbus  *uint
-	timeout *time.Duration
+	fontdir, name *string
+	i2cbus, port  *uint
+	timeout       *time.Duration
 }
 
 type header struct {
@@ -47,6 +47,8 @@ func (this *app) Define(cfg gopi.Config) error {
 	//this.fontdir = cfg.FlagString("fontdir", "", "Font directory", "fonts")
 	this.i2cbus = cfg.FlagUint("bus", 0, "I2C Bus", "i2c")
 	this.timeout = cfg.FlagDuration("timeout", time.Second, "Discovery timeout", "mdns")
+	this.port = cfg.FlagUint("port", 0, "Service Port", "mdns serve")
+	this.name = cfg.FlagString("name", "", "Service Name", "mdns serve")
 
 	// Define commands
 	cfg.Command("info", "Hardware information", this.RunInfo)
@@ -54,6 +56,7 @@ func (this *app) Define(cfg gopi.Config) error {
 		return this.PrintVersion(cfg)
 	})
 	cfg.Command("mdns", "mDNS Service Discovery", this.RunDiscovery)
+	cfg.Command("mdns serve", "Serve mDNS service record for this host", this.RunDiscoveryServe)
 	cfg.Command("i2c", "Detect I2C devices", this.RunI2C)
 
 	/*

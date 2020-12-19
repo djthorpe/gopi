@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/table"
@@ -102,7 +104,7 @@ func (this *app) RunDiscoveryLookup(ctx context.Context, name string) error {
 		return err
 	}
 
-	// Display platform information
+	// Display service information
 	table := table.New()
 	table.SetHeader(header{"Service"}, header{"Name"}, header{"Host"}, header{"Addr"}, header{"Txt"})
 	for _, record := range records {
@@ -112,4 +114,56 @@ func (this *app) RunDiscoveryLookup(ctx context.Context, name string) error {
 
 	// Return success
 	return nil
+}
+
+func (this *app) RunDiscoveryServe(ctx context.Context) error {
+	args := this.Command.Args()
+	if this.ServiceDiscovery == nil {
+		return gopi.ErrInternalAppError.WithPrefix("ServiceDiscovery")
+	}
+
+	record, err := this.GetServiceRecord(args)
+	if err != nil {
+		return err
+	}
+
+	// Display service information
+	table := table.New()
+	table.SetHeader(header{"Service"}, header{"Name"}, header{"Host"}, header{"Addr"}, header{"Txt"})
+	table.Append(record.Service(), record.Name(), hosts{record}, addrs{record}, txt{record})
+	table.Render(os.Stdout)
+
+	fmt.Println("Serving, press CTRL+C to exit")
+
+	// Serve until CTRL+C
+	return this.ServiceDiscovery.Serve(ctx, []gopi.ServiceRecord{record})
+}
+
+func (this *app) GetServiceRecord(args []string) (gopi.ServiceRecord, error) {
+	txt := []string{}
+	service := "gopi"
+	name := ""
+	if hostname, err := os.Hostname(); err != nil {
+		return nil, err
+	} else {
+		name = hostname
+	}
+	if *this.name != "" {
+		name = strings.TrimSpace(*this.name)
+	}
+	if len(args) > 0 {
+		service = args[0]
+		txt = args[1:]
+	}
+	if strings.HasPrefix(service, "_") == false {
+		service = "_" + service
+	}
+	if strings.HasSuffix(service, "._tcp") == false && strings.HasSuffix(service, "._udp") == false {
+		service = service + "._tcp"
+	}
+	if record, err := this.ServiceDiscovery.NewServiceRecord(service, name, uint16(*this.port), txt, gopi.SERVICE_FLAG_IP4); err != nil {
+		return nil, err
+	} else {
+		return record, nil
+	}
 }

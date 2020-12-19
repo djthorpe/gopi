@@ -3,7 +3,9 @@ package mdns
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -271,6 +273,7 @@ func handleServiceRecords(req *dns.Msg, question dns.Question, recs []gopi.Servi
 	if len(recs) == 0 {
 		return nil
 	}
+
 	// Handle PTR and ANY
 	if question.Qtype != dns.TypeANY && question.Qtype != dns.TypePTR {
 		return nil
@@ -287,7 +290,6 @@ func handleServiceRecords(req *dns.Msg, question dns.Question, recs []gopi.Servi
 }
 
 func handleRecord(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) *dns.Msg {
-	fmt.Println("ptr=", record.Ptr())
 	// Header
 	answers := []dns.RR{&dns.PTR{
 		Hdr: dns.RR_Header{
@@ -296,98 +298,94 @@ func handleRecord(req *dns.Msg, question dns.Question, record gopi.ServiceRecord
 			Class:  dns.ClassINET,
 			Ttl:    queryDefaultTTL,
 		},
-		Ptr: record.Ptr(),
+		Ptr: record.Instance(),
 	}}
 
-	// TODO Append record answers
+	if question.Qtype == dns.TypeANY || question.Qtype == dns.TypePTR {
+		// Append SRV, A, AAAA, TXT
+		answers = append(answers, handleSRV(req, question, record)...)
+		answers = append(answers, handleA(req, question, record)...)
+		answers = append(answers, handleAAAA(req, question, record)...)
+		answers = append(answers, handleTxt(req, question, record))
+	}
 
 	return prepareResponse(req, answers...)
 }
 
-func handleRecordAnswers(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []dns.RR {
-	return nil
-	/*
-		switch question.Qtype {
-		case dns.TypeANY:
-			recs := handleRecordAnswers(req, dns.Question{
-				Qtype: dns.TypeSRV,
-				Name:  "i",
-			}, record)
-			return append(recs, handleRecordAnswers(req, dns.Question{
-				Qtype: dns.TypeTXT,
-				Name:  "i",
-			}, record)...)
-		case dns.TypeSRV:
-			srv := &dns.SRV{
-				Hdr: dns.RR_Header{
-					Name:   question.Name,
-					Rrtype: dns.TypeSRV,
-					Class:  dns.ClassINET,
-					Ttl:    queryDefaultTTL,
-				},
-				Priority: 10,
-				Weight:   1,
-				Port:     uint16(record.Port),
-				Target:   record.Host,
-			}
-			// Add the A record
-			recs := append([]dns.RR{srv}, handleRecordAnswers(req, dns.Question{
-				Qtype: dns.TypeA,
-				Name:  "i",
-			}, record)...)
-			// Add the AAAA record
-			return append(recs, handleRecordAnswers(req, dns.Question{
-				Qtype: dns.TypeAAAA,
-				Name:  "i",
-			}, record)...)
-		case dns.TypeA:
-			var rr []dns.RR
-			for _, ip := range record.Addrs {
-				if ip4 := ip.To4(); ip4 != nil {
-					rr = append(rr, &dns.A{
-						Hdr: dns.RR_Header{
-							Name:   record.Host,
-							Rrtype: dns.TypeA,
-							Class:  dns.ClassINET,
-							Ttl:    uint32(MDNS_DEFAULT_TTL),
-						},
-						A: ip4,
-					})
-				}
-			}
-			return rr
-		case dns.TypeAAAA:
-			var rr []dns.RR
-			for _, ip := range record.Addrs {
-				if ip6 := ip.To16(); ip6 != nil {
-					rr = append(rr, &dns.AAAA{
-						Hdr: dns.RR_Header{
-							Name:   record.Host,
-							Rrtype: dns.TypeAAAA,
-							Class:  dns.ClassINET,
-							Ttl:    uint32(MDNS_DEFAULT_TTL),
-						},
-						AAAA: ip6,
-					})
-				}
-			}
-			return rr
-		case dns.TypeTXT:
-			txt := &dns.TXT{
-				Hdr: dns.RR_Header{
-					Name:   question.Name,
-					Rrtype: dns.TypeTXT,
-					Class:  dns.ClassINET,
-					Ttl:    uint32(MDNS_DEFAULT_TTL),
-				},
-				Txt: record.Txt,
-			}
-			return []dns.RR{txt}
+func handleSRV(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []dns.RR {
+	answers := []dns.RR{}
+	for _, hostport := range record.HostPort() {
+		host, port, err := net.SplitHostPort(hostport)
+		if err != nil {
+			return nil
 		}
+		portN, _ := strconv.Atoi(port)
+		answers = append(answers, &dns.SRV{
+			Hdr: dns.RR_Header{
+				Name:   question.Name,
+				Rrtype: dns.TypeSRV,
+				Class:  dns.ClassINET,
+				Ttl:    queryDefaultTTL,
+			},
+			Priority: 10,
+			Weight:   1,
+			Port:     uint16(portN),
+			Target:   host,
+		})
+	}
+	return answers
+}
 
-		// Return nil
-		return nil
-	*/
+func handleA(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []dns.RR {
+	answers := []dns.RR{}
+	for _, ip := range record.Addrs() {
+		ip4 := ip.To4()
+		if ip4 == nil {
+			continue
+		}
+		answers = append(answers, &dns.A{
+			Hdr: dns.RR_Header{
+				Name:   record.Host,
+				Rrtype: dns.TypeA,
+				Class:  dns.ClassINET,
+				Ttl:    queryDefaultTTL,
+			},
+			A: ip4,
+		})
+	}
+	return answers
+}
+
+func handleAAAA(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) []dns.RR {
+	answers := []dns.RR{}
+	for _, ip := range record.Addrs() {
+		ip6 := ip.To16()
+		if ip6 == nil {
+			continue
+		}
+		answers = append(answers, &dns.A{
+			Hdr: dns.RR_Header{
+				Name:   record.Host,
+				Rrtype: dns.TypeAAAA,
+				Class:  dns.ClassINET,
+				Ttl:    queryDefaultTTL,
+			},
+			A: ip6,
+		})
+	}
+	return answers
+}
+
+func handleTxt(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) dns.RR {
+	return &dns.TXT{
+		Hdr: dns.RR_Header{
+			Name:   question.Name,
+			Rrtype: dns.TypeTXT,
+			Class:  dns.ClassINET,
+			Ttl:    queryDefaultTTL,
+		},
+		Txt: record.Txt(),
+	}
 }
 
 func prepareResponse(req *dns.Msg, answers ...dns.RR) *dns.Msg {

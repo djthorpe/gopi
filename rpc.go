@@ -86,7 +86,7 @@ type ServiceDiscovery interface {
 }
 
 type ServiceRecord interface {
-	Ptr() string
+	Instance() string
 	Service() string
 	Name() string
 	HostPort() []string

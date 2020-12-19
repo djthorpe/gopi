@@ -59,7 +59,7 @@ func (this *service) Name() string {
 	return name
 }
 
-func (this *service) Ptr() string {
+func (this *service) Instance() string {
 	return fqn(this.name)
 }
 

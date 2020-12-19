@@ -112,7 +112,7 @@ func (this *Discovery) Lookup(ctx context.Context, srv string) ([]gopi.ServiceRe
 			case evt := <-ch:
 				if service, ok := evt.(*service); ok {
 					if service.Service() == srv && service.ttl != 0 {
-						key := service.Ptr()
+						key := service.Instance()
 						records[key] = service
 					}
 				}
