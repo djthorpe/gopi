@@ -10,5 +10,7 @@ WantedBy=multi-user.target
 User=gopi
 Group=gopi
 EnvironmentFile=/opt/gopi/etc/douglas.env
-ExecStart=/opt/gopi/bin/douglas -loop ${FLAGS} /opt/gopi/var/images/*
+ExecStart=/opt/gopi/bin/douglas -loop -interval=${INTERVAL} -scale=${SCALE} \
+    -epd.rotate=${ROTATE} /opt/gopi/var/images/*
 Restart=on-failure
+
