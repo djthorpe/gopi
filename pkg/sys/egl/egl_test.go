@@ -3,56 +3,26 @@
 package egl_test
 
 import (
-	"sync"
 	"testing"
 
-	// Frameworks
-	egl "github.com/djthorpe/gopi/v2/sys/egl"
-	rpi "github.com/djthorpe/gopi/v2/sys/rpi"
+	egl "github.com/djthorpe/gopi/v3/pkg/sys/egl"
 )
-
-var (
-	dxinit sync.Once
-)
-
-func DXInit(t *testing.T) {
-	dxinit.Do(func() {
-		rpi.DXInit()
-	})
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // TEST EGL INIT
 
 func Test_EGL_000(t *testing.T) {
-	DXInit(t)
-	if display, err := rpi.DXDisplayOpen(rpi.DX_DISPLAYID_MAIN_LCD); err != nil {
+	if major, minor, err := egl.EGLInitialize(egl.EGLGetDisplay(0)); err != nil {
 		t.Error(err)
-	} else if err := rpi.DXDisplayClose(display); err != nil {
-		t.Error(err)
-	} else {
-		t.Log(display)
-	}
-}
-
-func Test_EGL_001(t *testing.T) {
-	DXInit(t)
-	if display, err := rpi.DXDisplayOpen(rpi.DX_DISPLAYID_MAIN_LCD); err != nil {
-		t.Error(err)
-	} else if major, minor, err := egl.EGLInitialize(egl.EGLGetDisplay(uint(rpi.DX_DISPLAYID_MAIN_LCD))); err != nil {
-		t.Error(err)
-	} else if err := egl.EGLTerminate(egl.EGLGetDisplay(uint(rpi.DX_DISPLAYID_MAIN_LCD))); err != nil {
-		t.Error(err)
-	} else if err := rpi.DXDisplayClose(display); err != nil {
+	} else if err := egl.EGLTerminate(egl.EGLGetDisplay(0)); err != nil {
 		t.Error(err)
 	} else {
-		t.Log("display=", display)
 		t.Log("egl_version=", major, ".", minor)
 	}
 }
 
+/*
 func Test_EGL_002(t *testing.T) {
-	DXInit(t)
 	if display, err := rpi.DXDisplayOpen(rpi.DX_DISPLAYID_MAIN_LCD); err != nil {
 		t.Error(err)
 	} else if handle := egl.EGLGetDisplay(uint(rpi.DX_DISPLAYID_MAIN_LCD)); handle == 0 {
@@ -82,7 +52,6 @@ func Test_EGL_002(t *testing.T) {
 }
 
 func Test_EGL_003(t *testing.T) {
-	DXInit(t)
 	if display, err := rpi.DXDisplayOpen(rpi.DX_DISPLAYID_MAIN_LCD); err != nil {
 		t.Error(err)
 	} else if handle := egl.EGLGetDisplay(uint(rpi.DX_DISPLAYID_MAIN_LCD)); handle == 0 {

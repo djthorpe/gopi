@@ -40,13 +40,20 @@ ifneq ($strip $(MMAL)),)
 	$(eval TAGS += mmal)
 endif
 
-
 # EGL package
-egl: rpi
-	$(eval EGL = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion brcmegl))
+egl: gbm
+	$(eval EGL = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion egl))
 ifneq ($strip $(EGL)),)
 	@echo "Targetting egl"
 	$(eval TAGS += egl)
+endif
+
+# GBM package
+gbm:
+	$(eval GBM = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion gbm))
+ifneq ($strip $(GBM)),)
+	@echo "Targetting gbm"
+	$(eval TAGS += gbm)
 endif
 
 # Freetype package

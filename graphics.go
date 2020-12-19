@@ -12,6 +12,9 @@ import (
 type (
 	FontFlags    uint16
 	FontSizeUnit uint
+
+	// SurfaceFlags are flags associated with renderable surface
+	SurfaceFlags uint16
 )
 
 type FontSize struct {
@@ -74,6 +77,20 @@ const (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	SURFACE_FLAG_BITMAP SurfaceFlags = (1 << iota)
+	SURFACE_FLAG_OPENGL
+	SURFACE_FLAG_OPENGL_ES
+	SURFACE_FLAG_OPENGL_ES2
+	SURFACE_FLAG_OPENVG
+	SURFACE_FLAG_NONE SurfaceFlags = 0
+	SURFACE_FLAG_MIN               = SURFACE_FLAG_BITMAP
+	SURFACE_FLAG_MAX               = SURFACE_FLAG_OPENVG
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (f FontFlags) String() string {
@@ -105,5 +122,37 @@ func (f FontFlags) StringFlag() string {
 		return "FONT_FLAGS_STYLE_ANY"
 	default:
 		return fmt.Sprintf("[?? Invalid FontFlags value %d]", int(f))
+	}
+}
+
+func (f SurfaceFlags) String() string {
+	if f == SURFACE_FLAG_NONE {
+		return f.StringFlag()
+	}
+	str := ""
+	for v := SURFACE_FLAG_MIN; v <= SURFACE_FLAG_MAX; v <<= 1 {
+		if f&v == v {
+			str += v.StringFlag() + "|"
+		}
+	}
+	return strings.TrimSuffix(str, "|")
+}
+
+func (f SurfaceFlags) StringFlag() string {
+	switch f {
+	case SURFACE_FLAG_NONE:
+		return "SURFACE_FLAG_NONE"
+	case SURFACE_FLAG_BITMAP:
+		return "SURFACE_FLAG_BITMAP"
+	case SURFACE_FLAG_OPENGL:
+		return "SURFACE_FLAG_OPENGL"
+	case SURFACE_FLAG_OPENGL_ES:
+		return "SURFACE_FLAG_OPENGL_ES"
+	case SURFACE_FLAG_OPENGL_ES2:
+		return "SURFACE_FLAG_OPENGL_ES2"
+	case SURFACE_FLAG_OPENVG:
+		return "SURFACE_FLAG_OPENVG"
+	default:
+		return "[?? Invalid SurfaceFlags value]"
 	}
 }
