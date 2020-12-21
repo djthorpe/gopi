@@ -47,6 +47,8 @@ func (this *app) New(cfg gopi.Config) error {
 func (this *app) Run(ctx context.Context) error {
 	if bg, err := this.SurfaceManager.CreateBackground(this.Display, gopi.SURFACE_FLAG_BITMAP); err != nil {
 		return err
+	} else if err := this.SurfaceManager.SwapBuffers(); err != nil {
+		return err
 	} else {
 		this.Print(bg)
 	}

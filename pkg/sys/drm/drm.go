@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"syscall"
 	"unsafe"
 
 	"github.com/djthorpe/gopi/v3"
@@ -21,6 +22,9 @@ import (
 #cgo pkg-config: libdrm
 #include <xf86drm.h>
 #include <xf86drmMode.h>
+#include <errno.h>
+
+int _drm_errno() { return errno; }
 */
 import "C"
 
@@ -92,7 +96,6 @@ func GetConnector(fd uintptr, id uint32) (*ModeConnector, error) {
 }
 
 func GetEncoder(fd uintptr, id uint32) (*ModeEncoder, error) {
-	fmt.Println("GetEncoder", id)
 	if enc := C.drmModeGetEncoder(C.int(fd), C.uint32_t(id)); enc == nil {
 		return nil, gopi.ErrBadParameter.WithPrefix("GetEncoder")
 	} else {
@@ -101,7 +104,6 @@ func GetEncoder(fd uintptr, id uint32) (*ModeEncoder, error) {
 }
 
 func GetCRTC(fd uintptr, id uint32) (*ModeCRTC, error) {
-	fmt.Println("GetCRTC", id)
 	if crtc := C.drmModeGetCrtc(C.int(fd), C.uint32_t(id)); crtc == nil {
 		return nil, gopi.ErrBadParameter.WithPrefix("GetCRTC")
 	} else {
@@ -339,4 +341,24 @@ func (this *ModeResources) String() string {
 		str += fmt.Sprintf(" height{min,max}={%v,%v}", min, max)
 	}
 	return str + ">"
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Frame Buffers
+
+func AddFrameBuffer(fd uintptr, width, height uint32, depth, bpp uint8, stride uint32, handle uintptr) (uint32, error) {
+	var id C.uint32_t
+	if ret := C.drmModeAddFB(C.int(fd), C.uint32_t(width), C.uint32_t(height), C.uint8_t(depth), C.uint8_t(bpp), C.uint32_t(stride), C.uint32_t(handle), &id); ret != 0 {
+		return 0, os.NewSyscallError("drmModeAddFB", syscall.Errno(C._drm_errno()))
+	} else {
+		return uint32(id), nil
+	}
+}
+
+func RemoveFrameBuffer(fd uintptr, fb uint32) error {
+	if ret := C.drmModeRmFB(C.int(fd), C.uint32_t(fb)); ret != 0 {
+		return os.NewSyscallError("drmModeRmFB", syscall.Errno(C._drm_errno()))
+	} else {
+		return nil
+	}
 }

@@ -17,8 +17,10 @@ import (
 type Surface struct {
 	sync.RWMutex
 
-	ctx  *gbm.GBMSurface
-	w, h uint32
+	ctx        *gbm.GBMSurface
+	egl        egl.EGLSurface
+	x, y, w, h uint32
+	dirty      bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -47,6 +49,7 @@ func (this *Manager) NewSurface(api gopi.SurfaceFlags, display egl.EGLDisplay, f
 		surface.ctx = ctx
 		surface.w = width
 		surface.h = height
+		surface.dirty = true
 	}
 
 	// Create EGL surface
@@ -96,13 +99,55 @@ func (this *Surface) Dispose() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS
+// PROPERTIES
 
 func (this *Surface) Size() gopi.Size {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
 	return gopi.Size{float32(this.w), float32(this.h)}
+}
+
+func (this *Surface) Origin() gopi.Point {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	return gopi.Point{float32(this.x), float32(this.y)}
+}
+
+func (this *Surface) Dirty() bool {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	return this.dirty
+}
+
+func (this *Surface) SetDirty() {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+	this.dirty = true
+}
+
+func (this *Surface) SetClean() {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+	this.dirty = false
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS
+
+func (this *Surface) EGLSwapBuffers(display egl.EGLDisplay) error {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.egl != nil {
+		if err := egl.EGLSwapBuffers(display, this.egl); err != nil {
+			return err
+		}
+	}
+
+	// Return success
+	return nil
 }
 
 func (this *Surface) HasFreeBuffers() bool {
@@ -127,34 +172,23 @@ func (this *Surface) ReleaseBuffer(buffer *gbm.GBMBuffer) {
 	}
 }
 
-/*
-	buf := gbm.Retain(this.gbm)
-
-	handle = gbm_bo_get_handle (bo).u32;
-pitch = gbm_bo_get_stride (bo);
-drmModeAddFB (device, mode_info.hdisplay, mode_info.vdisplay, 24, 32, pitch, handle, &fb);
-drmModeSetCrtc (device, crtc->crtc_id, fb, 0, 0, &connector_id, 1, &mode_info);
-if (previous_bo) {
-  drmModeRmFB (device, previous_fb);
-  gbm_surface_release_buffer (gbm_surface, previous_bo);
-  }
-previous_bo = bo;
-previous_fb = fb;
+func (this *Surface) Draw() error {
+	/*
+		glClearColor (1.0f-progress, progress, 0.0, 1.0);
+		glClear (GL_COLOR_BUFFER_BIT);
+	*/
+	return nil
 }
-
-func (this *Surface) Draw() {
-	glClearColor (1.0f-progress, progress, 0.0, 1.0);
-	glClear (GL_COLOR_BUFFER_BIT);
-	this.SwapBuffers()
-}
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *Surface) String() string {
 	str := "<surface.eglgbm"
+
 	if size := this.Size(); size != gopi.ZeroSize {
+		origin := this.Origin()
+		str += " origin=" + fmt.Sprint(origin)
 		str += " size=" + fmt.Sprint(size)
 	}
 	return str + ">"

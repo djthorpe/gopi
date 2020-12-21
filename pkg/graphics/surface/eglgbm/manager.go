@@ -220,6 +220,9 @@ func (this *Manager) CreateBackground(display gopi.Display, flags gopi.SurfaceFl
 }
 
 func (this *Manager) DisposeSurface(surface gopi.Surface) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
 	var result error
 	for i, surface_ := range this.surfaces {
 		if surface == surface_ {
@@ -227,6 +230,21 @@ func (this *Manager) DisposeSurface(surface gopi.Surface) error {
 				result = multierror.Append(err)
 			}
 			this.surfaces[i] = nil
+		}
+	}
+	return result
+}
+
+func (this *Manager) SwapBuffers() error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	var result error
+	for _, surface := range this.surfaces {
+		if surface != nil && surface.Dirty() {
+			if err := this.swapBuffersForSurface(surface); err != nil {
+				result = multierror.Append(result)
+			}
 		}
 	}
 	return result
@@ -267,25 +285,47 @@ func (this *Manager) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func (this *Manager) swapBuffers(surface *Surface) error {
+func (this *Manager) swapBuffersForSurface(surface *Surface) error {
 	var result error
 
-	// TODO: Draw here
-
-	if err := egl.EGLSwapBuffers(this.egl, surface.ctx); err != nil {
+	// Draw here and set the dirty flag
+	if err := surface.Draw(); err != nil {
 		result = multierror.Append(result, err)
 	}
 
+	if surface.Dirty() == false {
+		return nil
+	}
+	if err := surface.EGLSwapBuffers(this.egl); err != nil {
+		result = multierror.Append(result, err)
+	}
 	if surface.HasFreeBuffers() == false {
 		result = multierror.Append(result, fmt.Errorf("swapBuffers: No free buffers"))
 	}
-
-	if buffer := surface.RetainBuffer(); next_buffer == nil {
+	if buffer := surface.RetainBuffer(); buffer == nil {
 		result = multierror.Append(result, fmt.Errorf("swapBuffers: Failed to lock front buffer"))
 	} else {
-		fmt.Println("buffer=", buffer)
+		handle := buffer.Handle()
+		stride := buffer.Stride()
+		bpp := buffer.BitsPerPixel()
+		depth := 32 // TODO
+		if fb, err := drm.AddFrameBuffer(this.fd, surface.w, surface.h, depth, bpp, stride, handle); err != nil {
+			result = multierror.Append(result, err)
+		}
+		/* else if err := drm.SetCrtc(...); err != nil {
+			result = multierror.Append(result,err)
+		} else if(previous_bo) {
+		  drmModeRmFB (device, previous_fb);
+		  gbm_surface_release_buffer (gbm_surface, previous_bo);
+		}
+		previous_bo = bo;
+		previous_fb = fb;*/
 	}
 
+	// Indicate surface has been swapped
+	surface.SetClean()
+
+	// Return any errors
 	return result
 }
 

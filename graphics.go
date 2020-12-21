@@ -33,15 +33,16 @@ type SurfaceManager interface {
 	CreateBackground(Display, SurfaceFlags) (Surface, error)
 	DisposeSurface(Surface) error
 
+	SwapBuffers() error
 	/*
-		// Create and destroy surfaces
 		CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 		CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 	*/
 }
 
 type Surface interface {
-	//Size() gopi.Size
+	Origin() Point
+	Size() Size
 }
 
 // FontManager for font management

@@ -17,6 +17,10 @@ import (
 #include <gbm.h>
 
 int _errno();
+
+static uint32_t gbm_bo_handle(struct gbm_bo* bo) {
+	return gbm_bo_get_handle(bo).u32;
+}
 */
 import "C"
 
@@ -91,6 +95,11 @@ func (this *GBMBuffer) BitsPerPixel() uint32 {
 func (this *GBMBuffer) Offset(plane uint) uint32 {
 	ctx := (*C.struct_gbm_bo)(this)
 	return uint32(C.gbm_bo_get_offset(ctx, C.int(plane)))
+}
+
+func (this *GBMBuffer) Handle() uint32 {
+	ctx := (*C.struct_gbm_bo)(this)
+	return uint32(C.gbm_bo_handle(ctx))
 }
 
 func (this *GBMBuffer) Write(data []byte) error {
