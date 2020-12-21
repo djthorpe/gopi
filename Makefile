@@ -56,6 +56,14 @@ ifneq ($strip $(GBM)),)
 	$(eval TAGS += gbm)
 endif
 
+# DRM package
+drm:
+	$(eval DRM = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion drm))
+ifneq ($strip $(DRM)),)
+	@echo "Targetting drm"
+	$(eval TAGS += drm)
+endif
+
 # Freetype package
 freetype: darwin rpi
 	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion freetype2))
@@ -138,6 +146,10 @@ rpcping: builddir protogen
 
 mediakit: builddir ffmpeg chromaprint
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit
+
+
+gx: builddir rpi egl drm gbm
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/gx -tags "$(TAGS)" ${GOFLAGS} ./cmd/gx
 
 # Build rules - dependencies
 nfpm:

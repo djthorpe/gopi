@@ -15,6 +15,9 @@ type (
 
 	// SurfaceFlags are flags associated with renderable surface
 	SurfaceFlags uint16
+
+	// SurfaceFormat defines the pixel format for a surface
+	SurfaceFormat uint
 )
 
 type FontSize struct {
@@ -27,13 +30,18 @@ type FontSize struct {
 
 // SurfaceManager to manage graphics surfaces
 type SurfaceManager interface {
+	CreateBackground(Display, SurfaceFlags) (Surface, error)
+	DisposeSurface(Surface) error
+
 	/*
 		// Create and destroy surfaces
 		CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 		CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
-		CreateBackground(SurfaceFlags, float32) (Surface, error)
-		DestroySurface(Surface) error
 	*/
+}
+
+type Surface interface {
+	//Size() gopi.Size
 }
 
 // FontManager for font management
@@ -101,6 +109,16 @@ const (
 	SURFACE_FLAG_MAX               = SURFACE_FLAG_OPENVG
 )
 
+const (
+	SURFACE_FMT_NONE   SurfaceFormat = iota
+	SURFACE_FMT_RGBA32               // 4 bytes per pixel with transparency
+	SURFACE_FMT_XRGB32               // 4 bytes per pixel without transparency
+	SURFACE_FMT_RGB888               // 3 bytes per pixel
+	SURFACE_FMT_RGB565               // 2 bytes per pixel
+	SURFACE_FMT_1BPP                 // 1 bit per pixel (Mono)
+	SURFACE_FMT_MAX    = SURFACE_FMT_1BPP
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -165,5 +183,22 @@ func (f SurfaceFlags) StringFlag() string {
 		return "SURFACE_FLAG_OPENVG"
 	default:
 		return "[?? Invalid SurfaceFlags value]"
+	}
+}
+
+func (f SurfaceFormat) String() string {
+	switch f {
+	case SURFACE_FMT_NONE:
+		return "SURFACE_FMT_NONE"
+	case SURFACE_FMT_RGBA32:
+		return "SURFACE_FMT_RGBA32"
+	case SURFACE_FMT_XRGB32:
+		return "SURFACE_FMT_XRGB32"
+	case SURFACE_FMT_RGB888:
+		return "SURFACE_FMT_RGB888"
+	case SURFACE_FMT_RGB565:
+		return "SURFACE_FMT_RGB565"
+	default:
+		return "[?? Invalid SurfaceFormat value]"
 	}
 }

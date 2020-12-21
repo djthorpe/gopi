@@ -34,6 +34,8 @@ type DisplayManager interface {
 	gopi.DisplayManager
 
 	Fd() uintptr
+	Width() (uint32, uint32)
+	Height() (uint32, uint32)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -119,6 +121,30 @@ func (this *Manager) Fd() uintptr {
 	} else {
 		return 0
 	}
+}
+
+func (this *Manager) Width() (uint32, uint32) {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.res != nil {
+		return this.res.Width()
+	} else {
+		return 0, 0
+	}
+
+}
+
+func (this *Manager) Height() (uint32, uint32) {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.res != nil {
+		return this.res.Height()
+	} else {
+		return 0, 0
+	}
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

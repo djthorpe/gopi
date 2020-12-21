@@ -30,6 +30,12 @@ type (
 	EGLNativeWindow C.EGLNativeWindowType
 )
 
+/*
+var (
+	EGL_DEFAULT_DISPLAY EGLDisplay = C.EGL_DEFAULT_DISPLAY
+)
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBALS
 
@@ -112,7 +118,7 @@ func EGLGetConfigAttrib(display EGLDisplay, config EGLConfig, attrib EGLConfigAt
 
 func EGLGetConfigAttribs(display EGLDisplay, config EGLConfig) (map[EGLConfigAttrib]int, error) {
 	attribs := make(map[EGLConfigAttrib]int, 0)
-	for k := EGL_COMFIG_ATTRIB_MIN; k <= EGL_COMFIG_ATTRIB_MAX; k++ {
+	for k := EGL_CONFIG_ATTRIB_MIN; k <= EGL_CONFIG_ATTRIB_MAX; k++ {
 		if v, err := EGLGetConfigAttrib(display, config, k); err == EGL_BAD_ATTRIBUTE {
 			continue
 		} else if err != nil {

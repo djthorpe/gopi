@@ -23,10 +23,13 @@ type Manager struct {
 	gopi.DisplayManager
 	sync.RWMutex
 
-	fd   uintptr
-	gpu  *gbm.GBMDevice
-	egl  egl.EGLDisplay
-	name string
+	fd         uintptr
+	minx, miny uint32
+	maxx, maxy uint32
+	gpu        *gbm.GBMDevice
+	egl        egl.EGLDisplay
+	name       string
+	surfaces   []*Surface
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,6 +42,8 @@ func (this *Manager) New(gopi.Config) error {
 		return gopi.ErrInternalAppError.WithPrefix("Invalid DisplayManager")
 	} else {
 		this.fd = drm.Fd()
+		this.minx, this.maxx = drm.Width()
+		this.miny, this.maxy = drm.Height()
 	}
 
 	if gpu, err := gbm.GBMCreateDevice(this.fd); err != nil {
@@ -54,15 +59,6 @@ func (this *Manager) New(gopi.Config) error {
 		this.name = fmt.Sprintf("EGL %v.%v", major, minor)
 	}
 
-	// Check for necessary extensions
-	/*
-		for _, ext := range []string{"EGL_KHR_create_context", "EGL_KHR_surfaceless_context"} {
-			if this.EGLHasExtension(ext) == false {
-				return gopi.ErrNotImplemented.WithPrefix("EGL Extension: ", ext)
-			}
-		}
-	*/
-
 	// Return success
 	return nil
 }
@@ -72,6 +68,15 @@ func (this *Manager) Dispose() error {
 	defer this.RWMutex.Unlock()
 
 	var result error
+
+	// Dispose of surfaces
+	for _, surface := range this.surfaces {
+		if surface != nil {
+			if err := surface.Dispose(); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}
 
 	if this.egl != 0 {
 		if err := egl.EGLTerminate(this.egl); err != nil {
@@ -86,6 +91,7 @@ func (this *Manager) Dispose() error {
 	this.fd = 0
 	this.gpu = nil
 	this.egl = 0
+	this.surfaces = nil
 
 	return result
 }
@@ -119,7 +125,14 @@ func (this *Manager) EGLVersion() string {
 	}
 }
 
-func (this *Manager) EGLExtensions() []string {
+func (this *Manager) EGLDeviceExtensions() []string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	return strings.Fields(strings.TrimSpace(egl.EGLQueryString(0, egl.EGL_QUERY_EXTENSIONS)))
+}
+
+func (this *Manager) EGLDisplayExtensions() []string {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
@@ -155,12 +168,68 @@ func (this *Manager) EGLClientApis() []egl.EGLAPI {
 }
 
 func (this *Manager) EGLHasExtension(name string) bool {
-	for _, ext := range this.EGLExtensions() {
+	for _, ext := range this.EGLDeviceExtensions() {
+		if strings.ToLower(ext) == strings.ToLower(name) {
+			return true
+		}
+	}
+	for _, ext := range this.EGLDisplayExtensions() {
 		if strings.ToLower(ext) == strings.ToLower(name) {
 			return true
 		}
 	}
 	return false
+}
+
+func (this *Manager) GBMFormats() []gopi.SurfaceFormat {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.gpu == nil {
+		return nil
+	}
+
+	results := []gopi.SurfaceFormat{}
+	for fmt := gopi.SURFACE_FMT_NONE + 1; fmt <= gopi.SURFACE_FMT_MAX; fmt++ {
+		if gbm_fmt := gbmSurfaceFormat(fmt); gbm_fmt == 0 {
+			continue
+		} else if this.gpu.IsFormatSupported(gbm_fmt, 0) {
+			results = append(results, fmt)
+		}
+	}
+	return results
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS
+
+func (this *Manager) CreateBackground(display gopi.Display, flags gopi.SurfaceFlags) (gopi.Surface, error) {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if display == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("CreateBackground")
+	}
+	width, height := display.Size()
+	if surface, err := this.NewSurface(flags, this.egl, gopi.SURFACE_FMT_XRGB32, width, height); err != nil {
+		return nil, err
+	} else {
+		this.surfaces = append(this.surfaces, surface)
+		return surface, nil
+	}
+}
+
+func (this *Manager) DisposeSurface(surface gopi.Surface) error {
+	var result error
+	for i, surface_ := range this.surfaces {
+		if surface == surface_ {
+			if err := surface_.Dispose(); err != nil {
+				result = multierror.Append(err)
+			}
+			this.surfaces[i] = nil
+		}
+	}
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -177,11 +246,92 @@ func (this *Manager) String() string {
 	if version := this.EGLVersion(); version != "" {
 		str += " egl.version=" + strconv.Quote(version)
 	}
-	if extensions := this.EGLExtensions(); len(extensions) > 0 {
-		str += " egl.extensions=" + fmt.Sprint(extensions)
+	if extensions := this.EGLDeviceExtensions(); len(extensions) > 0 {
+		str += " egl.device_extensions=" + fmt.Sprint(extensions)
+	}
+	if extensions := this.EGLDisplayExtensions(); len(extensions) > 0 {
+		str += " egl.display_extensions=" + fmt.Sprint(extensions)
 	}
 	if apis := this.EGLClientApis(); len(apis) > 0 {
 		str += " egl.client_apis=" + fmt.Sprint(apis)
 	}
+	if fmts := this.GBMFormats(); len(fmts) > 0 {
+		str += " gbm.supported_formats=" + fmt.Sprint(fmts)
+	}
+	if this.maxx > 0 && this.maxy > 0 {
+		str += fmt.Sprintf(" size={%v,%v,%v,%v}", this.minx, this.miny, this.maxx, this.maxy)
+	}
 	return str + ">"
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
+
+func gbmSurfaceFormat(fmt gopi.SurfaceFormat) gbm.GBMFormat {
+	switch fmt {
+	case gopi.SURFACE_FMT_RGBA32:
+		return gbm.GBM_FORMAT_RGBA8888
+	case gopi.SURFACE_FMT_XRGB32:
+		return gbm.GBM_FORMAT_XRGB8888
+	case gopi.SURFACE_FMT_RGB888:
+		return gbm.GBM_FORMAT_RGB888
+	case gopi.SURFACE_FMT_RGB565:
+		return gbm.GBM_FORMAT_RGB565
+	default:
+		return 0
+	}
+}
+
+func eglApiFlags(flags gopi.SurfaceFlags) int {
+	value := int(0)
+	if flags&gopi.SURFACE_FLAG_OPENGL != 0 {
+		value |= int(egl.EGL_OPENGL_BIT)
+	}
+	if flags&gopi.SURFACE_FLAG_OPENGL_ES != 0 {
+		value |= int(egl.EGL_OPENGL_ES_BIT)
+	}
+	if flags&gopi.SURFACE_FLAG_OPENGL_ES2 != 0 {
+		value |= int(egl.EGL_OPENGL_ES2_BIT)
+	}
+	if flags&gopi.SURFACE_FLAG_OPENVG != 0 {
+		value |= int(egl.EGL_OPENVG_BIT)
+	}
+	return value
+}
+
+func eglAttributesForParams(fmt gopi.SurfaceFormat, flags gopi.SurfaceFlags) map[egl.EGLConfigAttrib]int {
+	attribs := make(map[egl.EGLConfigAttrib]int, 10)
+	switch fmt {
+	case gopi.SURFACE_FMT_RGBA32:
+		attribs[egl.EGL_RED_SIZE] = 8
+		attribs[egl.EGL_GREEN_SIZE] = 8
+		attribs[egl.EGL_BLUE_SIZE] = 8
+		attribs[egl.EGL_ALPHA_SIZE] = 8
+		attribs[egl.EGL_BUFFER_SIZE] = 32
+	case gopi.SURFACE_FMT_XRGB32:
+		attribs[egl.EGL_RED_SIZE] = 8
+		attribs[egl.EGL_GREEN_SIZE] = 8
+		attribs[egl.EGL_BLUE_SIZE] = 8
+		attribs[egl.EGL_ALPHA_SIZE] = 0
+		attribs[egl.EGL_BUFFER_SIZE] = 32
+	case gopi.SURFACE_FMT_RGB888:
+		attribs[egl.EGL_RED_SIZE] = 8
+		attribs[egl.EGL_GREEN_SIZE] = 8
+		attribs[egl.EGL_BLUE_SIZE] = 8
+		attribs[egl.EGL_ALPHA_SIZE] = 0
+		attribs[egl.EGL_BUFFER_SIZE] = 24
+	case gopi.SURFACE_FMT_RGB565:
+		attribs[egl.EGL_RED_SIZE] = 5
+		attribs[egl.EGL_GREEN_SIZE] = 6
+		attribs[egl.EGL_BLUE_SIZE] = 5
+		attribs[egl.EGL_ALPHA_SIZE] = 0
+		attribs[egl.EGL_BUFFER_SIZE] = 16
+	default:
+		return nil
+	}
+
+	attribs[egl.EGL_SURFACE_TYPE] = int(egl.EGL_WINDOW_BIT)
+	attribs[egl.EGL_RENDERABLE_TYPE] = eglApiFlags(flags)
+
+	return attribs
 }
