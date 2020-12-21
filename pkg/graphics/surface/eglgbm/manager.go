@@ -267,6 +267,28 @@ func (this *Manager) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
+func (this *Manager) swapBuffers(surface *Surface) error {
+	var result error
+
+	// TODO: Draw here
+
+	if err := egl.EGLSwapBuffers(this.egl, surface.ctx); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	if surface.HasFreeBuffers() == false {
+		result = multierror.Append(result, fmt.Errorf("swapBuffers: No free buffers"))
+	}
+
+	if buffer := surface.RetainBuffer(); next_buffer == nil {
+		result = multierror.Append(result, fmt.Errorf("swapBuffers: Failed to lock front buffer"))
+	} else {
+		fmt.Println("buffer=", buffer)
+	}
+
+	return result
+}
+
 func gbmSurfaceFormat(fmt gopi.SurfaceFormat) gbm.GBMFormat {
 	switch fmt {
 	case gopi.SURFACE_FMT_RGBA32:

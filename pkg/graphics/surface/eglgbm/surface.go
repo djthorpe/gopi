@@ -49,6 +49,7 @@ func (this *Manager) NewSurface(api gopi.SurfaceFlags, display egl.EGLDisplay, f
 		surface.h = height
 	}
 
+	// Create EGL surface
 	if api != gopi.SURFACE_FLAG_BITMAP {
 		if err := egl.EGLBindAPI(egl_api); err != nil {
 			surface.ctx.Free()
@@ -104,9 +105,29 @@ func (this *Surface) Size() gopi.Size {
 	return gopi.Size{float32(this.w), float32(this.h)}
 }
 
-/* TODO
-func (this *Surface) SwapBuffers() {
-	eglSwapBuffers(this.egl, egl->surface);
+func (this *Surface) HasFreeBuffers() bool {
+	if this.ctx == nil {
+		return false
+	} else {
+		return this.ctx.HasFreeBuffers()
+	}
+}
+
+func (this *Surface) RetainBuffer() *gbm.GBMBuffer {
+	if this.ctx == nil {
+		return nil
+	} else {
+		return this.ctx.RetainBuffer()
+	}
+}
+
+func (this *Surface) ReleaseBuffer(buffer *gbm.GBMBuffer) {
+	if this.ctx != nil && buffer != nil {
+		this.ctx.ReleaseBuffer(buffer)
+	}
+}
+
+/*
 	buf := gbm.Retain(this.gbm)
 
 	handle = gbm_bo_get_handle (bo).u32;

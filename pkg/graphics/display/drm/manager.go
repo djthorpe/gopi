@@ -21,10 +21,9 @@ type Manager struct {
 	gopi.Platform
 	sync.RWMutex
 
-	node *string
-	fh   *os.File
-	res  *drm.ModeResources
-
+	node    *string
+	fh      *os.File
+	res     *drm.ModeResources
 	display map[uint32]*Display
 }
 
@@ -150,41 +149,72 @@ func (this *Manager) Height() (uint32, uint32) {
 ////////////////////////////////////////////////////////////////////////////////
 // DISPLAYS
 
-func (this *Manager) Displays() []gopi.Display {
-	connectors := this.res.Connectors()
-	result := make([]gopi.Display, 0, len(connectors))
-	for _, id := range connectors {
-		if display, err := this.GetDisplay(id); err == nil {
-			result = append(result, display)
-		}
-	}
-	return result
-}
-
-func (this *Manager) GetDisplay(id uint32) (gopi.Display, error) {
+// GetDisplay returns display matched by Id
+func (this *Manager) Display(id uint32) gopi.Display {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
 	// Check parameters
-	if id == 0 {
-		return nil, gopi.ErrBadParameter.WithPrefix("GetDisplay")
-	}
 	if this.fh == nil {
-		return nil, gopi.ErrOutOfOrder.WithPrefix("GetDisplay")
+		return nil
 	}
 
+	// Return previously opened display
 	display, exists := this.display[id]
-	if exists == false || display == nil {
-		if ctx, err := drm.GetConnector(this.fh.Fd(), id); err != nil {
-			return nil, err
-		} else if display = NewDisplay(ctx); display == nil {
-			ctx.Free()
-			return nil, gopi.ErrInternalAppError.WithPrefix("GetDisplay")
+	if exists {
+		return display
+	}
+
+	conns := this.connectors(func(conn *drm.ModeConnector) bool {
+		if id == 0 {
+			return conn.Status() == drm.ModeConnectionConnected
 		} else {
-			this.display[id] = display
+			return conn.Id() == id
+		}
+	})
+
+	// Check condition where no connectors
+	if len(conns) == 0 {
+		return nil
+	}
+
+	// Free unused connectors
+	for i, ctx := range conns {
+		if i > 0 {
+			ctx.Free()
 		}
 	}
-	return display, nil
+
+	// Get encoder and CRTC
+	encoder, err := drm.GetEncoder(this.fh.Fd(), conns[0].Encoder())
+	if err != nil {
+		conns[0].Free()
+		return nil
+	}
+	crtc, err := drm.GetCRTC(this.fh.Fd(), encoder.Crtc())
+	if err != nil {
+		encoder.Free()
+		conns[0].Free()
+		return nil
+	}
+
+	// Make display
+	if display = NewDisplay(conns[0], encoder, crtc); display == nil {
+		crtc.Free()
+		encoder.Free()
+		conns[0].Free()
+		return nil
+	} else {
+		key := conns[0].Id()
+		this.display[key] = display
+	}
+
+	// Return display
+	return display
+}
+
+func (this *Manager) PrimaryDisplay() gopi.Display {
+	return this.Display(0)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -225,4 +255,19 @@ func (this *Manager) chooseGpu() string {
 		// Other Raspberry Pi
 		return "card0"
 	}
+}
+
+func (this *Manager) connectors(filter func(*drm.ModeConnector) bool) []*drm.ModeConnector {
+	connectors := this.res.Connectors()
+	result := make([]*drm.ModeConnector, 0, len(connectors))
+	for _, id := range connectors {
+		if ctx, err := drm.GetConnector(this.fh.Fd(), id); err != nil {
+			continue
+		} else if filter != nil && filter(ctx) == false {
+			ctx.Free()
+		} else {
+			result = append(result, ctx)
+		}
+	}
+	return result
 }

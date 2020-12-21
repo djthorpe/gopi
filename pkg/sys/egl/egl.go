@@ -211,7 +211,7 @@ func EGLCreateContext(display EGLDisplay, config EGLConfig, share_context EGLCon
 	}
 }
 
-func EGL_DestroyContext(display EGLDisplay, context EGLContext) error {
+func EGLDestroyContext(display EGLDisplay, context EGLContext) error {
 	if C.eglDestroyContext(C.EGLDisplay(display), C.EGLContext(context)) != EGL_TRUE {
 		return EGLGetError()
 	} else {

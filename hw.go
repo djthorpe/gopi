@@ -43,7 +43,13 @@ type Platform interface {
 
 // DisplayManager manages the connected displays
 type DisplayManager interface {
-	Displays() []Display
+	// Display returns a display with a specific Id, or nil
+	// if the display is not found
+	Display(uint32) Display
+
+	// Return the primary connected display, or nil
+	// if no displays are connected
+	PrimaryDisplay() Display
 }
 
 // SPI implements the SPI interface for sensors, etc.

@@ -92,6 +92,7 @@ func GetConnector(fd uintptr, id uint32) (*ModeConnector, error) {
 }
 
 func GetEncoder(fd uintptr, id uint32) (*ModeEncoder, error) {
+	fmt.Println("GetEncoder", id)
 	if enc := C.drmModeGetEncoder(C.int(fd), C.uint32_t(id)); enc == nil {
 		return nil, gopi.ErrBadParameter.WithPrefix("GetEncoder")
 	} else {
@@ -100,6 +101,7 @@ func GetEncoder(fd uintptr, id uint32) (*ModeEncoder, error) {
 }
 
 func GetCRTC(fd uintptr, id uint32) (*ModeCRTC, error) {
+	fmt.Println("GetCRTC", id)
 	if crtc := C.drmModeGetCrtc(C.int(fd), C.uint32_t(id)); crtc == nil {
 		return nil, gopi.ErrBadParameter.WithPrefix("GetCRTC")
 	} else {
@@ -120,9 +122,17 @@ func (this *ModeEncoder) Id() uint32 {
 	return uint32(ctx.encoder_id)
 }
 
+func (this *ModeEncoder) Crtc() uint32 {
+	ctx := (*C.drmModeEncoder)(this)
+	return uint32(ctx.crtc_id)
+}
+
 func (this *ModeEncoder) String() string {
-	str := "<drm.modeencoder"
+	str := "<drm.encoder"
 	str += " id=" + fmt.Sprint(this.Id())
+	if crtc := this.Crtc(); crtc != 0 {
+		str += " crtc=" + fmt.Sprint(crtc)
+	}
 	return str + ">"
 }
 
@@ -140,7 +150,7 @@ func (this *ModeCRTC) Id() uint32 {
 }
 
 func (this *ModeCRTC) String() string {
-	str := "<drm.modecrtc"
+	str := "<drm.crtc"
 	str += " id=" + fmt.Sprint(this.Id())
 	return str + ">"
 }
@@ -192,7 +202,7 @@ func (this *ModeConnector) Encoder() uint32 {
 }
 
 func (this *ModeConnector) String() string {
-	str := "<drm.modeconnector"
+	str := "<drm.connector"
 	str += " id=" + fmt.Sprint(this.Id())
 	if c := this.Status(); c != ModeConnectionNone {
 		str += " status=" + fmt.Sprint(c)
@@ -224,7 +234,7 @@ func (this ModeInfo) Size() (uint32, uint32) {
 }
 
 func (this ModeInfo) String() string {
-	str := "<drm.modeinfo"
+	str := "<drm.info"
 	if name := this.Name(); name != "" {
 		str += " name=" + strconv.Quote(name)
 	}
@@ -309,7 +319,7 @@ func (this *ModeResources) Height() (uint32, uint32) {
 }
 
 func (this *ModeResources) String() string {
-	str := "<drm.moderesources"
+	str := "<drm.resources"
 	if fb := this.Framebuffers(); len(fb) > 0 {
 		str += " fb=" + fmt.Sprint(fb)
 	}

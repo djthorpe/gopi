@@ -16,20 +16,24 @@ import (
 type Display struct {
 	sync.RWMutex
 
-	ctx  *drm.ModeConnector
-	mode drm.ModeInfo
+	ctx     *drm.ModeConnector
+	mode    drm.ModeInfo
+	encoder *drm.ModeEncoder
+	crtc    *drm.ModeCRTC
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewDisplay(ctx *drm.ModeConnector) *Display {
+func NewDisplay(ctx *drm.ModeConnector, encoder *drm.ModeEncoder, crtc *drm.ModeCRTC) *Display {
 	this := new(Display)
 
-	if ctx == nil {
+	if ctx == nil || encoder == nil || crtc == nil {
 		return nil
 	} else {
 		this.ctx = ctx
+		this.encoder = encoder
+		this.crtc = crtc
 	}
 
 	// We always choose the zero-indexed mode
@@ -47,13 +51,22 @@ func (this *Display) Dispose() error {
 	defer this.RWMutex.Unlock()
 
 	// Release DRM resources
+	if this.crtc != nil {
+		this.crtc.Free()
+	}
+	if this.encoder != nil {
+		this.encoder.Free()
+	}
 	if this.ctx != nil {
 		this.ctx.Free()
 	}
 
 	// Release resources
+	this.crtc = nil
+	this.encoder = nil
 	this.ctx = nil
 
+	// Return success
 	return nil
 }
 

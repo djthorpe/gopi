@@ -42,7 +42,7 @@ func (this *GBMSurface) Free() {
 	C.gbm_surface_destroy(ctx)
 }
 
-func (this *GBMSurface) Lock() *GBMBuffer {
+func (this *GBMSurface) RetainBuffer() *GBMBuffer {
 	ctx := (*C.struct_gbm_surface)(this)
 	if buf := C.gbm_surface_lock_front_buffer(ctx); buf == nil {
 		return nil
@@ -51,7 +51,7 @@ func (this *GBMSurface) Lock() *GBMBuffer {
 	}
 }
 
-func (this *GBMSurface) Release(buf *GBMBuffer) {
+func (this *GBMSurface) ReleaseBuffer(buf *GBMBuffer) {
 	ctx := (*C.struct_gbm_surface)(this)
 	C.gbm_surface_release_buffer(ctx, (*C.struct_gbm_bo)(buf))
 }

@@ -34,10 +34,10 @@ func (this *app) New(cfg gopi.Config) error {
 		return gopi.ErrInternalAppError.WithPrefix("Invalid SurfaceManager")
 	}
 
-	if displays := this.DisplayManager.Displays(); len(displays) == 0 {
+	if display := this.DisplayManager.PrimaryDisplay(); display == nil {
 		return fmt.Errorf("No connected display")
 	} else {
-		this.Display = displays[0]
+		this.Display = display
 	}
 
 	// Return success
