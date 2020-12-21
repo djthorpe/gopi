@@ -25,6 +25,17 @@ type FontSize struct {
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
+// SurfaceManager to manage graphics surfaces
+type SurfaceManager interface {
+	/*
+		// Create and destroy surfaces
+		CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
+		CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
+		CreateBackground(SurfaceFlags, float32) (Surface, error)
+		DestroySurface(Surface) error
+	*/
+}
+
 // FontManager for font management
 type FontManager interface {
 

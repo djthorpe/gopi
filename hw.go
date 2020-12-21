@@ -41,6 +41,11 @@ type Platform interface {
 	AttachedDisplays() []uint                  // AttachedDisplays returns array of displays which are connected
 }
 
+// DisplayManager manages the connected displays
+type DisplayManager interface {
+	Displays() []Display
+}
+
 // SPI implements the SPI interface for sensors, etc.
 type SPI interface {
 	// Return all valid devices
@@ -158,7 +163,7 @@ type GPIOEvent interface {
 
 // Display implements a pixel-based display device
 type Display interface {
-	Id() uint16             // Return display number
+	Id() uint32             // Return display number
 	Name() string           // Return name of the display
 	Size() (uint32, uint32) // Return display size for nominated display number, or (0,0) if display does not exist
 	PixelsPerInch() uint32  // Return the PPI (pixels-per-inch) for the display, or return zero if unknown

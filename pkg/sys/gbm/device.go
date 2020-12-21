@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"syscall"
 
 	gopi "github.com/djthorpe/gopi/v3"
 )
@@ -17,6 +18,8 @@ import (
 /*
 #cgo pkg-config: gbm
 #include <gbm.h>
+
+int _errno();
 */
 import "C"
 
@@ -66,11 +69,11 @@ func OpenDevice(node string) (*os.File, error) {
 	}
 }
 
-func GBMCreateDevice(fd uintptr) *GBMDevice {
-	if dev := C.gbm_create_device(C.int(fd)); dev == nil {
-		return nil
+func GBMCreateDevice(fd uintptr) (*GBMDevice, error) {
+	if dev := C.gbm_create_device(C.int(fd)); dev != nil {
+		return (*GBMDevice)(dev), nil
 	} else {
-		return (*GBMDevice)(dev)
+		return nil, os.NewSyscallError("gbm_create_device", syscall.Errno(C._errno()))
 	}
 }
 

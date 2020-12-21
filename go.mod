@@ -3,7 +3,6 @@ module github.com/djthorpe/gopi/v3
 go 1.13
 
 require (
-	github.com/djthorpe/gopi/v2 v2.0.30
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
