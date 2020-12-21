@@ -1,4 +1,4 @@
-// +build egl
+// +build egl,gbm
 
 package egl
 
@@ -7,6 +7,7 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v3"
+	gbm "github.com/djthorpe/gopi/v3/pkg/sys/gbm"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +27,7 @@ type (
 	EGLConfig       C.EGLConfig
 	EGLContext      C.EGLContext
 	EGLSurface      C.EGLSurface
-	EGLNativeWindow unsafe.Pointer
+	EGLNativeWindow C.EGLNativeWindowType
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -54,8 +55,9 @@ var (
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func EGLGetDisplay(display uint) EGLDisplay {
-	return EGLDisplay(C.eglGetDisplay(C.EGLNativeDisplayType(uintptr(display))))
+func EGLGetDisplay(device *gbm.GBMDevice) EGLDisplay {
+	disp := C.EGLNativeDisplayType(unsafe.Pointer(device))
+	return EGLDisplay(C.eglGetDisplay(disp))
 }
 
 func EGLInitialize(display EGLDisplay) (int, int, error) {

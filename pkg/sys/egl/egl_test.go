@@ -6,41 +6,61 @@ import (
 	"testing"
 
 	egl "github.com/djthorpe/gopi/v3/pkg/sys/egl"
+	gbm "github.com/djthorpe/gopi/v3/pkg/sys/gbm"
+)
+
+const (
+	GPU_NODE = "card1"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TEST EGL INIT
 
 func Test_EGL_000(t *testing.T) {
-	if major, minor, err := egl.EGLInitialize(egl.EGLGetDisplay(0)); err != nil {
+	fh, err := gbm.OpenDevice(GPU_NODE)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fh.Close()
+	display := gbm.GBMCreateDevice(fh.Fd())
+	if display == nil {
+		t.Fatal(err)
+	}
+	defer display.Free()
+	if major, minor, err := egl.EGLInitialize(egl.EGLGetDisplay(display)); err != nil {
 		t.Error(err)
-	} else if err := egl.EGLTerminate(egl.EGLGetDisplay(0)); err != nil {
+	} else if err := egl.EGLTerminate(egl.EGLGetDisplay(display)); err != nil {
 		t.Error(err)
 	} else {
 		t.Log("egl_version=", major, ".", minor)
 	}
 }
 
-/*
 func Test_EGL_002(t *testing.T) {
-	if display, err := rpi.DXDisplayOpen(rpi.DX_DISPLAYID_MAIN_LCD); err != nil {
-		t.Error(err)
-	} else if handle := egl.EGLGetDisplay(uint(rpi.DX_DISPLAYID_MAIN_LCD)); handle == 0 {
-		t.Error("EGLGetDisplay returned nil")
-	} else if major, minor, err := egl.EGLInitialize(handle); err != nil {
-		t.Error(err)
-	} else if vendor := egl.EGLQueryString(handle, egl.EGL_QUERY_VENDOR); vendor == "" {
+	fh, err := gbm.OpenDevice(GPU_NODE)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fh.Close()
+	device := gbm.GBMCreateDevice(fh.Fd())
+	if device == nil {
+		t.Fatal(err)
+	}
+	defer device.Free()
+	display := egl.EGLGetDisplay(device)
+	major, minor, err := egl.EGLInitialize(display)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if vendor := egl.EGLQueryString(display, egl.EGL_QUERY_VENDOR); vendor == "" {
 		t.Error("Empty value returned for EGL_QUERY_VENDOR")
-	} else if version := egl.EGLQueryString(handle, egl.EGL_QUERY_VERSION); version == "" {
+	} else if version := egl.EGLQueryString(display, egl.EGL_QUERY_VERSION); version == "" {
 		t.Error("Empty value returned for EGL_QUERY_VERSION")
-	} else if extensions := egl.EGLQueryString(handle, egl.EGL_QUERY_EXTENSIONS); extensions == "" {
+	} else if extensions := egl.EGLQueryString(display, egl.EGL_QUERY_EXTENSIONS); extensions == "" {
 		t.Error("Empty value returned for EGL_QUERY_EXTENSIONS")
-	} else if apis := egl.EGLQueryString(handle, egl.EGL_QUERY_CLIENT_APIS); extensions == "" {
+	} else if apis := egl.EGLQueryString(display, egl.EGL_QUERY_CLIENT_APIS); extensions == "" {
 		t.Error("Empty value returned for EGL_QUERY_CLIENT_APIS")
-	} else if err := egl.EGLTerminate(handle); err != nil {
-		t.Error(err)
-	} else if err := rpi.DXDisplayClose(display); err != nil {
-		t.Error(err)
 	} else {
 		t.Log("display=", display)
 		t.Logf("egl_version= %v,%v", major, minor)
@@ -49,54 +69,77 @@ func Test_EGL_002(t *testing.T) {
 		t.Logf("EGL_QUERY_EXTENSIONS= %v", extensions)
 		t.Logf("EGL_QUERY_CLIENT_APIS= %v", apis)
 	}
+
+	if err := egl.EGLTerminate(display); err != nil {
+		t.Error(err)
+	}
+
 }
 
 func Test_EGL_003(t *testing.T) {
-	if display, err := rpi.DXDisplayOpen(rpi.DX_DISPLAYID_MAIN_LCD); err != nil {
-		t.Error(err)
-	} else if handle := egl.EGLGetDisplay(uint(rpi.DX_DISPLAYID_MAIN_LCD)); handle == 0 {
-		t.Error("EGL_GetDisplay returned nil")
-	} else if major, minor, err := egl.EGLInitialize(handle); err != nil {
-		t.Error(err)
-	} else if configs, err := egl.EGLGetConfigs(handle); err != nil {
+	fh, err := gbm.OpenDevice(GPU_NODE)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fh.Close()
+	device := gbm.GBMCreateDevice(fh.Fd())
+	if device == nil {
+		t.Fatal(err)
+	}
+	defer device.Free()
+	display := egl.EGLGetDisplay(device)
+
+	if _, _, err := egl.EGLInitialize(display); err != nil {
+		t.Fatal(err)
+	}
+
+	if configs, err := egl.EGLGetConfigs(display); err != nil {
 		t.Error(err)
 	} else if len(configs) == 0 {
 		t.Error("Expected at least one config")
-	} else if err := egl.EGLTerminate(handle); err != nil {
-		t.Error(err)
-	} else if err := rpi.DXDisplayClose(display); err != nil {
-		t.Error(err)
 	} else {
 		t.Log("display=", display)
-		t.Logf("egl_version= %v,%v", major, minor)
 		t.Logf("configs= %v", configs)
+	}
+
+	if err := egl.EGLTerminate(display); err != nil {
+		t.Error(err)
 	}
 }
 
 func Test_EGL_004(t *testing.T) {
-	DXInit(t)
-	if display, err := rpi.DXDisplayOpen(rpi.DX_DISPLAYID_MAIN_LCD); err != nil {
-		t.Error(err)
-	} else if handle := egl.EGLGetDisplay(uint(rpi.DX_DISPLAYID_MAIN_LCD)); handle == 0 {
-		t.Error("EGL_GetDisplay returned nil")
-	} else if major, minor, err := egl.EGLInitialize(handle); err != nil {
-		t.Error(err)
-	} else if configs, err := egl.EGLGetConfigs(handle); err != nil {
+	fh, err := gbm.OpenDevice(GPU_NODE)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fh.Close()
+	device := gbm.GBMCreateDevice(fh.Fd())
+	if device == nil {
+		t.Fatal(err)
+	}
+	defer device.Free()
+	display := egl.EGLGetDisplay(device)
+
+	if _, _, err := egl.EGLInitialize(display); err != nil {
+		t.Fatal(err)
+	}
+
+	if configs, err := egl.EGLGetConfigs(display); err != nil {
 		t.Error(err)
 	} else if len(configs) == 0 {
 		t.Error("Expected at least one config")
-	} else if attributes, err := egl.EGLGetConfigAttribs(handle, configs[0]); err != nil {
-		t.Error(err)
-	} else if err := egl.EGLTerminate(handle); err != nil {
-		t.Error(err)
-	} else if err := rpi.DXDisplayClose(display); err != nil {
+	} else if attributes, err := egl.EGLGetConfigAttribs(display, configs[0]); err != nil {
 		t.Error(err)
 	} else {
-		t.Log("display=", display)
-		t.Logf("egl_version= %v,%v", major, minor)
 		t.Logf("attributes[0]= %v", attributes)
 	}
+
+	if err := egl.EGLTerminate(display); err != nil {
+		t.Error(err)
+	}
 }
+
+/*
 
 func Test_EGL_005(t *testing.T) {
 	DXInit(t)
