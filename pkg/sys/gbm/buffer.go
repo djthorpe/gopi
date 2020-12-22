@@ -87,9 +87,9 @@ func (this *GBMBuffer) Format() GBMFormat {
 	return GBMFormat(C.gbm_bo_get_format(ctx))
 }
 
-func (this *GBMBuffer) BitsPerPixel() uint32 {
+func (this *GBMBuffer) BitsPerPixel() uint8 {
 	ctx := (*C.struct_gbm_bo)(this)
-	return uint32(C.gbm_bo_get_bpp(ctx))
+	return uint8(C.gbm_bo_get_bpp(ctx))
 }
 
 func (this *GBMBuffer) Offset(plane uint) uint32 {
@@ -97,9 +97,9 @@ func (this *GBMBuffer) Offset(plane uint) uint32 {
 	return uint32(C.gbm_bo_get_offset(ctx, C.int(plane)))
 }
 
-func (this *GBMBuffer) Handle() uint32 {
+func (this *GBMBuffer) Handle() uintptr {
 	ctx := (*C.struct_gbm_bo)(this)
-	return uint32(C.gbm_bo_handle(ctx))
+	return uintptr(C.gbm_bo_handle(ctx))
 }
 
 func (this *GBMBuffer) Write(data []byte) error {

@@ -5,10 +5,12 @@ package surface
 import (
 	"fmt"
 	"sync"
+	"unsafe"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	egl "github.com/djthorpe/gopi/v3/pkg/sys/egl"
 	gbm "github.com/djthorpe/gopi/v3/pkg/sys/gbm"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -17,8 +19,12 @@ import (
 type Surface struct {
 	sync.RWMutex
 
-	ctx        *gbm.GBMSurface
-	egl        egl.EGLSurface
+	// Surface & context handles
+	gbm         *gbm.GBMSurface
+	egl_surface egl.EGLSurface
+	egl_context egl.EGLContext
+
+	// Surface properties
 	x, y, w, h uint32
 	dirty      bool
 }
@@ -26,7 +32,7 @@ type Surface struct {
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func (this *Manager) NewSurface(api gopi.SurfaceFlags, display egl.EGLDisplay, format gopi.SurfaceFormat, width, height uint32) (*Surface, error) {
+func (this *Manager) NewSurface(display egl.EGLDisplay, api gopi.SurfaceFlags, format gopi.SurfaceFormat, width, height uint32) (*Surface, error) {
 	surface := new(Surface)
 
 	// Check parameters
@@ -37,16 +43,18 @@ func (this *Manager) NewSurface(api gopi.SurfaceFlags, display egl.EGLDisplay, f
 	if width == 0 || height == 0 {
 		return nil, gopi.ErrBadParameter.WithPrefix("size")
 	}
-	gbm_format := gbmSurfaceFormat(format)
-	if gbm_format == 0 {
+
+	// Determine GBM format
+	gbm_format := gbmBufferFormat(format)
+	if gbm_format == gbm.GBM_BO_FORMAT_NONE {
 		return nil, gopi.ErrBadParameter.WithPrefix("format")
 	}
 
-	// Create surface
-	if ctx, err := this.gpu.SurfaceCreate(width, height, gbm_format, gbm.GBM_BO_USE_SCANOUT|gbm.GBM_BO_USE_RENDERING); err != nil {
+	// Create GBM surface
+	if ctx, err := this.gbm.SurfaceCreate(width, height, gbm_format, gbm.GBM_BO_USE_SCANOUT|gbm.GBM_BO_USE_RENDERING); err != nil {
 		return nil, err
 	} else {
-		surface.ctx = ctx
+		surface.gbm = ctx
 		surface.w = width
 		surface.h = height
 		surface.dirty = true
@@ -55,47 +63,67 @@ func (this *Manager) NewSurface(api gopi.SurfaceFlags, display egl.EGLDisplay, f
 	// Create EGL surface
 	if api != gopi.SURFACE_FLAG_BITMAP {
 		if err := egl.EGLBindAPI(egl_api); err != nil {
-			surface.ctx.Free()
+			surface.gbm.Free()
 			return nil, err
+		} else if attrs := eglAttributesForParams(format, api); attrs == nil {
+			surface.gbm.Free()
+			return nil, gopi.ErrBadParameter.WithPrefix(format)
+		} else if config, err := eglChooseConfig(display, attrs); err != nil {
+			surface.gbm.Free()
+			return nil, err
+		} else if egl_context, err := egl.EGLCreateContext(display, config, nil, nil); err != nil {
+			surface.gbm.Free()
+			return nil, gopi.ErrNotFound.WithPrefix(format)
+		} else if egl_surface, err := egl.EGLCreateSurface(display, config, egl.EGLNativeWindow(unsafe.Pointer(surface.gbm))); err != nil {
+			egl.EGLDestroyContext(display, egl_context)
+			surface.gbm.Free()
+			return nil, err
+		} else {
+			surface.egl_surface = egl_surface
+			surface.egl_context = egl_context
 		}
-		// TODO
-		/*
-		   eglGetConfigs(display, NULL, 0, &count);
-		   configs = malloc(count * sizeof *configs);
-		   eglChooseConfig (display, attributes, configs, count, &num_config);
-		   config_index = match_config_to_visual(display,GBM_FORMAT_XRGB8888,configs,num_config);
-
-		   context = eglCreateContext (display, configs[config_index], EGL_NO_CONTEXT, context_attribs);
-		   egl_surface = eglCreateWindowSurface (display, configs[config_index], gbm_surface, NULL);
-		   eglMakeCurrent (display, egl_surface, egl_surface, context);
-		*/
 	}
 
 	return surface, nil
 }
 
-func (this *Surface) Dispose() error {
+func (this *Surface) Dispose(display egl.EGLDisplay) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
+
+	var result error
+
+	if this.egl_context != nil {
+		if err := egl.EGLDestroyContext(display, this.egl_context); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	if this.egl_surface != nil {
+		if err := egl.EGLDestroySurface(display, this.egl_surface); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
 
 	/* TODO
 	if (previous_bo) {
 		drmModeRmFB (device, previous_fb);
 		gbm_surface_release_buffer (gbm_surface, previous_bo);
 		}
-	  eglDestroySurface (display, egl_surface);
 	*/
 
-	if this.ctx != nil {
-		this.ctx.Free()
+	if this.gbm != nil {
+		this.gbm.Free()
 	}
 
 	// Release resources
-	this.ctx = nil
+	this.gbm = nil
+	this.egl_surface = nil
+	this.egl_context = nil
 	this.w, this.h = 0, 0
 
 	// Return success
-	return nil
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,39 +168,39 @@ func (this *Surface) EGLSwapBuffers(display egl.EGLDisplay) error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	if this.egl != nil {
-		if err := egl.EGLSwapBuffers(display, this.egl); err != nil {
-			return err
-		}
+	if this.egl_surface == nil {
+		return nil
+	}
+
+	if err := egl.EGLSwapBuffers(display, this.egl_surface); err != nil {
+		return err
 	}
 
 	// Return success
 	return nil
 }
 
-func (this *Surface) HasFreeBuffers() bool {
-	if this.ctx == nil {
-		return false
-	} else {
-		return this.ctx.HasFreeBuffers()
-	}
-}
+func (this *Surface) GBMSwapBuffers() error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
 
-func (this *Surface) RetainBuffer() *gbm.GBMBuffer {
-	if this.ctx == nil {
+	if this.gbm == nil {
 		return nil
-	} else {
-		return this.ctx.RetainBuffer()
 	}
-}
 
-func (this *Surface) ReleaseBuffer(buffer *gbm.GBMBuffer) {
-	if this.ctx != nil && buffer != nil {
-		this.ctx.ReleaseBuffer(buffer)
+	if buffer := this.gbm.RetainBuffer(); buffer == nil {
+		return gopi.ErrOutOfOrder.WithPrefix("GBMSwapBuffers")
+	} else {
+		fmt.Println("Buffer=", buffer)
+		this.gbm.ReleaseBuffer(buffer)
 	}
+
+	// Return success
+	return nil
 }
 
 func (this *Surface) Draw() error {
+	fmt.Println("TODO: Draw on surface")
 	/*
 		glClearColor (1.0f-progress, progress, 0.0, 1.0);
 		glClear (GL_COLOR_BUFFER_BIT);
@@ -190,6 +218,12 @@ func (this *Surface) String() string {
 		origin := this.Origin()
 		str += " origin=" + fmt.Sprint(origin)
 		str += " size=" + fmt.Sprint(size)
+	}
+	if this.gbm != nil {
+		str += " gbm=" + fmt.Sprint(this.gbm)
+	}
+	if this.egl_surface != nil {
+		str += " egl=" + fmt.Sprint(this.egl_surface)
 	}
 	return str + ">"
 }

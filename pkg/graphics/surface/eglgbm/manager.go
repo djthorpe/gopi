@@ -26,7 +26,7 @@ type Manager struct {
 	fd         uintptr
 	minx, miny uint32
 	maxx, maxy uint32
-	gpu        *gbm.GBMDevice
+	gbm        *gbm.GBMDevice
 	egl        egl.EGLDisplay
 	name       string
 	surfaces   []*Surface
@@ -46,16 +46,16 @@ func (this *Manager) New(gopi.Config) error {
 		this.miny, this.maxy = drm.Height()
 	}
 
-	if gpu, err := gbm.GBMCreateDevice(this.fd); err != nil {
+	if gbm, err := gbm.GBMCreateDevice(this.fd); err != nil {
 		return err
 	} else {
-		this.gpu = gpu
+		this.gbm = gbm
 	}
 
-	if major, minor, err := egl.EGLInitialize(egl.EGLGetDisplay(this.gpu)); err != nil {
+	if major, minor, err := egl.EGLInitialize(egl.EGLGetDisplay(this.gbm)); err != nil {
 		return err
 	} else {
-		this.egl = egl.EGLGetDisplay(this.gpu)
+		this.egl = egl.EGLGetDisplay(this.gbm)
 		this.name = fmt.Sprintf("EGL %v.%v", major, minor)
 	}
 
@@ -72,7 +72,7 @@ func (this *Manager) Dispose() error {
 	// Dispose of surfaces
 	for _, surface := range this.surfaces {
 		if surface != nil {
-			if err := surface.Dispose(); err != nil {
+			if err := surface.Dispose(this.egl); err != nil {
 				result = multierror.Append(result, err)
 			}
 		}
@@ -83,13 +83,13 @@ func (this *Manager) Dispose() error {
 			result = multierror.Append(result, err)
 		}
 	}
-	if this.gpu != nil {
-		this.gpu.Free()
+	if this.gbm != nil {
+		this.gbm.Free()
 	}
 
 	// Release resources
 	this.fd = 0
-	this.gpu = nil
+	this.gbm = nil
 	this.egl = 0
 	this.surfaces = nil
 
@@ -109,9 +109,9 @@ func (this *Manager) EGLVendor() string {
 
 	if this.egl == 0 {
 		return ""
-	} else {
-		return egl.EGLQueryString(this.egl, egl.EGL_QUERY_VENDOR)
 	}
+
+	return egl.EGLQueryString(this.egl, egl.EGL_QUERY_VENDOR)
 }
 
 func (this *Manager) EGLVersion() string {
@@ -120,9 +120,9 @@ func (this *Manager) EGLVersion() string {
 
 	if this.egl == 0 {
 		return ""
-	} else {
-		return egl.EGLQueryString(this.egl, egl.EGL_QUERY_VERSION)
 	}
+
+	return egl.EGLQueryString(this.egl, egl.EGL_QUERY_VERSION)
 }
 
 func (this *Manager) EGLDeviceExtensions() []string {
@@ -138,9 +138,9 @@ func (this *Manager) EGLDisplayExtensions() []string {
 
 	if this.egl == 0 {
 		return nil
-	} else {
-		return strings.Fields(strings.TrimSpace(egl.EGLQueryString(this.egl, egl.EGL_QUERY_EXTENSIONS)))
 	}
+
+	return strings.Fields(strings.TrimSpace(egl.EGLQueryString(this.egl, egl.EGL_QUERY_EXTENSIONS)))
 }
 
 func (this *Manager) EGLClientApis() []egl.EGLAPI {
@@ -148,18 +148,19 @@ func (this *Manager) EGLClientApis() []egl.EGLAPI {
 	defer this.RWMutex.RUnlock()
 
 	var result []egl.EGLAPI
+
 	if this.egl == 0 {
 		return nil
-	} else {
-		apis := strings.Fields(strings.TrimSpace(egl.EGLQueryString(this.egl, egl.EGL_QUERY_CLIENT_APIS)))
-		for _, api := range apis {
-			if surface_type, exists := egl.EGLSurfaceTypeMap[api]; exists == false {
-				continue
-			} else if api, exists := egl.EGLAPIMap[surface_type]; exists == false {
-				continue
-			} else {
-				result = append(result, api)
-			}
+	}
+
+	apis := strings.Fields(strings.TrimSpace(egl.EGLQueryString(this.egl, egl.EGL_QUERY_CLIENT_APIS)))
+	for _, api := range apis {
+		if surface_type, exists := egl.EGLSurfaceTypeMap[api]; exists == false {
+			continue
+		} else if api, exists := egl.EGLAPIMap[surface_type]; exists == false {
+			continue
+		} else {
+			result = append(result, api)
 		}
 	}
 
@@ -181,25 +182,6 @@ func (this *Manager) EGLHasExtension(name string) bool {
 	return false
 }
 
-func (this *Manager) GBMFormats() []gopi.SurfaceFormat {
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
-	if this.gpu == nil {
-		return nil
-	}
-
-	results := []gopi.SurfaceFormat{}
-	for fmt := gopi.SURFACE_FMT_NONE + 1; fmt <= gopi.SURFACE_FMT_MAX; fmt++ {
-		if gbm_fmt := gbmSurfaceFormat(fmt); gbm_fmt == 0 {
-			continue
-		} else if this.gpu.IsFormatSupported(gbm_fmt, 0) {
-			results = append(results, fmt)
-		}
-	}
-	return results
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
@@ -210,8 +192,9 @@ func (this *Manager) CreateBackground(display gopi.Display, flags gopi.SurfaceFl
 	if display == nil {
 		return nil, gopi.ErrBadParameter.WithPrefix("CreateBackground")
 	}
+
 	width, height := display.Size()
-	if surface, err := this.NewSurface(flags, this.egl, gopi.SURFACE_FMT_XRGB32, width, height); err != nil {
+	if surface, err := this.NewSurface(this.egl, flags, gopi.SURFACE_FMT_XRGB32, width, height); err != nil {
 		return nil, err
 	} else {
 		this.surfaces = append(this.surfaces, surface)
@@ -226,7 +209,7 @@ func (this *Manager) DisposeSurface(surface gopi.Surface) error {
 	var result error
 	for i, surface_ := range this.surfaces {
 		if surface == surface_ {
-			if err := surface_.Dispose(); err != nil {
+			if err := surface_.Dispose(this.egl); err != nil {
 				result = multierror.Append(err)
 			}
 			this.surfaces[i] = nil
@@ -247,6 +230,29 @@ func (this *Manager) SwapBuffers() error {
 			}
 		}
 	}
+	/*
+		if surface.HasFreeBuffers() == false {
+			result = multierror.Append(result, fmt.Errorf("SwapBuffers: No free buffers"))
+		} else if buffer := surface.RetainBuffer(); buffer == nil {
+			result = multierror.Append(result, fmt.Errorf("SwapBuffers: Failed to lock front buffer"))
+		} else {
+			handle := buffer.Handle()
+			stride := buffer.Stride()
+			bpp := buffer.BitsPerPixel()
+			depth := 32 // TODO
+			if fb, err := drm.AddFrameBuffer(this.fd, surface.w, surface.h, depth, bpp, stride, handle); err != nil {
+				result = multierror.Append(result, err)
+			}
+			else if err := drm.SetCrtc(...); err != nil {
+				result = multierror.Append(result,err)
+			} else if(previous_bo) {
+			  drmModeRmFB (device, previous_fb);
+			  gbm_surface_release_buffer (gbm_surface, previous_bo);
+			}
+			previous_bo = bo;
+			previous_fb = fb;
+		}
+	*/
 	return result
 }
 
@@ -273,9 +279,6 @@ func (this *Manager) String() string {
 	if apis := this.EGLClientApis(); len(apis) > 0 {
 		str += " egl.client_apis=" + fmt.Sprint(apis)
 	}
-	if fmts := this.GBMFormats(); len(fmts) > 0 {
-		str += " gbm.supported_formats=" + fmt.Sprint(fmts)
-	}
 	if this.maxx > 0 && this.maxy > 0 {
 		str += fmt.Sprintf(" size={%v,%v,%v,%v}", this.minx, this.miny, this.maxx, this.maxy)
 	}
@@ -288,38 +291,22 @@ func (this *Manager) String() string {
 func (this *Manager) swapBuffersForSurface(surface *Surface) error {
 	var result error
 
-	// Draw here and set the dirty flag
+	// Draw here and swap if any drawing was done
 	if err := surface.Draw(); err != nil {
 		result = multierror.Append(result, err)
 	}
-
 	if surface.Dirty() == false {
 		return nil
 	}
+
+	// Swap buffers
 	if err := surface.EGLSwapBuffers(this.egl); err != nil {
 		result = multierror.Append(result, err)
 	}
-	if surface.HasFreeBuffers() == false {
-		result = multierror.Append(result, fmt.Errorf("swapBuffers: No free buffers"))
-	}
-	if buffer := surface.RetainBuffer(); buffer == nil {
-		result = multierror.Append(result, fmt.Errorf("swapBuffers: Failed to lock front buffer"))
-	} else {
-		handle := buffer.Handle()
-		stride := buffer.Stride()
-		bpp := buffer.BitsPerPixel()
-		depth := 32 // TODO
-		if fb, err := drm.AddFrameBuffer(this.fd, surface.w, surface.h, depth, bpp, stride, handle); err != nil {
-			result = multierror.Append(result, err)
-		}
-		/* else if err := drm.SetCrtc(...); err != nil {
-			result = multierror.Append(result,err)
-		} else if(previous_bo) {
-		  drmModeRmFB (device, previous_fb);
-		  gbm_surface_release_buffer (gbm_surface, previous_bo);
-		}
-		previous_bo = bo;
-		previous_fb = fb;*/
+
+	// GBM swap
+	if err := surface.GBMSwapBuffers(); err != nil {
+		result = multierror.Append(result, err)
 	}
 
 	// Indicate surface has been swapped
@@ -329,18 +316,14 @@ func (this *Manager) swapBuffersForSurface(surface *Surface) error {
 	return result
 }
 
-func gbmSurfaceFormat(fmt gopi.SurfaceFormat) gbm.GBMFormat {
+func gbmBufferFormat(fmt gopi.SurfaceFormat) gbm.GBMBufferFormat {
 	switch fmt {
 	case gopi.SURFACE_FMT_RGBA32:
-		return gbm.GBM_FORMAT_RGBA8888
+		return gbm.GBM_BO_FORMAT_ARGB8888
 	case gopi.SURFACE_FMT_XRGB32:
-		return gbm.GBM_FORMAT_XRGB8888
-	case gopi.SURFACE_FMT_RGB888:
-		return gbm.GBM_FORMAT_RGB888
-	case gopi.SURFACE_FMT_RGB565:
-		return gbm.GBM_FORMAT_RGB565
+		return gbm.GBM_BO_FORMAT_XRGB8888
 	default:
-		return 0
+		return gbm.GBM_BO_FORMAT_NONE
 	}
 }
 
@@ -396,4 +379,14 @@ func eglAttributesForParams(fmt gopi.SurfaceFormat, flags gopi.SurfaceFlags) map
 	attribs[egl.EGL_RENDERABLE_TYPE] = eglApiFlags(flags)
 
 	return attribs
+}
+
+func eglChooseConfig(display egl.EGLDisplay, attrs map[egl.EGLConfigAttrib]int) (egl.EGLConfig, error) {
+	if configs, err := egl.EGLChooseConfig_(display, attrs); err != nil {
+		return 0, err
+	} else if len(configs) == 0 {
+		return 0, gopi.ErrNotFound.WithPrefix("eglChooseConfig")
+	} else {
+		return configs[0], nil
+	}
 }

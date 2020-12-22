@@ -1,3 +1,5 @@
+// +build gbm
+
 package gbm
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -13,11 +15,18 @@ import "C"
 // TYPES
 
 type (
-	GBMFormat C.uint32_t
+	GBMFormat       C.uint32_t
+	GBMBufferFormat C.enum_gbm_bo_format
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
+
+const (
+	GBM_BO_FORMAT_NONE     GBMBufferFormat = 0xFFFFFFFF
+	GBM_BO_FORMAT_XRGB8888 GBMBufferFormat = C.GBM_BO_FORMAT_XRGB8888
+	GBM_BO_FORMAT_ARGB8888 GBMBufferFormat = C.GBM_BO_FORMAT_ARGB8888
+)
 
 const (
 	GBM_FORMAT_C8            GBMFormat = C.GBM_FORMAT_C8

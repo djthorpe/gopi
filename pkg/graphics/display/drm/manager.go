@@ -258,6 +258,10 @@ func (this *Manager) chooseGpu() string {
 }
 
 func (this *Manager) connectors(filter func(*drm.ModeConnector) bool) []*drm.ModeConnector {
+	if this.res == nil {
+		return nil
+	}
+
 	connectors := this.res.Connectors()
 	result := make([]*drm.ModeConnector, 0, len(connectors))
 	for _, id := range connectors {

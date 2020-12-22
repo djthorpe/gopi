@@ -27,7 +27,7 @@ type (
 	EGLConfig       C.EGLConfig
 	EGLContext      C.EGLContext
 	EGLSurface      C.EGLSurface
-	EGLNativeWindow C.EGLNativeWindowType
+	EGLNativeWindow uintptr
 )
 
 /*
@@ -165,14 +165,19 @@ func EGLChooseConfig_(display EGLDisplay, attributes map[EGLConfigAttrib]int) ([
 }
 
 func EGLChooseConfig(display EGLDisplay, r_bits, g_bits, b_bits, a_bits uint, surface_type EGLSurfaceTypeFlag, renderable_type EGLRenderableFlag) (EGLConfig, error) {
-	if configs, err := EGLChooseConfig_(display, map[EGLConfigAttrib]int{
-		EGL_RED_SIZE:        int(r_bits),
-		EGL_GREEN_SIZE:      int(g_bits),
-		EGL_BLUE_SIZE:       int(b_bits),
-		EGL_ALPHA_SIZE:      int(a_bits),
-		EGL_SURFACE_TYPE:    int(surface_type),
-		EGL_RENDERABLE_TYPE: int(renderable_type),
-	}); err != nil {
+	attrs := map[EGLConfigAttrib]int{
+		EGL_RED_SIZE:   int(r_bits),
+		EGL_GREEN_SIZE: int(g_bits),
+		EGL_BLUE_SIZE:  int(b_bits),
+		EGL_ALPHA_SIZE: int(a_bits),
+	}
+	if surface_type != 0 {
+		attrs[EGL_SURFACE_TYPE] = int(surface_type)
+	}
+	if renderable_type != 0 {
+		attrs[EGL_RENDERABLE_TYPE] = int(renderable_type)
+	}
+	if configs, err := EGLChooseConfig_(display, attrs); err != nil {
 		return 0, err
 	} else if len(configs) == 0 {
 		return 0, EGL_BAD_CONFIG
@@ -203,8 +208,13 @@ func EGLQueryAPI() (EGLAPI, error) {
 ////////////////////////////////////////////////////////////////////////////////
 // CONTEXT
 
-func EGLCreateContext(display EGLDisplay, config EGLConfig, share_context EGLContext) (EGLContext, error) {
-	if context := EGLContext(C.eglCreateContext(C.EGLDisplay(display), C.EGLConfig(config), C.EGLContext(share_context), nil)); context == nil {
+func EGLCreateContext(display EGLDisplay, config EGLConfig, share_context EGLContext, version map[EGLConfigAttrib]int) (EGLContext, error) {
+	attribs := []C.EGLint{}
+	for k, v := range version {
+		attribs = append(attribs, C.EGLint(k), C.EGLint(v))
+	}
+	attribs = append(attribs, C.EGLint(EGL_NONE))
+	if context := EGLContext(C.eglCreateContext(C.EGLDisplay(display), C.EGLConfig(config), C.EGLContext(share_context), &attribs[0])); context == nil {
 		return nil, EGLGetError()
 	} else {
 		return context, nil

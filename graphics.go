@@ -33,7 +33,7 @@ type SurfaceManager interface {
 	CreateBackground(Display, SurfaceFlags) (Surface, error)
 	DisposeSurface(Surface) error
 
-	SwapBuffers() error
+	SwapBuffers() error // Temporary for testing
 	/*
 		CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 		CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)

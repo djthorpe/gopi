@@ -28,7 +28,7 @@ type (
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 
-func (this *GBMDevice) SurfaceCreate(width, height uint32, format GBMFormat, flags GBMBufferFlags) (*GBMSurface, error) {
+func (this *GBMDevice) SurfaceCreate(width, height uint32, format GBMBufferFormat, flags GBMBufferFlags) (*GBMSurface, error) {
 	ctx := (*C.struct_gbm_device)(this)
 	if surface := C.gbm_surface_create(ctx, C.uint32_t(width), C.uint32_t(height), C.uint32_t(format), C.uint32_t(flags)); surface != nil {
 		return (*GBMSurface)(surface), nil
