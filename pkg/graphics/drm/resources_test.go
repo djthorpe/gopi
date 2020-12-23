@@ -38,7 +38,7 @@ func Test_Resources_002(t *testing.T) {
 	defer fh.Close()
 	res, err := drm.NewResources(fh.Fd())
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer res.Dispose()
 	t.Log(res)
@@ -76,7 +76,7 @@ func Test_Resources_003(t *testing.T) {
 	defer fh.Close()
 	res, err := drm.NewResources(fh.Fd())
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer res.Dispose()
 	t.Log(res)
@@ -90,25 +90,27 @@ func Test_Resources_003(t *testing.T) {
 			names = append(names, mode.Name())
 		}
 	}
-	// Now iterate through to get modes again
+	for _, connector := range connectors {
+		if err := connector.Dispose(); err != nil {
+			t.Error(err)
+		}
+	}
+	t.Log(names)
+
 	for _, name := range names {
 		if conns, err := res.NewActiveConnectorsForMode(name, 0); err != nil {
 			t.Error(err)
 		} else if len(conns) == 0 {
 			t.Error("Expected connector to be returned")
 		} else {
+			t.Log(name, "=>", conns)
+
 			// Dispose connectors
 			for _, conn := range conns {
 				if err := conn.Dispose(); err != nil {
 					t.Error(err)
 				}
 			}
-		}
-	}
-	// Dispose connectors
-	for _, connector := range connectors {
-		if err := connector.Dispose(); err != nil {
-			t.Error(err)
 		}
 	}
 }
@@ -158,25 +160,11 @@ func Test_Resources_005(t *testing.T) {
 	for _, connector := range connectors {
 		if mode := connector.PreferredMode("", 0); mode == nil {
 			t.Error("Expected preferred mode to be returned")
-		} else if encoder, err := res.NewEncoderForConnector(connector); err != nil {
-			t.Error(err)
-		} else if encoder == nil {
-			t.Error("Expected encoder to be returned")
-		} else if crtc, err := res.NewCrtcForEncoder(encoder); err != nil {
-			t.Error(err)
-		} else if crtc == nil {
-			t.Error("Expected crtc to be returned")
 		} else {
 			t.Log("Preferred mode=", mode)
-			t.Log("Encoder=", encoder)
-			t.Log("Crtc=", crtc)
-			if err := crtc.Dispose(); err != nil {
-				t.Error(err)
-			}
-			if err := encoder.Dispose(); err != nil {
-				t.Error(err)
-			}
 		}
+	}
+	for _, connector := range connectors {
 		if err := connector.Dispose(); err != nil {
 			t.Error(err)
 		}

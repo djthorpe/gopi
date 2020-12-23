@@ -5,6 +5,7 @@ package gbm
 import (
 	"os"
 	"syscall"
+	"unsafe"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +27,7 @@ type (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// METHODS
+// LIFECYCLE
 
 func (this *GBMDevice) SurfaceCreate(width, height uint32, format GBMBufferFormat, flags GBMBufferFlags) (*GBMSurface, error) {
 	ctx := (*C.struct_gbm_device)(this)
@@ -37,10 +38,27 @@ func (this *GBMDevice) SurfaceCreate(width, height uint32, format GBMBufferForma
 	}
 }
 
+func (this *GBMDevice) SurfaceCreateWithModifiers(width, height uint32, format GBMBufferFormat, modifiers []uint64) (*GBMSurface, error) {
+	ctx := (*C.struct_gbm_device)(this)
+	data := (*C.uint64_t)(nil)
+	count := (C.uint)(0)
+	if len(modifiers) > 0 {
+		data = (*C.uint64_t)(unsafe.Pointer(&modifiers[0]))
+	}
+	if surface := C.gbm_surface_create_with_modifiers(ctx, C.uint32_t(width), C.uint32_t(height), C.uint32_t(format), data, count); surface != nil {
+		return (*GBMSurface)(surface), nil
+	} else {
+		return nil, os.NewSyscallError("gbm_surface_create", syscall.Errno(C._errno()))
+	}
+}
+
 func (this *GBMSurface) Free() {
 	ctx := (*C.struct_gbm_surface)(this)
 	C.gbm_surface_destroy(ctx)
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// METHODS
 
 func (this *GBMSurface) RetainBuffer() *GBMBuffer {
 	ctx := (*C.struct_gbm_surface)(this)

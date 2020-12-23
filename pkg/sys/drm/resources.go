@@ -4,10 +4,10 @@ package drm
 
 import (
 	"fmt"
+	"os"
 	"reflect"
+	"syscall"
 	"unsafe"
-
-	"github.com/djthorpe/gopi/v3"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -17,6 +17,8 @@ import (
 #cgo pkg-config: libdrm
 #include <xf86drm.h>
 #include <xf86drmMode.h>
+
+extern int _drm_errno();
 */
 import "C"
 
@@ -32,7 +34,7 @@ type (
 
 func GetResources(fd uintptr) (*ModeResources, error) {
 	if res := C.drmModeGetResources(C.int(fd)); res == nil {
-		return nil, gopi.ErrInternalAppError.WithPrefix("GetResources")
+		return nil, os.NewSyscallError("drmModeGetResources", syscall.Errno(C._drm_errno()))
 	} else {
 		return (*ModeResources)(unsafe.Pointer(res)), nil
 	}

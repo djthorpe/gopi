@@ -139,12 +139,23 @@ func (this *DRM) Dispose() error {
 	this.encoder = nil
 	this.crtc = nil
 
-	// Return success
-	return nil
+	// Return any errors
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
+
+func (this *DRM) Fd() uintptr {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.fh == nil {
+		return 0
+	} else {
+		return this.fh.Fd()
+	}
+}
 
 func (this *DRM) Connector() *Connector {
 	this.RWMutex.RLock()

@@ -9,6 +9,7 @@ package drm
 #cgo pkg-config: libdrm
 #include <xf86drm.h>
 #include <xf86drmMode.h>
+#include <libdrm/drm_fourcc.h>
 */
 import "C"
 import "strings"
@@ -34,6 +35,10 @@ const (
 
 const (
 	DRM_MODE_FB_MODIFIERS = C.DRM_MODE_FB_MODIFIERS
+)
+
+const (
+	DRM_FORMAT_MOD_LINEAR = C.DRM_FORMAT_MOD_LINEAR
 )
 
 const (

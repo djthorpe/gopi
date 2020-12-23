@@ -27,6 +27,7 @@ type Resources struct {
 func NewResources(fd uintptr) (*Resources, error) {
 	this := new(Resources)
 	this.fd = fd
+
 	if res, err := drm.GetResources(this.fd); err != nil {
 		return nil, err
 	} else {
@@ -153,6 +154,9 @@ func (this *Resources) NewCrtcForEncoder(encoder *Encoder) (*Crtc, error) {
 // STRINGIFY
 
 func (this *Resources) String() string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	str := "<drm.resources"
 	if this.res != nil {
 		str += " res=" + fmt.Sprint(this.res)
