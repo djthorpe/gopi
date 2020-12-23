@@ -10,21 +10,21 @@ import (
 )
 
 func Test_DRM_000(t *testing.T) {
-	if devices := drm.Devices(); devices == nil {
+	devices := drm.Devices()
+	if devices == nil {
 		t.Error("Unexpected error with drm.Devices call")
-	} else {
-		for _, node := range devices {
-			if strings.HasPrefix(node, "card") == false {
-				t.Log("Skipping", node)
-				continue
-			}
-			if fh, err := drm.OpenDevice(node); err != nil {
-				t.Error(err)
-			} else if err := fh.Close(); err != nil {
-				t.Error(err)
-			} else {
-				t.Log("Opened device", node)
-			}
+	}
+	for _, node := range devices {
+		if strings.HasPrefix(node, "card") == false {
+			t.Log("Skipping", node)
+			continue
+		}
+		if fh, err := drm.OpenDevice(node); err != nil {
+			t.Error(err)
+		} else if err := fh.Close(); err != nil {
+			t.Error(err)
+		} else {
+			t.Log("Opened device", node)
 		}
 	}
 }

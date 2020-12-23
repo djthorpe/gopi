@@ -11,6 +11,7 @@ package drm
 #include <xf86drmMode.h>
 */
 import "C"
+import "strings"
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
@@ -18,6 +19,7 @@ import "C"
 type (
 	ModeConnection uint
 	ConnectorType  C.int
+	ModeInfoType   uint
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,6 +62,19 @@ const (
 	DRM_MODE_CONNECTOR_VIRTUAL     ConnectorType = C.DRM_MODE_CONNECTOR_VIRTUAL
 	DRM_MODE_CONNECTOR_DSI         ConnectorType = C.DRM_MODE_CONNECTOR_DSI
 	DRM_MODE_CONNECTOR_DPI         ConnectorType = C.DRM_MODE_CONNECTOR_DPI
+)
+
+const (
+	DRM_MODE_TYPE_BUILTIN ModeInfoType = (1 << iota)
+	DRM_MODE_TYPE_CLOCK_C
+	DRM_MODE_TYPE_CRTC_C
+	DRM_MODE_TYPE_PREFERRED
+	DRM_MODE_TYPE_DEFAULT
+	DRM_MODE_TYPE_USERDEF
+	DRM_MODE_TYPE_DRIVER
+	DRM_MODE_TYPE_NONE ModeInfoType = 0
+	DRM_MODE_TYPE_MIN               = DRM_MODE_TYPE_BUILTIN
+	DRM_MODE_TYPE_MAX               = DRM_MODE_TYPE_DRIVER
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -120,5 +135,41 @@ func (c ConnectorType) String() string {
 		return "DRM_MODE_CONNECTOR_DPI"
 	default:
 		return "[?? Unknown ConnectorType value]"
+	}
+}
+
+func (t ModeInfoType) String() string {
+	if t == DRM_MODE_TYPE_NONE {
+		return t.FlagString()
+	}
+	str := ""
+	for v := DRM_MODE_TYPE_MIN; v <= DRM_MODE_TYPE_MAX; v <<= 1 {
+		if t&v == v {
+			str += v.FlagString() + "|"
+		}
+	}
+	return strings.TrimSuffix(str, "|")
+}
+
+func (t ModeInfoType) FlagString() string {
+	switch t {
+	case DRM_MODE_TYPE_NONE:
+		return "DRM_MODE_TYPE_NONE"
+	case DRM_MODE_TYPE_BUILTIN:
+		return "DRM_MODE_TYPE_BUILTIN"
+	case DRM_MODE_TYPE_CLOCK_C:
+		return "DRM_MODE_TYPE_CLOCK_C"
+	case DRM_MODE_TYPE_CRTC_C:
+		return "DRM_MODE_TYPE_CRTC_C"
+	case DRM_MODE_TYPE_PREFERRED:
+		return "DRM_MODE_TYPE_PREFERRED"
+	case DRM_MODE_TYPE_DEFAULT:
+		return "DRM_MODE_TYPE_DEFAULT"
+	case DRM_MODE_TYPE_USERDEF:
+		return "DRM_MODE_TYPE_USERDEF"
+	case DRM_MODE_TYPE_DRIVER:
+		return "DRM_MODE_TYPE_DRIVER"
+	default:
+		return "[?? Invalid ModeInfoType value]"
 	}
 }

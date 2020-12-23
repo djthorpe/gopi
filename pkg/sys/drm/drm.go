@@ -4,11 +4,8 @@ package drm
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"reflect"
-	"strconv"
 	"syscall"
 	"unsafe"
 
@@ -80,45 +77,7 @@ type (
 	ModeConnector C.drmModeConnector
 	ModeEncoder   C.drmModeEncoder
 	ModeCRTC      C.drmModeCrtc
-	ModeInfo      C.drmModeModeInfo
 )
-
-////////////////////////////////////////////////////////////////////////////////
-// CONSTANTS
-
-const (
-	DRM_DEVICE_PATH = "/dev/dri"
-)
-
-////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS
-
-func DevicePath(node string) string {
-	return filepath.Join(DRM_DEVICE_PATH, node)
-}
-
-func Devices() []string {
-	files, err := ioutil.ReadDir(DRM_DEVICE_PATH)
-	if err != nil {
-		return nil
-	}
-	result := []string{}
-	for _, file := range files {
-		if file.Mode()&os.ModeDevice == 0 {
-			continue
-		}
-		result = append(result, file.Name())
-	}
-	return result
-}
-
-func OpenDevice(node string) (*os.File, error) {
-	if fh, err := os.OpenFile(DevicePath(node), os.O_RDWR|os.O_SYNC, 0); err != nil {
-		return nil, err
-	} else {
-		return fh, nil
-	}
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
@@ -263,30 +222,6 @@ func (this *ModeConnector) String() string {
 		str += fmt.Sprintf(" dimensions={%vmm,%vmm}", w, h)
 	}
 	str += fmt.Sprintf(" modes=%v", this.Modes())
-	return str + ">"
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// ModeInfo
-
-func (this ModeInfo) Name() string {
-	ctx := (C.drmModeModeInfo)(this)
-	return C.GoString(&ctx.name[0])
-}
-
-func (this ModeInfo) Size() (uint32, uint32) {
-	ctx := (C.drmModeModeInfo)(this)
-	return uint32(ctx.hdisplay), uint32(ctx.vdisplay)
-}
-
-func (this ModeInfo) String() string {
-	str := "<drm.info"
-	if name := this.Name(); name != "" {
-		str += " name=" + strconv.Quote(name)
-	}
-	if w, h := this.Size(); w > 0 && h > 0 {
-		str += fmt.Sprintf(" size={ %v,%v }", w, h)
-	}
 	return str + ">"
 }
 
