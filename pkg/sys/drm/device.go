@@ -94,7 +94,13 @@ func OpenDevice(device *Device, node DeviceNode) (*os.File, error) {
 		return nil, gopi.ErrBadParameter.WithPrefix("OpenDevice")
 	} else if path := device.AvailableNode(node); path == "" {
 		return nil, gopi.ErrBadParameter.WithPrefix("OpenDevice")
-	} else if fh, err := os.OpenFile(path, os.O_RDWR|os.O_SYNC, 0); err != nil {
+	} else {
+		return OpenPath(path)
+	}
+}
+
+func OpenPath(path string) (*os.File, error) {
+	if fh, err := os.OpenFile(path, os.O_RDWR|os.O_SYNC, 0); err != nil {
 		return nil, err
 	} else {
 		return fh, nil

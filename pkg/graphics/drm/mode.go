@@ -22,6 +22,10 @@ func NewMode(info drm.ModeInfo) *Mode {
 	return &Mode{info}
 }
 
+func (this *Mode) Dispose() error {
+	return nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
