@@ -48,9 +48,10 @@ const (
 	RPI_MODEL_ZERO_W               Model = (0x0C << 4)
 	RPI_MODEL_B_3PLUS              Model = (0x0D << 4)
 	RPI_MODEL_A_3PLUS              Model = (0x0E << 4)
-	RPI_MODEL_UNKNOWN              Model = (0x0F << 4)
 	RPI_MODEL_COMPUTE_MODULE_3PLUS Model = (0x10 << 4)
 	RPI_MODEL_B_4                  Model = (0x11 << 4)
+	RPI_MODEL_400                  Model = (0x13 << 4)
+	RPI_MODEL_COMPUTE_MODULE_4     Model = (0x14 << 4)
 )
 
 const (
@@ -203,6 +204,10 @@ func (m Model) String() string {
 		return "RPI_MODEL_COMPUTE_MODULE_3PLUS"
 	case RPI_MODEL_B_4:
 		return "RPI_MODEL_B_4"
+	case RPI_MODEL_400:
+		return "RPI_MODEL_400"
+	case RPI_MODEL_COMPUTE_MODULE_4:
+		return "RPI_MODEL_COMPUTE_MODULE_4"
 	default:
 		return fmt.Sprintf("[?? Unknown Model value 0x%02X]", uint32(m))
 	}
