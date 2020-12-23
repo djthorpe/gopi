@@ -90,6 +90,10 @@ func (this *Plane) GetProperty(name string) (uint64, bool) {
 	return value, exists
 }
 
+func (this *Plane) SetProperty(res *drm.Atomic, name string, value uint64) error {
+	// TODO
+}
+
 // MatchesCrtc returns true when this plane can be rendered
 // by the crtc in the argument
 func (this *Plane) MatchesCrtc(crtc *Crtc) bool {

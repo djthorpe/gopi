@@ -4,8 +4,10 @@ package drm
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
+	"syscall"
 	"unsafe"
 )
 
@@ -16,6 +18,8 @@ import (
 #cgo pkg-config: libdrm
 #include <xf86drm.h>
 #include <xf86drmMode.h>
+
+extern int _drm_errno();
 */
 import "C"
 
@@ -26,6 +30,7 @@ type (
 	Properties   C.drmModeObjectProperties
 	Property     C.drmModePropertyRes
 	PropertyEnum C.struct_drm_mode_property_enum
+	Atomic       C.drmModeAtomicReq
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,6 +90,11 @@ func NewProperty(fd uintptr, id uint32) *Property {
 	return (*Property)(unsafe.Pointer(ctx))
 }
 
+func NewAtomic() *Atomic {
+	ctx := C.drmModeAtomicAlloc()
+	return (*Atomic)(ctx)
+}
+
 func (this *Properties) Free() {
 	ctx := (*C.drmModeObjectProperties)(this)
 	C.drmModeFreeObjectProperties(ctx)
@@ -93,6 +103,11 @@ func (this *Properties) Free() {
 func (this *Property) Free() {
 	ctx := (*C.drmModePropertyRes)(this)
 	C.drmModeFreeProperty(ctx)
+}
+
+func (this *Atomic) Free() {
+	ctx := (*C.drmModeAtomicReq)(this)
+	C.drmModeAtomicFree(ctx)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,6 +179,23 @@ func (this *Property) Enums() []PropertyEnum {
 	sliceHeader.Len = int(ctx.count_enums)
 	sliceHeader.Data = uintptr(unsafe.Pointer(ctx.enums))
 	return result
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ATOMIC
+
+func (this *Atomic) Commit(uintptr fd, uint32 flags, uintptr data) error {
+	ctx := (*C.drmModeAtomicReq)(this)
+	if ret := C.drmModeAtomicCommit(C.int(fd), ctx, C.uint32_t(flags), unsafe.Pointer(data)); ret != 0 {
+		return os.NewSyscallError("drmModeAtomicCommit", syscall.Errno(C._drm_errno()))
+	}
+}
+
+func (this *Atomic) SetObjectProperty(id, key uint32, value uint64) error {
+	ctx := (*C.drmModeAtomicReq)(this)
+	if ret := C.drmModeAtomicAddProperty(ctx, C.uint32_t(obj), C.uint32_t(key), C.uint64_t(value)); ret != 0 {
+		return os.NewSyscallError("drmModeAtomicAddProperty", syscall.Errno(C._drm_errno()))
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
