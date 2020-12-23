@@ -130,14 +130,23 @@ func (this *Resources) NewCrtcForEncoder(encoder *Encoder) (*Crtc, error) {
 		return nil, gopi.ErrInternalAppError.WithPrefix("NewCrtcForEncoder")
 	}
 
-	if ctx, err := drm.GetCRTC(this.fd, encoder.Crtc()); err != nil {
-		return nil, err
-	} else if crtc := NewCrtc(this.fd, ctx); crtc == nil {
-		ctx.Free()
-		return nil, gopi.ErrInternalAppError.WithPrefix("NewCrtcForEncoder")
-	} else {
-		return crtc, nil
+	// Go through all Crtcs
+	for index, id := range this.res.CRTCs() {
+		if id != encoder.Crtc() {
+			continue
+		}
+		if ctx, err := drm.GetCRTC(this.fd, id); err != nil {
+			return nil, err
+		} else if crtc := NewCrtc(this.fd, ctx, index); crtc == nil {
+			ctx.Free()
+			return nil, gopi.ErrInternalAppError.WithPrefix("NewCrtcForEncoder")
+		} else {
+			return crtc, nil
+		}
 	}
+
+	// Not found
+	return nil, gopi.ErrNotFound.WithPrefix("NewCrtcForEncoder")
 }
 
 ////////////////////////////////////////////////////////////////////////////////

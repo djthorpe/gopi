@@ -43,6 +43,15 @@ const (
 	DRM_MODE_OBJECT_ANY       = C.DRM_MODE_OBJECT_ANY
 )
 
+const (
+	DRM_MODE_PROP_PENDING       = C.DRM_MODE_PROP_PENDING
+	DRM_MODE_PROP_RANGE         = C.DRM_MODE_PROP_RANGE
+	DRM_MODE_PROP_IMMUTABLE     = C.DRM_MODE_PROP_IMMUTABLE
+	DRM_MODE_PROP_ENUM          = C.DRM_MODE_PROP_ENUM
+	DRM_MODE_PROP_BLOB          = C.DRM_MODE_PROP_BLOB
+	DRM_MODE_PROP_EXTENDED_TYPE = C.DRM_MODE_PROP_EXTENDED_TYPE
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
@@ -158,6 +167,19 @@ func (this *Property) Enums() []PropertyEnum {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// ENUM
+
+func (this PropertyEnum) Value() uint64 {
+	ctx := (C.struct_drm_mode_property_enum)(this)
+	return uint64(ctx.value)
+}
+
+func (this PropertyEnum) Name() string {
+	ctx := (C.struct_drm_mode_property_enum)(this)
+	return C.GoString(&ctx.name[0])
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *Properties) String() string {
@@ -187,5 +209,12 @@ func (this *Property) String() string {
 	if enums := this.Enums(); len(enums) != 0 {
 		str += " enums=" + fmt.Sprint(enums)
 	}
+	return str + ">"
+}
+
+func (this PropertyEnum) String() string {
+	str := "<"
+	str += fmt.Sprint(this.Value(), ":")
+	str += strconv.Quote(this.Name())
 	return str + ">"
 }

@@ -144,10 +144,35 @@ func (this *DRM) Dispose() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// PROPERTIES
+
+func (this *DRM) Connector() *Connector {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	return this.connector
+}
+
+func (this *DRM) Mode() *Mode {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	return this.mode
+}
+
+func (this *DRM) Crtc() *Crtc {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	return this.crtc
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// NewPlanes returns all planes. They neeed to be disposed of
-func (this *DRM) NewPlanes() []*Plane {
+// NewPlanes returns all planes which can be rendered by Crtc with
+// appropriate type. Can be limited to first "count" planes.
+func (this *DRM) NewPlanesForCrtc(t PlaneType, crtc *Crtc, count int) []*Plane {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
@@ -156,7 +181,7 @@ func (this *DRM) NewPlanes() []*Plane {
 	}
 
 	planes := drm.Planes(this.fh.Fd())
-	if planes == nil {
+	if len(planes) == 0 {
 		return nil
 	}
 
@@ -165,19 +190,56 @@ func (this *DRM) NewPlanes() []*Plane {
 		if ctx, err := drm.GetPlane(this.fh.Fd(), plane); err != nil {
 			continue
 		} else if plane := NewPlane(this.fh.Fd(), ctx); plane == nil {
+			ctx.Free()
+			continue
+		} else if t != DRM_PLANE_TYPE_NONE && t != plane.Type() {
+			plane.Dispose()
+			continue
+		} else if crtc != nil && plane.MatchesCrtc(crtc) == false {
+			plane.Dispose()
 			continue
 		} else {
 			result = append(result, plane)
+		}
+		if count != 0 && len(result) >= count {
+			break
 		}
 	}
 
 	return result
 }
 
+// NewPrimaryPlaneForCrtc returns primary plane which can be rendered
+// by the specificed Crtc or nil if none found
+func (this *DRM) NewPrimaryPlaneForCrtc(crtc *Crtc) *Plane {
+	planes := this.NewPlanesForCrtc(DRM_PLANE_TYPE_PRIMARY, crtc, 1)
+	if len(planes) == 0 {
+		return nil
+	} else {
+		return planes[0]
+	}
+}
+
+func (this *DRM) NewCursorPlaneForCrtc(crtc *Crtc) *Plane {
+	planes := this.NewPlanesForCrtc(DRM_PLANE_TYPE_CURSOR, crtc, 1)
+	if len(planes) == 0 {
+		return nil
+	} else {
+		return planes[0]
+	}
+}
+
+func (this *DRM) NewOverlayPlanesForCrtc(crtc *Crtc) []*Plane {
+	return this.NewPlanesForCrtc(DRM_PLANE_TYPE_OVERLAY, crtc, 0)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *DRM) String() string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	str := "<drm"
 	if this.fh != nil {
 		str += " node=" + strconv.Quote(this.fh.Name())

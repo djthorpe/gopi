@@ -85,6 +85,12 @@ const (
 	DRM_MODE_TYPE_MAX               = DRM_MODE_TYPE_DRIVER
 )
 
+const (
+	DRM_PLANE_TYPE_OVERLAY = C.DRM_PLANE_TYPE_OVERLAY
+	DRM_PLANE_TYPE_PRIMARY = C.DRM_PLANE_TYPE_PRIMARY
+	DRM_PLANE_TYPE_CURSOR  = C.DRM_PLANE_TYPE_CURSOR
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

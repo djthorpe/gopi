@@ -24,17 +24,7 @@ import "C"
 // TYPES
 
 type (
-	Plane     C.drmModePlane
-	PlaneType int
-)
-
-////////////////////////////////////////////////////////////////////////////////
-// CONSTANTS
-
-const (
-	DRM_PLANE_TYPE_OVERLAY PlaneType = C.DRM_PLANE_TYPE_OVERLAY
-	DRM_PLANE_TYPE_PRIMARY PlaneType = C.DRM_PLANE_TYPE_PRIMARY
-	DRM_PLANE_TYPE_CURSOR  PlaneType = C.DRM_PLANE_TYPE_CURSOR
+	Plane C.drmModePlane
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,11 +98,10 @@ func (this *Plane) Crtc() uint32 {
 	return uint32(ctx.crtc_id)
 }
 
-/* TODO
-func (this *Plane) PossibleCrtcs() []uint32 {
-
+func (this *Plane) PossibleCrtcs() uint32 {
+	ctx := (*C.drmModePlane)(this)
+	return uint32(ctx.possible_crtcs)
 }
-*/
 
 func (this *Plane) GammaSize() uint32 {
 	ctx := (*C.drmModePlane)(this)
@@ -138,6 +127,9 @@ func (this *Plane) String() string {
 
 	if gamma_size := this.GammaSize(); gamma_size != 0 {
 		str += " gamma_size=" + fmt.Sprint(gamma_size)
+	}
+	if possible_crtcs := this.PossibleCrtcs(); possible_crtcs > 0 {
+		str += fmt.Sprintf(" possible_crtcs=0b%032b", possible_crtcs)
 	}
 	return str + ">"
 }

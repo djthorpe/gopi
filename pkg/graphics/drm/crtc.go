@@ -15,20 +15,22 @@ import (
 type Crtc struct {
 	sync.RWMutex
 
-	fd  uintptr
-	ctx *drm.ModeCRTC
+	fd    uintptr
+	ctx   *drm.ModeCRTC
+	index int
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewCrtc(fd uintptr, ctx *drm.ModeCRTC) *Crtc {
+func NewCrtc(fd uintptr, ctx *drm.ModeCRTC, index int) *Crtc {
 	this := new(Crtc)
 	if ctx == nil || fd == 0 {
 		return nil
 	}
 	this.fd = fd
 	this.ctx = ctx
+	this.index = index
 	return this
 }
 
@@ -56,5 +58,6 @@ func (this *Crtc) String() string {
 	if this.ctx != nil {
 		str += " ctx=" + fmt.Sprint(this.ctx)
 	}
+	str += " index=" + fmt.Sprint(this.index)
 	return str + ">"
 }

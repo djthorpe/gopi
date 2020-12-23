@@ -24,8 +24,28 @@ func Test_DRM_001(t *testing.T) {
 		t.Error(err)
 	} else {
 		t.Log(drm)
-		for _, plane := range drm.NewPlanes() {
-			t.Log(plane)
+
+		if primary := drm.NewPrimaryPlaneForCrtc(drm.Crtc()); primary != nil {
+			t.Log("primary=", primary)
+			if err := primary.Dispose(); err != nil {
+				t.Error(err)
+			}
+		} else {
+			t.Error("Expected primary plane")
+		}
+
+		if cursor := drm.NewCursorPlaneForCrtc(drm.Crtc()); cursor != nil {
+			t.Log("cursor=", cursor)
+			if err := cursor.Dispose(); err != nil {
+				t.Error(err)
+			}
+		} else {
+			t.Error("Expected cursor plane")
+		}
+
+		overlays := drm.NewOverlayPlanesForCrtc(drm.Crtc())
+		for _, plane := range overlays {
+			t.Log("overlay=", plane)
 			if err := plane.Dispose(); err != nil {
 				t.Error(err)
 			}
