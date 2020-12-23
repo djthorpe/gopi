@@ -63,9 +63,28 @@ func (this *Surface) Dispose(display egl.EGLDisplay) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// METHODS
+
+func (this *Surface) MakeCurrent(display egl.EGLDisplay) error {
+	return egl.EGLMakeCurrent(display, this.egl, this.egl, this.ctx)
+}
+
+func (this *Surface) Draw() error {
+	// TODO
+	return nil
+}
+
+func (this *Surface) SwapBuffers(display egl.EGLDisplay) error {
+	return egl.EGLSwapBuffers(display, this.egl)
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *Surface) String() string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	str := "<surface"
 	if this.egl != nil {
 		str += " egl=" + fmt.Sprint(this.egl)

@@ -20,9 +20,10 @@ import (
 type EGL struct {
 	sync.RWMutex
 
-	gbm     *GBM
-	display egl.EGLDisplay
-	ext     map[string]bool
+	gbm      *GBM
+	display  egl.EGLDisplay
+	ext      map[string]bool
+	surfaces []*Surface
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,12 +72,25 @@ func (this *EGL) Dispose() error {
 
 	var result error
 
+	// Destroy surfaces
+	for _, surface := range this.surfaces {
+		if surface == nil {
+			continue
+		}
+		if err := surface.Dispose(this.display); err != nil {
+			result = multierror.Append(result)
+		}
+	}
+
+	// Destroy display
 	if this.display != 0 {
 		if err := egl.EGLTerminate(this.display); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
 
+	// Release resources
+	this.surfaces = nil
 	this.display = 0
 	this.gbm = nil
 	this.ext = nil
@@ -209,7 +223,9 @@ func (this *EGL) CreateContextForSurface(api string, version uint, r, g, b, a ui
 }
 
 func (this *EGL) CreateSurface(api string, version uint, w, h uint32, format Format) (*Surface, error) {
-	if r, g, b, a := this.gbm.BitsForFormat(format); r == 0 || g == 0 || b == 0 {
+	if this.display == 0 || this.gbm == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("CreateSurface")
+	} else if r, g, b, a := this.gbm.BitsForFormat(format); r == 0 || g == 0 || b == 0 {
 		return nil, gopi.ErrBadParameter.WithPrefix("CreateSurface: ", format)
 	} else if config, context, err := this.CreateContextForSurface(api, version, r, g, b, a); err != nil {
 		return nil, err
@@ -226,9 +242,31 @@ func (this *EGL) CreateSurface(api string, version uint, w, h uint32, format For
 		gbm_surface.Free()
 		return nil, gopi.ErrInternalAppError.WithPrefix("CreateSurface")
 	} else {
-		// TODO
+		this.RWMutex.Lock()
+		defer this.RWMutex.Unlock()
+
+		this.surfaces = append(this.surfaces, surface)
 		return surface, nil
 	}
+}
+
+func (this *EGL) DestroySurface(surface *Surface) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	var result error
+	for i, surface_ := range this.surfaces {
+		if surface_ != surface {
+			continue
+		}
+		if err := surface.Dispose(this.display); err != nil {
+			result = multierror.Append(result)
+		}
+		this.surfaces[i] = nil
+	}
+
+	// Return errors
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////

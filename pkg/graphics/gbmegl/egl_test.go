@@ -3,7 +3,9 @@
 package gbmegl_test
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	drm "github.com/djthorpe/gopi/v3/pkg/graphics/drm"
 	gbmegl "github.com/djthorpe/gopi/v3/pkg/graphics/gbmegl"
@@ -118,27 +120,64 @@ func Test_EGL_003(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer gbm.Dispose()
 	egl, err := gbmegl.NewEGL(gbm)
 	if err != nil {
 		gbm.Dispose()
 		t.Fatal(err)
 	}
+	defer egl.Dispose()
 
 	for _, api := range egl.API() {
 		if err := egl.BindAPI(api); err != nil {
 			t.Error(err)
 		}
-		if surface, err := egl.CreateSurface(api, 1, 1920, 1080, gbmegl.GBM_BO_FORMAT_ARGB8888); err != nil {
+		if surface, err := egl.CreateSurface(api, 1, 1920, 1080, gbmegl.GBM_BO_FORMAT_XRGB8888); err != nil {
 			t.Log(err)
 		} else {
 			t.Log("surface=", surface)
+			if err := egl.DestroySurface(surface); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+}
+
+func Test_EGL_004(t *testing.T) {
+	drm, err := drm.NewDRM("", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer drm.Dispose()
+	gbm, err := gbmegl.NewGBM(drm.Fd())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer gbm.Dispose()
+	egl, err := gbmegl.NewEGL(gbm)
+	if err != nil {
+		gbm.Dispose()
+		t.Fatal(err)
+	}
+	defer egl.Dispose()
+
+	for _, api := range egl.API() {
+		if err := egl.BindAPI(api); err != nil {
+			t.Error(err)
+		}
+		if surface, err := egl.CreateSurface(api, 1, 1920, 1080, gbmegl.GBM_BO_FORMAT_XRGB8888); err != nil {
+			t.Log(err)
+		} else {
+			t.Log("surface=", surface)
+			if err := egl.DestroySurface(surface); err != nil {
+				t.Error(err)
+			}
 		}
 	}
 
-	if err := egl.Dispose(); err != nil {
-		t.Error(err)
-	}
-	if err := gbm.Dispose(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if err := egl.Run(ctx); err != nil && err != context.Canceled && err != context.DeadlineExceeded {
 		t.Error(err)
 	}
 }

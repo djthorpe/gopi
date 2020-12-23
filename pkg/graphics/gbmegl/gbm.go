@@ -97,10 +97,15 @@ func (this *GBM) BitsForFormat(format Format) (uint, uint, uint, uint) {
 
 func (this *GBM) NewSurface(w, h uint32, format Format) (*gbm.GBMSurface, error) {
 	modifiers := []uint64{drm.DRM_FORMAT_MOD_LINEAR}
+	flags := gbm.GBM_BO_USE_SCANOUT | gbm.GBM_BO_USE_RENDERING
 	if this.dev == nil {
 		return nil, gopi.ErrInternalAppError.WithPrefix("NewSurface")
+	} else if surface, err := this.dev.SurfaceCreateWithModifiers(w, h, gbm.GBMBufferFormat(format), modifiers); err == nil {
+		return surface, nil
+	} else if surface, err := this.dev.SurfaceCreate(w, h, gbm.GBMBufferFormat(format), flags); err != nil {
+		return nil, err
 	} else {
-		return this.dev.SurfaceCreateWithModifiers(w, h, gbm.GBMBufferFormat(format), modifiers)
+		return surface, nil
 	}
 }
 
