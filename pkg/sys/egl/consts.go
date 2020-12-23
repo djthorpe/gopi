@@ -3,6 +3,7 @@
 package egl
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -299,7 +300,7 @@ func (a EGLConfigAttrib) String() string {
 	case EGL_CONFORMANT:
 		return "EGL_CONFORMANT"
 	default:
-		return "[?? Invalid EGL_ConfigAttrib value]"
+		return fmt.Sprintf("[?? Invalid EGL_ConfigAttrib value 0x%04X]", uint(a))
 	}
 }
 

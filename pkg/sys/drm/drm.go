@@ -45,20 +45,26 @@ int _drm_page_flip_wait(int fd,uint32_t crtc_id,uint32_t fb_id) {
 	if(ret != 0) {
 		return ret;
 	}
+	struct timeval timeout = {
+        .tv_sec = 3,
+        .tv_usec = 0
+    };
 	while(flag == 0) {
 	    FD_ZERO(&fds);
 	    FD_SET(0, &fds);
 		FD_SET(fd, &fds);
-
-		ret = select(fd + 1, &fds, NULL, NULL, NULL);
+		ret = select(fd + 1, &fds, NULL, NULL, &timeout);
 	    if (ret < 0) {
 			return ret;
 	    } else if (ret == 0) {
 			return ETIMEDOUT;
 	    } else if (FD_ISSET(0, &fds)) {
 			return EINTR;
-	    }
-	    drmHandleEvent(fd, &evctx);
+		}
+		ret = drmHandleEvent(fd, &evctx);
+	    if(ret != 0) {
+			return ret;
+		}
 	}
 
 	return 0;
