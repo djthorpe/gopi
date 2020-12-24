@@ -5,8 +5,8 @@ package gbmegl_test
 import (
 	"testing"
 
-	drm "github.com/djthorpe/gopi/v3/pkg/graphics/drm"
-	gbmegl "github.com/djthorpe/gopi/v3/pkg/graphics/gbmegl"
+	drm "github.com/djthorpe/gopi/v3/pkg/graphics/internal/drm"
+	gbmegl "github.com/djthorpe/gopi/v3/pkg/graphics/internal/gbmegl"
 )
 
 func Test_GBM_000(t *testing.T) {

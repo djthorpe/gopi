@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	drm "github.com/djthorpe/gopi/v3/pkg/graphics/drm"
-	gbmegl "github.com/djthorpe/gopi/v3/pkg/graphics/gbmegl"
+	drm "github.com/djthorpe/gopi/v3/pkg/graphics/internal/drm"
+	gbmegl "github.com/djthorpe/gopi/v3/pkg/graphics/internal/gbmegl"
 )
 
 func Test_EGL_000(t *testing.T) {

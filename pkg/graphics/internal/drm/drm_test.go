@@ -5,7 +5,7 @@ package drm_test
 import (
 	"testing"
 
-	drm "github.com/djthorpe/gopi/v3/pkg/graphics/drm"
+	drm "github.com/djthorpe/gopi/v3/pkg/graphics/internal/drm"
 )
 
 func Test_DRM_000(t *testing.T) {
