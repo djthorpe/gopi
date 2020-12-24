@@ -52,6 +52,7 @@ const (
 	RPI_MODEL_B_4                  Model = (0x11 << 4)
 	RPI_MODEL_400                  Model = (0x13 << 4)
 	RPI_MODEL_COMPUTE_MODULE_4     Model = (0x14 << 4)
+	RPI_MODEL_UNKNOWN              Model = (0xFF << 4)
 )
 
 const (

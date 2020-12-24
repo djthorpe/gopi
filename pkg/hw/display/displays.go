@@ -17,7 +17,7 @@ type Displays struct {
 	sync.Mutex
 	*platform.Platform
 
-	displays map[uint16]gopi.Display
+	displays map[uint32]gopi.Display
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,7 +25,7 @@ type Displays struct {
 
 // New is called to initialize
 func (this *Displays) New(gopi.Config) error {
-	this.displays = make(map[uint16]gopi.Display)
+	this.displays = make(map[uint32]gopi.Display)
 	return nil
 }
 
@@ -41,7 +41,7 @@ func (this *Displays) Dispose() error {
 }
 
 // Open returns a gopi.Display object based on id
-func (this *Displays) Open(id uint16) (gopi.Display, error) {
+func (this *Displays) Open(id uint32) (gopi.Display, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -59,7 +59,7 @@ func (this *Displays) Open(id uint16) (gopi.Display, error) {
 }
 
 // Close disposes of an open display
-func (this *Displays) Close(id uint16) error {
+func (this *Displays) Close(id uint32) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 

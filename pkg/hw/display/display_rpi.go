@@ -15,7 +15,7 @@ import (
 type display struct {
 	gopi.Unit
 
-	id     uint16
+	id     uint32
 	handle rpi.DXDisplayHandle
 	info   rpi.DXDisplayModeInfo
 }
@@ -29,7 +29,7 @@ func (this *display) Define(cfg gopi.Config) error {
 }
 
 func (this *display) New(cfg gopi.Config) error {
-	id := uint16(cfg.GetUint("display"))
+	id := uint32(cfg.GetUint("display"))
 	return this.new(id)
 }
 
@@ -40,7 +40,7 @@ func (this *display) Dispose() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE NEW/CLOSE
 
-func (this *display) new(id uint16) error {
+func (this *display) new(id uint32) error {
 	if handle, err := rpi.DXDisplayOpen(rpi.DXDisplayId(id)); err != nil {
 		return err
 	} else if info, err := rpi.DXDisplayGetInfo(handle); err != nil {
@@ -70,7 +70,7 @@ func (this *display) close() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *display) Id() uint16 {
+func (this *display) Id() uint32 {
 	return this.id
 }
 
