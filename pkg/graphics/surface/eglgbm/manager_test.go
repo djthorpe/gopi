@@ -8,9 +8,6 @@ import (
 	gopi "github.com/djthorpe/gopi/v3"
 	surface "github.com/djthorpe/gopi/v3/pkg/graphics/surface/eglgbm"
 	tool "github.com/djthorpe/gopi/v3/pkg/tool"
-
-	_ "github.com/djthorpe/gopi/v3/pkg/graphics/display/drm"
-	_ "github.com/djthorpe/gopi/v3/pkg/hw/platform"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
