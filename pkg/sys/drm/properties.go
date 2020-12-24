@@ -85,6 +85,11 @@ func GetFrameBufferProperties(fd uintptr, id uint32) *Properties {
 	return (*Properties)(unsafe.Pointer(ctx))
 }
 
+func GetAnyProperties(fd uintptr, id uint32) *Properties {
+	ctx := C.drmModeObjectGetProperties(C.int(fd), C.uint32_t(id), C.uint32_t(DRM_MODE_OBJECT_ANY))
+	return (*Properties)(unsafe.Pointer(ctx))
+}
+
 func NewProperty(fd uintptr, id uint32) *Property {
 	ctx := C.drmModeGetProperty(C.int(fd), C.uint32_t(id))
 	return (*Property)(unsafe.Pointer(ctx))
@@ -92,7 +97,7 @@ func NewProperty(fd uintptr, id uint32) *Property {
 
 func NewAtomic() *Atomic {
 	ctx := C.drmModeAtomicAlloc()
-	return (*Atomic)(ctx)
+	return (*Atomic)(unsafe.Pointer(ctx))
 }
 
 func (this *Properties) Free() {
@@ -184,17 +189,21 @@ func (this *Property) Enums() []PropertyEnum {
 ////////////////////////////////////////////////////////////////////////////////
 // ATOMIC
 
-func (this *Atomic) Commit(uintptr fd, uint32 flags, uintptr data) error {
+func (this *Atomic) Commit(fd uintptr, flags uint32, data uintptr) error {
 	ctx := (*C.drmModeAtomicReq)(this)
 	if ret := C.drmModeAtomicCommit(C.int(fd), ctx, C.uint32_t(flags), unsafe.Pointer(data)); ret != 0 {
 		return os.NewSyscallError("drmModeAtomicCommit", syscall.Errno(C._drm_errno()))
+	} else {
+		return nil
 	}
 }
 
 func (this *Atomic) SetObjectProperty(id, key uint32, value uint64) error {
 	ctx := (*C.drmModeAtomicReq)(this)
-	if ret := C.drmModeAtomicAddProperty(ctx, C.uint32_t(obj), C.uint32_t(key), C.uint64_t(value)); ret != 0 {
+	if ret := C.drmModeAtomicAddProperty(ctx, C.uint32_t(id), C.uint32_t(key), C.uint64_t(value)); ret != 0 {
 		return os.NewSyscallError("drmModeAtomicAddProperty", syscall.Errno(C._drm_errno()))
+	} else {
+		return nil
 	}
 }
 

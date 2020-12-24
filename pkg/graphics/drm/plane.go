@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"sync"
 
+	gopi "github.com/djthorpe/gopi/v3"
 	drm "github.com/djthorpe/gopi/v3/pkg/sys/drm"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -14,10 +16,10 @@ import (
 
 type Plane struct {
 	sync.RWMutex
+	Properties
 
-	fd    uintptr
-	ctx   *drm.Plane
-	props map[string]uint64
+	fd  uintptr
+	ctx *drm.Plane
 }
 
 type PlaneType uint64
@@ -35,15 +37,19 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewPlane(fd uintptr, ctx *drm.Plane) *Plane {
+func NewPlane(fd uintptr, ctx *drm.Plane) (*Plane, error) {
 	this := new(Plane)
 	if ctx == nil || fd == 0 {
-		return nil
+		return nil, gopi.ErrInternalAppError.WithPrefix("NewPlane")
 	}
 	this.fd = fd
 	this.ctx = ctx
 
-	return this
+	if err := this.Properties.New(fd, ctx.Id()); err != nil {
+		return nil, err
+	} else {
+		return this, nil
+	}
 }
 
 func (this *Plane) Dispose() error {
@@ -54,19 +60,37 @@ func (this *Plane) Dispose() error {
 		this.ctx.Free()
 	}
 
+	var result error
+	if err := this.Properties.Dispose(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
 	// Release resources
 	this.ctx = nil
 	this.fd = 0
-	this.props = nil
 
 	// Return success
-	return nil
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
 
+func (this *Plane) Id() uint32 {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.ctx == nil {
+		return 0
+	} else {
+		return this.ctx.Id()
+	}
+}
+
 func (this *Plane) Type() PlaneType {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	if v, exists := this.GetProperty("type"); exists {
 		return PlaneType(v)
 	} else {
@@ -74,29 +98,12 @@ func (this *Plane) Type() PlaneType {
 	}
 }
 
-func (this *Plane) GetProperty(name string) (uint64, bool) {
-	if this.props == nil {
-		this.RWMutex.Lock()
-		this.props = this.getProperties()
-		this.RWMutex.Unlock()
-	}
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
-	if this.fd == 0 || this.ctx == nil {
-		return 0, false
-	}
-	value, exists := this.props[name]
-	return value, exists
-}
-
-func (this *Plane) SetProperty(res *drm.Atomic, name string, value uint64) error {
-	// TODO
-}
-
 // MatchesCrtc returns true when this plane can be rendered
 // by the crtc in the argument
 func (this *Plane) MatchesCrtc(crtc *Crtc) bool {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	if crtc == nil || this.ctx == nil {
 		return false
 	} else {
@@ -108,6 +115,9 @@ func (this *Plane) MatchesCrtc(crtc *Crtc) bool {
 // STRINGIFY
 
 func (this *Plane) String() string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	str := "<drm.plane"
 	if this.ctx != nil {
 		str += " ctx=" + fmt.Sprint(this.ctx)
@@ -115,6 +125,7 @@ func (this *Plane) String() string {
 	if t := this.Type(); t != DRM_PLANE_TYPE_NONE {
 		str += " type=" + fmt.Sprint(t)
 	}
+	str += " props=" + fmt.Sprint(&this.Properties)
 	return str + ">"
 }
 
@@ -131,32 +142,4 @@ func (t PlaneType) String() string {
 	default:
 		return "[?? Invalid PlaneType value]"
 	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-
-func (this *Plane) getProperties() map[string]uint64 {
-	if this.fd == 0 || this.ctx == nil {
-		return nil
-	}
-
-	props := drm.GetPlaneProperties(this.fd, this.ctx.Id())
-	if props == nil {
-		return nil
-	}
-	defer props.Free()
-
-	result := make(map[string]uint64)
-	values := props.Values()
-	for i, key := range props.Keys() {
-		prop := drm.NewProperty(this.fd, key)
-		if prop == nil {
-			continue
-		}
-		defer prop.Free()
-		name := prop.Name()
-		result[name] = values[i]
-	}
-	return result
 }

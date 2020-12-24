@@ -200,7 +200,7 @@ func (this *DRM) NewPlanesForCrtc(t PlaneType, crtc *Crtc, count int) []*Plane {
 	for _, plane := range planes {
 		if ctx, err := drm.GetPlane(this.fh.Fd(), plane); err != nil {
 			continue
-		} else if plane := NewPlane(this.fh.Fd(), ctx); plane == nil {
+		} else if plane, err := NewPlane(this.fh.Fd(), ctx); err != nil {
 			ctx.Free()
 			continue
 		} else if t != DRM_PLANE_TYPE_NONE && t != plane.Type() {
@@ -242,6 +242,25 @@ func (this *DRM) NewCursorPlaneForCrtc(crtc *Crtc) *Plane {
 
 func (this *DRM) NewOverlayPlanesForCrtc(crtc *Crtc) []*Plane {
 	return this.NewPlanesForCrtc(DRM_PLANE_TYPE_OVERLAY, crtc, 0)
+}
+
+func (this *DRM) UpdatePlaneProperties(req *drm.Atomic, plane *Plane) error {
+	props := plane.GetDirtyProperties()
+
+	var result error
+
+	// Set properties
+	for id, value := range props {
+		if err := req.SetObjectProperty(plane.Id(), id, value); err != nil {
+			result = multierror.Append(result)
+		}
+	}
+
+	// Mark properties as clean
+	plane.Clean()
+
+	// Return any errors
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
