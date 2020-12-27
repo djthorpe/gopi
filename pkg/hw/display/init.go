@@ -1,3 +1,5 @@
+// +build rpi
+
 package display
 
 import (
@@ -9,5 +11,5 @@ import (
 
 func init() {
 	// Register display as gopi.Display
-	graph.RegisterUnit(reflect.TypeOf(&display{}), reflect.TypeOf((*gopi.Display)(nil)))
+	graph.RegisterUnit(reflect.TypeOf(&Manager{}), reflect.TypeOf((*gopi.DisplayManager)(nil)))
 }

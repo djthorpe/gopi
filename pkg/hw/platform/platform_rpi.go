@@ -84,21 +84,3 @@ func (this *Platform) Product() string {
 		return fmt.Sprint(productinfo.Model)
 	}
 }
-
-// Return number of displays
-func (this *Platform) NumberOfDisplays() uint {
-	return uint(rpi.DXNumberOfDisplays())
-}
-
-// Return attached displays
-func (this *Platform) AttachedDisplays() []uint {
-	if displays, err := rpi.VCHI_TVGetAttachedDevices(); err != nil {
-		return nil
-	} else {
-		displays_ := make([]uint, len(displays))
-		for i, display := range displays {
-			displays_[i] = uint(display)
-		}
-		return displays_
-	}
-}

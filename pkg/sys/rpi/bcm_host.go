@@ -94,6 +94,16 @@ func BCMHostGetSDRAMAddress() uint32 {
 	return uint32(C.bcm_host_get_sdram_address())
 }
 
+func BCMGetDisplaySize(display uint16) (uint32, uint32) {
+	var w, h C.uint32_t
+	if ret := C.graphics_get_display_size(C.uint16_t(display), &w, &h); ret != 0 {
+		fmt.Println("error", C.uint16_t(display), w, h)
+		return 0, 0
+	} else {
+		return uint32(w), uint32(h)
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS: VIDEOCORE
 

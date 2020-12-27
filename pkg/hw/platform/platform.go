@@ -35,11 +35,5 @@ func (this *Platform) String() string {
 	if av1, av5, av15 := this.LoadAverages(); av1 != 0 || av5 != 0 || av15 != 0 {
 		str += fmt.Sprintf(" load_avg={ %.2f, %.2f, %.2f }", av1, av5, av15)
 	}
-	if d := this.NumberOfDisplays(); d != 0 {
-		str += " number_displays=" + fmt.Sprint(d)
-	}
-	if a := this.AttachedDisplays(); len(a) != 0 {
-		str += " attached_displays=" + fmt.Sprint(a)
-	}
 	return str + ">"
 }

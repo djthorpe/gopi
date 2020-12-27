@@ -16,6 +16,17 @@ import (
 #cgo pkg-config: bcm_host
 #include <interface/vmcs_host/vc_tvservice.h>
 #include <interface/vmcs_host/vc_hdmi.h>
+#include <stdio.h>
+
+extern void tvservice_callback(void *callback_data, uint32_t reason, uint32_t param1, uint32_t param2);
+
+static void tvservice_register_callback() {
+	vc_tv_register_callback(&tvservice_callback,NULL);
+	tvservice_callback(NULL,0,0,0);
+}
+static void tvservice_unregister_callback() {
+	vc_tv_unregister_callback(&tvservice_callback);
+}
 */
 import "C"
 
@@ -29,6 +40,7 @@ type (
 	TVDisplayInfo      C.TV_DEVICE_ID_T
 	TVError            uint
 	TVDisplayStateFlag uint32
+	TVEventCallback    func(TVDisplayStateFlag, DXDisplayId)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -67,6 +79,13 @@ const (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
+// GLOBALS
+
+var (
+	callback TVEventCallback
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 
 func VCHI_Init() VCHIInstance {
@@ -94,8 +113,10 @@ func VCHI_TVInit(instance VCHIInstance) (VCHIConnection, error) {
 }
 
 func VCHI_TVStop(instance VCHIInstance) error {
+	C.tvservice_unregister_callback()
 	C.vc_vchi_tv_stop()
 	C.vchi_disconnect(C.VCHI_INSTANCE_T(instance))
+	callback = nil
 	return nil
 }
 
@@ -164,6 +185,49 @@ func VCHI_TVGetDisplayInfo(display DXDisplayId) (TVDisplayInfo, error) {
 		return info, ErrDeviceError
 	} else {
 		return info, nil
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Watch Events
+
+// VCTV_RegisterCallback can be called to register and unregister a callback
+// which is called on HDMI connection unplugging and attaching events
+func VCTV_RegisterCallback(fn TVEventCallback) {
+	if callback != nil {
+		C.tvservice_unregister_callback()
+		callback = nil
+	}
+	if fn != nil {
+		C.tvservice_register_callback()
+		callback = fn
+	}
+}
+
+//export tvservice_callback
+func tvservice_callback(data unsafe.Pointer, reason, param1, param2 C.uint32_t) {
+	switch TVDisplayStateFlag(reason) {
+	case TV_STATE_HDMI_UNPLUGGED:
+		if callback != nil {
+			callback(TV_STATE_HDMI_UNPLUGGED, DXDisplayId(param1))
+		}
+	case TV_STATE_HDMI_ATTACHED:
+		if callback != nil {
+			// DisplayId not provided!
+			callback(TV_STATE_HDMI_ATTACHED, DXDisplayId(0))
+		}
+	case TV_STATE_HDMI_DVI:
+		// HDMI in DVI mode
+	case TV_STATE_HDMI_HDMI:
+		// HDMI in HDMI mode
+	case TV_STATE_HDMI_HDCP_UNAUTH:
+		// HDCP authentication is broken
+	case TV_STATE_HDMI_HDCP_AUTH:
+		// HDCP is active
+	case TV_STATE_HDMI_HDCP_KEY_DOWNLOAD:
+		// HDCP key download
+	case TV_STATE_HDMI_HDCP_SRM_DOWNLOAD:
+		// HDCP revocation list download
 	}
 }
 

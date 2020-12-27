@@ -3,7 +3,9 @@
 package rpi_test
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	// Frameworks
 	"github.com/djthorpe/gopi/v3/pkg/sys/rpi"
@@ -73,4 +75,19 @@ func Test_TVService_003(t *testing.T) {
 			}
 		}
 	}
+}
+
+func Test_TVService_004(t *testing.T) {
+	instance := rpi.VCHI_Init()
+	if instance == nil {
+		t.Fatal("VCHI_Init failed")
+	} else if _, err := rpi.VCHI_TVInit(instance); err != nil {
+		t.Fatal("VCHI_TVInit failed: ", err)
+	}
+	defer rpi.VCHI_TVStop(instance)
+	rpi.VCTV_RegisterCallback(func(evt rpi.TVDisplayStateFlag, id rpi.DXDisplayId) {
+		fmt.Println("Event", evt, "Display", id)
+	})
+	fmt.Println("Waiting for event")
+	time.Sleep(60 * time.Second)
 }

@@ -11,6 +11,7 @@ import (
 
 type (
 	PlatformType uint32
+	DisplayFlag  uint32
 	SPIMode      uint32 // SPIMode is the SPI Mode
 	GPIOPin      uint8  // GPIOPin is the logical GPIO pin
 	GPIOState    uint8  // GPIOState is the GPIO Pin state
@@ -37,19 +38,30 @@ type Platform interface {
 	Uptime() time.Duration                     // Uptime returns uptime for host
 	LoadAverages() (float64, float64, float64) // LoadAverages returns 1, 5 and 15 minute load averages
 	TemperatureZones() map[string]float32      // Return celcius values for zones
-	NumberOfDisplays() uint                    // NumberOfDisplays returns the number of possible displays for this host
-	AttachedDisplays() []uint                  // AttachedDisplays returns array of displays which are connected
 }
 
-// DisplayManager manages the connected displays
+// DisplayManager manages the connected displays and emits Display objects
+// when their state changes
 type DisplayManager interface {
-	// Display returns a display with a specific Id, or nil
-	// if the display is not found
-	Display(uint32) Display
+	// Displays return all attached displays
+	Displays() []Display
 
-	// Return the primary connected display, or nil
-	// if no displays are connected
-	PrimaryDisplay() Display
+	// PowerOn a display, can return ErrNotImplemented if
+	// a specific display does not support control
+	PowerOn(Display) error
+
+	// PowerOff a display, can return ErrNotImplemented if
+	// a specific display does not support control
+	PowerOff(Display) error
+}
+
+// Display implements a pixel-based display device
+type Display interface {
+	Id() uint32             // Return display number
+	Flags() DisplayFlag     // Return information about the display
+	Name() string           // Return name of the display
+	Size() (uint32, uint32) // Return display size for nominated display number, or (0,0) if display does not exist
+	PixelsPerInch() uint32  // Return the PPI (pixels-per-inch) for the display, or return zero if unknown
 }
 
 // SPI implements the SPI interface for sensors, etc.
@@ -167,14 +179,6 @@ type GPIOEvent interface {
 	Edge() GPIOEdge
 }
 
-// Display implements a pixel-based display device
-type Display interface {
-	Id() uint32             // Return display number
-	Name() string           // Return name of the display
-	Size() (uint32, uint32) // Return display size for nominated display number, or (0,0) if display does not exist
-	PixelsPerInch() uint32  // Return the PPI (pixels-per-inch) for the display, or return zero if unknown
-}
-
 // LIRC implements the IR send & receive interface
 type LIRC interface {
 	// Get receive and send modes
@@ -241,6 +245,21 @@ const (
 	// MIN AND MAX
 	PLATFORM_MIN = PLATFORM_DARWIN
 	PLATFORM_MAX = PLATFORM_BCM2838_ARM8
+)
+
+const (
+	DISPLAY_FLAG_HDMI DisplayFlag = (1 << iota)
+	DISPLAY_FLAG_DVI
+	DISPLAY_FLAG_LCD
+	DISPLAY_FLAG_SDTV
+	DISPLAY_FLAG_NTSC
+	DISPLAY_FLAG_PAL
+	DISPLAY_FLAG_UNPLUGGED
+	DISPLAY_FLAG_ATTACHED
+
+	DISPLAY_FLAG_NONE DisplayFlag = 0
+	DISPLAY_FLAG_MIN              = DISPLAY_FLAG_HDMI
+	DISPLAY_FLAG_MAX              = DISPLAY_FLAG_ATTACHED
 )
 
 const (
@@ -462,5 +481,43 @@ func (t LIRCType) String() string {
 		return "LIRC_TYPE_TIMEOUT"
 	default:
 		return "[?? Invalid LIRCType value]"
+	}
+}
+
+func (f DisplayFlag) String() string {
+	if f == DISPLAY_FLAG_NONE {
+		return f.FlagString()
+	}
+	str := ""
+	for v := DISPLAY_FLAG_MIN; v <= DISPLAY_FLAG_MAX; v <<= 1 {
+		if f&v == v {
+			str += "|" + v.FlagString()
+		}
+	}
+	return strings.TrimPrefix(str, "|")
+}
+
+func (f DisplayFlag) FlagString() string {
+	switch f {
+	case DISPLAY_FLAG_NONE:
+		return "DISPLAY_FLAG_NONE"
+	case DISPLAY_FLAG_HDMI:
+		return "DISPLAY_FLAG_HDMI"
+	case DISPLAY_FLAG_DVI:
+		return "DISPLAY_FLAG_DVI"
+	case DISPLAY_FLAG_LCD:
+		return "DISPLAY_FLAG_LCD"
+	case DISPLAY_FLAG_SDTV:
+		return "DISPLAY_FLAG_SDTV"
+	case DISPLAY_FLAG_NTSC:
+		return "DISPLAY_FLAG_NTSC"
+	case DISPLAY_FLAG_PAL:
+		return "DISPLAY_FLAG_PAL"
+	case DISPLAY_FLAG_UNPLUGGED:
+		return "DISPLAY_FLAG_UNPLUGGED"
+	case DISPLAY_FLAG_ATTACHED:
+		return "DISPLAY_FLAG_ATTACHED"
+	default:
+		return "[?? Invalid DisplayFlag value]"
 	}
 }
