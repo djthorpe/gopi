@@ -9,33 +9,52 @@ import (
 
 	"github.com/djthorpe/gopi/v3"
 	rpi "github.com/djthorpe/gopi/v3/pkg/sys/rpi"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 type display struct {
 	sync.Mutex
 	rpi.DXDisplayId
 	rpi.TVDisplayInfo
+	rpi.DXDisplayHandle
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewDisplay(id rpi.DXDisplayId) *display {
+func NewDisplay(id rpi.DXDisplayId) (*display, error) {
 	this := new(display)
 
 	if id == 0 {
-		return nil
+		return nil, gopi.ErrBadParameter.WithPrefix("NewDisplay")
 	} else {
 		this.DXDisplayId = id
 	}
 
 	if info, err := rpi.VCHI_TVGetDisplayInfo(id); err != nil {
-		return nil
+		return nil, err
 	} else {
 		this.TVDisplayInfo = info
 	}
 
-	return this
+	return this, nil
+}
+
+func (this *display) Dispose() error {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
+	var result error
+	if this.DXDisplayHandle != 0 {
+		if err := rpi.DXDisplayClose(this.DXDisplayHandle); err != nil {
+			result = multierror.Append(result, err)
+		}
+
+	}
+
+	this.DXDisplayHandle = 0
+
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -86,7 +105,12 @@ func (this *display) Flags() gopi.DisplayFlag {
 }
 
 func (this *display) Size() (uint32, uint32) {
-	return rpi.BCMGetDisplaySize(uint16(this.Id()))
+	if info, err := rpi.DXDisplayGetInfo(this.DXDisplayHandle); err != nil {
+		fmt.Println(err)
+		return 0, 0
+	} else {
+		return info.Size.W, info.Size.H
+	}
 }
 
 func (this *display) PixelsPerInch() uint32 {

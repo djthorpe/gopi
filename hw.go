@@ -46,6 +46,9 @@ type DisplayManager interface {
 	// Displays return all attached displays
 	Displays() []Display
 
+	// Displays returns specific display
+	Display(uint32) (Display, error)
+
 	// PowerOn a display, can return ErrNotImplemented if
 	// a specific display does not support control
 	PowerOn(Display) error

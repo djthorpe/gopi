@@ -4,7 +4,6 @@ package display_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/djthorpe/gopi/v3"
 	"github.com/djthorpe/gopi/v3/pkg/tool"
@@ -43,24 +42,35 @@ func Test_Manager_002(t *testing.T) {
 
 func Test_Manager_003(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		displays := app.DisplayManager.Displays()
-		if len(displays) == 0 {
-			t.Skip("Skipping tests due to no displays")
-		}
-		for _, display := range displays {
-			if err := app.DisplayManager.PowerOff(display); err != nil {
-				t.Error(err)
-			} else {
-				t.Log("powered off", display)
+		//displays := app.DisplayManager.Displays()
+
+		if disp, err := app.DisplayManager.Display(7); err != nil {
+			t.Error("Display", err)
+		} else {
+			t.Log("Powering on", disp)
+			if err := app.DisplayManager.PowerOn(disp); err != nil {
+				t.Error("PowerOn", err)
 			}
 		}
-		time.Sleep(time.Second)
-		for _, display := range displays {
-			if err := app.DisplayManager.PowerOn(display); err != nil {
-				t.Error(err)
-			} else {
-				t.Log("powered on", display)
+		/*
+
+			if len(displays) == 0 {
+				t.Log("Skipping tests due to no displays")
 			}
-		}
+			for _, display := range displays {
+				if err := app.DisplayManager.PowerOff(display); err != nil {
+					t.Error(err)
+				} else {
+					t.Log("powered off", display)
+				}
+			}
+			time.Sleep(time.Second)
+			for _, display := range displays {
+				if err := app.DisplayManager.PowerOn(display); err != nil {
+					t.Error(err)
+				} else {
+					t.Log("powered on", display)
+				}
+			}*/
 	})
 }

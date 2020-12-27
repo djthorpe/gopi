@@ -16,7 +16,6 @@ import (
 #cgo pkg-config: bcm_host
 #include <interface/vmcs_host/vc_tvservice.h>
 #include <interface/vmcs_host/vc_hdmi.h>
-#include <stdio.h>
 
 extern void tvservice_callback(void *callback_data, uint32_t reason, uint32_t param1, uint32_t param2);
 
