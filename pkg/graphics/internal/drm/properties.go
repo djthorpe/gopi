@@ -41,7 +41,7 @@ func (this *Properties) New(fd uintptr, id uint32) error {
 
 	props := drm.GetAnyProperties(fd, id)
 	if props == nil {
-		return gopi.ErrInternalAppError.WithPrefix("NewProperties")
+		return gopi.ErrInternalAppError.WithPrefix("GetAnyProperties")
 	}
 	defer props.Free()
 	if this.props = this.init(props); this.props == nil {
@@ -63,23 +63,20 @@ func (this *Properties) Dispose() error {
 ////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
 
+// Id returns the Object Id
+func (this *Properties) Id() uint32 {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	return this.id
+}
+
 // Dirty returns true is properties have been changed
 func (this *Properties) Dirty() bool {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
 	return this.dirty
-}
-
-// Clean removes any dirty flags
-func (this *Properties) Clean() {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	for name := range this.props {
-		this.props[name].dirty = false
-	}
-	this.dirty = false
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,14 +144,21 @@ func (this *Properties) GetDirtyProperties() map[uint32]uint64 {
 	if this.dirty == false {
 		return nil
 	}
+
 	// Iterate through values
+	this.RWMutex.Lock()
+	defer this.RWMutex.RUnlock()
 	result := make(map[uint32]uint64, len(this.props))
-	for _, v := range this.props {
+	for k, v := range this.props {
 		if v.dirty == false {
 			continue
 		}
 		result[v.id] = v.value
+		this.props[k].dirty = false
 	}
+	// Unset dirty flag
+	this.dirty = false
+
 	// Return result
 	return result
 }
@@ -165,16 +169,16 @@ func (this *Properties) GetDirtyProperties() map[uint32]uint64 {
 func (this *Properties) String() string {
 	str := "<properties"
 	for k, v := range this.props {
-		str += fmt.Sprintf(" %v=%v", k, v)
+		str += fmt.Sprintf(" %v%v", k, v)
 	}
 	return str + ">"
 }
 
 func (this *property) String() string {
 	if this.dirty {
-		return fmt.Sprintf("<%d:%d>[dirty]", this.id, this.value)
+		return fmt.Sprintf("<%d>=%d[dirty]", this.id, this.value)
 	} else {
-		return fmt.Sprintf("<%d:%d>", this.id, this.value)
+		return fmt.Sprintf("<%d>=%d", this.id, this.value)
 	}
 }
 
@@ -195,4 +199,8 @@ func (this *Properties) init(props *drm.Properties) map[string]*property {
 		result[name] = &property{key, value, false}
 	}
 	return result
+}
+
+// Clean removes any dirty flags
+func (this *Properties) clean() {
 }

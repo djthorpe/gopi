@@ -18,8 +18,9 @@ type Plane struct {
 	sync.RWMutex
 	Properties
 
-	fd  uintptr
-	ctx *drm.Plane
+	fd    uintptr
+	ctx   *drm.Plane
+	index int
 }
 
 type PlaneType uint64
@@ -37,13 +38,15 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewPlane(fd uintptr, ctx *drm.Plane) (*Plane, error) {
+func NewPlane(fd uintptr, ctx *drm.Plane, index int) (*Plane, error) {
 	this := new(Plane)
 	if ctx == nil || fd == 0 {
 		return nil, gopi.ErrInternalAppError.WithPrefix("NewPlane")
+	} else {
+		this.fd = fd
+		this.ctx = ctx
+		this.index = index
 	}
-	this.fd = fd
-	this.ctx = ctx
 
 	if err := this.Properties.New(fd, ctx.Id()); err != nil {
 		return nil, err
@@ -56,13 +59,12 @@ func (this *Plane) Dispose() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	if this.ctx != nil {
-		this.ctx.Free()
-	}
-
 	var result error
 	if err := this.Properties.Dispose(); err != nil {
 		result = multierror.Append(result, err)
+	}
+	if this.ctx != nil {
+		this.ctx.Free()
 	}
 
 	// Release resources
@@ -85,6 +87,13 @@ func (this *Plane) Id() uint32 {
 	} else {
 		return this.ctx.Id()
 	}
+}
+
+func (this *Plane) P() *Properties {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	return &this.Properties
 }
 
 func (this *Plane) Type() PlaneType {
@@ -126,6 +135,7 @@ func (this *Plane) String() string {
 		str += " type=" + fmt.Sprint(t)
 	}
 	str += " props=" + fmt.Sprint(&this.Properties)
+	str += " index=" + fmt.Sprint(this.index)
 	return str + ">"
 }
 

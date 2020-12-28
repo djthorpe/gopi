@@ -25,6 +25,9 @@ type DRM struct {
 	mode      *Mode
 	encoder   *Encoder
 	crtc      *Crtc
+	primary   *Plane
+	cursor    *Plane
+	overlay   []*Plane
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,11 +109,30 @@ func (this *DRM) Dispose() error {
 
 	var result error
 
+	for _, plane := range this.overlay {
+		if err := plane.Dispose(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	if this.cursor != nil {
+		if err := this.cursor.Dispose(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	if this.primary != nil {
+		if err := this.primary.Dispose(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
 	if this.crtc != nil {
 		if err := this.crtc.Dispose(); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
+
 	if this.encoder != nil {
 		if err := this.encoder.Dispose(); err != nil {
 			result = multierror.Append(result, err)
@@ -138,6 +160,9 @@ func (this *DRM) Dispose() error {
 	this.mode = nil
 	this.encoder = nil
 	this.crtc = nil
+	this.primary = nil
+	this.cursor = nil
+	this.overlay = nil
 
 	// Return any errors
 	return result
@@ -178,10 +203,49 @@ func (this *DRM) Crtc() *Crtc {
 	return this.crtc
 }
 
+func (this *DRM) Encoder() *Encoder {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	return this.encoder
+}
+
+func (this *DRM) Primary() *Plane {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if this.primary == nil {
+		if this.crtc == nil {
+			return nil
+		} else if planes := this.NewPlanesForCrtc(DRM_PLANE_TYPE_PRIMARY, this.crtc, 1); len(planes) == 0 {
+			return nil
+		} else {
+			this.primary = planes[0]
+		}
+	}
+	return this.primary
+}
+
+func (this *DRM) Cursor() *Plane {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if this.cursor == nil {
+		if this.crtc == nil {
+			return nil
+		} else if planes := this.NewPlanesForCrtc(DRM_PLANE_TYPE_CURSOR, this.crtc, 1); len(planes) == 0 {
+			return nil
+		} else {
+			this.cursor = planes[0]
+		}
+	}
+	return this.cursor
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-// NewPlanes returns all planes which can be rendered by Crtc with
+// NewPlanesForCrtc returns all planes which can be rendered by Crtc with
 // appropriate type. Can be limited to first "count" planes.
 func (this *DRM) NewPlanesForCrtc(t PlaneType, crtc *Crtc, count int) []*Plane {
 	this.RWMutex.RLock()
@@ -197,10 +261,10 @@ func (this *DRM) NewPlanesForCrtc(t PlaneType, crtc *Crtc, count int) []*Plane {
 	}
 
 	var result []*Plane
-	for _, plane := range planes {
+	for index, plane := range planes {
 		if ctx, err := drm.GetPlane(this.fh.Fd(), plane); err != nil {
 			continue
-		} else if plane, err := NewPlane(this.fh.Fd(), ctx); err != nil {
+		} else if plane, err := NewPlane(this.fh.Fd(), ctx, index); err != nil {
 			ctx.Free()
 			continue
 		} else if t != DRM_PLANE_TYPE_NONE && t != plane.Type() {
@@ -220,46 +284,51 @@ func (this *DRM) NewPlanesForCrtc(t PlaneType, crtc *Crtc, count int) []*Plane {
 	return result
 }
 
-// NewPrimaryPlaneForCrtc returns primary plane which can be rendered
-// by the specificed Crtc or nil if none found
-func (this *DRM) NewPrimaryPlaneForCrtc(crtc *Crtc) *Plane {
-	planes := this.NewPlanesForCrtc(DRM_PLANE_TYPE_PRIMARY, crtc, 1)
-	if len(planes) == 0 {
-		return nil
-	} else {
-		return planes[0]
-	}
-}
-
-func (this *DRM) NewCursorPlaneForCrtc(crtc *Crtc) *Plane {
-	planes := this.NewPlanesForCrtc(DRM_PLANE_TYPE_CURSOR, crtc, 1)
-	if len(planes) == 0 {
-		return nil
-	} else {
-		return planes[0]
-	}
-}
-
-func (this *DRM) NewOverlayPlanesForCrtc(crtc *Crtc) []*Plane {
-	return this.NewPlanesForCrtc(DRM_PLANE_TYPE_OVERLAY, crtc, 0)
-}
-
-func (this *DRM) UpdatePlaneProperties(req *drm.Atomic, plane *Plane) error {
-	props := plane.GetDirtyProperties()
-
+func (this *DRM) CommitChanges(modeset bool) error {
 	var result error
 
-	// Set properties
-	for id, value := range props {
-		if err := req.SetObjectProperty(plane.Id(), id, value); err != nil {
-			result = multierror.Append(result)
-		}
+	flags := uint32(drm.DRM_MODE_ATOMIC_NONBLOCK)
+	if modeset {
+		flags |= drm.DRM_MODE_ATOMIC_ALLOW_MODESET
 	}
 
-	// Mark properties as clean
-	plane.Clean()
+	// Create atomic request
+	req := drm.NewAtomic()
+
+	// Get properties for connector, crtc and planes
+	if err := setPropertiesFor(req, this.Connector().P()); err != nil {
+		result = multierror.Append(result, err)
+	}
+	if err := setPropertiesFor(req, this.Crtc().P()); err != nil {
+		result = multierror.Append(result, err)
+	}
+	if err := setPropertiesFor(req, this.Primary().P()); err != nil {
+		result = multierror.Append(result, err)
+	}
+	if err := setPropertiesFor(req, this.Cursor().P()); err != nil {
+		result = multierror.Append(result, err)
+	}
+	// TODO: Overlay planes
+
+	// Commit changes atomically
+	if err := req.Commit(this.Fd(), flags, 0); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	// Free atomic request
+	req.Free()
 
 	// Return any errors
+	return result
+}
+
+func setPropertiesFor(req *drm.Atomic, props *Properties) error {
+	var result error
+	for k, v := range props.GetDirtyProperties() {
+		if err := req.SetObjectProperty(props.Id(), k, v); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
 	return result
 }
 

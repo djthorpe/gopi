@@ -269,6 +269,21 @@ func (this *EGL) DestroySurface(surface *Surface) error {
 	return result
 }
 
+func (this *EGL) SwapBuffers() error {
+	var result error
+	for _, surface := range this.surfaces {
+		if err := surface.MakeCurrent(this.display); err != nil {
+			result = multierror.Append(err)
+		} else if err := surface.Draw(); err != nil {
+			result = multierror.Append(err)
+		}
+		if err := surface.SwapBuffers(this.display); err != nil {
+			result = multierror.Append(err)
+		}
+	}
+	return result
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRIMGIFY
 

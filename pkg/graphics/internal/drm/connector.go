@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/djthorpe/gopi/v3"
 	drm "github.com/djthorpe/gopi/v3/pkg/sys/drm"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -14,6 +16,7 @@ import (
 
 type Connector struct {
 	sync.RWMutex
+	Properties
 
 	fd  uintptr
 	ctx *drm.ModeConnector
@@ -22,20 +25,34 @@ type Connector struct {
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewConnector(fd uintptr, ctx *drm.ModeConnector) *Connector {
+func NewConnector(fd uintptr, ctx *drm.ModeConnector) (*Connector, error) {
 	this := new(Connector)
 	if ctx == nil || fd == 0 {
-		return nil
+		return nil, gopi.ErrBadParameter.WithPrefix("NewConnector")
+	} else {
+		this.fd = fd
+		this.ctx = ctx
 	}
-	this.fd = fd
-	this.ctx = ctx
-	return this
+
+	if err := this.Properties.New(fd, ctx.Id()); err != nil {
+		return nil, err
+	} else {
+		return this, nil
+	}
 }
 
 func (this *Connector) Dispose() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
+	var result error
+
+	// Release properties
+	if err := this.Properties.Dispose(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	// Context
 	if this.ctx != nil {
 		this.ctx.Free()
 	}
@@ -44,12 +61,19 @@ func (this *Connector) Dispose() error {
 	this.ctx = nil
 	this.fd = 0
 
-	// Return success
-	return nil
+	// Return any errors
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
+
+func (this *Connector) P() *Properties {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	return &this.Properties
+}
 
 func (this *Connector) Encoder() uint32 {
 	this.RWMutex.RLock()
@@ -118,5 +142,6 @@ func (this *Connector) String() string {
 	if this.ctx != nil {
 		str += " ctx=" + fmt.Sprint(this.ctx)
 	}
+	str += " props=" + fmt.Sprint(this.P())
 	return str + ">"
 }

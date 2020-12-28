@@ -21,7 +21,6 @@ extern void tvservice_callback(void *callback_data, uint32_t reason, uint32_t pa
 
 static void tvservice_register_callback() {
 	vc_tv_register_callback(&tvservice_callback,NULL);
-	tvservice_callback(NULL,0,0,0);
 }
 static void tvservice_unregister_callback() {
 	vc_tv_unregister_callback(&tvservice_callback);

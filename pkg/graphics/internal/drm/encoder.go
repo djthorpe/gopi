@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/djthorpe/gopi/v3"
 	drm "github.com/djthorpe/gopi/v3/pkg/sys/drm"
 )
 
@@ -22,20 +23,22 @@ type Encoder struct {
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewEncoder(fd uintptr, ctx *drm.ModeEncoder) *Encoder {
+func NewEncoder(fd uintptr, ctx *drm.ModeEncoder) (*Encoder, error) {
 	this := new(Encoder)
 	if ctx == nil || fd == 0 {
-		return nil
+		return nil, gopi.ErrBadParameter.WithPrefix("NewEncoder")
+	} else {
+		this.fd = fd
+		this.ctx = ctx
 	}
-	this.fd = fd
-	this.ctx = ctx
-	return this
+	return this, nil
 }
 
 func (this *Encoder) Dispose() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
+	// Context
 	if this.ctx != nil {
 		this.ctx.Free()
 	}

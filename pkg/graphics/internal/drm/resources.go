@@ -73,8 +73,11 @@ func (this *Resources) NewActiveConnectors() []*Connector {
 		} else if conn.Status() != drm.ModeConnectionConnected {
 			conn.Free()
 			continue
+		} else if connector, err := NewConnector(this.fd, conn); err != nil {
+			conn.Free()
+			continue
 		} else {
-			result = append(result, NewConnector(this.fd, conn))
+			result = append(result, connector)
 		}
 	}
 
@@ -115,9 +118,9 @@ func (this *Resources) NewEncoderForConnector(connector *Connector) (*Encoder, e
 
 	if ctx, err := drm.GetEncoder(this.fd, connector.Encoder()); err != nil {
 		return nil, err
-	} else if encoder := NewEncoder(this.fd, ctx); encoder == nil {
+	} else if encoder, err := NewEncoder(this.fd, ctx); err != nil {
 		ctx.Free()
-		return nil, gopi.ErrInternalAppError.WithPrefix("NewEncoderForConnector")
+		return nil, err
 	} else {
 		return encoder, nil
 	}
@@ -138,9 +141,9 @@ func (this *Resources) NewCrtcForEncoder(encoder *Encoder) (*Crtc, error) {
 		}
 		if ctx, err := drm.GetCRTC(this.fd, id); err != nil {
 			return nil, err
-		} else if crtc := NewCrtc(this.fd, ctx, index); crtc == nil {
+		} else if crtc, err := NewCrtc(this.fd, ctx, index); crtc == nil {
 			ctx.Free()
-			return nil, gopi.ErrInternalAppError.WithPrefix("NewCrtcForEncoder")
+			return nil, err
 		} else {
 			return crtc, nil
 		}

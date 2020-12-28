@@ -3,8 +3,10 @@
 package surface
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	drm "github.com/djthorpe/gopi/v3/pkg/graphics/internal/drm"
@@ -16,8 +18,10 @@ import (
 // TYPES
 
 type Manager struct {
-	gopi.Unit
 	sync.RWMutex
+	gopi.Unit
+	gopi.Logger
+	gopi.Metrics
 
 	drm *drm.DRM
 	gbm *gbmegl.GBM
@@ -37,6 +41,11 @@ func (this *Manager) Define(cfg gopi.Config) error {
 }
 
 func (this *Manager) New(gopi.Config) error {
+	if this.Metrics == nil {
+		return gopi.ErrInternalAppError.WithPrefix("Metrics")
+	}
+
+	// Create EGL, GBM and EGL interfaces
 	if drm, err := drm.NewDRM(*this.mode, uint32(*this.vrefresh)); err != nil {
 		return err
 	} else {
@@ -53,6 +62,11 @@ func (this *Manager) New(gopi.Config) error {
 		this.egl = egl
 	}
 
+	// Record framerate
+	if _, err := this.Metrics.NewMeasurement("vrefresh", "hertz float64"); err != nil {
+		return err
+	}
+
 	// Return success
 	return nil
 }
@@ -63,6 +77,7 @@ func (this *Manager) Dispose() error {
 
 	var result error
 
+	// Dispose of all interfaces
 	if this.egl != nil {
 		if err := this.egl.Dispose(); err != nil {
 			result = multierror.Append(result, err)
@@ -87,6 +102,88 @@ func (this *Manager) Dispose() error {
 	// Return any errors
 	return result
 }
+
+func (this *Manager) Run(ctx context.Context) error {
+	var modeset bool
+
+	// Ensure connector and Crtc have been set
+	if this.drm.Connector() == nil {
+		return gopi.ErrBadParameter.WithPrefix("Connector")
+	} else if this.drm.Crtc() == nil {
+		return gopi.ErrBadParameter.WithPrefix("Crtc")
+	} else {
+		if exists := this.drm.Connector().SetProperty("CRTC_ID", uint64(this.drm.Crtc().Id())); exists == false {
+			this.Debug("No CRTC_ID property for connector")
+		}
+		if exists := this.drm.Crtc().SetProperty("ACTIVE", 1); exists == false {
+			this.Debug("No ACTIVE property for crtc")
+		}
+		// TODO: Create Mode Blob and set in Crtc
+
+		this.Debug(this.drm.Crtc())
+		this.Debug(this.drm.Connector())
+
+		// Flag to set the modeset on the first run of the loop
+		modeset = true
+	}
+
+FOR_LOOP:
+	for {
+		select {
+		case <-ctx.Done():
+			break FOR_LOOP
+		default:
+			now := time.Now()
+
+			// Swap EGL buffers for drawing
+			if err := this.egl.SwapBuffers(); err != nil {
+				this.Print("SwapBuffers: ", err)
+			}
+
+			// DO STUFF IN HERE
+			time.Sleep(500 * time.Millisecond)
+
+			// Commit changes to flip page
+			if err := this.drm.CommitChanges(modeset); err != nil {
+				this.Print("CommitChanges: ", err)
+			}
+
+			// Don't set modeset a second time
+			modeset = false
+
+			// Send framerate metrics
+			framerate := float64(1.0e9) / float64(time.Since(now).Nanoseconds())
+			if err := this.Metrics.Emit("vrefresh", framerate); err != nil {
+				this.Print(err)
+			}
+		}
+	}
+	return ctx.Err()
+}
+
+/*
+func (this *Manager) RunOnce() {
+
+		if (gbm->surface) {
+			next_bo = gbm_surface_lock_front_buffer(gbm->surface);
+		} else {
+			next_bo = gbm->bos[frame % NUM_BUFFERS];
+		}
+		if (!next_bo) {
+			printf("Failed to lock frontbuffer\n");
+			return -1;
+		}
+		fb = drm_fb_get_from_bo(next_bo);
+		if (!fb) {
+			printf("Failed to get a new framebuffer BO\n");
+			return -1;
+		}
+
+	// release last buffer to render on again
+	if (bo && gbm->surface)
+		gbm_surface_release_buffer(gbm->surface, bo);
+	bo = next_bo;:
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
