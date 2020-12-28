@@ -285,7 +285,7 @@ func (this *EGL) SwapBuffers() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// STRIMGIFY
+// STRINGIFY
 
 func (this *EGL) String() string {
 	str := "<egl"

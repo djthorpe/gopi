@@ -30,10 +30,9 @@ type FontSize struct {
 
 // SurfaceManager to manage graphics surfaces
 type SurfaceManager interface {
-	CreateBackground(Display, SurfaceFlags) (Surface, error)
+	CreateBackground(SurfaceFlags) (Surface, error)
 	DisposeSurface(Surface) error
 
-	SwapBuffers() error // Temporary for testing
 	/*
 		CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 		CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
@@ -104,6 +103,7 @@ const (
 	SURFACE_FLAG_OPENGL
 	SURFACE_FLAG_OPENGL_ES
 	SURFACE_FLAG_OPENGL_ES2
+	SURFACE_FLAG_OPENGL_ES3
 	SURFACE_FLAG_OPENVG
 	SURFACE_FLAG_NONE SurfaceFlags = 0
 	SURFACE_FLAG_MIN               = SURFACE_FLAG_BITMAP

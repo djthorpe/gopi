@@ -118,6 +118,7 @@ func (this *Manager) Run(ctx context.Context) error {
 		if exists := this.drm.Crtc().SetProperty("ACTIVE", 1); exists == false {
 			this.Debug("No ACTIVE property for crtc")
 		}
+
 		// TODO: Create Mode Blob and set in Crtc
 
 		this.Debug(this.drm.Crtc())
@@ -139,6 +140,8 @@ FOR_LOOP:
 			if err := this.egl.SwapBuffers(); err != nil {
 				this.Print("SwapBuffers: ", err)
 			}
+
+			// EGL DRAW HERE
 
 			// DO STUFF IN HERE
 			time.Sleep(500 * time.Millisecond)
@@ -191,15 +194,34 @@ func (this *Manager) RunOnce() {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *Manager) CreateBackground(display gopi.Display, flags gopi.SurfaceFlags) (gopi.Surface, error) {
-	return nil, gopi.ErrNotImplemented
+func (this *Manager) CreateBackground(flags gopi.SurfaceFlags) (gopi.Surface, error) {
+	api := ""
+	version := uint(0)
+	switch flags {
+	case SURFACE_FLAG_BITMAP, SURFACE_FLAG_OPENGL_ES:
+		api = "OpenGL_ES"
+		version = 1
+	case SURFACE_FLAG_OPENGL:
+		api = "OpenGL"
+	case SURFACE_FLAG_OPENGL_ES2:
+		api = "OpenGL_ES"
+		version = 2
+	case SURFACE_FLAG_OPENGL_ES3:
+		api = "OpenGL_ES"
+		version = 3
+	case SURFACE_FLAG_OPENVG:
+		api = "OpenVG"
+	default:
+		return gopi.ErrBadParameter.WithPrefix("CreateBackground", flags)
+	}
+	if ctx, err := this.egl.CreateSurface(api, version, 100, 100, 0); err != nil {
+		return nil, err
+	} else {
+		// TODO
+	}
 }
 
 func (this *Manager) DisposeSurface(surface gopi.Surface) error {
-	return gopi.ErrNotImplemented
-}
-
-func (this *Manager) SwapBuffers() error {
 	return gopi.ErrNotImplemented
 }
 
