@@ -97,7 +97,7 @@ builddir:
 	install -d $(BUILDDIR)
 
 # Make debian packages
-debian: clean builddir argonone dnsregister douglas httpserver nfpm
+debian: clean builddir argonone dnsregister douglas httpserver rpcping nfpm
 	$(eval VERSION = $(shell git describe --tags))
 	$(eval ARCH = $(shell $(GO) env GOARCH))
 	$(eval PLATFORM = $(shell $(GO) env GOOS))
@@ -129,6 +129,13 @@ debian: clean builddir argonone dnsregister douglas httpserver nfpm
 		-e 's/^platform:.*$$/platform: $(PLATFORM)/' \
 		etc/nfpm/httpserver.yaml > $(BUILDDIR)/httpserver.yaml
 	@nfpm pkg -f $(BUILDDIR)/httpserver.yaml --packager deb --target $(BUILDDIR)
+
+	@sed \
+		-e 's/^version:.*$$/version: $(VERSION)/'  \
+		-e 's/^arch:.*$$/arch: $(ARCH)/' \
+		-e 's/^platform:.*$$/platform: $(PLATFORM)/' \
+		etc/nfpm/rpcping.yaml > $(BUILDDIR)/rpcping.yaml
+	@nfpm pkg -f $(BUILDDIR)/rpcping.yaml --packager deb --target $(BUILDDIR)
 
 	@echo
 	@ls -1 $(BUILDDIR)/*.deb

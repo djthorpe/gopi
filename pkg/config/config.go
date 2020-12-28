@@ -70,9 +70,7 @@ func (this *config) Parse() error {
 func (this *config) Usage(name string) {
 	name = strings.ToLower(strings.TrimSpace(name))
 	parts := strings.Fields(name)
-	if len(parts) == 0 {
-		this.usageAll()
-	} else if cmd, _ := this.GetCommand(parts); cmd != nil {
+	if cmd, _ := this.GetCommand(parts); cmd != nil {
 		this.usageOne(cmd)
 	} else {
 		this.usageAll()
@@ -129,11 +127,10 @@ func (this *config) GetCommand(args []string) (gopi.Command, error) {
 			cmd = child
 		}
 	}
+
 	// Special case where root command matched
 	if cmd == this.commands {
-		i = 0
-		cmd = this.commands.commands[0]
-		args = append([]string{cmd.name}, args...)
+		return nil, nil
 	}
 
 	// Create a new command from the existing one, setting arguments

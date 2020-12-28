@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
-	"github.com/olekukonko/tablewriter"
+	"github.com/djthorpe/gopi/v3/pkg/table"
 )
 
 func (this *app) RunVersion(ctx context.Context, stub gopi.PingStub) error {
@@ -17,48 +17,33 @@ func (this *app) RunVersion(ctx context.Context, stub gopi.PingStub) error {
 	}
 
 	// Display platform information
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAutoMergeCells(true)
-	table.Append([]string{
-		"Name", version.Name(),
-	})
+	table := table.New(table.WithHeader(false), table.WithMergeCells())
+
+	table.Append(header{"Name"}, version.Name())
+
 	tag, branch, hash := version.Version()
 	if tag != "" {
-		table.Append([]string{
-			"Tag", tag,
-		})
+		table.Append(header{"Tag"}, tag)
 	}
 	if branch != "" {
-		table.Append([]string{
-			"Branch", branch,
-		})
+		table.Append(header{"Branch"}, branch)
 	}
 	if hash != "" {
-		table.Append([]string{
-			"Hash", hash,
-		})
-	}
-	table.Append([]string{
-		"Go version", version.GoVersion(),
-	})
-	if t := version.BuildTime(); t.IsZero() == false {
-		table.Append([]string{
-			"Build time", t.Format(time.RFC3339),
-		})
+		table.Append(header{"Hash"}, hash)
 	}
 
-	if services, err := stub.ListServices(ctx); err != nil {
-		return err
-	} else if len(services) > 0 {
+	table.Append(header{"GoVersion"}, version.GoVersion())
+
+	if t := version.BuildTime(); t.IsZero() == false {
+		table.Append(header{"BuildTime"}, t.Format(time.RFC3339))
+	}
+
+	if services, err := stub.ListServices(ctx); err == nil {
 		for _, service := range services {
-			table.Append([]string{
-				"Services", service,
-			})
+			table.Append(header{"Services"}, service)
 		}
 	}
-
-	table.Render()
+	table.Render(os.Stdout)
 
 	// Return success
 	return nil

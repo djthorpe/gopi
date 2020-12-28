@@ -35,11 +35,15 @@ func (this *command) Name() string {
 }
 
 func (this *command) Usage() (string, string) {
-	return this.syntax, this.usage
+	return this.Syntax(), this.usage
 }
 
 func (this *command) Syntax() string {
-	return this.syntax
+	if this.syntax == "" {
+		return "<args>"
+	} else {
+		return this.syntax
+	}
 }
 
 func (this *command) Args() []string {
