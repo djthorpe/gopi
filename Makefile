@@ -9,13 +9,17 @@ GOLDFLAGS += -X $(GOPI).GitHash=$(shell git rev-parse HEAD)
 GOLDFLAGS += -X $(GOPI).GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)" 
 BUILDDIR = build
+PACKAGECLOUD_REPO = djthorpe/gopi/raspbian/buster
 
-all: hw helloworld hellohttp argonone douglas dnsregister rpcping mediakit
+all: hw httpserver helloworld argonone douglas dnsregister rpcping mediakit 
 	@echo Use "make debian" to release to packaging
+	@echo Use "make clean" to clear build cache
+	@echo Use "make test" to run tests
 
 clean: 
 	rm -fr $(BUILDDIR)
 	$(GO) clean
+	$(GO) mod tidy
 
 # Darwin anticipates additional libraries installed via homebrew
 darwin:
@@ -93,7 +97,7 @@ builddir:
 	install -d $(BUILDDIR)
 
 # Make debian packages
-debian: builddir argonone dnsregister douglas nfpm
+debian: clean builddir argonone dnsregister douglas httpserver nfpm
 	$(eval VERSION = $(shell git describe --tags))
 	$(eval ARCH = $(shell $(GO) env GOARCH))
 	$(eval PLATFORM = $(shell $(GO) env GOOS))
@@ -119,18 +123,28 @@ debian: builddir argonone dnsregister douglas nfpm
 		etc/nfpm/douglas.yaml > $(BUILDDIR)/douglas.yaml
 	@nfpm pkg -f $(BUILDDIR)/douglas.yaml --packager deb --target $(BUILDDIR)
 
+	@sed \
+		-e 's/^version:.*$$/version: $(VERSION)/'  \
+		-e 's/^arch:.*$$/arch: $(ARCH)/' \
+		-e 's/^platform:.*$$/platform: $(PLATFORM)/' \
+		etc/nfpm/httpserver.yaml > $(BUILDDIR)/httpserver.yaml
+	@nfpm pkg -f $(BUILDDIR)/httpserver.yaml --packager deb --target $(BUILDDIR)
+
 	@echo
 	@ls -1 $(BUILDDIR)/*.deb
 	@echo
 	@echo "Use sudo dpkg -i <package> to install"
 	@echo
 
+release: debian pkgcloud
+	@$(foreach file, $(wildcard $(BUILDDIR)/*.deb), pkgcloud-push $(PACKAGECLOUD_REPO) $(file);)
+
 # Commands
 helloworld: builddir
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/helloworld -tags "$(TAGS)" ${GOFLAGS} ./cmd/helloworld
 
-hellohttp: builddir
-	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/hellohttp -tags "$(TAGS)" ${GOFLAGS} ./cmd/hellohttp
+httpserver: builddir
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/httpserver -tags "$(TAGS)" ${GOFLAGS} ./cmd/httpserver
 
 hw: rpi darwin freetype
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/hw -tags "$(TAGS)" ${GOFLAGS} ./cmd/hw
@@ -150,13 +164,15 @@ rpcping: builddir protogen
 mediakit: builddir ffmpeg chromaprint
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit
 
-
 gx: builddir rpi egl drm gbm
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/gx -tags "$(TAGS)" ${GOFLAGS} ./cmd/gx
 
 # Build rules - dependencies
 nfpm:
 	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm
+
+pkgcloud:
+	$(GO) get github.com/mlafeldt/pkgcloud/cmd/pkgcloud-push
 
 protogen: protoc
 	$(GO) get google.golang.org/protobuf/cmd/protoc-gen-go

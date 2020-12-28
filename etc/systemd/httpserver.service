@@ -1,0 +1,16 @@
+[Unit]
+Description=HTTP Service
+Documentation=http://github.com/djthorpe/gopi/cmd/httpserver
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=gopi
+Group=gopi
+EnvironmentFile=/opt/gopi/etc/httpserver.env
+ExecStart=/opt/gopi/bin/httpserver \
+    -ssl.cert=${SSLCERT} -ssl.key=${SSLKEY} \
+    -addr=${ADDR} /opt/gopi/var/htdocs
+Restart=on-failure

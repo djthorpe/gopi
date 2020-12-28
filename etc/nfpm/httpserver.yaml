@@ -1,0 +1,35 @@
+
+# nfpm file to create debian package for httpserver
+name: "httpserver"
+
+# arch, platform and version are replaced with GOARCH, GOOS and git tag
+arch: "arm"
+platform: "linux"
+version: "v0.0.0"
+
+replaces:
+  - httpserver
+provides:
+  - httpserver
+maintainer: "David Thorpe <djt@mutablelogic.com>"
+description: |
+  Static serving of files over HTTP
+vendor: "mutablelogic.com"
+homepage: "http://github.com/djthorpe/gopi/cmd/httpserver"
+license: "Apache 2.0"
+
+files:
+  build/httpserver: /opt/gopi/bin/httpserver
+  etc/systemd/httpserver.service: /opt/gopi/etc/httpserver.service
+
+symlinks:
+  /etc/systemd/system/httpserver.service: /opt/gopi/etc/httpserver.service
+
+config_files:
+  etc/systemd/httpserver.env: /opt/gopi/etc/httpserver.env
+
+scripts:
+  postinstall: etc/nfpm/httpserver-postinstall.sh
+  preremove: etc/nfpm/httpserver-preremove.sh
+
+

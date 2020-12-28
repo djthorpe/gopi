@@ -40,8 +40,6 @@ func (this *app) RunInfo(ctx context.Context) error {
 			table.Append("Temperature Zones", k, fmt.Sprintf("%.2fC", v))
 		}
 	}
-	table.Append("Number of Displays", "", fmt.Sprint(this.Platform.NumberOfDisplays()))
-	table.Append("Attached Displays", "", fmt.Sprint(this.Platform.AttachedDisplays()))
 	table.Render(os.Stdout)
 
 	// Return success
