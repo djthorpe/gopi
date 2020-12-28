@@ -30,9 +30,11 @@ func Test_Server_001(t *testing.T) {
 
 func Test_Server_002(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		if err := app.Server.StartInBackground("tcp", ""); err != nil {
+		if err := app.Server.StartInBackground("tcp", ":0"); err != nil {
 			t.Error(err)
-		} else if err := app.Server.Stop(false); err != nil {
+		}
+		t.Log(app.Server)
+		if err := app.Server.Stop(true); err != nil {
 			t.Error(err)
 		}
 	})

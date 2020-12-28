@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,17 +14,23 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
+/////////////////////////////////////////////////////////////////////
+// TYPES
+
 type Server struct {
 	gopi.Unit
+	gopi.Logger
 	sync.RWMutex
 	sync.WaitGroup
 
 	cert, key *string
 	ssl       bool
-	errs      chan error
 	server    *http.Server
 	timeout   *time.Duration
 }
+
+/////////////////////////////////////////////////////////////////////
+// LIFECYCLE
 
 func (this *Server) Define(cfg gopi.Config) error {
 	this.cert = cfg.FlagString("ssl.cert", "", "SSL Certificate")
@@ -44,9 +51,6 @@ func (this *Server) New(cfg gopi.Config) error {
 		}
 	}
 
-	// Create channel for errors
-	this.errs = make(chan error)
-
 	// Return success
 	return nil
 }
@@ -60,12 +64,8 @@ func (this *Server) Dispose() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	// Close error channel
-	close(this.errs)
-
 	// Release resources
 	this.server = nil
-	this.errs = nil
 
 	// Return any errors
 	return result
@@ -85,7 +85,10 @@ func (this *Server) Addr() string {
 	}
 }
 
-// Start serves HTTP in foreground
+// Start serves HTTP in foreground. Network should always be "tcp"
+// and address is either empty (using standard ports) or ":0" which
+// means a free port is used and can be determined using the Addr
+// method once the server has started.
 func (this *Server) StartInBackground(network, addr string) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
@@ -98,6 +101,19 @@ func (this *Server) StartInBackground(network, addr string) error {
 	// Only accept "tcp" as network argument
 	if network != "tcp" {
 		return gopi.ErrBadParameter.WithPrefix("StartInBackground", network)
+	}
+	if addr == "" {
+		if this.ssl {
+			addr = ":https"
+		} else {
+			addr = ":http"
+		}
+	} else if addr == ":0" {
+		if port, err := getFreePort(); err != nil {
+			return err
+		} else {
+			addr = ":" + fmt.Sprint(port)
+		}
 	}
 
 	// Set server object
@@ -112,21 +128,20 @@ func (this *Server) StartInBackground(network, addr string) error {
 	// Start server in background
 	this.WaitGroup.Add(1)
 	go func() {
+		var result error
 		if this.ssl {
-			this.errs <- this.server.ListenAndServeTLS(*this.cert, *this.key)
+			result = this.server.ListenAndServeTLS(*this.cert, *this.key)
 		} else {
-			this.errs <- this.server.ListenAndServe()
+			result = this.server.ListenAndServe()
 		}
-		this.server = nil
+		if errors.Is(result, http.ErrServerClosed) == false {
+			this.Print(result)
+		}
 		this.WaitGroup.Done()
 	}()
 
 	// Return success
 	return nil
-}
-
-func (this *Server) RegisterService(interface{}, gopi.Service) error {
-	return gopi.ErrNotImplemented
 }
 
 func (this *Server) Stop(force bool) error {
@@ -138,18 +153,49 @@ func (this *Server) Stop(force bool) error {
 		return nil
 	}
 
-	cancel := func() {}
-	ctx := context.Background()
+	// Close or Shutdown
+	var result error
 	if force {
-		ctx, cancel = context.WithTimeout(ctx, time.Second)
+		if err := this.server.Close(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	} else {
+		ctx, cancel := context.WithTimeout(context.Background(), *this.timeout)
+		defer cancel()
+		if err := this.server.Shutdown(ctx); err != nil {
+			result = multierror.Append(result, err)
+		}
 	}
-	defer cancel()
-	err := this.server.Shutdown(ctx)
+
+	// Wait for server stop
 	this.WaitGroup.Wait()
-	return err
+
+	// Set server object as nil and return any errors
+	this.server = nil
+
+	return result
 }
 
 func (this *Server) NewStreamContext() context.Context {
+	return nil
+}
+
+func (this *Server) RegisterService(path interface{}, service gopi.Service) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if this.server == nil {
+		return gopi.ErrOutOfOrder.WithPrefix("RegisterService")
+	} else if path_, ok := path.(string); ok == false {
+		return gopi.ErrBadParameter.WithPrefix("RegisterService", "path")
+	} else if handler_, ok := service.(http.Handler); ok == false {
+		return gopi.ErrBadParameter.WithPrefix("RegisterService", "service")
+	} else {
+		mux := this.server.Handler.(*http.ServeMux)
+		mux.Handle(path_, handler_)
+	}
+
+	// Return success
 	return nil
 }
 

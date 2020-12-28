@@ -8,6 +8,7 @@ import (
 )
 
 func init() {
-	// Register as gopi.Server
+	// Register server and services
 	graph.RegisterUnit(reflect.TypeOf(&Server{}), reflect.TypeOf((*gopi.Server)(nil)))
+	graph.RegisterUnit(reflect.TypeOf(&Static{}), reflect.TypeOf((*gopi.HttpStatic)(nil)))
 }

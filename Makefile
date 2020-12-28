@@ -10,7 +10,7 @@ GOLDFLAGS += -X $(GOPI).GoBuildTime=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)" 
 BUILDDIR = build
 
-all: hw helloworld argonone douglas dnsregister rpcping mediakit
+all: hw helloworld hellohttp argonone douglas dnsregister rpcping mediakit
 	@echo Use "make debian" to release to packaging
 
 clean: 
@@ -128,6 +128,9 @@ debian: builddir argonone dnsregister douglas nfpm
 # Commands
 helloworld: builddir
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/helloworld -tags "$(TAGS)" ${GOFLAGS} ./cmd/helloworld
+
+hellohttp: builddir
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/hellohttp -tags "$(TAGS)" ${GOFLAGS} ./cmd/hellohttp
 
 hw: rpi darwin freetype
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/hw -tags "$(TAGS)" ${GOFLAGS} ./cmd/hw

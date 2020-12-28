@@ -13,10 +13,10 @@ type ServiceFlag uint
 /////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-// Server is a generic RPC server, which can serve responses for
+// Server is a generic RPC or HTTP server, which can serve responses for
 // registered services to clients
 type Server interface {
-	// Register an RPC service with the server
+	// Register an RPC or HTTP service with the server
 	RegisterService(interface{}, Service) error
 
 	// Start server in background and return
@@ -33,7 +33,8 @@ type Server interface {
 	NewStreamContext() context.Context
 }
 
-// Service defines an RPC service
+// Service defines an RPC or HTTP service. At the moment HTTP services must
+// adhere to the http.Handler interface.
 type Service interface{}
 
 // ConnPool is a factory of client connections
@@ -96,7 +97,7 @@ type ServiceRecord interface {
 }
 
 /////////////////////////////////////////////////////////////////////
-// SERVICES
+// gRPC SERVICES
 
 type PingService interface {
 	Service
@@ -118,6 +119,15 @@ type InputStub interface {
 	ServiceStub
 
 	Stream(ctx context.Context, ch chan<- InputEvent) error
+}
+
+/////////////////////////////////////////////////////////////////////
+// HTTP SERVICES
+
+// HttpStatic serves files and folders from the filesystem
+type HttpStatic interface {
+	// Serve a folder and child folders with root URL as "path"
+	ServeFolder(path, folder string) error
 }
 
 /////////////////////////////////////////////////////////////////////

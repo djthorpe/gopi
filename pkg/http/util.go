@@ -2,24 +2,18 @@ package http
 
 import (
 	"net"
-	"os"
 )
 
 /////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func createListener(network, addr string) (net.Listener, error) {
-	if _, _, err := net.SplitHostPort(addr); err != nil {
-		network = "unix"
-		if _, err := os.Stat(addr); os.IsNotExist(err) == false {
-			if err := os.Remove(addr); err != nil {
-				return nil, err
-			}
-		}
-	}
-	if listener, err := net.Listen(network, addr); err != nil {
-		return nil, err
+func getFreePort() (int, error) {
+	if addr, err := net.ResolveTCPAddr("tcp", ":0"); err != nil {
+		return 0, err
+	} else if listener, err := net.ListenTCP("tcp", addr); err != nil {
+		return 0, err
 	} else {
-		return listener, nil
+		defer listener.Close()
+		return listener.Addr().(*net.TCPAddr).Port, nil
 	}
 }
