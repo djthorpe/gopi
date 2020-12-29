@@ -37,18 +37,16 @@ func NewService(zone string) *service {
 // GET PROPERTIES
 
 func (this *service) Instance() string {
-	return fqn(this.name)
+	return strings.TrimSuffix(fqn(this.name), this.zone)
 }
 
 func (this *service) Service() string {
-	return fqn(this.service)
+	return strings.TrimSuffix(fqn(this.service), this.zone)
 }
 
 func (this *service) Name() string {
-	name := ""
-	if this.Service() == fqn(queryServices) {
-		name = strings.TrimSuffix(this.name, this.zone)
-	} else {
+	name := strings.TrimSuffix(this.name, this.zone)
+	if this.Service() != fqn(queryServices) {
 		name = strings.TrimSuffix(this.name, this.service)
 		if name_, err := Unquote(unfqn(name)); err != nil {
 		} else {
@@ -64,6 +62,10 @@ func (this *service) Host() string {
 
 func (this *service) Port() uint16 {
 	return this.port
+}
+
+func (this *service) Zone() string {
+	return fqn(this.zone)
 }
 
 func (this *service) Addrs() []net.IP {
@@ -108,11 +110,17 @@ func (this *service) SetAAAA(ip net.IP) {
 
 func (this *service) String() string {
 	str := "<dns.servicerecord"
+	if instance := this.Instance(); instance != "" {
+		str += fmt.Sprintf(" instance=%q", instance)
+	}
 	if service := this.Service(); service != "" {
 		str += fmt.Sprintf(" service=%q", service)
 	}
 	if name := this.Name(); name != "" {
 		str += fmt.Sprintf(" name=%q", name)
+	}
+	if zone := this.Zone(); zone != "" {
+		str += fmt.Sprintf(" zone=%q", zone)
 	}
 	if host, port := this.Host(), this.Port(); host != "" {
 		str += fmt.Sprintf(" host=%v", net.JoinHostPort(host, fmt.Sprint(port)))

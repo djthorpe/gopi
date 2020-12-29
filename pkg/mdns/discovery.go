@@ -27,7 +27,7 @@ const (
 	queryServices   = "_services._dns-sd._udp"
 	queryRepeat     = 0
 	queryBackoff    = time.Millisecond * 250
-	queryDefaultTTL = 60 * 30 // In seconds
+	queryDefaultTTL = 60 * 30 // In seconds (30 mins)
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -158,7 +158,7 @@ func (this *Discovery) EnumerateServices(ctx context.Context) ([]string, error) 
 				return
 			case evt := <-ch:
 				if srv, ok := evt.(*service); ok {
-					if srv.Service() == query.Question[0].Name && srv.ttl != 0 {
+					if srv.Service() == fqn(queryServices) && srv.ttl != 0 {
 						key := fqn(srv.Name())
 						names[key] = true
 					}

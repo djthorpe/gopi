@@ -90,6 +90,7 @@ type ServiceRecord interface {
 	Instance() string
 	Service() string
 	Name() string
+	Zone() string
 	Host() string
 	Port() uint16
 	Addrs() []net.IP

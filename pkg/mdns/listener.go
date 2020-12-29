@@ -168,6 +168,10 @@ func (this *Listener) Send(msg *dns.Msg, ifIndex int) error {
 		buf = buf_
 	}
 
+	for i, q := range msg.Question {
+		this.Debug("  ", i, " Send: ", q.Name, " type=", qTypeString(q.Qtype), " ifIndex=", ifIndex)
+	}
+
 	if this.ip4 != nil {
 		var cm ipv4.ControlMessage
 		if ifIndex != 0 {
@@ -275,7 +279,8 @@ func (this *Listener) AddrForIface(ifIndex int, flags gopi.ServiceFlag) []net.IP
 		}
 		for _, addr := range addrs {
 			if ip, _, err := net.ParseCIDR(addr.String()); err != nil {
-				fmt.Println("NOT OK: ", addr.String())
+				this.Debug("AddrForIface: Error: ", addr.String())
+				continue
 			} else if ip.Equal(net.IPv6loopback) {
 				continue
 			} else if ip.String() == "127.0.0.1" {
@@ -296,7 +301,6 @@ func (this *Listener) AddrForIface(ifIndex int, flags gopi.ServiceFlag) []net.IP
 func (this *Listener) String() string {
 	str := "<listener"
 	str += fmt.Sprintf(" domain=%q", *this.domain)
-
 	str += fmt.Sprintf(" ifaces=")
 	for i, iface := range this.ifaces {
 		if i > 0 {

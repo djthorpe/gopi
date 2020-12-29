@@ -2,12 +2,13 @@ package mdns
 
 import (
 	"context"
-	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
+	multierror "github.com/hashicorp/go-multierror"
 	dns "github.com/miekg/dns"
 )
 
@@ -123,34 +124,47 @@ func (this *Responder) ProcessQuestion(msg *msgevent) error {
 		return gopi.ErrBadParameter.WithPrefix("ProcessQuestion")
 	}
 	if msg.Opcode != dns.OpcodeQuery {
-		return fmt.Errorf("Received query with non-zero Opcode (%v)", msg.Opcode)
+		return gopi.ErrBadParameter.WithPrefix("Query with non-zero opcode")
 	}
 	if msg.Rcode != 0 {
-		return fmt.Errorf("Received query with non-zero Rcode (%v)", msg.Rcode)
+		return gopi.ErrBadParameter.WithPrefix("Query with non-zero Rcode")
 	}
 	if msg.Truncated {
-		return fmt.Errorf("DNS requests with high truncated bit not implemented")
+		return gopi.ErrBadParameter.WithPrefix("Query with high truncated bit")
 	}
 
 	// Handle each question with responses
 	zone := this.Zone()
 	for _, q := range msg.Question {
-
 		// Only answer questions for this zone
 		if strings.HasSuffix(q.Name, zone) == false {
 			continue
 		}
 
 		// Process responses to question
-		responses := handleQuestion(msg.Msg, q, this.Listener.Zone(), this.Services, this.Records)
-		for _, response := range responses {
-			// Ignore errors on send
-			this.Listener.Send(response, msg.ifIndex)
+		answers := handleQuestion(msg.Msg, q, zone, this.Services, this.Records)
+
+		// Send answers, ignoring any errors
+		this.SendAnswers(msg.ifIndex, answers)
+
+		// Report on any unhandled questions through debugging
+		if len(answers) == 0 && this.isRelevantQuestion(q, zone) {
+			this.Debug("Unhandled question: ", strconv.Quote(q.Name), " of type: ", qTypeString(q.Qtype))
 		}
 	}
 
 	// Success
 	return nil
+}
+
+func (this *Responder) SendAnswers(ifIndex int, msgs []*dns.Msg) error {
+	var result error
+	for _, msg := range msgs {
+		if err := this.Listener.Send(msg, ifIndex); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+	return result
 }
 
 func (this *Responder) Serve(ctx context.Context, r []gopi.ServiceRecord) error {
@@ -163,18 +177,52 @@ func (this *Responder) Serve(ctx context.Context, r []gopi.ServiceRecord) error 
 	} else if s := this.Services(); len(s) == 0 {
 		return gopi.ErrBadParameter.WithPrefix("Serve")
 	} else {
-		this.Debug("Serve:", this.names)
+		this.Debug("Serve: ", this.names)
 	}
+
+	// Register services and service records
+	msgs := []*dns.Msg{}
+	zone := this.Listener.Zone()
+	msgs = append(msgs, answerEnum(dns.Question{
+		Name:  fqn(queryServices) + zone,
+		Qtype: dns.TypeANY,
+	}, this.names, zone)...)
+	for _, record := range r {
+		msgs = append(msgs, answerServiceRecords(dns.Question{
+			Name:  record.Service() + record.Zone(),
+			Qtype: dns.TypeANY,
+		}, []gopi.ServiceRecord{record}, queryDefaultTTL)...)
+	}
+	this.SendAnswers(0, msgs)
 
 	// Wait for context to end
 	<-ctx.Done()
 
-	// TODO: Emit messages on listener with TTL=0
+	// De-register service records
+	for _, record := range r {
+		msg := prepareResponse(&dns.PTR{
+			Hdr: dns.RR_Header{
+				Name:   record.Service() + record.Zone(),
+				Rrtype: dns.TypePTR,
+				Class:  dns.ClassINET,
+				Ttl:    0,
+			},
+			Ptr: record.Instance() + record.Zone(),
+		})
+		this.SendAnswers(0, []*dns.Msg{msg})
+	}
 
+	// Set empty services
+	if err := this.SetServices(nil); err != nil {
+		return err
+	}
+
+	// Return success
 	return nil
 }
 
 func (this *Responder) NewServiceRecord(service string, name string, port uint16, txt []string, flags gopi.ServiceFlag) (gopi.ServiceRecord, error) {
+	// Create service record
 	r := NewService(this.Listener.Zone())
 
 	// Set service and name
@@ -184,8 +232,6 @@ func (this *Responder) NewServiceRecord(service string, name string, port uint16
 	// Add host
 	if host, err := os.Hostname(); err != nil {
 		return nil, err
-	} else if port == 0 {
-		return nil, gopi.ErrBadParameter.WithPrefix("port")
 	} else {
 		host = fqn(host)
 		if strings.HasSuffix(host, r.zone) == false {
@@ -195,10 +241,11 @@ func (this *Responder) NewServiceRecord(service string, name string, port uint16
 		r.port = port
 	}
 
-	// Addr
+	// Add addresses
 	if flags&gopi.SERVICE_FLAG_IP4 != 0 || flags == gopi.SERVICE_FLAG_NONE {
 		r.a = this.Listener.AddrForIface(0, gopi.SERVICE_FLAG_IP4)
 	}
+
 	if flags&gopi.SERVICE_FLAG_IP6 != 0 || flags == gopi.SERVICE_FLAG_NONE {
 		r.aaaa = this.Listener.AddrForIface(0, gopi.SERVICE_FLAG_IP6)
 	}
@@ -213,6 +260,19 @@ func (this *Responder) NewServiceRecord(service string, name string, port uint16
 ///////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
+// isRelevantQuestion returns true if a question has a suffix of a recorded
+// service, ie, it's relevant to be answered
+func (this *Responder) isRelevantQuestion(q dns.Question, zone string) bool {
+	name := strings.TrimSuffix(q.Name, zone)
+	for k := range this.records {
+		if strings.HasSuffix(name, k) {
+			return true
+		}
+	}
+	return false
+}
+
+// handleQuestion prepares a response to be sent
 func handleQuestion(msg *dns.Msg, question dns.Question, zone string, f1 FuncServices, f2 FuncRecordsForService) []*dns.Msg {
 	// If forcing over unicast, ignore (RFC 6762, section 18.12)
 	if question.Qclass&(1<<15) != 0 {
@@ -225,30 +285,26 @@ func handleQuestion(msg *dns.Msg, question dns.Question, zone string, f1 FuncSer
 	}
 
 	// Remove the zone from the question
-	questionName := fqn(question.Name)
-	switch {
-	case questionName == fqn(queryServices):
-		return handleEnum(msg, question, zone, f1)
-	case len(f2(questionName)) > 0:
-		return handleServiceRecords(msg, question, f2(questionName))
-	default:
-		fmt.Println("TODO: Unhandled question:", questionName)
+	questionName := strings.TrimSuffix(question.Name, zone)
+
+	// Check for service, record or instance
+	if questionName == fqn(queryServices) {
+		return answerEnum(question, f1(), zone)
+	} else if r := f2(questionName); len(r) > 0 {
+		return answerServiceRecords(question, r, queryDefaultTTL)
+	} else {
 		return nil
 	}
 }
 
-func handleEnum(req *dns.Msg, question dns.Question, zone string, fn FuncServices) []*dns.Msg {
-	// Check incoming parametersf2(questionName)
-	if req == nil || fn == nil {
+func answerEnum(question dns.Question, services []string, zone string) []*dns.Msg {
+	// Check incoming parameters
+	if len(services) == 0 {
 		return nil
 	}
+
 	// Handle PTR and ANY only
 	if question.Qtype != dns.TypeANY && question.Qtype != dns.TypePTR {
-		return nil
-	}
-	// Get services and the ttl
-	services := fn()
-	if len(services) == 0 {
 		return nil
 	}
 
@@ -264,12 +320,12 @@ func handleEnum(req *dns.Msg, question dns.Question, zone string, fn FuncService
 			},
 			Ptr: fqn(service) + zone,
 		}
-		msgs = append(msgs, prepareResponse(req, rr))
+		msgs = append(msgs, prepareResponse(rr))
 	}
 	return msgs
 }
 
-func handleServiceRecords(req *dns.Msg, question dns.Question, recs []gopi.ServiceRecord) []*dns.Msg {
+func answerServiceRecords(question dns.Question, recs []gopi.ServiceRecord, ttl uint32) []*dns.Msg {
 	// Check incoming parameters
 	if len(recs) == 0 {
 		return nil
@@ -278,43 +334,51 @@ func handleServiceRecords(req *dns.Msg, question dns.Question, recs []gopi.Servi
 	// Get messages for each record
 	msgs := []*dns.Msg{}
 	for _, rec := range recs {
-		if msg := handleRecord(req, question, rec); msg != nil {
+		if msg := answerRecord(question, rec, ttl); msg != nil {
 			msgs = append(msgs, msg)
 		}
 	}
 	return msgs
 }
 
-func handleRecord(req *dns.Msg, question dns.Question, record gopi.ServiceRecord) *dns.Msg {
+func answerRecord(question dns.Question, record gopi.ServiceRecord, ttl uint32) *dns.Msg {
 	// Header
 	answers := []dns.RR{&dns.PTR{
 		Hdr: dns.RR_Header{
 			Name:   question.Name,
 			Rrtype: dns.TypePTR,
 			Class:  dns.ClassINET,
-			Ttl:    queryDefaultTTL,
+			Ttl:    ttl,
 		},
-		Ptr: record.Instance() + "local.",
+		Ptr: record.Instance() + record.Zone(),
 	}}
 
-	fmt.Println("Question", question.Name, question.Qtype, "ptr", record.Instance()+"local.")
 	if question.Qtype == dns.TypePTR || question.Qtype == dns.TypeANY {
-		answers = append(answers, handleSRV(question, record))
-		answers = append(answers, handleA(question, record)...)
-		answers = append(answers, handleAAAA(question, record)...)
-		answers = append(answers, handleTxt(question, record))
+		answers = append(answers, answerSRV(question, record, ttl))
+		answers = append(answers, answerA(question, record, ttl)...)
+		answers = append(answers, answerAAAA(question, record, ttl)...)
+		answers = append(answers, answerTxt(question, record, ttl))
+	} else if question.Qtype == dns.TypeTXT {
+		answers = append(answers, answerTxt(question, record, ttl))
 	}
 
-	return prepareResponse(req, answers...)
+	/*
+		fmt.Println("Question", question.Name, qTypeString(question.Qtype))
+		for i, answer := range answers {
+			fmt.Println("  ", i, answer)
+		}
+	*/
+
+	return prepareResponse(answers...)
 }
 
-func handleSRV(question dns.Question, record gopi.ServiceRecord) dns.RR {
+func answerSRV(question dns.Question, record gopi.ServiceRecord, ttl uint32) dns.RR {
 	return &dns.SRV{
 		Hdr: dns.RR_Header{
-			Name:   record.Instance() + "local.",
+			Name:   record.Instance() + record.Zone(),
 			Rrtype: dns.TypeSRV,
 			Class:  dns.ClassINET,
-			Ttl:    queryDefaultTTL,
+			Ttl:    ttl,
 		},
 		Priority: 10,
 		Weight:   1,
@@ -323,7 +387,7 @@ func handleSRV(question dns.Question, record gopi.ServiceRecord) dns.RR {
 	}
 }
 
-func handleA(question dns.Question, record gopi.ServiceRecord) []dns.RR {
+func answerA(question dns.Question, record gopi.ServiceRecord, ttl uint32) []dns.RR {
 	answers := []dns.RR{}
 	for _, ip := range record.Addrs() {
 		ip4 := ip.To4()
@@ -335,7 +399,7 @@ func handleA(question dns.Question, record gopi.ServiceRecord) []dns.RR {
 				Name:   record.Host(),
 				Rrtype: dns.TypeA,
 				Class:  dns.ClassINET,
-				Ttl:    queryDefaultTTL,
+				Ttl:    ttl,
 			},
 			A: ip4,
 		})
@@ -343,7 +407,7 @@ func handleA(question dns.Question, record gopi.ServiceRecord) []dns.RR {
 	return answers
 }
 
-func handleAAAA(question dns.Question, record gopi.ServiceRecord) []dns.RR {
+func answerAAAA(question dns.Question, record gopi.ServiceRecord, ttl uint32) []dns.RR {
 	answers := []dns.RR{}
 	for _, ip := range record.Addrs() {
 		if ip.To4() != nil {
@@ -353,36 +417,37 @@ func handleAAAA(question dns.Question, record gopi.ServiceRecord) []dns.RR {
 		if ip6 == nil {
 			continue
 		}
-		answers = append(answers, &dns.A{
+		answers = append(answers, &dns.AAAA{
 			Hdr: dns.RR_Header{
 				Name:   record.Host(),
 				Rrtype: dns.TypeAAAA,
 				Class:  dns.ClassINET,
-				Ttl:    queryDefaultTTL,
+				Ttl:    ttl,
 			},
-			A: ip6,
+			AAAA: ip6,
 		})
 	}
 	return answers
 }
 
-func handleTxt(question dns.Question, record gopi.ServiceRecord) dns.RR {
+func answerTxt(question dns.Question, record gopi.ServiceRecord, ttl uint32) dns.RR {
 	return &dns.TXT{
 		Hdr: dns.RR_Header{
 			Name:   question.Name,
 			Rrtype: dns.TypeTXT,
 			Class:  dns.ClassINET,
-			Ttl:    queryDefaultTTL,
+			Ttl:    ttl,
 		},
 		Txt: record.Txt(),
 	}
 }
 
-func prepareResponse(req *dns.Msg, answers ...dns.RR) *dns.Msg {
-	var queryId uint16
+func prepareResponse(answers ...dns.RR) *dns.Msg {
 	if len(answers) == 0 {
 		return nil
 	}
+
+	var queryId uint16
 	// if unicast { queryId = msg.Id }
 	return &dns.Msg{
 		MsgHdr: dns.MsgHdr{
