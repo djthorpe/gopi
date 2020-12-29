@@ -1,6 +1,15 @@
 # Building and Using
 
-## Dependencies: Debian
+This section describes how you might download and integrate units
+into your own code. 
+
+## Dependencies
+
+Some units are either platform-dependent or 
+dependent on libraries and tools being available. You can satisfy
+these dependencies by running the commands as indicated below.
+
+### Debian
 
 These are the commands you should run on Debian to install libraries needed:
 
@@ -12,7 +21,7 @@ apt install libchromaprint1
 apt install protobuf-compiler
 ```
 
-## Dependencies: Macintosh
+### Macintosh
 
 It is assumed on Macintosh you are using [Homebrew](https://brew.sh/) in order to do package management.
 There is no currently supported graphics on Macintosh:
@@ -23,4 +32,3 @@ brew install pulseaudio
 brew install chromaprint
 brew install protobuf
 ```
-
