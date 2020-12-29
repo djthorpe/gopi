@@ -25,6 +25,7 @@ type server struct {
 
 	srv      *grpc.Server
 	listener net.Listener
+	ssl      bool
 	cancels  []context.CancelFunc
 }
 
@@ -40,7 +41,7 @@ func (this *server) Define(cfg gopi.Config) error {
 
 func (this *server) New(cfg gopi.Config) error {
 	opts := []grpc.ServerOption{}
-	if opts, err := appendServerCredentialOption(cfg, opts); err != nil {
+	if opts, ssl, err := appendServerCredentialOption(cfg, opts); err != nil {
 		return err
 	} else if opts, err := appendConnectionTimeoutOption(cfg, opts); err != nil {
 		return err
@@ -48,6 +49,7 @@ func (this *server) New(cfg gopi.Config) error {
 		return gopi.ErrBadParameter
 	} else {
 		this.srv = server
+		this.ssl = ssl
 	}
 
 	// Register reflection service
@@ -170,6 +172,14 @@ func (this *server) Addr() string {
 	}
 }
 
+func (this *server) SSL() bool {
+	if this.listener != nil {
+		return this.ssl
+	} else {
+		return false
+	}
+}
+
 /////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -196,17 +206,19 @@ func (this *server) String() string {
 /////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func appendServerCredentialOption(cfg gopi.Config, opts []grpc.ServerOption) ([]grpc.ServerOption, error) {
+func appendServerCredentialOption(cfg gopi.Config, opts []grpc.ServerOption) ([]grpc.ServerOption, bool, error) {
 	cert := cfg.GetString("ssl.cert")
 	key := cfg.GetString("ssl.key")
+	ssl := false
 	if cert != "" || key != "" {
 		if creds, err := credentials.NewServerTLSFromFile(cert, key); err != nil {
-			return nil, err
+			return nil, false, err
 		} else {
 			opts = append(opts, grpc.Creds(creds))
+			ssl = true
 		}
 	}
-	return opts, nil
+	return opts, ssl, nil
 }
 
 func appendConnectionTimeoutOption(cfg gopi.Config, opts []grpc.ServerOption) ([]grpc.ServerOption, error) {

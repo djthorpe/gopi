@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"strconv"
+	"strings"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	_ "github.com/djthorpe/gopi/v3/pkg/http"
@@ -18,8 +19,7 @@ type server struct {
 	gopi.Logger
 	gopi.ServiceDiscovery
 
-	addr *string
-	name string
+	addr, name *string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,11 +35,15 @@ func HttpServer(name string, args []string, objs ...interface{}) int {
 
 func (this *server) Define(cfg gopi.Config) error {
 	this.addr = cfg.FlagString("addr", ":0", "Address for HTTP Server")
+	this.name = cfg.FlagString("name", "", "HTTP Service Name")
 	return nil
 }
 
 func (this *server) New(cfg gopi.Config) error {
-	this.name = cfg.Version().Name()
+	*this.name = strings.TrimSpace(*this.name)
+	if *this.name == "" {
+		*this.name = cfg.Version().Name()
+	}
 	return this.Server.StartInBackground("tcp", *this.addr)
 }
 
@@ -52,11 +56,19 @@ func (this *server) Run(ctx context.Context) error {
 		}
 	}
 
+	// Set TXT record
+	txt := []string{}
+	if this.Server.SSL() {
+		txt = append(txt, "ssl=1")
+	} else {
+		txt = append(txt, "ssl=0")
+	}
+
 	// Register if ServiceDisovery is enabled
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
 	if this.ServiceDiscovery != nil && port != 0 {
-		record, err := this.ServiceDiscovery.NewServiceRecord("_http._tcp.", this.name, port, nil, 0)
+		record, err := this.ServiceDiscovery.NewServiceRecord("_http._tcp.", *this.name, port, txt, 0)
 		if err != nil {
 			this.Debug(err)
 		} else {

@@ -28,6 +28,9 @@ type Server interface {
 	// Addr returns the address of the server, or empty if not connected
 	Addr() string
 
+	// SSL returns true if SSL is enabled
+	SSL() bool
+
 	// NewStreamContext returns a streaming context which should be used
 	// to cancel streaming to clients when the server is shutdown
 	NewStreamContext() context.Context

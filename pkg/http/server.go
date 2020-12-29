@@ -85,6 +85,17 @@ func (this *Server) Addr() string {
 	}
 }
 
+func (this *Server) SSL() bool {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.server == nil {
+		return false
+	} else {
+		return this.ssl
+	}
+}
+
 // Start serves HTTP in foreground. Network should always be "tcp"
 // and address is either empty (using standard ports) or ":0" which
 // means a free port is used and can be determined using the Addr
