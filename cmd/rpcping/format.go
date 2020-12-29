@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/djthorpe/gopi/v3/pkg/table"
+	table "github.com/djthorpe/gopi/v3/pkg/table"
 )
 
 type header struct {

@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/djthorpe/gopi/v3"
-	"github.com/djthorpe/gopi/v3/pkg/table"
+	gopi "github.com/djthorpe/gopi/v3"
+	table "github.com/djthorpe/gopi/v3/pkg/table"
 )
 
 func (this *app) RunVersion(ctx context.Context, stub gopi.PingStub) error {
@@ -65,4 +65,34 @@ func (this *app) RunPing(ctx context.Context, stub gopi.PingStub) error {
 			return ctx.Err()
 		}
 	}
+}
+
+func (this *app) RunMetrics(ctx context.Context, stub gopi.MetricsStub) error {
+	measurements, err := stub.List(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Display metrics information
+	table := table.New(table.WithMergeCells())
+	table.SetHeader("Measurement", "Dimension", "Name", "Kind", "Value")
+	for _, measurement := range measurements {
+		for _, tag := range measurement.Tags() {
+			table.Append(header{measurement.Name()}, header{"Tags"}, tag.Name(), tag.Kind(), tag.Value())
+		}
+		for _, metric := range measurement.Metrics() {
+			table.Append(header{measurement.Name()}, header{"Metrics"}, metric.Name(), metric.Kind(), metric.Value())
+		}
+	}
+	table.Render(os.Stdout)
+
+	ch := make(chan gopi.Measurement)
+	go func() {
+		for evt := range ch {
+			fmt.Println(evt)
+		}
+	}()
+	stub.Stream(ctx, "", ch)
+	close(ch)
+	return nil
 }

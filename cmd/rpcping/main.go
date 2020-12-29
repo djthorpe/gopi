@@ -3,8 +3,7 @@ package main
 import (
 	"os"
 
-	// Frameworks
-	"github.com/djthorpe/gopi/v3/pkg/tool"
+	tool "github.com/djthorpe/gopi/v3/pkg/tool"
 )
 
 func main() {

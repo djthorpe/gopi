@@ -26,6 +26,7 @@ type Server struct {
 	cert, key *string
 	ssl       bool
 	server    *http.Server
+	mux       *http.ServeMux
 	timeout   *time.Duration
 }
 
@@ -51,6 +52,9 @@ func (this *Server) New(cfg gopi.Config) error {
 		}
 	}
 
+	// Set multiplexer up
+	this.mux = http.NewServeMux()
+
 	// Return success
 	return nil
 }
@@ -66,6 +70,7 @@ func (this *Server) Dispose() error {
 
 	// Release resources
 	this.server = nil
+	this.mux = nil
 
 	// Return any errors
 	return result
@@ -97,6 +102,9 @@ func (this *Server) SSL() bool {
 }
 
 func (this *Server) Service() string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	if this.server != nil {
 		return "_http._tcp"
 	} else {
@@ -138,7 +146,7 @@ func (this *Server) StartInBackground(network, addr string) error {
 	// Set server object
 	this.server = &http.Server{
 		Addr:              addr,
-		Handler:           http.NewServeMux(),
+		Handler:           this.mux,
 		ReadHeaderTimeout: *this.timeout,
 		WriteTimeout:      *this.timeout,
 		IdleTimeout:       *this.timeout,
@@ -195,23 +203,26 @@ func (this *Server) Stop(force bool) error {
 	return result
 }
 
+// NewStreamContext is unused presently as it's not so useful for HTTP
 func (this *Server) NewStreamContext() context.Context {
 	return nil
 }
 
+// RegisterService currently accepts a path and a http.Handler object
+// but in future should also be able to handle http.Transport handlers
+// as well
 func (this *Server) RegisterService(path interface{}, service gopi.Service) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	if this.server == nil {
+	if this.mux == nil {
 		return gopi.ErrOutOfOrder.WithPrefix("RegisterService")
 	} else if path_, ok := path.(string); ok == false {
 		return gopi.ErrBadParameter.WithPrefix("RegisterService", "path")
 	} else if handler_, ok := service.(http.Handler); ok == false {
 		return gopi.ErrBadParameter.WithPrefix("RegisterService", "service")
 	} else {
-		mux := this.server.Handler.(*http.ServeMux)
-		mux.Handle(path_, handler_)
+		this.mux.Handle(path_, handler_)
 	}
 
 	// Return success

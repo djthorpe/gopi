@@ -5,17 +5,18 @@ import (
 	"net"
 	"time"
 
-	"github.com/djthorpe/gopi/v3"
+	gopi "github.com/djthorpe/gopi/v3"
 )
 
 type app struct {
-	gopi.Unit
 	gopi.ConnPool
 	gopi.Command
-	gopi.Server
-	gopi.PingService
-	gopi.ServiceDiscovery
 	gopi.Logger
+	gopi.PingService
+	gopi.MetricsService
+	gopi.Server
+	gopi.ServiceDiscovery
+	gopi.Unit
 }
 
 func (this *app) Define(cfg gopi.Config) error {
@@ -38,6 +39,13 @@ func (this *app) Define(cfg gopi.Config) error {
 			return err
 		} else {
 			return this.RunPing(ctx, stub)
+		}
+	})
+	cfg.Command("metrics", "Retrieve metrics from server", func(ctx context.Context) error {
+		if stub, err := this.GetMetricsStub(); err != nil {
+			return err
+		} else {
+			return this.RunMetrics(ctx, stub)
 		}
 	})
 
@@ -73,6 +81,23 @@ func (this *app) GetStub() (gopi.PingStub, error) {
 	if conn, err := this.ConnPool.ConnectService(ctx, "tcp", addr, 0); err != nil {
 		return nil, err
 	} else if stub, _ := conn.NewStub("gopi.ping.Ping").(gopi.PingStub); stub == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("Cannot create stub")
+	} else {
+		return stub, nil
+	}
+}
+
+func (this *app) GetMetricsStub() (gopi.MetricsStub, error) {
+	args := this.Args()
+	addr := "grpc"
+	if len(args) == 1 {
+		addr = args[0]
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	if conn, err := this.ConnPool.ConnectService(ctx, "tcp", addr, 0); err != nil {
+		return nil, err
+	} else if stub, _ := conn.NewStub("gopi.metrics.Metrics").(gopi.MetricsStub); stub == nil {
 		return nil, gopi.ErrInternalAppError.WithPrefix("Cannot create stub")
 	} else {
 		return stub, nil

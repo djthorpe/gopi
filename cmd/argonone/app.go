@@ -18,6 +18,7 @@ type app struct {
 	// Registered services
 	gopi.PingService
 	gopi.InputService
+	gopi.MetricsService
 
 	// Emit LIRC codes
 	gopi.LIRC

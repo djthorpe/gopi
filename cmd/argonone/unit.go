@@ -7,5 +7,6 @@ import (
 	_ "github.com/djthorpe/gopi/v3/pkg/log"          // Logger
 	_ "github.com/djthorpe/gopi/v3/pkg/mdns"         // RPC Service Discovery
 	_ "github.com/djthorpe/gopi/v3/pkg/rpc/client"   // RPC Client
+	_ "github.com/djthorpe/gopi/v3/pkg/rpc/metrics"  // RPC Metrics Service
 	_ "github.com/djthorpe/gopi/v3/pkg/rpc/ping"     // RPC Ping Service
 )

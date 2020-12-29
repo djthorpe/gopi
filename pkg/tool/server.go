@@ -55,11 +55,16 @@ func (this *server) New(cfg gopi.Config) error {
 		*this.version, _, _ = cfg.Version().Version()
 	}
 
-	// Start server over TCP
-	return this.Server.StartInBackground("tcp", *this.addr)
+	// Return success
+	return nil
 }
 
 func (this *server) Run(ctx context.Context) error {
+	// Start server in background
+	if err := this.Server.StartInBackground("tcp", *this.addr); err != nil {
+		return err
+	}
+
 	// Determine port
 	port := uint16(0)
 	if _, port_, err := net.SplitHostPort(this.Server.Addr()); err == nil {

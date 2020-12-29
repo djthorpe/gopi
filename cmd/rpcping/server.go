@@ -6,7 +6,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/djthorpe/gopi/v3"
+	gopi "github.com/djthorpe/gopi/v3"
 )
 
 func (this *app) RunServer(ctx context.Context, network, addr string) error {

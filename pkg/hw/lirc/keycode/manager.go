@@ -131,10 +131,12 @@ FOR_LOOP:
 			// End of Run
 			break FOR_LOOP
 		case evt := <-ch:
-			this.Print("TODO: ", evt)
+			// Process CodecEvent messages
+			if codecevt, ok := evt.(*codec.CodecEvent); ok {
+				this.Print("LIRCKeycodeManager: TODO: ", codecevt)
+			}
 			/*
-				// Process CodecEvent messages
-				if codecevt, ok := evt.(*codec.CodecEvent); ok {
+
 					inputevt := NewInputEvent(codecevt.Name(), gopi.KEYCODE_NONE, codecevt)
 					if kc := this.Lookup(codecevt.Device, codecevt.Code); len(kc) > 0 {
 						inputevt.KeyCode = kc[0]

@@ -137,6 +137,22 @@ type InputStub interface {
 	Stream(ctx context.Context, ch chan<- InputEvent) error
 }
 
+type MetricsService interface {
+	Service
+}
+
+type MetricsStub interface {
+	ServiceStub
+
+	// List returns the array of defined measurements
+	List(context.Context) ([]Measurement, error)
+
+	// Stream emits measurements defined by name filter on
+	// the provided channel until context is cancelled. Where
+	// the name filter is empty, all measurements are emitted
+	Stream(context.Context, string, chan<- Measurement) error
+}
+
 /////////////////////////////////////////////////////////////////////
 // HTTP SERVICES
 
