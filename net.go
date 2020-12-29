@@ -39,7 +39,16 @@ type Service interface{}
 
 // ConnPool is a factory of client connections
 type ConnPool interface {
+	// Connect accepts a network (tcp, udp, unix) and either
+	// an IP:port or a path name to a socket and returns a connection
 	Connect(network, addr string) (Conn, error)
+
+	// ConnectService accepts a network (tcp, udp, unix) and a service
+	// name. If network is 'unix' or service is an IP:port or host:port
+	// it will default to a normal Connect. The service name should be
+	// alphanumeric and the flags will determine if a IP4, IP6 connection
+	// is made. There is currently no selection between discovered services.
+	ConnectService(ctx context.Context, network, service string, flags ServiceFlag) (Conn, error)
 }
 
 // Conn is a connection to a remote server

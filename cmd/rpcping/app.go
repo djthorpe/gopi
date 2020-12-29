@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net"
+	"time"
 
 	"github.com/djthorpe/gopi/v3"
 )
@@ -63,9 +64,13 @@ func (this *app) Run(ctx context.Context) error {
 
 func (this *app) GetStub() (gopi.PingStub, error) {
 	args := this.Args()
-	if len(args) != 1 {
-		return nil, gopi.ErrBadParameter.WithPrefix("Missing server address")
-	} else if conn, err := this.ConnPool.Connect("tcp", args[0]); err != nil {
+	addr := "gopi"
+	if len(args) == 1 {
+		addr = args[0]
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	if conn, err := this.ConnPool.ConnectService(ctx, "tcp", addr, 0); err != nil {
 		return nil, err
 	} else if stub, _ := conn.NewStub("gopi.ping.Ping").(gopi.PingStub); stub == nil {
 		return nil, gopi.ErrInternalAppError.WithPrefix("Cannot create stub")
