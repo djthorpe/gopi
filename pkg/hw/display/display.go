@@ -12,6 +12,9 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
 type display struct {
 	sync.Mutex
 	rpi.DXDisplayId
