@@ -19,7 +19,7 @@ type server struct {
 	gopi.Logger
 	gopi.ServiceDiscovery
 
-	addr, name *string
+	addr, name, version *string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,13 +36,18 @@ func HttpServer(name string, args []string, objs ...interface{}) int {
 func (this *server) Define(cfg gopi.Config) error {
 	this.addr = cfg.FlagString("addr", ":0", "Address for HTTP Server")
 	this.name = cfg.FlagString("name", "", "HTTP Service Name")
+	this.version = cfg.FlagString("version", "", "Service Version")
 	return nil
 }
 
 func (this *server) New(cfg gopi.Config) error {
 	*this.name = strings.TrimSpace(*this.name)
+	*this.version = strings.TrimSpace(*this.version)
 	if *this.name == "" {
 		*this.name = cfg.Version().Name()
+	}
+	if *this.version == "" {
+		*this.version, _, _ = cfg.Version().Version()
 	}
 	return this.Server.StartInBackground("tcp", *this.addr)
 }
@@ -62,6 +67,9 @@ func (this *server) Run(ctx context.Context) error {
 		txt = append(txt, "ssl=1")
 	} else {
 		txt = append(txt, "ssl=0")
+	}
+	if *this.version != "" {
+		txt = append(txt, "v="+*this.version)
 	}
 
 	// Register if ServiceDisovery is enabled
