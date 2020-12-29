@@ -29,7 +29,7 @@ type connpool struct {
 // GLOBALS
 
 var (
-	reServiceName = regexp.MustCompile("^_(\\w+)._(tcp|udp)$")
+	reServiceName = regexp.MustCompile("^_(\\w+)\\._(tcp|udp)\\.$")
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -123,7 +123,7 @@ func (this *connpool) String() string {
 // PRIVATE METHODS
 
 func fqn(service, network string) (string, error) {
-	service = "_" + strings.Trim(service, "_") + "._" + network
+	service = "_" + strings.Trim(service, "_") + "._" + network + "."
 	if reServiceName.MatchString(service) == false {
 		return "", gopi.ErrBadParameter.WithPrefix(service)
 	} else {
