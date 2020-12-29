@@ -16,6 +16,7 @@ import (
 
 type app struct {
 	gopi.Unit
+	gopi.CastManager
 	gopi.Logger
 	gopi.Publisher
 	gopi.Platform
@@ -58,6 +59,7 @@ func (this *app) Define(cfg gopi.Config) error {
 	cfg.Command("mdns", "mDNS Service Discovery", this.RunDiscovery)
 	cfg.Command("mdns serve", "Serve mDNS service record for this host", this.RunDiscoveryServe)
 	cfg.Command("i2c", "Detect I2C devices", this.RunI2C)
+	cfg.Command("googlecast", "List Chromecast devices", this.RunCast)
 
 	/*
 			// TODO Define other commands

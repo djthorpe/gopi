@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "github.com/djthorpe/gopi/v3/pkg/dev/googlecast"
 	_ "github.com/djthorpe/gopi/v3/pkg/event"
 	_ "github.com/djthorpe/gopi/v3/pkg/graphics/fonts/freetype"
 	_ "github.com/djthorpe/gopi/v3/pkg/hw/display"
