@@ -72,7 +72,7 @@ func (this *app) Run(ctx context.Context) error {
 
 func (this *app) GetStub() (gopi.PingStub, error) {
 	args := this.Args()
-	addr := "gopi"
+	addr := "grpc"
 	if len(args) == 1 {
 		addr = args[0]
 	}
