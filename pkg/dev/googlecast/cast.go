@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/djthorpe/gopi/v3"
 )
@@ -55,8 +56,16 @@ func NewCastFromRecord(r gopi.ServiceRecord) *Cast {
 	return this
 }
 
+func (this *Cast) ConnectWithTimeout(timeout time.Duration) error {
+	return gopi.ErrNotImplemented
+}
+
+func (this *Cast) Disconnect() error {
+	return gopi.ErrNotImplemented
+}
+
 ////////////////////////////////////////////////////////////////////////////////
-// IMPLEMENTATION
+// PROPERTIES
 
 // Id returns the identifier for a chromecast
 func (this *Cast) Id() string {
