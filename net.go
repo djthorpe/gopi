@@ -31,6 +31,9 @@ type Server interface {
 	// SSL returns true if SSL is enabled
 	SSL() bool
 
+	// Service returns _http._net or _grpc._net
+	Service() string
+
 	// NewStreamContext returns a streaming context which should be used
 	// to cancel streaming to clients when the server is shutdown
 	NewStreamContext() context.Context

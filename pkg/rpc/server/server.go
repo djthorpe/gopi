@@ -180,6 +180,14 @@ func (this *server) SSL() bool {
 	}
 }
 
+func (this *server) Service() string {
+	if this.listener != nil {
+		return "_grpc._" + this.listener.Addr().Network()
+	} else {
+		return ""
+	}
+}
+
 /////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

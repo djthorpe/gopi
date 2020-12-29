@@ -13,9 +13,7 @@ import (
 
 	gopi "github.com/djthorpe/gopi/v3"
 	codec "github.com/djthorpe/gopi/v3/pkg/hw/lirc/codec"
-	"github.com/hashicorp/go-multierror"
-
-	_ "github.com/djthorpe/gopi/v3/pkg/event"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -133,16 +131,19 @@ FOR_LOOP:
 			// End of Run
 			break FOR_LOOP
 		case evt := <-ch:
-			// Process CodecEvent messages
-			if codecevt, ok := evt.(*codec.CodecEvent); ok {
-				inputevt := NewInputEvent(codecevt.Name(), gopi.KEYCODE_NONE, codecevt)
-				if kc := this.Lookup(codecevt.Device, codecevt.Code); len(kc) > 0 {
-					inputevt.KeyCode = kc[0]
+			this.Print("TODO: ", evt)
+			/*
+				// Process CodecEvent messages
+				if codecevt, ok := evt.(*codec.CodecEvent); ok {
+					inputevt := NewInputEvent(codecevt.Name(), gopi.KEYCODE_NONE, codecevt)
+					if kc := this.Lookup(codecevt.Device, codecevt.Code); len(kc) > 0 {
+						inputevt.KeyCode = kc[0]
+					}
+					if err := this.Publisher.Emit(inputevt, true); err != nil {
+						this.Print(err)
+					}
 				}
-				if err := this.Publisher.Emit(inputevt, true); err != nil {
-					this.Print(err)
-				}
-			}
+			*/
 		case <-timer.C:
 			// Ocassionally write to disk
 			if err := this.writeDirty(); err != nil {
@@ -180,30 +181,38 @@ func (this *Manager) Keycode(name string) []gopi.KeyCode {
 }
 
 // Lookup one or more keycodes for a device and scancode
-func (this *Manager) Lookup(device gopi.InputDeviceType, code uint32) []gopi.KeyCode {
+func (this *Manager) Lookup(device gopi.InputDevice, code uint32) []gopi.KeyCode {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
-	keys := []gopi.KeyCode{}
-	for _, db := range this.db {
-		if k := db.Lookup(device, code); k != gopi.KEYCODE_NONE {
-			keys = append(keys, k)
+	// TODO
+	return nil
+	/*
+		keys := []gopi.KeyCode{}
+		for _, db := range this.db {
+			if k := db.Lookup(device, code); k != gopi.KEYCODE_NONE {
+				keys = append(keys, k)
+			}
 		}
-	}
-	return keys
+		return keys*/
 }
 
 // Set keycode for name,device and scancode
-func (this *Manager) Set(device gopi.InputDeviceType, code uint32, key gopi.KeyCode, name string) error {
-	// Set mapping in existing or new database
-	if db, err := this.DatabaseForName(name); err != nil {
-		return err
-	} else if err := db.Set(device, code, key); err != nil {
-		return err
-	}
+func (this *Manager) Set(device gopi.InputDevice, code uint32, key gopi.KeyCode, name string) error {
+	return gopi.ErrNotImplemented
 
-	// Return sucess
-	return nil
+	// TODO
+
+	/*
+		// Set mapping in existing or new database
+		if db, err := this.DatabaseForName(name); err != nil {
+			return err
+		} else if err := db.Set(device, code, key); err != nil {
+			return err
+		}
+
+		// Return sucess
+		return nil*/
 }
 
 func (this *Manager) DatabaseForName(name string) (*keycodedb, error) {

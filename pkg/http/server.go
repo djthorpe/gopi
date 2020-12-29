@@ -96,6 +96,14 @@ func (this *Server) SSL() bool {
 	}
 }
 
+func (this *Server) Service() string {
+	if this.server != nil {
+		return "_http._tcp"
+	} else {
+		return ""
+	}
+}
+
 // Start serves HTTP in foreground. Network should always be "tcp"
 // and address is either empty (using standard ports) or ":0" which
 // means a free port is used and can be determined using the Addr

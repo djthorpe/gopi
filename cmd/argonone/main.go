@@ -8,5 +8,5 @@ import (
 )
 
 func main() {
-	os.Exit(tool.CommandLine("argonone", os.Args[1:], new(app)))
+	os.Exit(tool.Server("argonone", os.Args[1:], new(app)))
 }

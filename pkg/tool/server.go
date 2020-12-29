@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	gopi "github.com/djthorpe/gopi/v3"
-	_ "github.com/djthorpe/gopi/v3/pkg/http"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,7 +24,7 @@ type server struct {
 ////////////////////////////////////////////////////////////////////////////////
 // BOOTSTRAP
 
-func HttpServer(name string, args []string, objs ...interface{}) int {
+func Server(name string, args []string, objs ...interface{}) int {
 	srv := []interface{}{new(server)}
 	return CommandLine(name, args, append(srv, objs...)...)
 }
@@ -34,13 +33,19 @@ func HttpServer(name string, args []string, objs ...interface{}) int {
 // LIFECYCLE
 
 func (this *server) Define(cfg gopi.Config) error {
-	this.addr = cfg.FlagString("addr", ":0", "Address for HTTP Server")
-	this.name = cfg.FlagString("name", "", "HTTP Service Name")
-	this.version = cfg.FlagString("version", "", "Service Version")
+	this.addr = cfg.FlagString("addr", ":0", "Address for server")
+	this.name = cfg.FlagString("name", "", "Service name")
+	this.version = cfg.FlagString("version", "", "Service version")
 	return nil
 }
 
 func (this *server) New(cfg gopi.Config) error {
+	// Check to make sure server is available
+	if this.Server == nil {
+		return gopi.ErrInternalAppError.WithPrefix("Server")
+	}
+
+	// Set defaults for name and version
 	*this.name = strings.TrimSpace(*this.name)
 	*this.version = strings.TrimSpace(*this.version)
 	if *this.name == "" {
@@ -49,6 +54,8 @@ func (this *server) New(cfg gopi.Config) error {
 	if *this.version == "" {
 		*this.version, _, _ = cfg.Version().Version()
 	}
+
+	// Start server over TCP
 	return this.Server.StartInBackground("tcp", *this.addr)
 }
 
@@ -60,6 +67,9 @@ func (this *server) Run(ctx context.Context) error {
 			port = uint16(port_)
 		}
 	}
+
+	// Service
+	service := this.Server.Service()
 
 	// Set TXT record
 	txt := []string{}
@@ -76,21 +86,21 @@ func (this *server) Run(ctx context.Context) error {
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
 	if this.ServiceDiscovery != nil && port != 0 {
-		record, err := this.ServiceDiscovery.NewServiceRecord("_http._tcp.", *this.name, port, txt, 0)
+		record, err := this.ServiceDiscovery.NewServiceRecord(service, *this.name, port, txt, 0)
 		if err != nil {
-			this.Debug(err)
+			this.Debug("Error: ", err)
 		} else {
 			this.Debug("Started server: ", record)
 		}
 		go func() {
 			if this.ServiceDiscovery != nil && record != nil {
 				if err := this.ServiceDiscovery.Serve(ctx2, []gopi.ServiceRecord{record}); err != nil {
-					this.Debug(err)
+					this.Print("Error: ", err)
 				}
 			}
 		}()
 	} else {
-		this.Debug("ServiceDiscovery is not enabled")
+		this.Debug("Notice: ServiceDiscovery is not enabled")
 	}
 
 	// Wait for interupt
