@@ -81,7 +81,6 @@ type CastManager interface {
 
 // Cast represents a Google Chromecast device
 type Cast interface {
-
 	// Id returns the identifier for a chromecast
 	Id() string
 

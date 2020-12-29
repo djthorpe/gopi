@@ -2,6 +2,7 @@ package googlecast
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,10 +16,13 @@ import (
 
 type Cast struct {
 	sync.RWMutex
+	connection
 
 	id, fn string
 	md, rs string
 	st     uint
+	ips    []net.IP
+	port   uint16
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +34,19 @@ type Cast struct {
 func NewCastFromRecord(r gopi.ServiceRecord) *Cast {
 	this := new(Cast)
 
+	// Set addr and port
+	if port := r.Port(); port == 0 {
+		return nil
+	} else {
+		this.port = port
+	}
+	if ips := r.Addrs(); len(ips) == 0 {
+		return nil
+	} else {
+		this.ips = ips
+	}
+
+	// Set properties
 	tuples := txtToMap(r.Txt())
 	if id, exists := tuples["id"]; exists && id != "" {
 		this.id = id
@@ -57,10 +74,12 @@ func NewCastFromRecord(r gopi.ServiceRecord) *Cast {
 }
 
 func (this *Cast) ConnectWithTimeout(timeout time.Duration) error {
+	// TODO
 	return gopi.ErrNotImplemented
 }
 
 func (this *Cast) Disconnect() error {
+	// TODO
 	return gopi.ErrNotImplemented
 }
 

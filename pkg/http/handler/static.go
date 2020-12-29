@@ -1,9 +1,9 @@
-package http
+package handler
 
 import (
 	"net/http"
 
-	"github.com/djthorpe/gopi/v3"
+	gopi "github.com/djthorpe/gopi/v3"
 )
 
 /////////////////////////////////////////////////////////////////////
