@@ -40,15 +40,10 @@ func (this *server) Define(cfg gopi.Config) error {
 
 func (this *server) New(cfg gopi.Config) error {
 	this.name = cfg.Version().Name()
-	return nil
+	return this.Server.StartInBackground("tcp", *this.addr)
 }
 
 func (this *server) Run(ctx context.Context) error {
-	addr := *this.addr
-	if err := this.Server.StartInBackground("tcp", addr); err != nil {
-		return err
-	}
-
 	// Determine port
 	port := uint16(0)
 	if _, port_, err := net.SplitHostPort(this.Server.Addr()); err == nil {
@@ -61,11 +56,17 @@ func (this *server) Run(ctx context.Context) error {
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
 	if this.ServiceDiscovery != nil && port != 0 {
+		record, err := this.ServiceDiscovery.NewServiceRecord("_http._tcp.", this.name, port, nil, 0)
+		if err != nil {
+			this.Debug(err)
+		} else {
+			this.Debug("Started server: ", record)
+		}
 		go func() {
-			if record, err := this.ServiceDiscovery.NewServiceRecord("_http._tcp.", this.name, port, nil, 0); err != nil {
-				this.Debug(err)
-			} else if err := this.ServiceDiscovery.Serve(ctx2, []gopi.ServiceRecord{record}); err != nil {
-				this.Debug(err)
+			if this.ServiceDiscovery != nil && record != nil {
+				if err := this.ServiceDiscovery.Serve(ctx2, []gopi.ServiceRecord{record}); err != nil {
+					this.Debug(err)
+				}
 			}
 		}()
 	} else {
@@ -73,7 +74,6 @@ func (this *server) Run(ctx context.Context) error {
 	}
 
 	// Wait for interupt
-	this.Debug("Started server, http://localhost" + this.Server.Addr() + "/")
 	<-ctx.Done()
 
 	// Return success
