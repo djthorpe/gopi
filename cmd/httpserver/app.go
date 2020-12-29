@@ -14,12 +14,9 @@ import (
 
 type app struct {
 	gopi.Unit
-	gopi.Server
 	gopi.HttpStatic
 	gopi.Logger
 	gopi.Command
-
-	addr *string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +24,6 @@ type app struct {
 
 func (this *app) Define(cfg gopi.Config) error {
 	cfg.Command("serve", "Serve static files", this.Serve)
-	this.addr = cfg.FlagString("addr", ":0", "Address for server", "serve")
 	return nil
 }
 
@@ -51,24 +47,14 @@ func (this *app) Run(ctx context.Context) error {
 // COMMANDS
 
 func (this *app) Serve(ctx context.Context) error {
-	// Check parameters
-	if this.Server == nil {
-		return gopi.ErrInternalAppError.WithPrefix("Server")
-	}
-
-	// Start server and add services
+	// Add static serving
 	if folder, err := this.getFolderRoot(); err != nil {
-		return err
-	} else if addr, err := this.getAddr(); err != nil {
-		return err
-	} else if err := this.Server.StartInBackground("tcp", addr); err != nil {
 		return err
 	} else if err := this.HttpStatic.ServeFolder("/", folder); err != nil {
 		return err
 	}
 
 	// Wait for interrupt
-	fmt.Println("Started server, http://localhost" + this.Server.Addr() + "/")
 	fmt.Println("Press CTRL+C to end")
 	<-ctx.Done()
 
@@ -90,8 +76,4 @@ func (this *app) getFolderRoot() (string, error) {
 	} else {
 		return filepath.Clean(args[0]), nil
 	}
-}
-
-func (this *app) getAddr() (string, error) {
-	return *this.addr, nil
 }

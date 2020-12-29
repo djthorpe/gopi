@@ -146,6 +146,15 @@ debian: clean builddir argonone dnsregister douglas httpserver rpcping nfpm
 release: debian pkgcloud
 	@$(foreach file, $(wildcard $(BUILDDIR)/*.deb), pkgcloud-push $(PACKAGECLOUD_REPO) $(file);)
 
+	@echo
+	@echo "Use the following command in order to add the gopi repository to your list of"
+	@echo "repos:"
+	@echo
+	@echo "  curl -s https://packagecloud.io/install/repositories/djthorpe/gopi/script.deb.sh | sudo bash"
+	@echo
+	@echo "Then use sudo apt install <package> to install"
+	@echo
+	
 # Commands
 helloworld: builddir
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/helloworld -tags "$(TAGS)" ${GOFLAGS} ./cmd/helloworld

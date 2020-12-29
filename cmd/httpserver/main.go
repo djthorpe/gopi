@@ -8,5 +8,5 @@ import (
 )
 
 func main() {
-	os.Exit(tool.CommandLine("httpserver", os.Args[1:], new(app)))
+	os.Exit(tool.HttpServer("httpserver", os.Args[1:], new(app)))
 }
