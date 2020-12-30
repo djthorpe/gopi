@@ -16,7 +16,7 @@ type PayloadHeader struct {
 
 type SetVolumeRequest struct {
 	PayloadHeader
-	//	Volume volume `json:"volume"`
+	Volume `json:"volume"`
 }
 
 type LaunchAppRequest struct {
@@ -26,9 +26,9 @@ type LaunchAppRequest struct {
 
 type LoadMediaRequest struct {
 	PayloadHeader
-	//	Media       mediaItem `json:"media"`
-	CurrentTime int  `json:"currentTime,omitempty"`
-	Autoplay    bool `json:"autoplay,omitempty"`
+	Media       MediaItem `json:"media"`
+	CurrentTime int       `json:"currentTime,omitempty"`
+	Autoplay    bool      `json:"autoplay,omitempty"`
 }
 
 type LoadQueueRequest struct {
@@ -38,22 +38,22 @@ type LoadQueueRequest struct {
 }
 
 type LoadQueueItem struct {
-	//	Media            mediaItem `json:"media"`
-	Autoplay         bool `json:"autoplay"`
-	PlaybackDuration uint `json:"playbackDuration"`
+	Media            MediaItem `json:"media"`
+	Autoplay         bool      `json:"autoplay"`
+	PlaybackDuration uint      `json:"playbackDuration"`
 }
 
 type ReceiverStatusResponse struct {
 	PayloadHeader
-	//	Status struct {
-	//		Applications []application `json:"applications"`
-	//		Volume       volume        `json:"volume"`
-	//	} `json:"status"`
+	Status struct {
+		Apps   []App `json:"applications"`
+		Volume `json:"volume"`
+	} `json:"status"`
 }
 
 type MediaStatusResponse struct {
 	PayloadHeader
-	//	Status []media `json:"status"`
+	Status []Media `json:"status"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////

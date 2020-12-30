@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
@@ -14,9 +16,11 @@ import (
 // RUN
 
 func (this *app) RunCast(ctx context.Context) error {
-	devices, err := this.GetCastDevices(ctx, this.Args())
+	devices, err := this.GetCastDevices(ctx)
 	if err != nil {
 		return err
+	} else if len(devices) == 0 {
+		return gopi.ErrNotFound.WithPrefix("Cast")
 	}
 
 	table := table.New()
@@ -26,34 +30,163 @@ func (this *app) RunCast(ctx context.Context) error {
 	}
 	table.Render(os.Stdout)
 
-	// If there is one device then connect
-	if len(devices) == 1 {
-		return this.RunCastDevice(ctx, devices[0])
+	// Return success
+	return nil
+}
+
+func (this *app) RunCastApp(ctx context.Context) error {
+	devices, err := this.GetCastDevices(ctx)
+	if err != nil {
+		return err
+	} else if len(devices) != 1 {
+		return gopi.ErrNotFound.WithPrefix("Cast")
 	}
+
+	// Watch in background
+	if *this.watch {
+		this.WaitGroup.Add(1)
+		go this.RunCastWatch(ctx)
+	}
+
+	if args := this.Args(); len(args) != 1 {
+		return gopi.ErrBadParameter.WithPrefix("AppId required")
+	} else if err := this.CastManager.LaunchAppWithId(devices[0], args[0]); err != nil {
+		return err
+	}
+
+	// Wait for watching to end
+	this.WaitGroup.Wait()
 
 	// Return success
 	return nil
 }
 
-func (this *app) RunCastDevice(ctx context.Context, device gopi.Cast) error {
-	if err := this.CastManager.Connect(device); err != nil {
+func (this *app) RunCastVol(ctx context.Context) error {
+	devices, err := this.GetCastDevices(ctx)
+	if err != nil {
+		return err
+	} else if len(devices) != 1 {
+		return gopi.ErrNotFound.WithPrefix("Cast")
+	}
+
+	// Watch in background
+	if *this.watch {
+		this.WaitGroup.Add(1)
+		go this.RunCastWatch(ctx)
+	}
+
+	if args := this.Args(); len(args) != 1 {
+		return gopi.ErrBadParameter.WithPrefix("Volume required between 0.0 and 1.0")
+	} else if value, err := strconv.ParseFloat(args[0], 32); err != nil {
+		return err
+	} else if err := this.CastManager.SetVolume(devices[0], float32(value)); err != nil {
 		return err
 	}
 
-	fmt.Println("Device=", device)
-	fmt.Println("Waiting for CTRL+C")
-	<-ctx.Done()
+	// Wait for watching to end
+	this.WaitGroup.Wait()
 
-	return this.CastManager.Disconnect(device)
+	// Return success
+	return nil
 }
 
-func (this *app) GetCastDevices(ctx context.Context, filter []string) ([]gopi.Cast, error) {
+func (this *app) RunCastLoad(ctx context.Context) error {
+	devices, err := this.GetCastDevices(ctx)
+	if err != nil {
+		return err
+	} else if len(devices) != 1 {
+		return gopi.ErrNotFound.WithPrefix("Cast")
+	}
+
+	// Watch in background
+	if *this.watch {
+		this.WaitGroup.Add(1)
+		go this.RunCastWatch(ctx)
+	}
+
+	// Connect and wait
+	if err := this.CastManager.Connect(devices[0]); err != nil {
+		return err
+	}
+
+	// Wait for app
+	time.Sleep(time.Second)
+
+	if args := this.Args(); len(args) != 1 {
+		return gopi.ErrBadParameter.WithPrefix("Missing URL")
+	} else if url, err := url.Parse(args[0]); err != nil {
+		return err
+	} else if err := this.CastManager.LoadURL(devices[0], url, true); err != nil {
+		return err
+	}
+
+	// Wait for watching to end
+	this.WaitGroup.Wait()
+
+	// Return success
+	return nil
+}
+
+func (this *app) RunCastMute(ctx context.Context) error {
+	return this.RunCastMuteEx(ctx, true)
+}
+
+func (this *app) RunCastUnmute(ctx context.Context) error {
+	return this.RunCastMuteEx(ctx, false)
+}
+
+func (this *app) RunCastMuteEx(ctx context.Context, value bool) error {
+	devices, err := this.GetCastDevices(ctx)
+	if err != nil {
+		return err
+	} else if len(devices) != 1 {
+		return gopi.ErrNotFound.WithPrefix("Cast")
+	}
+
+	// Watch in background
+	if *this.watch {
+		this.WaitGroup.Add(1)
+		go this.RunCastWatch(ctx)
+	}
+
+	if err := this.CastManager.SetMuted(devices[0], value); err != nil {
+		return err
+	}
+
+	// Wait for watching to end
+	this.WaitGroup.Wait()
+
+	// Return success
+	return nil
+}
+
+func (this *app) RunCastWatch(ctx context.Context) {
+	defer this.WaitGroup.Done()
+	fmt.Println("Press CTRL+C to end")
+
+	evts := this.Publisher.Subscribe()
+	defer this.Publisher.Unsubscribe(evts)
+
+FOR_LOOP:
+	for {
+		select {
+		case <-ctx.Done():
+			break FOR_LOOP
+		case evt := <-evts:
+			if castevt, ok := evt.(gopi.CastEvent); ok {
+				this.Print(castevt)
+			}
+		}
+	}
+}
+
+func (this *app) GetCastDevices(ctx context.Context) ([]gopi.Cast, error) {
 	if this.CastManager == nil {
 		return nil, gopi.ErrInternalAppError.WithPrefix("CastManager")
 	}
 
 	// Discover devices
-	ctx2, cancel := context.WithTimeout(ctx, time.Second)
+	ctx2, cancel := context.WithTimeout(ctx, *this.timeout)
 	defer cancel()
 	devices, err := this.CastManager.Devices(ctx2)
 	if err != nil {
@@ -63,23 +196,19 @@ func (this *app) GetCastDevices(ctx context.Context, filter []string) ([]gopi.Ca
 	}
 
 	// Where there are no filters, return all devices
-	if len(filter) == 0 {
+	if *this.name == "" {
 		return devices, nil
 	}
 
 	// Filter devices
 	castmap := make(map[string]gopi.Cast, len(devices))
-	result := make([]gopi.Cast, 0, len(devices))
 	for _, device := range devices {
-		key := device.Id()
-		castmap[key] = device
+		castmap[device.Id()] = device
+		castmap[device.Name()] = device
 	}
-	for _, key := range filter {
-		if device, exists := castmap[key]; exists {
-			result = append(result, device)
-		} else {
-			return nil, gopi.ErrNotFound.WithPrefix(key)
-		}
+	if device, exists := castmap[*this.name]; exists {
+		return []gopi.Cast{device}, nil
+	} else {
+		return []gopi.Cast{}, nil
 	}
-	return result, nil
 }

@@ -37,7 +37,7 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func (this *connection) Connect(addr string, timeout time.Duration, errs chan<- error) error {
+func (this *connection) Connect(key, addr string, timeout time.Duration, errs chan<- error, state chan<- state) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
@@ -58,6 +58,9 @@ func (this *connection) Connect(addr string, timeout time.Duration, errs chan<- 
 	} else {
 		this.conn = conn
 	}
+
+	// Initialise the channel
+	this.channel.Init(key, state)
 
 	// Start the receive loop, which will end on cancel()
 	this.WaitGroup.Add(1)
@@ -183,9 +186,6 @@ func (this *connection) decode(length uint32) error {
 	if length == 0 {
 		return nil
 	}
-
-	// TODO remove debugging
-	fmt.Println("Received packet of", length)
 
 	// Receive, decode and send any follow-ups
 	if size, err := io.ReadFull(this.conn, payload); err != nil {
