@@ -2,6 +2,8 @@ package gopi
 
 import (
 	"fmt"
+	"image"
+	"image/color"
 	"os"
 	"strings"
 )
@@ -37,11 +39,28 @@ type SurfaceManager interface {
 		CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 		CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 	*/
+
+	// CreateBitmap returns a new bitmap with a specific pixel format
+	// and size. The size cannot be zero
+	CreateBitmap(SurfaceFormat, Size) (Bitmap, error)
+
+	// DisposeBitmap frees resources for a bitmap
+	DisposeBitmap(Bitmap) error
 }
 
+// Surface is an on-screen surface, which embeds a drawable canvas
 type Surface interface {
 	Origin() Point
 	Size() Size
+}
+
+// Bitmap represents pixel-based images
+type Bitmap interface {
+	image.Image
+
+	Format() SurfaceFormat
+	Size() Size
+	ClearToColor(color.Color)
 }
 
 // FontManager for font management

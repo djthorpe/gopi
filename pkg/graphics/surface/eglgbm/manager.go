@@ -225,6 +225,14 @@ func (this *Manager) DisposeSurface(surface gopi.Surface) error {
 	return gopi.ErrNotImplemented
 }
 
+func (this *Manager) CreateBitmap(format gopi.SurfaceFormat, size gopi.Size) (gopi.Bitmap, error) {
+	return gopi.ErrNotImplemented
+}
+
+func (this *Manager) DisposeBitmap(gopi.Bitmap) error {
+	return gopi.ErrNotImplemented
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
