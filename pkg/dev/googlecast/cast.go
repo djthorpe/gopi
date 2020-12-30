@@ -73,14 +73,26 @@ func NewCastFromRecord(r gopi.ServiceRecord) *Cast {
 	return this
 }
 
-func (this *Cast) ConnectWithTimeout(timeout time.Duration) error {
-	// TODO
-	return gopi.ErrNotImplemented
+func (this *Cast) ConnectWithTimeout(timeout time.Duration, errs chan<- error) error {
+	// TODO: Get an address to connect to
+	if len(this.ips) == 0 {
+		return gopi.ErrNotFound.WithPrefix("ConnectWithTimeout", "No Address")
+	}
+	// Use first IP
+	addr := fmt.Sprintf("%v:%v", this.ips[0], this.port)
+	if err := this.connection.Connect(addr, timeout, errs); err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
 
 func (this *Cast) Disconnect() error {
-	// TODO
-	return gopi.ErrNotImplemented
+	if err := this.connection.Disconnect(); err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

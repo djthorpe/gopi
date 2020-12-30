@@ -17,9 +17,13 @@ type Manager struct {
 	sync.RWMutex
 	gopi.Unit
 	gopi.ServiceDiscovery
+	gopi.Logger
 
 	// Connected Cast Devices
 	dev map[string]*Cast
+
+	// Error channel
+	errs chan error
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,8 +42,9 @@ func (this *Manager) New(gopi.Config) error {
 		return gopi.ErrInternalAppError.WithPrefix("ServiceDiscovery")
 	}
 
-	// Make map of devices
+	// Make map of devices and error channel
 	this.dev = make(map[string]*Cast)
+	this.errs = make(chan error)
 
 	// Return success
 	return nil
@@ -57,11 +62,26 @@ func (this *Manager) Dispose() error {
 		}
 	}
 
+	// Close error channel
+	close(this.errs)
+
 	// Release resources
 	this.dev = nil
+	this.errs = nil
 
 	// Return any errors
 	return result
+}
+
+func (this *Manager) Run(ctx context.Context) error {
+	for {
+		select {
+		case err := <-this.errs:
+			this.Print("CastManager: ", err)
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,5 +178,5 @@ func (this *Manager) disconnect(device *Cast) error {
 }
 
 func (this *Manager) connect(device *Cast) error {
-	return device.ConnectWithTimeout(serviceConnectTimeout)
+	return device.ConnectWithTimeout(serviceConnectTimeout, this.errs)
 }
