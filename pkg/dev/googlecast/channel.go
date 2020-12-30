@@ -129,6 +129,34 @@ func (this *channel) LoadUrl(transportId string, url, mimetype string, autoplay 
 	return id, data, err
 }
 
+// Play
+func (this *channel) Play(state bool) (int, []byte, error) {
+	payload := &PayloadHeader{}
+	switch state {
+	case true:
+		payload.Type = "PLAY"
+	case false:
+		payload.Type = "STOP"
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_RECV, payload.WithId(id))
+	return id, data, err
+}
+
+// Pause
+func (this *channel) Pause(state bool) (int, []byte, error) {
+	payload := &PayloadHeader{}
+	switch state {
+	case false:
+		payload.Type = "PLAY"
+	case true:
+		payload.Type = "PAUSE"
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_RECV, payload.WithId(id))
+	return id, data, err
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 

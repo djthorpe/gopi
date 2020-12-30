@@ -272,6 +272,34 @@ func (this *Cast) ReqMuted(muted bool) error {
 	return nil
 }
 
+func (this *Cast) ReqPlay(state bool) error {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if _, data, err := this.channel.Play(state); err != nil {
+		return err
+	} else if err := this.send(data); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *Cast) ReqPause(state bool) error {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if _, data, err := this.channel.Pause(state); err != nil {
+		return err
+	} else if err := this.send(data); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
 func (this *Cast) ReqLoadURL(url *url.URL, mimetype string, autoplay bool) error {
 	// ConnectMedia
 	if this.app == nil || this.app.TransportId == "" {

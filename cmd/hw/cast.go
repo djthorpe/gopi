@@ -135,6 +135,14 @@ func (this *app) RunCastUnmute(ctx context.Context) error {
 	return this.RunCastMuteEx(ctx, false)
 }
 
+func (this *app) RunCastPlay(ctx context.Context) error {
+	return this.RunCastPlayEx(ctx, true)
+}
+
+func (this *app) RunCastStop(ctx context.Context) error {
+	return this.RunCastPlayEx(ctx, false)
+}
+
 func (this *app) RunCastMuteEx(ctx context.Context, value bool) error {
 	devices, err := this.GetCastDevices(ctx)
 	if err != nil {
@@ -149,7 +157,74 @@ func (this *app) RunCastMuteEx(ctx context.Context, value bool) error {
 		go this.RunCastWatch(ctx)
 	}
 
+	// Perform mute
 	if err := this.CastManager.SetMuted(devices[0], value); err != nil {
+		return err
+	}
+
+	// Wait for watching to end
+	this.WaitGroup.Wait()
+
+	// Return success
+	return nil
+}
+
+func (this *app) RunCastPause(ctx context.Context) error {
+	devices, err := this.GetCastDevices(ctx)
+	if err != nil {
+		return err
+	} else if len(devices) != 1 {
+		return gopi.ErrNotFound.WithPrefix("Cast")
+	}
+
+	// Watch in background
+	if *this.watch {
+		this.WaitGroup.Add(1)
+		go this.RunCastWatch(ctx)
+	}
+
+	// Connect and wait for App Transport Id
+	if err := this.CastManager.Connect(devices[0]); err != nil {
+		return err
+	} else {
+		// HACK!!!!
+		time.Sleep(time.Second)
+	}
+
+	if err := this.CastManager.SetPause(devices[0], true); err != nil {
+		return err
+	}
+
+	// Wait for watching to end
+	this.WaitGroup.Wait()
+
+	// Return success
+	return nil
+}
+
+func (this *app) RunCastPlayEx(ctx context.Context, value bool) error {
+	devices, err := this.GetCastDevices(ctx)
+	if err != nil {
+		return err
+	} else if len(devices) != 1 {
+		return gopi.ErrNotFound.WithPrefix("Cast")
+	}
+
+	// Watch in background
+	if *this.watch {
+		this.WaitGroup.Add(1)
+		go this.RunCastWatch(ctx)
+	}
+
+	// Connect and wait for App Transport Id
+	if err := this.CastManager.Connect(devices[0]); err != nil {
+		return err
+	} else {
+		// HACK!!!!
+		time.Sleep(time.Second)
+	}
+
+	if err := this.CastManager.SetPlay(devices[0], value); err != nil {
 		return err
 	}
 

@@ -46,10 +46,10 @@ func (h header) Format() (string, table.Alignment, table.Color) {
 func (this *app) Define(cfg gopi.Config) error {
 	// Define flags
 	this.i2cbus = cfg.FlagUint("bus", 0, "I2C Bus", "i2c")
-	this.timeout = cfg.FlagDuration("timeout", time.Second, "Discovery timeout", "mdns", "cast", "cast app", "cast vol", "cast mute", "cast unmute")
-	this.name = cfg.FlagString("name", "", "Service or Chromecast Name", "mdns serve", "cast app", "cast vol", "cast mute", "cast unmute")
+	this.timeout = cfg.FlagDuration("timeout", time.Second, "Discovery timeout", "mdns", "cast", "cast app", "cast vol", "cast mute", "cast unmute", "cast load", "cast play", "cast pause", "cast stop")
+	this.watch = cfg.FlagBool("watch", false, "Watch for events", "cast app", "cast vol", "cast mute", "cast unmute", "cast load", "cast play", "cast pause", "cast stop")
+	this.name = cfg.FlagString("name", "", "Service or Chromecast Name", "mdns serve", "cast app", "cast vol", "cast mute", "cast unmute", "cast load", "cast play", "cast pause", "cast stop")
 	this.port = cfg.FlagUint("port", 0, "Service Port", "mdns serve")
-	this.watch = cfg.FlagBool("watch", false, "Watch for events", "cast app", "cast vol", "cast mute", "cast unmute", "cast load")
 
 	// Define commands
 	cfg.Command("info", "Hardware information", this.RunInfo)
@@ -67,9 +67,9 @@ func (this *app) Define(cfg gopi.Config) error {
 	cfg.Command("cast mute", "Mute Chromecast volume", this.RunCastMute)
 	cfg.Command("cast unmute", "Unmute Chromecast volume", this.RunCastUnmute)
 	cfg.Command("cast load", "Play media on Chromecast", this.RunCastLoad)
-	//	cfg.Command("cast play", "Set play state on Chromecast", this.RunCastPlay)
-	//	cfg.Command("cast pause", "Set pause state on Chromecast", this.RunCastPause)
-	//	cfg.Command("cast stop", "Set stop state on Chromecast", this.RunCastStop)
+	cfg.Command("cast play", "Set play state on Chromecast", this.RunCastPlay)
+	cfg.Command("cast pause", "Set pause state on Chromecast", this.RunCastPause)
+	cfg.Command("cast stop", "Set stop state on Chromecast", this.RunCastStop)
 
 	// Return success
 	return nil

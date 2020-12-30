@@ -252,15 +252,40 @@ func (this *Manager) SetMuted(cast gopi.Cast, value bool) error {
 	}
 }
 
-// SetPlay sets media playback state to either PLAY or STOP.
-func (this *Manager) SetPlay(gopi.Cast, bool) error {
-	return gopi.ErrNotImplemented
+func (this *Manager) SetPlay(cast gopi.Cast, value bool) error {
+	if cast == nil {
+		return gopi.ErrBadParameter.WithPrefix("SetPlay")
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		if err := this.Connect(cast); err != nil {
+			return err
+		}
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		return gopi.ErrNotFound.WithPrefix("SetPlay")
+	} else {
+		return device.ReqPlay(value)
+	}
 }
 
-// SetPaused sets media state to PLAY or PAUSE. Will not affect
-// state if STOP.
-func (this *Manager) SetPaused(gopi.Cast, bool) error {
-	return gopi.ErrNotImplemented
+func (this *Manager) SetPause(cast gopi.Cast, value bool) error {
+	if cast == nil {
+		return gopi.ErrBadParameter.WithPrefix("SetPause")
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		if err := this.Connect(cast); err != nil {
+			return err
+		}
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		return gopi.ErrNotFound.WithPrefix("SetPause")
+	} else {
+		return device.ReqPause(value)
+	}
 }
 
 func (this *Manager) LoadURL(cast gopi.Cast, url *url.URL, autoplay bool) error {

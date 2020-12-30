@@ -94,16 +94,18 @@ type CastManager interface {
 	// volume level.
 	SetMuted(Cast, bool) error
 
-	// SetPlay sets media playback state to either PLAY or STOP.
+	// SetPlay sets media playback state to either PLAY or STOP
 	SetPlay(Cast, bool) error
 
-	// SetPaused sets media state to PLAY or PAUSE. Will not affect
-	// state if STOP.
-	SetPaused(Cast, bool) error
+	// SetPause sets media state to PLAY or PAUSE. Will not affect
+	// state if currently STOP
+	SetPause(Cast, bool) error
 
 	// Stream URL to Chromecast supports HTTP and HTTPS protocols,
 	// and the stream can be automatically started if the third
-	// argument is set to true.
+	// argument is set to true. Requires application load before
+	// calling, to set the transport, or else returns an OutOfOrder
+	// error
 	LoadURL(Cast, *url.URL, bool) error
 }
 
