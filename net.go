@@ -52,8 +52,10 @@ type ConnPool interface {
 	// ConnectService accepts a network (tcp, udp, unix) and a service
 	// name. If network is 'unix' or service is an IP:port or host:port
 	// it will default to a normal Connect. The service name should be
-	// alphanumeric and the flags will determine if a IP4, IP6 connection
-	// is made. There is currently no selection between discovered services.
+	// alphanumeric and the flags will determine if a connection by hostname,
+	// IP4 or IP6 connection is made. In addition, the service parameter can
+	// be either <service>:<name> or <name> to connecto to the correct service
+	// instance.
 	ConnectService(ctx context.Context, network, service string, flags ServiceFlag) (Conn, error)
 }
 

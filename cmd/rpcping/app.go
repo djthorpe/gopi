@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net"
+	"strings"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -18,7 +19,8 @@ type app struct {
 	gopi.ServiceDiscovery
 	gopi.Unit
 
-	castId *string
+	// Flags
+	service, castId *string
 }
 
 func (this *app) Define(cfg gopi.Config) error {
@@ -30,14 +32,14 @@ func (this *app) Define(cfg gopi.Config) error {
 		}
 	})
 	cfg.Command("version", "Display server version information", func(ctx context.Context) error {
-		if stub, err := this.GetStub(); err != nil {
+		if stub, err := this.GetPingStub(); err != nil {
 			return err
 		} else {
 			return this.RunVersion(ctx, stub)
 		}
 	})
 	cfg.Command("ping", "Perform ping to server", func(ctx context.Context) error {
-		if stub, err := this.GetStub(); err != nil {
+		if stub, err := this.GetPingStub(); err != nil {
 			return err
 		} else {
 			return this.RunPing(ctx, stub)
@@ -72,6 +74,9 @@ func (this *app) Define(cfg gopi.Config) error {
 		}
 	})
 
+	// Global flags
+	this.service = cfg.FlagString("srv", "", "name, service:name or host:port")
+
 	// Set flags for cast functions
 	this.castId = cfg.FlagString("id", "", "Chromecast Id", "cast app", "cast load")
 
@@ -96,54 +101,50 @@ func (this *app) Run(ctx context.Context) error {
 	return this.Command.Run(ctx)
 }
 
-func (this *app) GetStub() (gopi.PingStub, error) {
-	args := this.Args()
-	addr := "grpc"
-	if len(args) == 1 {
-		addr = args[0]
-	}
+func (this *app) GetStub(name string) (gopi.ServiceStub, error) {
+	// Timeout for lookup after 500ms
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
-	if conn, err := this.ConnPool.ConnectService(ctx, "tcp", addr, 0); err != nil {
+
+	service := "grpc"
+	if *this.service != "" {
+		if strings.Contains(*this.service, ":") == false {
+			service = service + ":" + *this.service
+		} else {
+			service = *this.service
+		}
+	}
+
+	if conn, err := this.ConnPool.ConnectService(ctx, "tcp", service, 0); err != nil {
 		return nil, err
-	} else if stub, _ := conn.NewStub("gopi.ping.Ping").(gopi.PingStub); stub == nil {
-		return nil, gopi.ErrInternalAppError.WithPrefix("Cannot create stub")
+	} else if stub := conn.NewStub(name); stub == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("Cannot create stub: ", name)
 	} else {
 		return stub, nil
+	}
+}
+
+func (this *app) GetPingStub() (gopi.PingStub, error) {
+	if stub, err := this.GetStub("gopi.ping.Ping"); err != nil {
+		return nil, err
+	} else {
+		return stub.(gopi.PingStub), nil
 	}
 }
 
 func (this *app) GetMetricsStub() (gopi.MetricsStub, error) {
-	args := this.Args()
-	addr := "grpc"
-	if len(args) == 1 {
-		addr = args[0]
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
-	if conn, err := this.ConnPool.ConnectService(ctx, "tcp", addr, 0); err != nil {
+	if stub, err := this.GetStub("gopi.metrics.Metrics"); err != nil {
 		return nil, err
-	} else if stub, _ := conn.NewStub("gopi.metrics.Metrics").(gopi.MetricsStub); stub == nil {
-		return nil, gopi.ErrInternalAppError.WithPrefix("Cannot create stub")
 	} else {
-		return stub, nil
+		return stub.(gopi.MetricsStub), nil
 	}
 }
 
 func (this *app) GetGoogleCastStub() (gopi.CastStub, error) {
-	args := this.Args()
-	addr := "grpc"
-	if len(args) == 1 {
-		addr = args[0]
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
-	if conn, err := this.ConnPool.ConnectService(ctx, "tcp", addr, 0); err != nil {
+	if stub, err := this.GetStub("gopi.googlecast.Manager"); err != nil {
 		return nil, err
-	} else if stub, _ := conn.NewStub("gopi.googlecast.Manager").(gopi.CastStub); stub == nil {
-		return nil, gopi.ErrInternalAppError.WithPrefix("Cannot create stub: ", "gopi.googlecast.Manager")
 	} else {
-		return stub, nil
+		return stub.(gopi.CastStub), nil
 	}
 }
 

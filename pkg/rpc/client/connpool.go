@@ -30,6 +30,7 @@ type connpool struct {
 
 var (
 	reServiceName = regexp.MustCompile("^_(\\w+)\\._(tcp|udp)\\.$")
+	reServiceAddr = regexp.MustCompile("^(\\w+):([a-zA-Z]+\\S*)$")
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -93,8 +94,16 @@ func (this *connpool) ConnectService(ctx context.Context, network, service strin
 		return nil, gopi.ErrBadParameter.WithPrefix(network)
 	}
 
+	// Name to filter for
+	name := ""
+
 	// Default to Connect if service is in a host:port format
-	if _, _, err := net.SplitHostPort(service); err == nil {
+	if parts := reServiceAddr.FindStringSubmatch(service); len(parts) == 3 {
+		service = parts[1]
+		name = parts[2]
+		this.Debugf("ConnectService service=%q name=%q", service, name)
+	} else if host, port, err := net.SplitHostPort(service); err == nil {
+		this.Debugf("ConnectService host=%q port=%q", host, port)
 		return this.Connect(network, service)
 	}
 
@@ -103,7 +112,7 @@ func (this *connpool) ConnectService(ctx context.Context, network, service strin
 		return nil, err
 	} else if records, err := this.ServiceDiscovery.Lookup(ctx, service); err != nil {
 		return nil, err
-	} else if addr, err := addr(records, flags); err != nil {
+	} else if addr, err := addr(records, name, flags); err != nil {
 		return nil, err
 	} else {
 		return this.Connect(network, addr)
@@ -131,8 +140,17 @@ func fqn(service, network string) (string, error) {
 	}
 }
 
-func addr(r []gopi.ServiceRecord, flags gopi.ServiceFlag) (string, error) {
+func addr(r []gopi.ServiceRecord, name string, flags gopi.ServiceFlag) (string, error) {
 	for _, record := range r {
+		// Filter by name
+		if name != "" && name != record.Name() {
+			continue
+		}
+		// If flags is none, then return hostname
+		if flags == gopi.SERVICE_FLAG_NONE {
+			return fmt.Sprint(record.Host(), ":", record.Port()), nil
+		}
+		// Get an address
 		for _, addr := range record.Addrs() {
 			switch {
 			case (flags&gopi.SERVICE_FLAG_IP6 != 0 || flags == gopi.SERVICE_FLAG_NONE) && addr.To4() == nil:
