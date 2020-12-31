@@ -130,8 +130,10 @@ func (this *channel) LoadUrl(transportId string, url, mimetype string, autoplay 
 }
 
 // Play
-func (this *channel) Play(state bool) (int, []byte, error) {
-	payload := &PayloadHeader{}
+func (this *channel) Play(sessionId int, state bool) (int, []byte, error) {
+	payload := &MediaRequest{
+		MediaSessionId: sessionId,
+	}
 	switch state {
 	case true:
 		payload.Type = "PLAY"
@@ -144,13 +146,40 @@ func (this *channel) Play(state bool) (int, []byte, error) {
 }
 
 // Pause
-func (this *channel) Pause(state bool) (int, []byte, error) {
-	payload := &PayloadHeader{}
+func (this *channel) Pause(sessionId int, state bool) (int, []byte, error) {
+	payload := &MediaRequest{
+		MediaSessionId: sessionId,
+	}
 	switch state {
 	case false:
 		payload.Type = "PLAY"
 	case true:
 		payload.Type = "PAUSE"
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_RECV, payload.WithId(id))
+	return id, data, err
+}
+
+// Seek
+func (this *channel) Seek(sessionId int, value int) (int, []byte, error) {
+	payload := &MediaRequest{
+		PayloadHeader: PayloadHeader{
+			Type: "SEEK",
+		},
+		MediaSessionId: sessionId,
+		CurrentTime:    value,
+		ResumeState:    "PLAYBACK_START",
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_RECV, payload.WithId(id))
+	return id, data, err
+}
+
+// Stop
+func (this *channel) Stop() (int, []byte, error) {
+	payload := &PayloadHeader{
+		Type: "STOP",
 	}
 	id := this.nextMsg()
 	data, err := this.encode(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_RECV, payload.WithId(id))
@@ -270,9 +299,14 @@ func (this *channel) rcvConnection(message *pb.CastMessage) ([]byte, error) {
 		return nil, err
 	}
 	switch header.Type {
+	//case "CLOSE":
+	//	this.ch <- NewState(this.key, header.RequestId, "CLOSE")
 	default:
 		return nil, fmt.Errorf("Ignoring message %q in namespace %q", header.Type, message.GetNamespace())
 	}
+
+	// Return success
+	//return nil, nil
 }
 
 // process media messages

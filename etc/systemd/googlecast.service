@@ -1,0 +1,15 @@
+[Unit]
+Description=Google Chromecast Service
+Documentation=http://github.com/djthorpe/gopi/cmd/googlecast
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=gopi
+Group=gopi
+EnvironmentFile=/opt/gopi/etc/googlecast.env
+ExecStart=/opt/gopi/bin/googlecast \
+    -ssl.cert="${SSLCERT}" -ssl.key="${SSLKEY}" -addr="${ADDR}" -name="${NAME}"
+Restart=on-failure

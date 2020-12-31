@@ -11,6 +11,7 @@ import (
 
 type event struct {
 	cast  *Cast
+	reqId int
 	flags gopi.CastFlag
 }
 
@@ -23,8 +24,8 @@ type state struct {
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewEvent(device *Cast, flags gopi.CastFlag) gopi.CastEvent {
-	return &event{device, flags}
+func NewEvent(device *Cast, flags gopi.CastFlag, reqId int) gopi.CastEvent {
+	return &event{device, reqId, flags}
 }
 
 func NewState(key string, req int, values ...interface{}) state {
@@ -57,6 +58,9 @@ func (this *event) String() string {
 	str := "<cast.event"
 	if this.flags != gopi.CAST_FLAG_NONE {
 		str += " flags=" + fmt.Sprint(this.flags)
+	}
+	if this.reqId != 0 {
+		str += " reqId=" + fmt.Sprint(this.reqId)
 	}
 	if this.cast != nil {
 		str += " device=" + fmt.Sprint(this.cast)

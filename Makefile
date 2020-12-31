@@ -11,7 +11,7 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 BUILDDIR = build
 PACKAGECLOUD_REPO = djthorpe/gopi/raspbian/buster
 
-all: hw httpserver helloworld argonone douglas dnsregister rpcping mediakit 
+all: hw httpserver helloworld argonone douglas dnsregister rpcping googlecast mediakit 
 	@echo Use "make debian" to release to packaging
 	@echo Use "make clean" to clear build cache
 	@echo Use "make test" to run tests
@@ -176,6 +176,9 @@ dnsregister: builddir
 
 rpcping: builddir protogen
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rpcping -tags "$(TAGS)" ${GOFLAGS} ./cmd/rpcping
+
+googlecast: builddir protogen
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/googlecast -tags "$(TAGS)" ${GOFLAGS} ./cmd/googlecast
 
 mediakit: builddir ffmpeg chromaprint
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit

@@ -17,6 +17,8 @@ type app struct {
 	gopi.Server
 	gopi.ServiceDiscovery
 	gopi.Unit
+
+	castId *string
 }
 
 func (this *app) Define(cfg gopi.Config) error {
@@ -48,6 +50,30 @@ func (this *app) Define(cfg gopi.Config) error {
 			return this.RunMetrics(ctx, stub)
 		}
 	})
+	cfg.Command("cast", "List Google Chromecasts", func(ctx context.Context) error {
+		if stub, err := this.GetGoogleCastStub(); err != nil {
+			return err
+		} else {
+			return this.RunCast(ctx, stub)
+		}
+	})
+	cfg.Command("cast app", "Start Chromecast Application", func(ctx context.Context) error {
+		if stub, err := this.GetGoogleCastStub(); err != nil {
+			return err
+		} else {
+			return this.RunCastApp(ctx, stub)
+		}
+	})
+	cfg.Command("cast load", "Load media from URL", func(ctx context.Context) error {
+		if stub, err := this.GetGoogleCastStub(); err != nil {
+			return err
+		} else {
+			return this.RunCastLoad(ctx, stub)
+		}
+	})
+
+	// Set flags for cast functions
+	this.castId = cfg.FlagString("id", "", "Chromecast Id", "cast app", "cast load")
 
 	// Return success
 	return nil
@@ -99,6 +125,23 @@ func (this *app) GetMetricsStub() (gopi.MetricsStub, error) {
 		return nil, err
 	} else if stub, _ := conn.NewStub("gopi.metrics.Metrics").(gopi.MetricsStub); stub == nil {
 		return nil, gopi.ErrInternalAppError.WithPrefix("Cannot create stub")
+	} else {
+		return stub, nil
+	}
+}
+
+func (this *app) GetGoogleCastStub() (gopi.CastStub, error) {
+	args := this.Args()
+	addr := "grpc"
+	if len(args) == 1 {
+		addr = args[0]
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	if conn, err := this.ConnPool.ConnectService(ctx, "tcp", addr, 0); err != nil {
+		return nil, err
+	} else if stub, _ := conn.NewStub("gopi.googlecast.Manager").(gopi.CastStub); stub == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("Cannot create stub: ", "gopi.googlecast.Manager")
 	} else {
 		return stub, nil
 	}

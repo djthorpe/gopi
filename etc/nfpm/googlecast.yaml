@@ -1,0 +1,36 @@
+
+# nfpm file to create debian package for googlecast
+name: "googlecast"
+
+# arch, platform and version are replaced with GOARCH, GOOS and git tag
+arch: "arm"
+platform: "linux"
+version: "v0.0.0"
+
+replaces:
+  - googlecast
+provides:
+  - googlecast
+maintainer: "David Thorpe <djt@mutablelogic.com>"
+description: |
+  Google Chromecast Control Service
+vendor: "mutablelogic.com"
+homepage: "http://github.com/djthorpe/gopi/cmd/googlecast"
+license: "Apache 2.0"
+
+files:
+  build/googlecast: /opt/gopi/bin/googlecast
+  etc/systemd/googlecast.service: /opt/gopi/etc/googlecast.service
+
+symlinks:
+  /etc/systemd/system/googlecast.service: /opt/gopi/etc/googlecast.service
+
+config_files:
+  etc/systemd/googlecast.env: /opt/gopi/etc/googlecast.env
+
+scripts:
+  postinstall: etc/nfpm/googlecast-postinstall.sh
+  preremove: etc/nfpm/googlecast-preremove.sh
+
+
+

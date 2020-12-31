@@ -63,6 +63,8 @@ func (this *server) Run(ctx context.Context) error {
 	// Start server in background
 	if err := this.Server.StartInBackground("tcp", *this.addr); err != nil {
 		return err
+	} else {
+		this.Debug("Started server: ", this.Server)
 	}
 
 	// Determine port
@@ -95,7 +97,7 @@ func (this *server) Run(ctx context.Context) error {
 		if err != nil {
 			this.Debug("Error: ", err)
 		} else {
-			this.Debug("Started server: ", record)
+			this.Debug("Advertising server: ", record)
 		}
 		go func() {
 			if this.ServiceDiscovery != nil && record != nil {

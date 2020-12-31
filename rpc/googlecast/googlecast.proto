@@ -1,0 +1,79 @@
+syntax = "proto3";
+package gopi.googlecast;
+
+option go_package = "github.com/djthorpe/gopi/v3/rpc/googlecast";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/duration.proto";
+
+message ListResponse {
+    repeated Cast cast = 1; 
+}
+
+message CastResponse {
+    Cast cast = 1; 
+    string appid = 2;
+    float volume = 3;
+    bool muted = 4;
+}
+
+message VolumeRequest {
+    string id = 1;     
+    float volume = 2;
+}
+
+message LoadRequest {
+    string id = 1;     
+    string url = 2;
+}
+
+message MuteRequest {
+    string id = 1;     
+    bool muted = 2;
+}
+
+message AppRequest {
+    string id = 1;     
+    string appid = 2;
+}
+
+
+message SeekRequest {
+    string id = 1;     
+    google.protobuf.Duration position = 2;
+}
+
+message CastRequest {
+    string id = 1;     
+}
+
+message Cast {
+    string id = 1; 
+    string name = 2; 
+    string model = 3; 
+    string service = 4; 
+    CastState state = 5;
+
+    enum CastState {
+        NONE = 0x00;
+        ACTIVE = 0x01;
+        IDLE = 0x02;
+        BACKDROP = 0x04;
+        PLAYING = 0x08;
+        BUFFERING = 0x10; 
+        PAUSED = 0x20;
+        UNKNOWN = 0x40;
+    }
+}
+
+service Manager {
+    rpc ListCasts(google.protobuf.Empty) returns (ListResponse);
+    rpc SetApp(AppRequest) returns (CastResponse);
+    rpc SetVolume(VolumeRequest) returns (CastResponse);
+    rpc SetMute(MuteRequest) returns (CastResponse);
+    rpc LoadURL(LoadRequest) returns (CastResponse);
+    rpc Stop(CastRequest) returns (CastResponse);
+    rpc Play(CastRequest) returns (CastResponse);
+    rpc Pause(CastRequest) returns (CastResponse);
+    rpc Seek(SeekRequest) returns (CastResponse);
+}

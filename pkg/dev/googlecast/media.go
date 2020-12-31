@@ -9,22 +9,33 @@ import (
 // TYPES
 
 type Media struct {
-	MediaSessionId int       `json:"mediaSessionId"`
-	PlayerState    string    `json:"playerState"`
-	CurrentTime    float32   `json:"currentTime"`
-	IdleReason     string    `json:"idleReason"`
-	Volume         Volume    `json:"volume"`
-	CurrentItemId  int       `json:"currentItemId"`
-	LoadingItemId  int       `json:"loadingItemId"`
-	Media          MediaItem `json:"media"`
+	MediaSessionId int `json:"mediaSessionId"`
+
+	// PLAYING, BUFFERING, PAUSED, IDLE or UNKNOWN
+	PlayerState string `json:"playerState"`
+
+	// CurrentTime in seconds
+	CurrentTime float32 `json:"currentTime"`
+
+	IdleReason    string    `json:"idleReason"`
+	Volume        Volume    `json:"volume"`
+	CurrentItemId int       `json:"currentItemId"`
+	LoadingItemId int       `json:"loadingItemId"`
+	Media         MediaItem `json:"media"`
 }
 
 type MediaItem struct {
-	ContentId   string         `json:"contentId"`
-	ContentType string         `json:"contentType,omitempty"`
-	StreamType  string         `json:"streamType,omitempty"`
-	Duration    float32        `json:"duration,omitempty"`
-	Metadata    *MediaMetadata `json:"metadata,omitempty"`
+	ContentId string `json:"contentId"`
+
+	// Mimetype
+	ContentType string `json:"contentType,omitempty"`
+
+	// BUFFERED, LIVE or UNKNOWN
+	StreamType string `json:"streamType,omitempty"`
+
+	// Duration in seconds
+	Duration float32        `json:"duration,omitempty"`
+	Metadata *MediaMetadata `json:"metadata,omitempty"`
 }
 
 type MediaMetadata struct {
@@ -84,6 +95,9 @@ func (m MediaItem) Equals(other MediaItem) bool {
 }
 
 func (m *MediaMetadata) Equals(other *MediaMetadata) bool {
+	if other == nil {
+		return m == nil
+	}
 	if m.MetadataType != other.MetadataType {
 		return false
 	}
@@ -110,11 +124,11 @@ func (m Media) String() string {
 	if m.IdleReason != "" {
 		parts += fmt.Sprintf(" idle_reason=%v", strconv.Quote(m.IdleReason))
 	}
-	if m.CurrentTime != 0 {
-		parts += fmt.Sprintf(" current_time=%v", m.CurrentTime)
-	}
 	if m.CurrentItemId != 0 {
 		parts += fmt.Sprintf(" current_id=%v", m.CurrentItemId)
+	}
+	if m.CurrentTime != 0 {
+		parts += fmt.Sprintf(" current_time=%v", m.CurrentTime)
 	}
 	if m.LoadingItemId != 0 {
 		parts += fmt.Sprintf(" loading_id=%v", m.LoadingItemId)
@@ -122,7 +136,7 @@ func (m Media) String() string {
 	if m.Media.ContentId != "" {
 		parts += fmt.Sprintf(" %v", m.Media)
 	}
-	return fmt.Sprintf("<media id=%v%v>", m.MediaSessionId, parts)
+	return fmt.Sprintf("<media media_session_id=%v%v>", m.MediaSessionId, parts)
 }
 
 func (m MediaItem) String() string {
@@ -139,7 +153,7 @@ func (m MediaItem) String() string {
 	if m.Metadata != nil && m.Metadata.MetadataType != 0 {
 		parts += fmt.Sprintf(" %v", m.Metadata)
 	}
-	return fmt.Sprintf("<item id=%v%v>", m.ContentId, parts)
+	return fmt.Sprintf("<item content_id=%v%v>", m.ContentId, parts)
 }
 
 func (m MediaMetadata) String() string {

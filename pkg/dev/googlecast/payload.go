@@ -29,6 +29,14 @@ type LoadMediaRequest struct {
 	Media       MediaItem `json:"media"`
 	CurrentTime int       `json:"currentTime,omitempty"`
 	Autoplay    bool      `json:"autoplay,omitempty"`
+	ResumeState string    `json:"resumeState,omitempty"`
+}
+
+type MediaRequest struct {
+	PayloadHeader
+	MediaSessionId int    `json:"mediaSessionId"`
+	CurrentTime    int    `json:"currentTime,omitempty"`
+	ResumeState    string `json:"resumeState,omitempty"`
 }
 
 type LoadQueueRequest struct {
@@ -38,6 +46,14 @@ type LoadQueueRequest struct {
 }
 
 type LoadQueueItem struct {
+	PayloadHeader
+	Media            MediaItem `json:"media"`
+	Autoplay         bool      `json:"autoplay"`
+	PlaybackDuration uint      `json:"playbackDuration"`
+}
+
+type QueueUpdate struct {
+	PayloadHeader
 	Media            MediaItem `json:"media"`
 	Autoplay         bool      `json:"autoplay"`
 	PlaybackDuration uint      `json:"playbackDuration"`
@@ -57,7 +73,7 @@ type MediaStatusResponse struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// TYPES
+// METHODS
 
 func (this *PayloadHeader) WithId(id int) Payload {
 	this.RequestId = id

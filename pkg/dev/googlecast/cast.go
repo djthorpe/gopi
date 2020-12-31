@@ -19,6 +19,7 @@ import (
 type Cast struct {
 	sync.RWMutex
 	connection
+	promises
 
 	// Data about the cast device
 	id, fn string
@@ -30,10 +31,18 @@ type Cast struct {
 	// State information
 	volume *Volume
 	app    *App
+	media  *Media
+
+	// Promises
+	callbacks map[int]promise
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // GLOBALS
+
+const (
+	promiseTimeout = 2 * time.Second
+)
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
@@ -81,6 +90,7 @@ func NewCastFromRecord(r gopi.ServiceRecord) *Cast {
 }
 
 func (this *Cast) ConnectWithTimeout(timeout time.Duration, errs chan<- error, state chan<- state) error {
+
 	// Get an address to connect to
 	if len(this.ips) == 0 {
 		return gopi.ErrNotFound.WithPrefix("ConnectWithTimeout", "No Address")
@@ -100,6 +110,10 @@ func (this *Cast) ConnectWithTimeout(timeout time.Duration, errs chan<- error, s
 	// Set state
 	this.volume = nil
 	this.app = nil
+	this.media = nil
+
+	// Init promises
+	this.promises.InitWithTimeout(promiseTimeout)
 
 	// Return success
 	return nil
@@ -119,6 +133,10 @@ func (this *Cast) Disconnect() error {
 	// Set state
 	this.volume = nil
 	this.app = nil
+	this.media = nil
+
+	// Dispose promises
+	this.promises.Dispose()
 
 	return result
 }
@@ -168,10 +186,11 @@ func (this *Cast) State() uint {
 ////////////////////////////////////////////////////////////////////////////////
 // STATE
 
-func (this *Cast) UpdateStatus() error {
+func (this *Cast) UpdateState() error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
+	// Update status for volume and app
 	if this.volume == nil || this.app == nil {
 		if _, data, err := this.channel.GetStatus(); err != nil {
 			return err
@@ -182,6 +201,43 @@ func (this *Cast) UpdateStatus() error {
 
 	// Return success
 	return nil
+}
+
+func (this *Cast) SetState(s state) (gopi.CastFlag, error) {
+	// Set state on device
+	flags := gopi.CAST_FLAG_NONE
+	for _, value := range s.values {
+		switch value := value.(type) {
+		case Volume:
+			if f, err := this.SetVolume(value); err != nil {
+				return flags, err
+			} else {
+				flags |= f
+			}
+		case App:
+			if f, err := this.SetApp(value); err != nil {
+				return flags, err
+			} else {
+				flags |= f
+			}
+		case Media:
+			if f, err := this.SetMedia(value); err != nil {
+				return flags, err
+			} else {
+				flags |= f
+			}
+		default:
+			return flags, gopi.ErrInternalAppError.WithPrefix(value)
+		}
+	}
+
+	// Call promise for request
+	if err := this.promises.Call(s.req); err != nil {
+		fmt.Println("Error:", err)
+	}
+
+	// Return success
+	return flags, nil
 }
 
 func (this *Cast) SetVolume(v Volume) (gopi.CastFlag, error) {
@@ -212,8 +268,12 @@ func (this *Cast) SetMedia(m Media) (gopi.CastFlag, error) {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	fmt.Println("TODO:MEDIA", m)
-	return gopi.CAST_FLAG_NONE, nil
+	if this.media == nil || this.media.Equals(m) == false {
+		this.media = &m
+		return gopi.CAST_FLAG_MEDIA, nil
+	} else {
+		return gopi.CAST_FLAG_NONE, nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -276,7 +336,12 @@ func (this *Cast) ReqPlay(state bool) error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	if _, data, err := this.channel.Play(state); err != nil {
+	if this.media == nil || this.media.MediaSessionId == 0 {
+		// Connect media and then provide callback
+		return this.ReqMediaConnect(func() error {
+			return this.ReqPlay(state)
+		})
+	} else if _, data, err := this.channel.Play(this.media.MediaSessionId, state); err != nil {
 		return err
 	} else if err := this.send(data); err != nil {
 		return err
@@ -290,7 +355,53 @@ func (this *Cast) ReqPause(state bool) error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	if _, data, err := this.channel.Pause(state); err != nil {
+	if this.media == nil || this.media.MediaSessionId == 0 {
+		// Connect media and then provide callback
+		return this.ReqMediaConnect(func() error {
+			if this.media == nil || this.media.MediaSessionId == 0 {
+				return gopi.ErrNotFound.WithPrefix("No Media Playing")
+			} else {
+				return this.ReqPause(state)
+			}
+		})
+	} else if _, data, err := this.channel.Pause(this.media.MediaSessionId, state); err != nil {
+		return err
+	} else if err := this.send(data); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *Cast) ReqSeek(value int) error {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.media == nil || this.media.MediaSessionId == 0 {
+		// Connect media and then provide callback
+		return this.ReqMediaConnect(func() error {
+			if this.media == nil || this.media.MediaSessionId == 0 {
+				return gopi.ErrNotFound.WithPrefix("No Media Playing")
+			} else {
+				return this.ReqSeek(value)
+			}
+		})
+	} else if _, data, err := this.channel.Seek(this.media.MediaSessionId, value); err != nil {
+		return err
+	} else if err := this.send(data); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *Cast) ReqStop() error {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if _, data, err := this.channel.Stop(); err != nil {
 		return err
 	} else if err := this.send(data); err != nil {
 		return err
@@ -301,9 +412,14 @@ func (this *Cast) ReqPause(state bool) error {
 }
 
 func (this *Cast) ReqLoadURL(url *url.URL, mimetype string, autoplay bool) error {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	// ConnectMedia
 	if this.app == nil || this.app.TransportId == "" {
-		return gopi.ErrOutOfOrder.WithPrefix("transportId")
+		return this.ReqAppConnect(func() error {
+			return this.ReqLoadURL(url, mimetype, autoplay)
+		})
 	} else if _, data, err := this.channel.ConnectMedia(this.app.TransportId); err != nil {
 		return err
 	} else if err := this.send(data); err != nil {
@@ -317,6 +433,40 @@ func (this *Cast) ReqLoadURL(url *url.URL, mimetype string, autoplay bool) error
 		return err
 	}
 
+	// Return success
+	return nil
+}
+
+func (this *Cast) ReqAppConnect(fn func() error) error {
+	if reqId, data, err := this.channel.GetStatus(); err != nil {
+		return err
+	} else if err := this.send(data); err != nil {
+		return err
+	} else {
+		// Set promise in background
+		go this.promises.Set(reqId, fn)
+	}
+	// Return success
+	return nil
+}
+
+func (this *Cast) ReqMediaConnect(fn func() error) error {
+	if this.app == nil || this.app.TransportId == "" {
+		return this.ReqAppConnect(func() error {
+			return this.ReqMediaConnect(fn)
+		})
+	} else if _, data, err := this.channel.ConnectMedia(this.app.TransportId); err != nil {
+		return err
+	} else if err := this.send(data); err != nil {
+		return err
+	} else if reqId, data, err := this.channel.GetMediaStatus(this.app.TransportId); err != nil {
+		return err
+	} else if err := this.send(data); err != nil {
+		return err
+	} else {
+		// Set promise in background
+		go this.promises.Set(reqId, fn)
+	}
 	// Return success
 	return nil
 }
@@ -345,6 +495,9 @@ func (this *Cast) String() string {
 	}
 	if this.app != nil {
 		str += " app=" + fmt.Sprint(this.app)
+	}
+	if this.media != nil {
+		str += " media=" + fmt.Sprint(this.media)
 	}
 	return str + ">"
 }

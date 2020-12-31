@@ -259,8 +259,14 @@ func (this *graph) NewServiceStub(s string) gopi.ServiceStub {
 	defer this.RWMutex.RUnlock()
 
 	if t, exists := stubs[s]; exists == false {
+		if this.Logfn != nil {
+			this.Logfn("Stub not registered: ", s)
+		}
 		return nil
 	} else if stub := reflect.New(t.Elem()); stub.IsValid() == false {
+		if this.Logfn != nil {
+			this.Logfn("Stub not valid: ", s)
+		}
 		return nil
 	} else {
 		return stub.Interface().(gopi.ServiceStub)

@@ -160,7 +160,7 @@ func (this *Manager) Connect(device gopi.Cast) error {
 
 	// Emit connect
 	if this.Publisher != nil {
-		this.Publisher.Emit(NewEvent(this.dev[key], gopi.CAST_FLAG_CONNECT), true)
+		this.Publisher.Emit(NewEvent(this.dev[key], gopi.CAST_FLAG_CONNECT, 0), true)
 	}
 
 	// Return success
@@ -185,7 +185,7 @@ func (this *Manager) Disconnect(device gopi.Cast) error {
 
 	// Emit disconnect
 	if this.Publisher != nil {
-		this.Publisher.Emit(NewEvent(this.dev[key], gopi.CAST_FLAG_DISCONNECT), true)
+		this.Publisher.Emit(NewEvent(this.dev[key], gopi.CAST_FLAG_DISCONNECT, 0), true)
 	}
 
 	// Remove device
@@ -288,6 +288,42 @@ func (this *Manager) SetPause(cast gopi.Cast, value bool) error {
 	}
 }
 
+func (this *Manager) Seek(cast gopi.Cast, value time.Duration) error {
+	if cast == nil {
+		return gopi.ErrBadParameter.WithPrefix("Seek")
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		if err := this.Connect(cast); err != nil {
+			return err
+		}
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		return gopi.ErrNotFound.WithPrefix("Seek")
+	} else {
+		return device.ReqSeek(int(value.Seconds()))
+	}
+}
+
+func (this *Manager) Stop(cast gopi.Cast) error {
+	if cast == nil {
+		return gopi.ErrBadParameter.WithPrefix("Stop")
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		if err := this.Connect(cast); err != nil {
+			return err
+		}
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		return gopi.ErrNotFound.WithPrefix("Stop")
+	} else {
+		return device.ReqStop()
+	}
+}
+
 func (this *Manager) LoadURL(cast gopi.Cast, url *url.URL, autoplay bool) error {
 	if cast == nil {
 		return gopi.ErrBadParameter.WithPrefix("LoadURL")
@@ -377,7 +413,7 @@ func (this *Manager) updateStatus() error {
 
 	var result error
 	for _, device := range this.dev {
-		if err := device.UpdateStatus(); err != nil {
+		if err := device.UpdateState(); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
@@ -394,36 +430,11 @@ func (this *Manager) setState(s state) error {
 		return gopi.ErrNotFound.WithPrefix(s.key)
 	}
 
-	// Set state on device
-	flags := gopi.CAST_FLAG_NONE
-	for _, value := range s.values {
-		switch value := value.(type) {
-		case Volume:
-			if f, err := device.SetVolume(value); err != nil {
-				return err
-			} else {
-				flags |= f
-			}
-		case App:
-			if f, err := device.SetApp(value); err != nil {
-				return err
-			} else {
-				flags |= f
-			}
-		case Media:
-			if f, err := device.SetMedia(value); err != nil {
-				return err
-			} else {
-				flags |= f
-			}
-		default:
-			return gopi.ErrInternalAppError.WithPrefix(value)
-		}
-	}
-
-	// Emit event
-	if flags != gopi.CAST_FLAG_NONE && this.Publisher != nil {
-		this.Publisher.Emit(NewEvent(device, flags), true)
+	// Set state in device
+	if flags, err := device.SetState(s); err != nil {
+		return err
+	} else if flags != gopi.CAST_FLAG_NONE && this.Publisher != nil {
+		this.Publisher.Emit(NewEvent(device, flags, s.req), true)
 	}
 
 	// Return success

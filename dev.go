@@ -5,6 +5,7 @@ import (
 	"image"
 	"net/url"
 	"strings"
+	"time"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,11 +88,11 @@ type CastManager interface {
 	LaunchAppWithId(Cast, string) error
 
 	// SetVolume sets the volume for a device, the value is between 0.0
-	// and 1.0.
+	// and 1.0
 	SetVolume(Cast, float32) error
 
 	// SetMuted sets the volume as muted or unmuted. Does not affect the
-	// volume level.
+	// volume level
 	SetMuted(Cast, bool) error
 
 	// SetPlay sets media playback state to either PLAY or STOP
@@ -100,6 +101,12 @@ type CastManager interface {
 	// SetPause sets media state to PLAY or PAUSE. Will not affect
 	// state if currently STOP
 	SetPause(Cast, bool) error
+
+	// Seek within media stream relative to start of stream
+	Seek(Cast, time.Duration) error
+
+	// Send stop signal, terminating any playing media
+	Stop(Cast) error
 
 	// Stream URL to Chromecast supports HTTP and HTTPS protocols,
 	// and the stream can be automatically started if the third
@@ -134,6 +141,44 @@ type CastEvent interface {
 	Flags() CastFlag
 }
 
+type CastService interface {
+	Service
+}
+
+type CastStub interface {
+	ServiceStub
+
+	// ListCasts returns all discovered Chromecast devices
+	ListCasts(ctx context.Context) ([]Cast, error)
+
+	// SetApp loads an application into the Chromecast
+	SetApp(ctx context.Context, castId, appId string) error
+
+	// SetVolume sets the Chromecast sound volume
+	SetVolume(ctx context.Context, castId string, value float32) error
+
+	// SetMute mutes and unmutes the sound
+	SetMute(ctx context.Context, castId string, value bool) error
+
+	// LoadURL loads a video, audio or image onto the Chromecast,
+	// assuming an application has already been loaded
+	LoadURL(ctx context.Context, castId string, url *url.URL) error
+
+	// Stop stops currently playing media if a media session is ongoing
+	// or else resets the Chromecast to the backdrop if no media session
+	Stop(ctx context.Context, castId string) error
+
+	// Play resumes playback after paused media
+	Play(ctx context.Context, castId string) error
+
+	// Pause the media session
+	Pause(ctx context.Context, castId string) error
+
+	// Seek within playing audio or video relative to the start of the
+	// playing media
+	Seek(ctx context.Context, castId string, value time.Duration) error
+}
+
 // TYPES
 const (
 	CAST_FLAG_CONNECT CastFlag = (1 << iota)
@@ -145,6 +190,12 @@ const (
 	CAST_FLAG_NONE CastFlag = 0
 	CAST_FLAG_MIN           = CAST_FLAG_CONNECT
 	CAST_FLAG_MAX           = CAST_FLAG_DISCONNECT
+)
+
+const (
+	CAST_APPID_DEFAULT      = "CC1AD845"
+	CAST_APPID_MUTABLEMEDIA = "5C292C3E"
+	CAST_APPID_BACKDROP     = "E8C28D3C"
 )
 
 // STRINGIFY

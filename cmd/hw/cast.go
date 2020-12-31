@@ -49,9 +49,16 @@ func (this *app) RunCastApp(ctx context.Context) error {
 	}
 
 	if args := this.Args(); len(args) != 1 {
-		return gopi.ErrBadParameter.WithPrefix("AppId required")
-	} else if err := this.CastManager.LaunchAppWithId(devices[0], args[0]); err != nil {
-		return err
+		return gopi.ErrBadParameter.WithPrefix("AppId required, use 'default'")
+	} else {
+		appid := args[0]
+		if appid == "" || appid == "default" {
+			appid = gopi.CAST_APPID_DEFAULT
+		}
+		this.Debugf("Launching App %q", appid)
+		if err := this.CastManager.LaunchAppWithId(devices[0], appid); err != nil {
+			return err
+		}
 	}
 
 	// Wait for watching to end
@@ -90,6 +97,35 @@ func (this *app) RunCastVol(ctx context.Context) error {
 	return nil
 }
 
+func (this *app) RunCastSeek(ctx context.Context) error {
+	devices, err := this.GetCastDevices(ctx)
+	if err != nil {
+		return err
+	} else if len(devices) != 1 {
+		return gopi.ErrNotFound.WithPrefix("Cast")
+	}
+
+	// Watch in background
+	if *this.watch {
+		this.WaitGroup.Add(1)
+		go this.RunCastWatch(ctx)
+	}
+
+	if args := this.Args(); len(args) != 1 {
+		return gopi.ErrBadParameter.WithPrefix("Volume required between 0.0 and 1.0")
+	} else if value, err := time.ParseDuration(args[0]); err != nil {
+		return err
+	} else if err := this.CastManager.Seek(devices[0], value); err != nil {
+		return err
+	}
+
+	// Wait for watching to end
+	this.WaitGroup.Wait()
+
+	// Return success
+	return nil
+}
+
 func (this *app) RunCastLoad(ctx context.Context) error {
 	devices, err := this.GetCastDevices(ctx)
 	if err != nil {
@@ -104,14 +140,7 @@ func (this *app) RunCastLoad(ctx context.Context) error {
 		go this.RunCastWatch(ctx)
 	}
 
-	// Connect and wait
-	if err := this.CastManager.Connect(devices[0]); err != nil {
-		return err
-	}
-
-	// Wait for app
-	time.Sleep(time.Second)
-
+	// Load URL
 	if args := this.Args(); len(args) != 1 {
 		return gopi.ErrBadParameter.WithPrefix("Missing URL")
 	} else if url, err := url.Parse(args[0]); err != nil {
@@ -183,14 +212,6 @@ func (this *app) RunCastPause(ctx context.Context) error {
 		go this.RunCastWatch(ctx)
 	}
 
-	// Connect and wait for App Transport Id
-	if err := this.CastManager.Connect(devices[0]); err != nil {
-		return err
-	} else {
-		// HACK!!!!
-		time.Sleep(time.Second)
-	}
-
 	if err := this.CastManager.SetPause(devices[0], true); err != nil {
 		return err
 	}
@@ -216,16 +237,14 @@ func (this *app) RunCastPlayEx(ctx context.Context, value bool) error {
 		go this.RunCastWatch(ctx)
 	}
 
-	// Connect and wait for App Transport Id
-	if err := this.CastManager.Connect(devices[0]); err != nil {
-		return err
+	if value {
+		if err := this.CastManager.SetPlay(devices[0], true); err != nil {
+			return err
+		}
 	} else {
-		// HACK!!!!
-		time.Sleep(time.Second)
-	}
-
-	if err := this.CastManager.SetPlay(devices[0], value); err != nil {
-		return err
+		if err := this.CastManager.Stop(devices[0]); err != nil {
+			return err
+		}
 	}
 
 	// Wait for watching to end
