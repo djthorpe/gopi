@@ -91,7 +91,15 @@ func (this *stub) Pause(ctx context.Context, castId string) error {
 }
 
 func (this *stub) Seek(ctx context.Context, castId string, value time.Duration) error {
-	return gopi.ErrNotImplemented
+	if _, err := this.ManagerClient.Seek(ctx, &SeekRequest{
+		Id:       castId,
+		Position: toProtoDuration(value),
+	}); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
 }
 
 /////////////////////////////////////////////////////////////////////

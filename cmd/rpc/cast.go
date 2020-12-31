@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"os"
+	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	table "github.com/djthorpe/gopi/v3/pkg/table"
@@ -58,6 +59,21 @@ func (this *app) RunCastLoad(ctx context.Context, stub gopi.CastStub) error {
 	if u, err := url.Parse(args[0]); err != nil {
 		return err
 	} else if err := stub.LoadURL(ctx, *this.castId, u); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *app) RunCastSeek(ctx context.Context, stub gopi.CastStub) error {
+	args := this.Args()
+	if *this.castId == "" || len(args) != 1 {
+		return gopi.ErrHelp
+	}
+	if time, err := time.ParseDuration(args[0]); err != nil {
+		return err
+	} else if err := stub.Seek(ctx, *this.castId, time); err != nil {
 		return err
 	}
 

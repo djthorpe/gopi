@@ -1,6 +1,12 @@
 package googlecast
 
-import gopi "github.com/djthorpe/gopi/v3"
+import (
+	"time"
+
+	gopi "github.com/djthorpe/gopi/v3"
+	ptypes "github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/duration"
+)
 
 /////////////////////////////////////////////////////////////////////
 // CAST DEVICE INTERFACE
@@ -65,4 +71,8 @@ func toProtoState(cast gopi.Cast) Cast_CastState {
 	} else {
 		return Cast_ACTIVE
 	}
+}
+
+func toProtoDuration(value time.Duration) *duration.Duration {
+	return ptypes.DurationProto(value)
 }

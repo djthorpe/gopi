@@ -190,6 +190,19 @@ func (this *service) Pause(context.Context, *CastRequest) (*CastResponse, error)
 	return nil, gopi.ErrNotImplemented
 }
 
-func (this *service) Seek(context.Context, *SeekRequest) (*CastResponse, error) {
-	return nil, gopi.ErrNotImplemented
+func (this *service) Seek(ctx context.Context, req *SeekRequest) (*CastResponse, error) {
+	this.Debug("<Seek ", req, ">")
+
+	// Retrieve Chromecast, Seek
+	cast := this.getCastEx(ctx, req.Id)
+	if cast == nil {
+		return nil, gopi.ErrNotFound.WithPrefix(req.Id)
+	} else if err := this.CastManager.Seek(cast, req.Position.AsDuration()); err != nil {
+		return nil, err
+	}
+
+	// Return success
+	return &CastResponse{
+		Cast: toProtoCast(cast),
+	}, nil
 }

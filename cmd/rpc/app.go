@@ -73,12 +73,19 @@ func (this *app) Define(cfg gopi.Config) error {
 			return this.RunCastLoad(ctx, stub)
 		}
 	})
+	cfg.Command("cast seek", "Seek within playing media", func(ctx context.Context) error {
+		if stub, err := this.GetGoogleCastStub(); err != nil {
+			return err
+		} else {
+			return this.RunCastSeek(ctx, stub)
+		}
+	})
 
 	// Global flags
 	this.service = cfg.FlagString("srv", "", "name, service:name or host:port")
 
 	// Set flags for cast functions
-	this.castId = cfg.FlagString("id", "", "Chromecast Id", "cast app", "cast load")
+	this.castId = cfg.FlagString("id", "", "Chromecast Id", "cast app", "cast load", "cast seek")
 
 	// Return success
 	return nil
