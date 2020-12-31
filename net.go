@@ -164,6 +164,12 @@ type HttpStatic interface {
 	ServeFolder(path, folder string) error
 }
 
+// HttpLogger logs request and response metrics
+type HttpLogger interface {
+	// Log all requests as named measurement
+	Log(string) error
+}
+
 /////////////////////////////////////////////////////////////////////
 // GLOBALS
 

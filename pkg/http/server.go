@@ -28,6 +28,12 @@ type Server struct {
 	server    *http.Server
 	mux       *http.ServeMux
 	timeout   *time.Duration
+	handler   http.Handler
+}
+
+type Transport interface {
+	http.Handler
+	SetHandler(fn http.Handler)
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -52,7 +58,7 @@ func (this *Server) New(cfg gopi.Config) error {
 		}
 	}
 
-	// Set multiplexer up
+	// Set multiplexer and handler chain
 	this.mux = http.NewServeMux()
 
 	// Return success
@@ -146,7 +152,7 @@ func (this *Server) StartInBackground(network, addr string) error {
 	// Set server object
 	this.server = &http.Server{
 		Addr:              addr,
-		Handler:           this.mux,
+		Handler:           this,
 		ReadHeaderTimeout: *this.timeout,
 		WriteTimeout:      *this.timeout,
 		IdleTimeout:       *this.timeout,
@@ -217,16 +223,39 @@ func (this *Server) RegisterService(path interface{}, service gopi.Service) erro
 
 	if this.mux == nil {
 		return gopi.ErrOutOfOrder.WithPrefix("RegisterService")
-	} else if path_, ok := path.(string); ok == false {
-		return gopi.ErrBadParameter.WithPrefix("RegisterService", "path")
 	} else if handler_, ok := service.(http.Handler); ok == false {
 		return gopi.ErrBadParameter.WithPrefix("RegisterService", "service")
+	} else if path == nil {
+		if handler_, ok := service.(Transport); ok == false {
+			return gopi.ErrBadParameter.WithPrefix("RegisterService", "Does not implement SetHandler")
+		} else {
+			if this.handler == nil {
+				handler_.SetHandler(this.mux)
+			} else {
+				handler_.SetHandler(this.handler)
+			}
+			this.handler = handler_
+		}
 	} else {
-		this.mux.Handle(path_, handler_)
+		if path_, ok := path.(string); ok == false {
+			return gopi.ErrBadParameter.WithPrefix("RegisterService", "path")
+		} else {
+			this.mux.Handle(path_, handler_)
+		}
 	}
 
 	// Return success
 	return nil
+}
+
+func (this *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// If any handlers are installed call them, or else call the default
+	// multiplexer
+	if this.handler == nil {
+		this.mux.ServeHTTP(w, req)
+	} else {
+		this.handler.ServeHTTP(w, req)
+	}
 }
 
 /////////////////////////////////////////////////////////////////////

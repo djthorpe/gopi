@@ -15,8 +15,11 @@ import (
 type app struct {
 	gopi.Unit
 	gopi.HttpStatic
+	gopi.HttpLogger
+	gopi.Publisher
 	gopi.Logger
 	gopi.Command
+	gopi.MetricWriter
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,9 +55,11 @@ func (this *app) Serve(ctx context.Context) error {
 		return err
 	} else if err := this.HttpStatic.ServeFolder("/", folder); err != nil {
 		return err
+	} else if err := this.HttpLogger.Log("httpserver"); err != nil {
+		return err
 	}
 
-	// Wait for interrupt
+	// Wait for interrupt, print out metrics
 	fmt.Println("Press CTRL+C to end")
 	<-ctx.Done()
 
