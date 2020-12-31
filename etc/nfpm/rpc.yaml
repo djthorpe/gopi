@@ -1,6 +1,6 @@
 
-# nfpm file to create debian package for rpcping
-name: "rpcping"
+# nfpm file to create debian package for rpc
+name: "rpc"
 
 # arch, platform and version are replaced with GOARCH, GOOS and git tag
 arch: "arm"
@@ -8,15 +8,15 @@ platform: "linux"
 version: "v0.0.0"
 
 replaces:
-  - rpcping
+  - rpc
 provides:
-  - rpcping
+  - rpc
 maintainer: "David Thorpe <djt@mutablelogic.com>"
 description: |
   Demonstration of client/server communication using RPC
 vendor: "mutablelogic.com"
-homepage: "http://github.com/djthorpe/gopi/cmd/rpcping"
+homepage: "http://github.com/djthorpe/gopi/cmd/rpc"
 license: "Apache 2.0"
 
 files:
-  build/rpcping: /opt/gopi/bin/rpcping
+  build/rpc: /opt/gopi/bin/rpc

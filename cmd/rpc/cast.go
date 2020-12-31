@@ -31,7 +31,18 @@ func (this *app) RunCast(ctx context.Context, stub gopi.CastStub) error {
 }
 
 func (this *app) RunCastApp(ctx context.Context, stub gopi.CastStub) error {
-	if err := stub.SetApp(ctx, *this.castId, gopi.CAST_APPID_MUTABLEMEDIA); err != nil {
+	args := this.Args()
+	if *this.castId == "" || len(args) != 1 {
+		return gopi.ErrHelp
+	}
+	app := args[0]
+	switch app {
+	case "default":
+		app = gopi.CAST_APPID_DEFAULT
+	case "mutablemedia":
+		app = gopi.CAST_APPID_MUTABLEMEDIA
+	}
+	if err := stub.SetApp(ctx, *this.castId, app); err != nil {
 		return err
 	}
 
@@ -40,7 +51,11 @@ func (this *app) RunCastApp(ctx context.Context, stub gopi.CastStub) error {
 }
 
 func (this *app) RunCastLoad(ctx context.Context, stub gopi.CastStub) error {
-	if u, err := url.Parse("http://aurl/"); err != nil {
+	args := this.Args()
+	if *this.castId == "" || len(args) != 1 {
+		return gopi.ErrHelp
+	}
+	if u, err := url.Parse(args[0]); err != nil {
 		return err
 	} else if err := stub.LoadURL(ctx, *this.castId, u); err != nil {
 		return err

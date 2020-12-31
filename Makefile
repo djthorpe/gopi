@@ -11,7 +11,7 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 BUILDDIR = build
 PACKAGECLOUD_REPO = djthorpe/gopi/raspbian/buster
 
-all: hw httpserver helloworld argonone douglas dnsregister rpcping googlecast mediakit 
+all: hw httpserver helloworld argonone douglas dnsregister rpc googlecast mediakit 
 	@echo Use "make debian" to release to packaging
 	@echo Use "make clean" to clear build cache
 	@echo Use "make test" to run tests
@@ -97,7 +97,7 @@ builddir:
 	install -d $(BUILDDIR)
 
 # Make debian packages
-debian: clean builddir argonone dnsregister douglas httpserver rpcping googlecast nfpm
+debian: clean builddir argonone dnsregister douglas httpserver rpc googlecast nfpm
 	$(eval VERSION = $(shell git describe --tags))
 	$(eval ARCH = $(shell $(GO) env GOARCH))
 	$(eval PLATFORM = $(shell $(GO) env GOOS))
@@ -134,8 +134,8 @@ debian: clean builddir argonone dnsregister douglas httpserver rpcping googlecas
 		-e 's/^version:.*$$/version: $(VERSION)/'  \
 		-e 's/^arch:.*$$/arch: $(ARCH)/' \
 		-e 's/^platform:.*$$/platform: $(PLATFORM)/' \
-		etc/nfpm/rpcping.yaml > $(BUILDDIR)/rpcping.yaml
-	@nfpm pkg -f $(BUILDDIR)/rpcping.yaml --packager deb --target $(BUILDDIR)
+		etc/nfpm/rpc.yaml > $(BUILDDIR)/rpc.yaml
+	@nfpm pkg -f $(BUILDDIR)/rpc.yaml --packager deb --target $(BUILDDIR)
 
 	@sed \
 		-e 's/^version:.*$$/version: $(VERSION)/'  \
@@ -181,8 +181,8 @@ douglas: builddir rpi
 dnsregister: builddir
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/dnsregister -tags "$(TAGS)" ${GOFLAGS} ./cmd/dnsregister
 
-rpcping: builddir protogen
-	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rpcping -tags "$(TAGS)" ${GOFLAGS} ./cmd/rpcping
+rpc: builddir protogen
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rpc -tags "$(TAGS)" ${GOFLAGS} ./cmd/rpc
 
 googlecast: builddir protogen
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/googlecast -tags "$(TAGS)" ${GOFLAGS} ./cmd/googlecast
