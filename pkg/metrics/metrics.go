@@ -78,20 +78,20 @@ func (this *metrics) Field(name string, value ...interface{}) gopi.Field {
 }
 
 // Emit metrics for a named measurement, omitting timestamp
-func (this *metrics) Emit(name string, values ...interface{}) error {
-	return this.EmitTS(name, time.Time{}, values...)
+func (this *metrics) Emit(name string, tags []gopi.Field, values ...interface{}) error {
+	return this.EmitTS(name, time.Time{}, tags, values...)
 }
 
 // EmitTS emits metrics for a named measurement, with defined timestamp
 // will retry if the channel is temporarily full
-func (this *metrics) EmitTS(name string, ts time.Time, values ...interface{}) error {
+func (this *metrics) EmitTS(name string, ts time.Time, tags []gopi.Field, values ...interface{}) error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
 	// Clone measurement
 	if m, exists := this.m[name]; exists == false {
 		return gopi.ErrBadParameter.WithPrefix("Emit", name)
-	} else if m, err := m.Clone(ts, values...); err != nil {
+	} else if m, err := m.Clone(ts, tags, values...); err != nil {
 		return err
 	} else {
 		// Unreliable emit mechanism but don't block

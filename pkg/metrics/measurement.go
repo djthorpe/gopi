@@ -126,7 +126,7 @@ func (this *measurement) Set(name string, value interface{}) error {
 	}
 }
 
-func (this *measurement) Clone(ts time.Time, values ...interface{}) (*measurement, error) {
+func (this *measurement) Clone(ts time.Time, tags []gopi.Field, values ...interface{}) (*measurement, error) {
 	// Check correct number of arguments
 	if len(values) != len(this.metrics) {
 		return nil, gopi.ErrBadParameter.WithPrefix("Clone")
@@ -136,6 +136,11 @@ func (this *measurement) Clone(ts time.Time, values ...interface{}) (*measuremen
 	that.name = this.name
 	that.ts = ts
 	that.fields = make(map[string]gopi.Field, len(this.fields))
+
+	// Index new tags and use them instead of defaults
+	for _, tag := range tags {
+		fmt.Println("TODO: Clone", tag)
+	}
 
 	// Clone tags
 	that.tags = make([]gopi.Field, len(this.tags))

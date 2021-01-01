@@ -9,26 +9,31 @@ import (
 
 // Metrics provides a mechanism for defining measurements
 // and emitting data, which may be time-series based and include
-// tags/dimensions (which are indexed) and metrics (which are not)
+// tags (which are indexed and can be used for grouping) and
+// metrics (which are not, and can be aggregated).
 type Metrics interface {
 	// Define a measurement with metric definitions and optional tag fields
 	NewMeasurement(string, string, ...Field) (Measurement, error)
 
-	// Field creates a field or nil if invalid
-	Field(string, ...interface{}) Field
+	// Emit tags and metrics for a named measurement, omitting timestamp
+	Emit(string, []Field, ...interface{}) error
 
-	// Emit metrics for a named measurement, omitting timestamp
-	Emit(string, ...interface{}) error
-
-	// EmitTS emits metrics for a named measurement, with defined timestamp
-	EmitTS(string, time.Time, ...interface{}) error
+	// EmitTS emits tags and metrics for a named measurement, with defined timestamp
+	EmitTS(string, time.Time, []Field, ...interface{}) error
 
 	// Measurements returns array of all defined measurements
 	Measurements() []Measurement
 
-	// Return some standard tags
+	// Field creates a field or nil if invalid
+	Field(string, ...interface{}) Field
+
+	// HostTag returns a field with the current hostname
 	HostTag() Field
+
+	// UserTag returns a field with the current username
 	UserTag() Field
+
+	// EnvTag returns a field with the value of an environment variable
 	EnvTag(string) Field
 }
 
