@@ -4,6 +4,7 @@ package mmal
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"unsafe"
 )
@@ -22,7 +23,6 @@ import "C"
 
 type (
 	MMALComponent C.MMAL_COMPONENT_T
-	MMALPort      C.MMAL_PORT_T
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -133,11 +133,26 @@ func (this *MMALComponent) Disable() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// METHODS - PORTS
+// METHODS
 
 func (this *MMALComponent) ControlPort() *MMALPort {
 	ctx := (*C.MMAL_COMPONENT_T)(this)
 	return (*MMALPort)(ctx.control)
+}
+
+func (this *MMALComponent) InputPorts() []*MMALPort {
+	ctx := (*C.MMAL_COMPONENT_T)(this)
+	return this.ports(ctx.input, uint(ctx.input_num))
+}
+
+func (this *MMALComponent) OutputPorts() []*MMALPort {
+	ctx := (*C.MMAL_COMPONENT_T)(this)
+	return this.ports(ctx.output, uint(ctx.output_num))
+}
+
+func (this *MMALComponent) ClockPorts() []*MMALPort {
+	ctx := (*C.MMAL_COMPONENT_T)(this)
+	return this.ports(ctx.clock, uint(ctx.clock_num))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -157,43 +172,29 @@ func (this *MMALComponent) String() string {
 	if ports := this.CountPorts(); ports > 0 {
 		str += " count_ports=" + fmt.Sprint(ports)
 	}
+	if ctrl := this.ControlPort(); ctrl != nil {
+		str += " control=" + fmt.Sprint(ctrl)
+	}
+	if input := this.InputPorts(); len(input) != 0 {
+		str += " input=" + fmt.Sprint(input)
+	}
+	if output := this.OutputPorts(); len(output) != 0 {
+		str += " output=" + fmt.Sprint(output)
+	}
+	if clock := this.ClockPorts(); len(clock) != 0 {
+		str += " clock=" + fmt.Sprint(clock)
+	}
 	return str + ">"
 }
 
-/*
+////////////////////////////////////////////////////////////////////////////////
+// PRIVATE METHODS
 
-func MMALComponentInputPortNum(handle MMALComponent) uint {
-	return uint(handle.input_num)
-}
-
-func MMALComponentInputPortAtIndex(handle MMALComponent, index uint) MMAL_PortHandle {
-	return mmal_component_port_at_index(handle.input, uint(handle.input_num), index)
-}
-
-func MMALComponentOutputPortNum(handle MMALComponent) uint {
-	return uint(handle.output_num)
-}
-
-func MMALComponentOutputPortAtIndex(handle MMALComponent, index uint) MMAL_PortHandle {
-	return mmal_component_port_at_index(handle.output, uint(handle.output_num), index)
-}
-
-func MMALComponentClockPortNum(handle MMAL_Component) uint {
-	return uint(handle.clock_num)
-}
-
-func MMALComponentClockPortAtIndex(handle MMAL_Component, index uint) MMAL_PortHandle {
-	return mmal_component_port_at_index(handle.clock, uint(handle.clock_num), index)
-}
-
-
-func mmal_component_port_at_index(array **C.MMAL_PORT_T, num, index uint) MMAL_PortHandle {
-	var handles []MMAL_PortHandle
-	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&handles)))
-	sliceHeader.Cap = int(num)
-	sliceHeader.Len = int(num)
+func (this *MMALComponent) ports(array **C.MMAL_PORT_T, count uint) []*MMALPort {
+	var result []*MMALPort
+	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&result)))
+	sliceHeader.Cap = int(count)
+	sliceHeader.Len = int(count)
 	sliceHeader.Data = uintptr(unsafe.Pointer(array))
-	return handles[index]
+	return result
 }
-
-*/
