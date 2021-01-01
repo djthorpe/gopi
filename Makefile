@@ -11,7 +11,7 @@ GOFLAGS = -ldflags "-s -w $(GOLDFLAGS)"
 BUILDDIR = build
 PACKAGECLOUD_REPO = djthorpe/gopi/raspbian/buster
 
-all: hw httpserver helloworld argonone douglas dnsregister rpc googlecast mediakit 
+all: hw httpserver helloworld argonone douglas dnsregister rpc googlecast mediakit
 	@echo Use "make debian" to release to packaging
 	@echo Use "make clean" to clear build cache
 	@echo Use "make test" to run tests
@@ -187,11 +187,15 @@ rpc: builddir protogen
 googlecast: builddir protogen
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/googlecast -tags "$(TAGS)" ${GOFLAGS} ./cmd/googlecast
 
+# In testing
 mediakit: builddir ffmpeg chromaprint
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit
 
 gx: builddir rpi egl drm gbm
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/gx -tags "$(TAGS)" ${GOFLAGS} ./cmd/gx
+
+mmaltest: rpi mmal
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) test -v -tags "$(TAGS)" ./pkg/sys/mmal
 
 # Build rules - dependencies
 nfpm:

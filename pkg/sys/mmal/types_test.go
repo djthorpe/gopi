@@ -1,3 +1,5 @@
+//+build mmal
+
 package mmal_test
 
 import "testing"
