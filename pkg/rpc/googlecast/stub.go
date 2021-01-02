@@ -90,8 +90,20 @@ func (this *stub) Pause(ctx context.Context, castId string) error {
 	return gopi.ErrNotImplemented
 }
 
-func (this *stub) Seek(ctx context.Context, castId string, value time.Duration) error {
-	if _, err := this.ManagerClient.Seek(ctx, &SeekRequest{
+func (this *stub) SeekAbs(ctx context.Context, castId string, value time.Duration) error {
+	if _, err := this.ManagerClient.SeekAbs(ctx, &SeekRequest{
+		Id:       castId,
+		Position: toProtoDuration(value),
+	}); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *stub) SeekRel(ctx context.Context, castId string, value time.Duration) error {
+	if _, err := this.ManagerClient.SeekRel(ctx, &SeekRequest{
 		Id:       castId,
 		Position: toProtoDuration(value),
 	}); err != nil {

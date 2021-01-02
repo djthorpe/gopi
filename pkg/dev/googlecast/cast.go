@@ -374,7 +374,7 @@ func (this *Cast) ReqPause(state bool) error {
 	return nil
 }
 
-func (this *Cast) ReqSeek(value int) error {
+func (this *Cast) ReqSeekAbs(value float32) error {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
@@ -384,10 +384,33 @@ func (this *Cast) ReqSeek(value int) error {
 			if this.media == nil || this.media.MediaSessionId == 0 {
 				return gopi.ErrNotFound.WithPrefix("No Media Playing")
 			} else {
-				return this.ReqSeek(value)
+				return this.ReqSeekAbs(value)
 			}
 		})
-	} else if _, data, err := this.channel.Seek(this.app.TransportId, this.media.MediaSessionId, value); err != nil {
+	} else if _, data, err := this.channel.SeekAbs(this.app.TransportId, this.media.MediaSessionId, value); err != nil {
+		return err
+	} else if err := this.send(data); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *Cast) ReqSeekRel(value float32) error {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.media == nil || this.media.MediaSessionId == 0 {
+		// Connect media and then provide callback
+		return this.ReqMediaConnect(func() error {
+			if this.media == nil || this.media.MediaSessionId == 0 {
+				return gopi.ErrNotFound.WithPrefix("No Media Playing")
+			} else {
+				return this.ReqSeekRel(value)
+			}
+		})
+	} else if _, data, err := this.channel.SeekRel(this.app.TransportId, this.media.MediaSessionId, value); err != nil {
 		return err
 	} else if err := this.send(data); err != nil {
 		return err

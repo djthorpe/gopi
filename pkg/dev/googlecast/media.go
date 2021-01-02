@@ -124,14 +124,14 @@ func (m Media) String() string {
 	if m.IdleReason != "" {
 		parts += fmt.Sprintf(" idle_reason=%v", strconv.Quote(m.IdleReason))
 	}
-	if m.CurrentItemId != 0 {
-		parts += fmt.Sprintf(" current_id=%v", m.CurrentItemId)
-	}
 	if m.CurrentTime != 0 {
 		parts += fmt.Sprintf(" current_time=%v", m.CurrentTime)
 	}
+	if m.CurrentItemId != 0 {
+		parts += fmt.Sprintf(" current_item_id=%v", m.CurrentItemId)
+	}
 	if m.LoadingItemId != 0 {
-		parts += fmt.Sprintf(" loading_id=%v", m.LoadingItemId)
+		parts += fmt.Sprintf(" loading_item_id=%v", m.LoadingItemId)
 	}
 	if m.Media.ContentId != "" {
 		parts += fmt.Sprintf(" %v", m.Media)

@@ -190,14 +190,31 @@ func (this *service) Pause(context.Context, *CastRequest) (*CastResponse, error)
 	return nil, gopi.ErrNotImplemented
 }
 
-func (this *service) Seek(ctx context.Context, req *SeekRequest) (*CastResponse, error) {
-	this.Debug("<Seek ", req, ">")
+func (this *service) SeekAbs(ctx context.Context, req *SeekRequest) (*CastResponse, error) {
+	this.Debug("<SeekAbs ", req, ">")
 
 	// Retrieve Chromecast, Seek
 	cast := this.getCastEx(ctx, req.Id)
 	if cast == nil {
 		return nil, gopi.ErrNotFound.WithPrefix(req.Id)
-	} else if err := this.CastManager.Seek(cast, req.Position.AsDuration()); err != nil {
+	} else if err := this.CastManager.SeekAbs(cast, req.Position.AsDuration()); err != nil {
+		return nil, err
+	}
+
+	// Return success
+	return &CastResponse{
+		Cast: toProtoCast(cast),
+	}, nil
+}
+
+func (this *service) SeekRel(ctx context.Context, req *SeekRequest) (*CastResponse, error) {
+	this.Debug("<SeekRel ", req, ">")
+
+	// Retrieve Chromecast, Seek
+	cast := this.getCastEx(ctx, req.Id)
+	if cast == nil {
+		return nil, gopi.ErrNotFound.WithPrefix(req.Id)
+	} else if err := this.CastManager.SeekRel(cast, req.Position.AsDuration()); err != nil {
 		return nil, err
 	}
 

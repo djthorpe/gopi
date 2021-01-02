@@ -284,9 +284,9 @@ func (this *Manager) SetPause(cast gopi.Cast, value bool) error {
 	}
 }
 
-func (this *Manager) Seek(cast gopi.Cast, value time.Duration) error {
+func (this *Manager) SeekAbs(cast gopi.Cast, value time.Duration) error {
 	if cast == nil {
-		return gopi.ErrBadParameter.WithPrefix("Seek")
+		return gopi.ErrBadParameter.WithPrefix("SeekAbs")
 	}
 
 	if device := this.getConnectedDevice(cast); device == nil {
@@ -296,9 +296,27 @@ func (this *Manager) Seek(cast gopi.Cast, value time.Duration) error {
 	}
 
 	if device := this.getConnectedDevice(cast); device == nil {
-		return gopi.ErrNotFound.WithPrefix("Seek")
+		return gopi.ErrNotFound.WithPrefix("SeekAbs")
 	} else {
-		return device.ReqSeek(int(value.Seconds()))
+		return device.ReqSeekAbs(float32(value.Seconds()))
+	}
+}
+
+func (this *Manager) SeekRel(cast gopi.Cast, value time.Duration) error {
+	if cast == nil {
+		return gopi.ErrBadParameter.WithPrefix("SeekRel")
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		if err := this.Connect(cast); err != nil {
+			return err
+		}
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		return gopi.ErrNotFound.WithPrefix("SeekRel")
+	} else {
+		return device.ReqSeekRel(float32(value.Seconds()))
 	}
 }
 
@@ -443,6 +461,16 @@ func (this *Manager) setState(s state) error {
 		return err
 	} else if flags != gopi.CAST_FLAG_NONE && this.Publisher != nil {
 		this.Publisher.Emit(NewEvent(device, flags, s.req), true)
+
+		if flags&gopi.CAST_FLAG_APP != 0 {
+			this.Debug("App:", device.id, "=>", device.app)
+		}
+		if flags&gopi.CAST_FLAG_VOLUME != 0 {
+			this.Debug("Vol:", device.id, "=>", device.volume)
+		}
+		if flags&gopi.CAST_FLAG_MEDIA != 0 {
+			this.Debug("Media:", device.id, "=>", device.media)
+		}
 	}
 
 	// Return success

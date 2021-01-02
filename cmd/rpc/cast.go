@@ -73,7 +73,7 @@ func (this *app) RunCastSeek(ctx context.Context, stub gopi.CastStub) error {
 	}
 	if time, err := time.ParseDuration(args[0]); err != nil {
 		return err
-	} else if err := stub.Seek(ctx, *this.castId, time); err != nil {
+	} else if err := stub.SeekAbs(ctx, *this.castId, time); err != nil {
 		return err
 	}
 

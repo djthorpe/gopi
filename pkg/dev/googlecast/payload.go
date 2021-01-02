@@ -34,9 +34,10 @@ type LoadMediaRequest struct {
 
 type MediaRequest struct {
 	PayloadHeader
-	MediaSessionId int    `json:"mediaSessionId"`
-	CurrentTime    int    `json:"currentTime,omitempty"`
-	ResumeState    string `json:"resumeState,omitempty"`
+	MediaSessionId int     `json:"mediaSessionId"`
+	CurrentTime    float32 `json:"currentTime,omitempty"`
+	RelativeTime   float32 `json:"relativeTime,omitempty"`
+	ResumeState    string  `json:"resumeState,omitempty"`
 }
 
 type LoadQueueRequest struct {
@@ -91,6 +92,11 @@ func (this *LaunchAppRequest) WithId(id int) Payload {
 }
 
 func (this *LoadMediaRequest) WithId(id int) Payload {
+	this.PayloadHeader.RequestId = id
+	return this
+}
+
+func (this *MediaRequest) WithId(id int) Payload {
 	this.PayloadHeader.RequestId = id
 	return this
 }

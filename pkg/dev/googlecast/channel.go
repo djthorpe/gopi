@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/djthorpe/gopi/v3"
 	pb "github.com/djthorpe/gopi/v3/pkg/rpc/castchannel"
@@ -15,9 +16,10 @@ import (
 
 type channel struct {
 	sync.RWMutex
-	msg int
-	key string
-	ch  chan<- state
+	msg  int
+	key  string
+	ch   chan<- state
+	ping time.Time
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -162,13 +164,28 @@ func (this *channel) Pause(transportId string, sessionId int, state bool) (int, 
 }
 
 // Seek
-func (this *channel) Seek(transportId string, sessionId int, value int) (int, []byte, error) {
+func (this *channel) SeekAbs(transportId string, sessionId int, value float32) (int, []byte, error) {
 	payload := &MediaRequest{
 		PayloadHeader: PayloadHeader{
 			Type: "SEEK",
 		},
 		MediaSessionId: sessionId,
 		CurrentTime:    value,
+		ResumeState:    "PLAYBACK_START",
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
+	return id, data, err
+}
+
+// SeekRel
+func (this *channel) SeekRel(transportId string, sessionId int, value float32) (int, []byte, error) {
+	payload := &MediaRequest{
+		PayloadHeader: PayloadHeader{
+			Type: "SEEK",
+		},
+		MediaSessionId: sessionId,
+		RelativeTime:   value,
 		ResumeState:    "PLAYBACK_START",
 	}
 	id := this.nextMsg()
@@ -191,6 +208,10 @@ func (this *channel) Stop() (int, []byte, error) {
 
 // encode message and return it
 func (this *channel) encode(source, dest, ns string, payload Payload) ([]byte, error) {
+	if debug, err := json.MarshalIndent(payload, "", "  "); err == nil {
+		fmt.Println(string(debug))
+	}
+
 	json, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -251,6 +272,7 @@ func (this *channel) recvHeartbeat(message *pb.CastMessage) ([]byte, error) {
 	}
 	switch header.Type {
 	case "PING":
+		this.ping = time.Now()
 		payload := &PayloadHeader{Type: "PONG", RequestId: -1}
 		src := message.GetSourceId()
 		dst := message.GetDestinationId()

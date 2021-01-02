@@ -103,7 +103,10 @@ type CastManager interface {
 	SetPause(Cast, bool) error
 
 	// Seek within media stream relative to start of stream
-	Seek(Cast, time.Duration) error
+	SeekAbs(Cast, time.Duration) error
+
+	// Seek within media stream relative to current position
+	SeekRel(Cast, time.Duration) error
 
 	// Send stop signal, terminating any playing media
 	Stop(Cast) error
@@ -174,9 +177,12 @@ type CastStub interface {
 	// Pause the media session
 	Pause(ctx context.Context, castId string) error
 
-	// Seek within playing audio or video relative to the start of the
+	// SeekAbs within playing audio or video relative to the start of the
 	// playing media
-	Seek(ctx context.Context, castId string, value time.Duration) error
+	SeekAbs(ctx context.Context, castId string, value time.Duration) error
+
+	// SeekRel within playing audio or video relative to the current position
+	SeekRel(ctx context.Context, castId string, value time.Duration) error
 }
 
 // TYPES

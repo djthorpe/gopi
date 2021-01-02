@@ -75,5 +75,6 @@ service Manager {
     rpc Stop(CastRequest) returns (CastResponse);
     rpc Play(CastRequest) returns (CastResponse);
     rpc Pause(CastRequest) returns (CastResponse);
-    rpc Seek(SeekRequest) returns (CastResponse);
+    rpc SeekAbs(SeekRequest) returns (CastResponse);
+    rpc SeekRel(SeekRequest) returns (CastResponse);
 }
