@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net"
 	"net/http"
 	"time"
 
@@ -26,11 +27,11 @@ type LoggerHandler struct {
 func (this *Logger) Log(name string) error {
 	tags := []gopi.Field{
 		this.Metrics.Field("method", ""),
-		this.Metrics.Field("uri", ""),
+		this.Metrics.Field("url", ""),
 		this.Metrics.Field("host", ""),
 		this.Metrics.Field("path", ""),
 		this.Metrics.Field("query", ""),
-		this.Metrics.Field("remoteHost", ""),
+		this.Metrics.Field("remoteAddr", ""),
 	}
 	if this.Server == nil {
 		return gopi.ErrInternalAppError.WithPrefix("Server")
@@ -59,20 +60,20 @@ func (this *LoggerHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// TAGS
-	/*
-		fmt.Println("method=", req.Method)
-		fmt.Println("uri=", req.RequestURI)
-		fmt.Println("host=", req.Host)
-		fmt.Println("path=", req.URL.Path)
-		fmt.Println("query=", req.URL.RawQuery)
-		if host, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
-			fmt.Println("remoteHost=", host)
-		}
-	*/
+	tags := []gopi.Field{
+		this.Metrics.Field("method", req.Method),
+		this.Metrics.Field("url", req.RequestURI),
+		this.Metrics.Field("host", req.Host),
+		this.Metrics.Field("path", req.URL.Path),
+		this.Metrics.Field("query", req.URL.RawQuery),
+	}
+	if host, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
+		tags = append(tags, this.Metrics.Field("remoteAddr", host))
+	}
 	/*	for k, v := range w.Header() {
 			fmt.Println("response header", k, v)
 		}
 	*/
 	// Emit Metrics
-	this.Metrics.EmitTS(this.name, now, nil, time.Since(now).Seconds(), req.UserAgent())
+	this.Metrics.EmitTS(this.name, now, tags, time.Since(now).Seconds(), req.UserAgent())
 }

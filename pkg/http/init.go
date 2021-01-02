@@ -13,4 +13,5 @@ func init() {
 	graph.RegisterUnit(reflect.TypeOf(&Server{}), reflect.TypeOf((*gopi.Server)(nil)))
 	graph.RegisterUnit(reflect.TypeOf(&handler.Static{}), reflect.TypeOf((*gopi.HttpStatic)(nil)))
 	graph.RegisterUnit(reflect.TypeOf(&handler.Logger{}), reflect.TypeOf((*gopi.HttpLogger)(nil)))
+	graph.RegisterUnit(reflect.TypeOf(&handler.Templates{}), reflect.TypeOf((*gopi.HttpTemplate)(nil)))
 }

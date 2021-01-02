@@ -16,6 +16,7 @@ type app struct {
 	gopi.Unit
 	gopi.HttpStatic
 	gopi.HttpLogger
+	gopi.HttpTemplate
 	gopi.Publisher
 	gopi.Logger
 	gopi.Command

@@ -170,6 +170,12 @@ type HttpLogger interface {
 	Log(string) error
 }
 
+// HttpTemplate loads and serves templates
+type HttpTemplate interface {
+	// Serve a template for a path
+	ServeTemplate(path, template string) error
+}
+
 /////////////////////////////////////////////////////////////////////
 // GLOBALS
 
