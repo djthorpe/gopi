@@ -37,7 +37,7 @@ const (
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func (this *connection) Connect(key, addr string, timeout time.Duration, errs chan<- error, state chan<- state) error {
+func (this *connection) Connect(key, addr string, timeout time.Duration, state chan<- state) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
@@ -67,7 +67,7 @@ func (this *connection) Connect(key, addr string, timeout time.Duration, errs ch
 	ctx, cancel := context.WithCancel(context.Background())
 	go func(ctx context.Context) {
 		defer this.WaitGroup.Done()
-		this.recv(ctx, errs)
+		this.recv(ctx, state)
 	}(ctx)
 	this.cancel = cancel
 
@@ -156,7 +156,7 @@ func (this *connection) send(data []byte) error {
 	}
 }
 
-func (this *connection) recv(ctx context.Context, errs chan<- error) {
+func (this *connection) recv(ctx context.Context, state chan<- state) {
 	var length uint32
 	for {
 		select {
@@ -165,15 +165,15 @@ func (this *connection) recv(ctx context.Context, errs chan<- error) {
 		default:
 			timeout := time.Now().Add(recvTimeout)
 			if err := this.conn.SetReadDeadline(timeout); err != nil {
-				errs <- err
+				state <- NewError(this.channel.key, err)
 			} else if err := binary.Read(this.conn, binary.BigEndian, &length); err != nil {
 				if err == io.EOF || os.IsTimeout(err) {
 					// Ignore error
 				} else {
-					errs <- err
+					state <- NewError(this.channel.key, err)
 				}
 			} else if err := this.decode(length); err != nil {
-				errs <- err
+				state <- NewError(this.channel.key, err)
 			}
 		}
 	}

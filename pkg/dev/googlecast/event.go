@@ -18,6 +18,7 @@ type event struct {
 type state struct {
 	key    string
 	req    int
+	err    error
 	values []interface{}
 }
 
@@ -29,7 +30,11 @@ func NewEvent(device *Cast, flags gopi.CastFlag, reqId int) gopi.CastEvent {
 }
 
 func NewState(key string, req int, values ...interface{}) state {
-	return state{key, req, values}
+	return state{key, req, nil, values}
+}
+
+func NewError(key string, err error) state {
+	return state{key, 0, err, nil}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

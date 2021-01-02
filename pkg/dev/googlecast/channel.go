@@ -130,7 +130,7 @@ func (this *channel) LoadUrl(transportId string, url, mimetype string, autoplay 
 }
 
 // Play
-func (this *channel) Play(sessionId int, state bool) (int, []byte, error) {
+func (this *channel) Play(transportId string, sessionId int, state bool) (int, []byte, error) {
 	payload := &MediaRequest{
 		MediaSessionId: sessionId,
 	}
@@ -141,12 +141,12 @@ func (this *channel) Play(sessionId int, state bool) (int, []byte, error) {
 		payload.Type = "STOP"
 	}
 	id := this.nextMsg()
-	data, err := this.encode(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_RECV, payload.WithId(id))
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
 	return id, data, err
 }
 
 // Pause
-func (this *channel) Pause(sessionId int, state bool) (int, []byte, error) {
+func (this *channel) Pause(transportId string, sessionId int, state bool) (int, []byte, error) {
 	payload := &MediaRequest{
 		MediaSessionId: sessionId,
 	}
@@ -157,12 +157,12 @@ func (this *channel) Pause(sessionId int, state bool) (int, []byte, error) {
 		payload.Type = "PAUSE"
 	}
 	id := this.nextMsg()
-	data, err := this.encode(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_RECV, payload.WithId(id))
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
 	return id, data, err
 }
 
 // Seek
-func (this *channel) Seek(sessionId int, value int) (int, []byte, error) {
+func (this *channel) Seek(transportId string, sessionId int, value int) (int, []byte, error) {
 	payload := &MediaRequest{
 		PayloadHeader: PayloadHeader{
 			Type: "SEEK",
@@ -172,7 +172,7 @@ func (this *channel) Seek(sessionId int, value int) (int, []byte, error) {
 		ResumeState:    "PLAYBACK_START",
 	}
 	id := this.nextMsg()
-	data, err := this.encode(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_RECV, payload.WithId(id))
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
 	return id, data, err
 }
 

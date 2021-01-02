@@ -3,11 +3,13 @@ package googlecast
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"mime"
 	"net/http"
 	"net/url"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
@@ -28,7 +30,6 @@ type Manager struct {
 	dev map[string]*Cast
 
 	// Channels for communication
-	errs  chan error
 	state chan state
 }
 
@@ -50,7 +51,6 @@ func (this *Manager) New(gopi.Config) error {
 
 	// Make map of devices and error channel
 	this.dev = make(map[string]*Cast)
-	this.errs = make(chan error)
 	this.state = make(chan state)
 
 	// Return success
@@ -70,12 +70,10 @@ func (this *Manager) Dispose() error {
 	}
 
 	// Close channels
-	close(this.errs)
 	close(this.state)
 
 	// Release resources
 	this.dev = nil
-	this.errs = nil
 	this.state = nil
 
 	// Return any errors
@@ -92,8 +90,6 @@ func (this *Manager) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case err := <-this.errs:
-			this.Print("CastManager: Error: ", err)
 		case state := <-this.state:
 			if err := this.setState(state); err != nil {
 				this.Print("CastManager: SetState: ", err)
@@ -393,7 +389,7 @@ func (this *Manager) disconnect(device *Cast) error {
 }
 
 func (this *Manager) connect(device *Cast) error {
-	return device.ConnectWithTimeout(serviceConnectTimeout, this.errs, this.state)
+	return device.ConnectWithTimeout(serviceConnectTimeout, this.state)
 }
 
 func (this *Manager) getConnectedDevice(cast gopi.Cast) *Cast {
@@ -430,6 +426,18 @@ func (this *Manager) setState(s state) error {
 		return gopi.ErrNotFound.WithPrefix(s.key)
 	}
 
+	// Check for error
+	if s.err != nil {
+		// Disconnect if system error with connection
+		if isDroppedConnection(s.err) {
+			this.Print(device.Id(), ": Disconnecting: ", s.err)
+			go this.Disconnect(device)
+		} else {
+			this.Print(device.Id(), ": ", s.err)
+		}
+		return nil
+	}
+
 	// Set state in device
 	if flags, err := device.SetState(s); err != nil {
 		return err
@@ -439,4 +447,15 @@ func (this *Manager) setState(s state) error {
 
 	// Return success
 	return nil
+}
+
+func isDroppedConnection(err error) bool {
+	if errors.Is(err, syscall.ECONNABORTED) {
+		return true
+	} else if errors.Is(err, syscall.ECONNREFUSED) {
+		return true
+	} else if errors.Is(err, syscall.ECONNRESET) {
+		return true
+	}
+	return false
 }

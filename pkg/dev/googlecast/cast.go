@@ -89,7 +89,7 @@ func NewCastFromRecord(r gopi.ServiceRecord) *Cast {
 	return this
 }
 
-func (this *Cast) ConnectWithTimeout(timeout time.Duration, errs chan<- error, state chan<- state) error {
+func (this *Cast) ConnectWithTimeout(timeout time.Duration, state chan<- state) error {
 
 	// Get an address to connect to
 	if len(this.ips) == 0 {
@@ -99,7 +99,7 @@ func (this *Cast) ConnectWithTimeout(timeout time.Duration, errs chan<- error, s
 	// Use first IP
 	// TODO: Use a random IP and retry with other IP's if not working
 	addr := fmt.Sprintf("%v:%v", this.ips[0], this.port)
-	if err := this.connection.Connect(this.Id(), addr, timeout, errs, state); err != nil {
+	if err := this.connection.Connect(this.Id(), addr, timeout, state); err != nil {
 		return err
 	}
 
@@ -341,7 +341,7 @@ func (this *Cast) ReqPlay(state bool) error {
 		return this.ReqMediaConnect(func() error {
 			return this.ReqPlay(state)
 		})
-	} else if _, data, err := this.channel.Play(this.media.MediaSessionId, state); err != nil {
+	} else if _, data, err := this.channel.Play(this.app.TransportId, this.media.MediaSessionId, state); err != nil {
 		return err
 	} else if err := this.send(data); err != nil {
 		return err
@@ -364,7 +364,7 @@ func (this *Cast) ReqPause(state bool) error {
 				return this.ReqPause(state)
 			}
 		})
-	} else if _, data, err := this.channel.Pause(this.media.MediaSessionId, state); err != nil {
+	} else if _, data, err := this.channel.Pause(this.app.TransportId, this.media.MediaSessionId, state); err != nil {
 		return err
 	} else if err := this.send(data); err != nil {
 		return err
@@ -387,7 +387,7 @@ func (this *Cast) ReqSeek(value int) error {
 				return this.ReqSeek(value)
 			}
 		})
-	} else if _, data, err := this.channel.Seek(this.media.MediaSessionId, value); err != nil {
+	} else if _, data, err := this.channel.Seek(this.app.TransportId, this.media.MediaSessionId, value); err != nil {
 		return err
 	} else if err := this.send(data); err != nil {
 		return err
