@@ -236,7 +236,7 @@ func (this *argonone) setFanForTemperature(celcius float32) error {
 
 	// Report measurement
 	if this.measurement != "" {
-		if err := this.Metrics.Emit(this.measurement, celcius, fan.(uint8)); err != nil {
+		if err := this.Metrics.Emit(this.measurement, nil, celcius, fan.(uint8)); err != nil {
 			return err
 		}
 	}

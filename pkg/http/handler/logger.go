@@ -74,5 +74,5 @@ func (this *LoggerHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	*/
 	// Emit Metrics
-	this.Metrics.EmitTS(this.name, now, time.Since(now).Seconds(), req.UserAgent())
+	this.Metrics.EmitTS(this.name, now, nil, time.Since(now).Seconds(), req.UserAgent())
 }
