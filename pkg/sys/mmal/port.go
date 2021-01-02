@@ -2,6 +2,13 @@
 
 package mmal
 
+import (
+	"fmt"
+	"strconv"
+	"strings"
+	"unsafe"
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // CGO
 
@@ -10,17 +17,16 @@ package mmal
 #include <interface/mmal/mmal.h>
 #include <interface/mmal/util/mmal_util.h>
 #include <interface/mmal/util/mmal_util_params.h>
+#include <stdio.h>
 
 // Callback Functions
 void mmal_port_callback(MMAL_PORT_T* port, MMAL_BUFFER_HEADER_T* buffer);
+
+static MMAL_STATUS_T mmal_port_enable_ex(MMAL_PORT_T* port) {
+	return mmal_port_enable(port,mmal_port_callback);
+}
 */
 import "C"
-import (
-	"fmt"
-	"strconv"
-	"strings"
-	"unsafe"
-)
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
@@ -99,12 +105,22 @@ func (this *MMALPort) Component() *MMALComponent {
 	return (*MMALComponent)(ctx.component)
 }
 
+func (this *MMALPort) Format() *MMALStreamFormat {
+	ctx := (*C.MMAL_PORT_T)(this)
+	return (*MMALStreamFormat)(ctx.format)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 
 func (this *MMALPort) Enable() error {
+	return this.EnableWithCallback(nil)
+}
+
+func (this *MMALPort) EnableWithCallback(fn MMALPortCallback) error {
 	ctx := (*C.MMAL_PORT_T)(this)
-	if status := Error(C.mmal_port_enable(ctx, C.MMAL_PORT_BH_CB_T(C.mmal_port_callback))); status == MMAL_SUCCESS {
+	if status := Error(C.mmal_port_enable_ex(ctx)); status == MMAL_SUCCESS {
+		MMALPortRegisterCallback(ctx, fn)
 		return nil
 	} else {
 		return status
@@ -116,6 +132,7 @@ func (this *MMALPort) Disable() error {
 	if status := Error(C.mmal_port_disable(ctx)); status == MMAL_SUCCESS {
 		return nil
 	} else {
+		MMALPortRegisterCallback(ctx, nil)
 		return status
 	}
 }
@@ -157,24 +174,29 @@ func (this *MMALPort) FormatCommit() error {
 	}
 }
 
-// BufferCount returns current, minimum & recommended number of buffers the port requires
-// A value of zero for recommendation means no special recommendation
-func (this *MMALPort) BufferCount() (uint32, uint32, uint32) {
+// BufferMin returns minimum number of buffers and size of each buffer
+func (this *MMALPort) BufferMin() (uint32, uint32) {
 	ctx := (*C.MMAL_PORT_T)(this)
-	return uint32(ctx.buffer_num), uint32(ctx.buffer_num_min), uint32(ctx.buffer_num_recommended)
+	return uint32(ctx.buffer_num_min), uint32(ctx.buffer_size_min)
 }
 
-// BufferSize returns current, minimum & recommended size of buffers the port requires
-// A value of zero means no special recommendation
-func (this *MMALPort) BufferSize() (uint32, uint32, uint32) {
+// BufferPreferred returns preferred number of buffers and size of each buffer
+func (this *MMALPort) BufferPreferred() (uint32, uint32) {
 	ctx := (*C.MMAL_PORT_T)(this)
-	return uint32(ctx.buffer_size), uint32(ctx.buffer_size_min), uint32(ctx.buffer_size_recommended)
+	return uint32(ctx.buffer_num_recommended), uint32(ctx.buffer_size_recommended)
 }
 
+// Set buffer count and size
 func (this *MMALPort) BufferSet(count, size uint32) {
 	ctx := (*C.MMAL_PORT_T)(this)
 	ctx.buffer_num = C.uint32_t(count)
 	ctx.buffer_size = C.uint32_t(size)
+}
+
+// Get buffer count and size
+func (this *MMALPort) BufferGet() (uint32, uint32) {
+	ctx := (*C.MMAL_PORT_T)(this)
+	return uint32(ctx.buffer_num), uint32(ctx.buffer_size)
 }
 
 // BufferAlignment returns minimum alignment requirement for the buffers.
@@ -205,12 +227,17 @@ func (this *MMALPort) SetURI(value string) error {
 	}
 }
 
-/*
-
-func MMALPortFormat(handle MMAL_PortHandle) MMAL_StreamFormat {
-	return handle.format
+func (this *MMALPort) SetUserdata(ptr uintptr) {
+	ctx := (*C.MMAL_PORT_T)(this)
+	ctx.userdata = (*C.struct_MMAL_PORT_USERDATA_T)(unsafe.Pointer(ptr))
 }
 
+func (this *MMALPort) Userdata() uintptr {
+	ctx := (*C.MMAL_PORT_T)(this)
+	return uintptr(unsafe.Pointer(ctx.userdata))
+}
+
+/*
 func MMALPortSetDisplayRegion(handle MMAL_PortHandle, value MMAL_DisplayRegion) error {
 	if status := MMAL_Status(C.mmal_util_set_display_region(handle, value)); status == MMAL_SUCCESS {
 		return nil
@@ -218,7 +245,6 @@ func MMALPortSetDisplayRegion(handle MMAL_PortHandle, value MMAL_DisplayRegion) 
 		return status
 	}
 }
-
 */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -286,6 +312,6 @@ func mmal_port_callback(port *C.MMAL_PORT_T, buffer *C.MMAL_BUFFER_HEADER_T) {
 		fn((*MMALPort)(port), (*MMALBuffer)(buffer))
 	} else {
 		// TODO
-		fmt.Printf("mmal_port_callback{port=%v buffer=%v}\n", port, buffer)
+		fmt.Printf("mmal_port_callback{port=%v buffer=%v}\n", (*MMALPort)(port), (*MMALBuffer)(buffer))
 	}
 }

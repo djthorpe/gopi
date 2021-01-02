@@ -8,6 +8,7 @@ package mmal
 /*
 #cgo pkg-config: mmal
 #include <interface/mmal/mmal.h>
+#include <interface/mmal/util/mmal_util.h>
 */
 import "C"
 
@@ -16,6 +17,12 @@ import "C"
 
 type (
 	MMALEncodingType uint32
+	MMALColorSpace   uint32
+	MMALBufferEvent  uint32
+)
+
+var (
+	MMAL_ENCODING_UNKNOWN MMALEncodingType = C.MMAL_ENCODING_UNKNOWN
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -88,3 +95,61 @@ var (
 	MMAL_ENCODING_BGR32       MMALEncodingType = C.MMAL_ENCODING_BGR32
 	MMAL_ENCODING_BGR32_SLICE MMALEncodingType = C.MMAL_ENCODING_BGR32_SLICE
 )
+
+////////////////////////////////////////////////////////////////////////////////
+// BUFFER EVENT
+
+var (
+	// Generic Error
+	MMAL_EVENT_ERROR MMALBufferEvent = C.MMAL_EVENT_ERROR
+
+	// End-of-stream event. Data contains a MMAL_EVENT_END_OF_STREAM_T
+	MMAL_EVENT_EOS MMALBufferEvent = C.MMAL_EVENT_EOS
+
+	// Format changed event. Data contains a MMAL_EVENT_FORMAT_CHANGED_T
+	MMAL_EVENT_FORMAT_CHANGED MMALBufferEvent = C.MMAL_EVENT_FORMAT_CHANGED
+
+	// Parameter changed event. Data contains a MMAL_EVENT_PARAMETER_CHANGED_T
+	MMAL_EVENT_PARAMETER_CHANGED MMALBufferEvent = C.MMAL_EVENT_PARAMETER_CHANGED
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// METHODS
+
+func (e MMALEncodingType) StrideToWidth(stride uint32) uint32 {
+	return uint32(C.mmal_encoding_stride_to_width(C.uint32_t(e), C.uint32_t(stride)))
+}
+
+func (e MMALEncodingType) WidthToStride(width uint32) uint32 {
+	return uint32(C.mmal_encoding_width_to_stride(C.uint32_t(e), C.uint32_t(width)))
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (e MMALEncodingType) String() string {
+	buf := [5]C.char{}
+	size := C.size_t(len(buf))
+	return C.GoString(C.mmal_4cc_to_string(&buf[0], size, C.uint32_t(e)))
+}
+
+func (c MMALColorSpace) String() string {
+	buf := [5]C.char{}
+	size := C.size_t(len(buf))
+	return C.GoString(C.mmal_4cc_to_string(&buf[0], size, C.uint32_t(c)))
+}
+
+func (e MMALBufferEvent) String() string {
+	switch e {
+	case MMAL_EVENT_ERROR:
+		return "MMAL_EVENT_ERROR"
+	case MMAL_EVENT_EOS:
+		return "MMAL_EVENT_EOS"
+	case MMAL_EVENT_FORMAT_CHANGED:
+		return "MMAL_EVENT_FORMAT_CHANGED"
+	case MMAL_EVENT_PARAMETER_CHANGED:
+		return "MMAL_EVENT_PARAMETER_CHANGED"
+	default:
+		return "[?? Invalid MMALBufferEvent value]"
+	}
+}

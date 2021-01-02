@@ -8,7 +8,7 @@ package mmal
 /*
 #cgo pkg-config: mmal
 #include <interface/mmal/mmal.h>
-#include <interface/mmal/util/mmal_connection.h>
+#include <interface/mmal/util/mmal_util.h>
 */
 import "C"
 
@@ -43,6 +43,10 @@ const (
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
+
+func (e Error) String() string {
+	return C.GoString(C.mmal_status_to_string(C.MMAL_STATUS_T(e)))
+}
 
 func (e Error) Error() string {
 	switch e {
