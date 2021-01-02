@@ -208,10 +208,9 @@ func (this *channel) Stop() (int, []byte, error) {
 
 // encode message and return it
 func (this *channel) encode(source, dest, ns string, payload Payload) ([]byte, error) {
-	if debug, err := json.MarshalIndent(payload, "", "  "); err == nil {
-		fmt.Println(string(debug))
-	}
-
+	//if debug, err := json.MarshalIndent(payload, "", "  "); err == nil {
+	//	fmt.Println(string(debug))
+	//}
 	json, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err

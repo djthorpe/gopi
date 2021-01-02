@@ -21,6 +21,7 @@ type app struct {
 
 	// Flags
 	service, castId *string
+	watch           *bool
 }
 
 func (this *app) Define(cfg gopi.Config) error {
@@ -100,6 +101,9 @@ func (this *app) Define(cfg gopi.Config) error {
 
 	// Set flags for cast functions
 	this.castId = cfg.FlagString("id", "", "Chromecast Id", "cast app", "cast load", "cast seek", "cast pause", "cast vol")
+
+	// Set watch flag
+	this.watch = cfg.FlagBool("watch", false, "Watch for events", "cast")
 
 	// Return success
 	return nil

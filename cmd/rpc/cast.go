@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"strconv"
@@ -28,6 +29,19 @@ func (this *app) RunCast(ctx context.Context, stub gopi.CastStub) error {
 		table.Append(cast.Name(), cast.Id(), cast.Model(), cast.Service(), cast.State())
 	}
 	table.Render(os.Stdout)
+
+	// If watch is set
+	if *this.watch {
+		ch := make(chan gopi.CastEvent)
+		go func() {
+			fmt.Println("Watching for events, press CTRL+C to end")
+			for evt := range ch {
+				fmt.Println(evt)
+			}
+		}()
+		stub.Stream(ctx, "", ch)
+		close(ch)
+	}
 
 	// Return success
 	return nil

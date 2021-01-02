@@ -2,6 +2,7 @@ package googlecast
 
 import (
 	context "context"
+	"io"
 	"net/url"
 	"strconv"
 	"time"
@@ -149,6 +150,31 @@ func (this *stub) SeekRel(ctx context.Context, castId string, value time.Duratio
 
 	// Return success
 	return nil
+}
+
+func (this *stub) Stream(ctx context.Context, id string, ch chan<- gopi.CastEvent) error {
+	this.Conn.Lock()
+	defer this.Conn.Unlock()
+
+	stream, err := this.ManagerClient.Stream(ctx, &CastRequest{Id: id})
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if msg, err := stream.Recv(); err == io.EOF {
+				return nil
+			} else if err != nil {
+				return this.Err(err)
+			} else if evt := fromProtoEvent(msg); evt != nil {
+				ch <- evt
+			}
+		}
+	}
 }
 
 /////////////////////////////////////////////////////////////////////

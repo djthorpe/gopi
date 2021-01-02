@@ -66,6 +66,21 @@ message Cast {
     }
 }
 
+message CastEvent {
+    Cast cast = 1; 
+    Flag changed = 2;
+
+    enum Flag {
+        NONE = 0x00;
+        CONNECT = 0x01;
+        VOLUME = 0x02;
+        MUTE = 0x04;
+        MEDIA = 0x08;
+        APP = 0x10;
+        DISCONNECT = 0x20;
+    }
+}
+
 service Manager {
     rpc ListCasts(google.protobuf.Empty) returns (ListResponse);
     rpc SetApp(AppRequest) returns (CastResponse);
@@ -77,4 +92,5 @@ service Manager {
     rpc Pause(CastRequest) returns (CastResponse);
     rpc SeekAbs(SeekRequest) returns (CastResponse);
     rpc SeekRel(SeekRequest) returns (CastResponse);
+    rpc Stream(CastRequest) returns (stream CastEvent);
 }

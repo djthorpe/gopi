@@ -1,12 +1,43 @@
 package googlecast
 
 import (
+	"fmt"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	ptypes "github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
 )
+
+/////////////////////////////////////////////////////////////////////
+// EVENT INTERFACE
+
+type event struct {
+	*CastEvent
+}
+
+func (this *event) Name() string {
+	return "cast.event"
+}
+
+func (this *event) Cast() gopi.Cast {
+	return fromProtoCast(this.GetCast())
+}
+
+func (this *event) Flags() gopi.CastFlag {
+	return gopi.CastFlag(this.Changed)
+}
+
+func (this *event) String() string {
+	str := "<cast.event"
+	if cast := this.Cast(); cast != nil {
+		str += " cast=" + fmt.Sprint(cast)
+	}
+	if flags := this.Flags(); flags != 0 {
+		str += " changed=" + fmt.Sprint(flags)
+	}
+	return str + ">"
+}
 
 /////////////////////////////////////////////////////////////////////
 // CAST DEVICE INTERFACE
@@ -75,4 +106,26 @@ func toProtoState(cast gopi.Cast) Cast_CastState {
 
 func toProtoDuration(value time.Duration) *duration.Duration {
 	return ptypes.DurationProto(value)
+}
+
+func toProtoEvent(evt gopi.CastEvent) *CastEvent {
+	if evt == nil || evt.Cast() == nil {
+		return nil
+	}
+	return &CastEvent{
+		Cast:    toProtoCast(evt.Cast()),
+		Changed: CastEvent_Flag(evt.Flags()),
+	}
+}
+
+func fromProtoEvent(evt *CastEvent) gopi.CastEvent {
+	if evt == nil || evt.Cast == nil {
+		return nil
+	} else {
+		return &event{evt}
+	}
+}
+
+func toProtoNull() *CastEvent {
+	return &CastEvent{}
 }

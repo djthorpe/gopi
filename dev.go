@@ -183,6 +183,11 @@ type CastStub interface {
 
 	// SeekRel within playing audio or video relative to the current position
 	SeekRel(ctx context.Context, castId string, value time.Duration) error
+
+	// Stream emits events from Chromecasts, filtered
+	// by the id of the chromecast  until context is cancelled. Where
+	// the id filter is empty, all connected chromecast events are emitted
+	Stream(context.Context, string, chan<- CastEvent) error
 }
 
 // TYPES

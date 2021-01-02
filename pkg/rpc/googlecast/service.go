@@ -16,6 +16,7 @@ type service struct {
 	gopi.Logger
 	gopi.Server
 	gopi.CastManager
+	gopi.Publisher
 
 	// Map of ID to Chromecast
 	casts map[string]gopi.Cast
@@ -31,6 +32,8 @@ func (this *service) New(cfg gopi.Config) error {
 		return gopi.ErrInternalAppError.WithPrefix("RegisterService: ", "(CastManager == nil)")
 	} else if this.Logger == nil {
 		return gopi.ErrInternalAppError.WithPrefix("RegisterService: ", "(Logger == nil)")
+	} else if this.Publisher == nil {
+		return gopi.ErrInternalAppError.WithPrefix("RegisterService: ", "(Publisher == nil)")
 	} else if err := this.Server.RegisterService(RegisterManagerServer, this); err != nil {
 		return err
 	}
@@ -287,4 +290,42 @@ func (this *service) SeekRel(ctx context.Context, req *SeekRequest) (*CastRespon
 	return &CastResponse{
 		Cast: toProtoCast(cast),
 	}, nil
+}
+
+// Stream measuremets to client
+func (this *service) Stream(req *CastRequest, stream Manager_StreamServer) error {
+	this.Logger.Debug("<Stream", req, ">")
+
+	// Send a null event once a second
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	// Subscribe to events
+	ch := this.Publisher.Subscribe()
+	defer this.Publisher.Unsubscribe(ch)
+
+	// Obtain server cancel context
+	ctx := this.Server.NewStreamContext()
+
+	// Loop which streams until server context cancels
+	// or an error occurs sending a Ping
+	for {
+		select {
+		case evt := <-ch:
+			if castevt, ok := evt.(gopi.CastEvent); ok {
+				if req.Id == "" || req.Id == castevt.Cast().Id() {
+					if err := stream.Send(toProtoEvent(castevt)); err != nil {
+						this.Print(err)
+					}
+				}
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			if err := stream.Send(toProtoNull()); err != nil {
+				this.Logger.Debug("Error sending null event, ending stream")
+				return err
+			}
+		}
+	}
 }
