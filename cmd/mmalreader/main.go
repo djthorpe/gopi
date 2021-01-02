@@ -81,7 +81,7 @@ func Run(r io.Reader) error {
 	// a frame has been decoded will put the frame into this queue.
 	queue := mmal.MMALQueueCreate()
 	out.SetUserdata(uintptr(unsafe.Pointer(queue)))
-
+	defer queue.Free()
 
 	// Enable all the input port and the output port.
 	// The callback specified here is the function which will be called when the buffer header
@@ -109,7 +109,7 @@ func Run(r io.Reader) error {
 	// Data processing loop, eof = end of input file, eoe = end of encoding
 	eof, eoe := false, false
 	i := 0
-	for eoe == false && i < 1000 {
+	for eoe == false && i < 500 {
 		fmt.Println("LOOP eof=", eof, " eoe=", eoe," i=",i)
 		i++
 
@@ -188,8 +188,8 @@ func input_callback(port *mmal.MMALPort, buffer *mmal.MMALBuffer) {
 func output_callback(port *mmal.MMALPort, buffer *mmal.MMALBuffer) {
 	queue := (*mmal.MMALQueue)(unsafe.Pointer(port.Userdata()))
 	// Queue the decoded video frame
-	fmt.Println("output_callback, decoded video=",buffer," => ",queue)
 	queue.Put(buffer)
+	fmt.Println("output_callback, decoded video=",buffer," => ",queue)
 }
 
 func control_callback(port *mmal.MMALPort, buffer *mmal.MMALBuffer) {
