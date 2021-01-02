@@ -331,6 +331,8 @@ func (this *channel) rcvMedia(message *pb.CastMessage) ([]byte, error) {
 			}
 			this.ch <- NewState(this.key, header.RequestId, result...)
 		}
+	case "INVALID_REQUEST":
+		return nil, gopi.ErrUnexpectedResponse.WithPrefix(message.GetPayloadUtf8())
 	case "LOAD_FAILED", "ERROR":
 		return nil, gopi.ErrUnexpectedResponse.WithPrefix(message.GetPayloadUtf8())
 	default:
