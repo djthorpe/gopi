@@ -71,23 +71,60 @@ func (this *stub) LoadURL(ctx context.Context, castId string, url *url.URL) erro
 }
 
 func (this *stub) SetVolume(ctx context.Context, castId string, value float32) error {
-	return gopi.ErrNotImplemented
+	if _, err := this.ManagerClient.SetVolume(ctx, &VolumeRequest{
+		Id:     castId,
+		Volume: value,
+	}); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
 }
 
 func (this *stub) SetMute(ctx context.Context, castId string, value bool) error {
-	return gopi.ErrNotImplemented
+	if _, err := this.ManagerClient.SetMute(ctx, &MuteRequest{
+		Id:    castId,
+		Muted: value,
+	}); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
 }
 
 func (this *stub) Stop(ctx context.Context, castId string) error {
-	return gopi.ErrNotImplemented
+	if _, err := this.ManagerClient.Stop(ctx, &CastRequest{
+		Id: castId,
+	}); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
 }
 
 func (this *stub) Play(ctx context.Context, castId string) error {
-	return gopi.ErrNotImplemented
+	if _, err := this.ManagerClient.Play(ctx, &CastRequest{
+		Id: castId,
+	}); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
 }
 
 func (this *stub) Pause(ctx context.Context, castId string) error {
-	return gopi.ErrNotImplemented
+	if _, err := this.ManagerClient.Pause(ctx, &CastRequest{
+		Id: castId,
+	}); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
 }
 
 func (this *stub) SeekAbs(ctx context.Context, castId string, value time.Duration) error {

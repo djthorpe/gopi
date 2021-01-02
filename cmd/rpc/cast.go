@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -71,9 +73,46 @@ func (this *app) RunCastSeek(ctx context.Context, stub gopi.CastStub) error {
 	if *this.castId == "" || len(args) != 1 {
 		return gopi.ErrHelp
 	}
+	rel := false
+	if strings.HasPrefix(args[0], "+") || strings.HasPrefix(args[0], "-") {
+		rel = true
+	}
 	if time, err := time.ParseDuration(args[0]); err != nil {
 		return err
-	} else if err := stub.SeekAbs(ctx, *this.castId, time); err != nil {
+	} else if rel {
+		if err := stub.SeekRel(ctx, *this.castId, time); err != nil {
+			return err
+		}
+	} else {
+		if err := stub.SeekAbs(ctx, *this.castId, time); err != nil {
+			return err
+		}
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *app) RunCastVol(ctx context.Context, stub gopi.CastStub) error {
+	args := this.Args()
+	if *this.castId == "" || len(args) != 1 {
+		return gopi.ErrHelp
+	}
+	if value, err := strconv.ParseFloat(args[0], 32); err != nil {
+		return err
+	} else if err := stub.SetVolume(ctx, *this.castId, float32(value)); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *app) RunCastPause(ctx context.Context, stub gopi.CastStub) error {
+	if *this.castId == "" {
+		return gopi.ErrHelp
+	}
+	if err := stub.Pause(ctx, *this.castId); err != nil {
 		return err
 	}
 

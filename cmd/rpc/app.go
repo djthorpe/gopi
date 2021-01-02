@@ -80,12 +80,26 @@ func (this *app) Define(cfg gopi.Config) error {
 			return this.RunCastSeek(ctx, stub)
 		}
 	})
+	cfg.Command("cast pause", "Pause media playback", func(ctx context.Context) error {
+		if stub, err := this.GetGoogleCastStub(); err != nil {
+			return err
+		} else {
+			return this.RunCastPause(ctx, stub)
+		}
+	})
+	cfg.Command("cast vol", "Set volume", func(ctx context.Context) error {
+		if stub, err := this.GetGoogleCastStub(); err != nil {
+			return err
+		} else {
+			return this.RunCastVol(ctx, stub)
+		}
+	})
 
 	// Global flags
 	this.service = cfg.FlagString("srv", "", "name, service:name or host:port")
 
 	// Set flags for cast functions
-	this.castId = cfg.FlagString("id", "", "Chromecast Id", "cast app", "cast load", "cast seek")
+	this.castId = cfg.FlagString("id", "", "Chromecast Id", "cast app", "cast load", "cast seek", "cast pause", "cast vol")
 
 	// Return success
 	return nil

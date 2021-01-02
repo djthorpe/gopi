@@ -170,24 +170,89 @@ func (this *service) LoadURL(ctx context.Context, req *LoadRequest) (*CastRespon
 	}, nil
 }
 
-func (this *service) SetVolume(context.Context, *VolumeRequest) (*CastResponse, error) {
-	return nil, gopi.ErrNotImplemented
+func (this *service) SetVolume(ctx context.Context, req *VolumeRequest) (*CastResponse, error) {
+	this.Debug("<SetVolume ", req, ">")
+
+	// Retrieve Chromecast, SetVolume
+	cast := this.getCastEx(ctx, req.Id)
+	if cast == nil {
+		return nil, gopi.ErrNotFound.WithPrefix(req.Id)
+	} else if err := this.CastManager.SetVolume(cast, req.Volume); err != nil {
+		return nil, err
+	}
+
+	// Return success
+	return &CastResponse{
+		Cast: toProtoCast(cast),
+	}, nil
 }
 
-func (this *service) SetMute(context.Context, *MuteRequest) (*CastResponse, error) {
-	return nil, gopi.ErrNotImplemented
+func (this *service) SetMute(ctx context.Context, req *MuteRequest) (*CastResponse, error) {
+	this.Debug("<SetMute ", req, ">")
+
+	// Retrieve Chromecast, SetMuted
+	cast := this.getCastEx(ctx, req.Id)
+	if cast == nil {
+		return nil, gopi.ErrNotFound.WithPrefix(req.Id)
+	} else if err := this.CastManager.SetMuted(cast, req.Muted); err != nil {
+		return nil, err
+	}
+
+	// Return success
+	return &CastResponse{
+		Cast: toProtoCast(cast),
+	}, nil
 }
 
-func (this *service) Stop(context.Context, *CastRequest) (*CastResponse, error) {
-	return nil, gopi.ErrNotImplemented
+func (this *service) Stop(ctx context.Context, req *CastRequest) (*CastResponse, error) {
+	this.Debug("<Stop ", req, ">")
+
+	// Retrieve Chromecast, Play
+	cast := this.getCastEx(ctx, req.Id)
+	if cast == nil {
+		return nil, gopi.ErrNotFound.WithPrefix(req.Id)
+	} else if err := this.CastManager.SetPlay(cast, false); err != nil {
+		return nil, err
+	}
+
+	// Return success
+	return &CastResponse{
+		Cast: toProtoCast(cast),
+	}, nil
 }
 
-func (this *service) Play(context.Context, *CastRequest) (*CastResponse, error) {
-	return nil, gopi.ErrNotImplemented
+func (this *service) Play(ctx context.Context, req *CastRequest) (*CastResponse, error) {
+	this.Debug("<Play ", req, ">")
+
+	// Retrieve Chromecast, Play
+	cast := this.getCastEx(ctx, req.Id)
+	if cast == nil {
+		return nil, gopi.ErrNotFound.WithPrefix(req.Id)
+	} else if err := this.CastManager.SetPlay(cast, true); err != nil {
+		return nil, err
+	}
+
+	// Return success
+	return &CastResponse{
+		Cast: toProtoCast(cast),
+	}, nil
 }
 
-func (this *service) Pause(context.Context, *CastRequest) (*CastResponse, error) {
-	return nil, gopi.ErrNotImplemented
+func (this *service) Pause(ctx context.Context, req *CastRequest) (*CastResponse, error) {
+	this.Debug("<Pause ", req, ">")
+
+	// Retrieve Chromecast, Play
+	cast := this.getCastEx(ctx, req.Id)
+	if cast == nil {
+		return nil, gopi.ErrNotFound.WithPrefix(req.Id)
+	} else if err := this.CastManager.SetPause(cast, true); err != nil {
+		return nil, err
+	}
+
+	// Return success
+	return &CastResponse{
+		Cast: toProtoCast(cast),
+	}, nil
 }
 
 func (this *service) SeekAbs(ctx context.Context, req *SeekRequest) (*CastResponse, error) {
