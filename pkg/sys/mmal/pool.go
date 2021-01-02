@@ -130,6 +130,11 @@ func (this *MMALQueue) Length() uint {
 	return uint(C.mmal_queue_length(ctx))
 }
 
+func (this *MMALQueue) Get() *MMALBuffer {
+	ctx := (*C.MMAL_QUEUE_T)(this)
+	return (*MMALBuffer)(C.mmal_queue_get(ctx))
+}
+
 func (this *MMALQueue) Put(buffer *MMALBuffer) {
 	ctx := (*C.MMAL_QUEUE_T)(this)
 	C.mmal_queue_put(ctx, (*C.MMAL_BUFFER_HEADER_T)(buffer))
@@ -138,11 +143,6 @@ func (this *MMALQueue) Put(buffer *MMALBuffer) {
 func (this *MMALQueue) PutBack(buffer *MMALBuffer) {
 	ctx := (*C.MMAL_QUEUE_T)(this)
 	C.mmal_queue_put_back(ctx, (*C.MMAL_BUFFER_HEADER_T)(buffer))
-}
-
-func (this *MMALQueue) Get() *MMALBuffer {
-	ctx := (*C.MMAL_QUEUE_T)(this)
-	return (*MMALBuffer)(C.mmal_queue_get(ctx))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -176,6 +176,7 @@ func mmal_pool_callback(ctx *C.MMAL_POOL_T, bufferctx *C.MMAL_BUFFER_HEADER_T, u
 	} else {
 		// Empty buffer is available - queue it
 		pool.Put(buffer)
+		fmt.Println("mmal_pool_callback: Queued empty buffer:",pool)
 		return MMAL_BOOL_FALSE
 	}
 }

@@ -52,11 +52,16 @@ func Run(r io.Reader) error {
 
 	// Get format on output
 	out := decoder.OutputPorts()[0]
-	fmt.Println("decoder in=", in.Format())
-	fmt.Println("decoder out=", out.Format())
 	if out.Format().Encoding() == mmal.MMAL_ENCODING_UNKNOWN {
 		return fmt.Errorf("Failed to set output format")
 	}
+
+	// Control port
+	ctrl := decoder.ControlPort()
+
+	fmt.Println("decoder in=", in.Format())
+	fmt.Println("decoder out=", out.Format())
+	fmt.Println("decoder ctrl=", ctrl.Format())
 
 	// Now we know the format of both ports and the requirements of the decoder, we can create
 	// our buffer headers and their associated memory buffers
@@ -77,6 +82,7 @@ func Run(r io.Reader) error {
 	queue := mmal.MMALQueueCreate()
 	out.SetUserdata(uintptr(unsafe.Pointer(queue)))
 
+
 	// Enable all the input port and the output port.
 	// The callback specified here is the function which will be called when the buffer header
 	// we sent to the component has been processed.
@@ -90,6 +96,11 @@ func Run(r io.Reader) error {
 	}
 	defer out.Disable()
 
+	if err := ctrl.EnableWithCallback(control_callback); err != nil {
+		return err
+	}
+	defer ctrl.Disable()
+
 	// Enable the component. Components will only process data when they are enabled.
 	if err := decoder.Enable(); err != nil {
 		return err
@@ -98,7 +109,7 @@ func Run(r io.Reader) error {
 	// Data processing loop, eof = end of input file, eoe = end of encoding
 	eof, eoe := false, false
 	i := 0
-	for eoe == false && i < 500 {
+	for eoe == false && i < 1000 {
 		fmt.Println("LOOP eof=", eof, " eoe=", eoe," i=",i)
 		i++
 
@@ -142,9 +153,12 @@ func Run(r io.Reader) error {
 			} else {
 				if evt := buffer.Event(); evt != 0 {
 					// This is an event. Do something with it and release the buffer.
-					fmt.Println("    -> EVT=", buffer.Event())
+					fmt.Println("    -> EVT=", buffer)
 					if evt&mmal.MMAL_EVENT_EOS == mmal.MMAL_EVENT_EOS || evt&mmal.MMAL_EVENT_ERROR == mmal.MMAL_EVENT_ERROR {
 						eoe = true
+						if err := out.Flush(); err != nil {
+							return err
+						}
 					} else if evt&mmal.MMAL_EVENT_FORMAT_CHANGED == mmal.MMAL_EVENT_FORMAT_CHANGED {
 						fmt.Println("     ->",out.Format())
 					}
@@ -158,6 +172,8 @@ func Run(r io.Reader) error {
 			}
 		}
 	}
+
+	fmt.Println("FINISHED LOOP")
 
 	// Return success
 	return nil
@@ -174,4 +190,9 @@ func output_callback(port *mmal.MMALPort, buffer *mmal.MMALBuffer) {
 	// Queue the decoded video frame
 	fmt.Println("output_callback, decoded video=",buffer," => ",queue)
 	queue.Put(buffer)
+}
+
+func control_callback(port *mmal.MMALPort, buffer *mmal.MMALBuffer) {
+	fmt.Println("control_callback, ",buffer)
+	buffer.Release()
 }

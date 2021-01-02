@@ -42,6 +42,11 @@ func (this *MMALBuffer) Length() uint32 {
 	return uint32(ctx.length)
 }
 
+func (this *MMALBuffer) Size() uint32 {
+	ctx := (*C.MMAL_BUFFER_HEADER_T)(this)
+	return uint32(ctx.alloc_size)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
@@ -98,6 +103,9 @@ func (this *MMALBuffer) String() string {
 	}
 	if length := this.Length(); length != 0 {
 		str += " length=" + fmt.Sprint(length)
+	}
+	if size := this.Size(); size != 0 {
+		str += " size=" + fmt.Sprint(size)
 	}
 	return str + ">"
 }
