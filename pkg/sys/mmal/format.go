@@ -4,6 +4,8 @@ package mmal
 
 import (
 	"fmt"
+	"io"
+	"reflect"
 	"unsafe"
 )
 
@@ -26,6 +28,7 @@ type (
 	MMALVideoFormat      (C.MMAL_VIDEO_FORMAT_T)
 	MMALAudioFormat      (C.MMAL_AUDIO_FORMAT_T)
 	MMALSubpictureFormat (C.MMAL_SUBPICTURE_FORMAT_T)
+	MMALStreamFormatEvent (C.MMAL_EVENT_FORMAT_CHANGED_T)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -66,6 +69,19 @@ func (this *MMALStreamFormat) ExtradataAlloc(size uint32) error {
 	} else {
 		return err
 	}
+}
+
+func (this *MMALStreamFormat) ExtradataRead(r io.ReadSeeker, size uint32) error {
+	if err := this.ExtradataAlloc(size); err != nil {
+		return err
+	} else if _, err := r.Read(this.Extradata()); err != nil {
+		return err
+	} else if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -136,6 +152,21 @@ func (this *MMALStreamFormat) Subpicture() *MMALSubpictureFormat {
 	} else {
 		return nil
 	}
+}
+
+func (this *MMALStreamFormat) Extradata() []byte {
+	var result []byte
+
+	ctx := (*C.MMAL_ES_FORMAT_T)(this)
+
+	// Make a fake slice
+	sliceHeader := (*reflect.SliceHeader)((unsafe.Pointer(&result)))
+	sliceHeader.Cap = int(ctx.extradata_size)
+	sliceHeader.Len = int(ctx.extradata_size)
+	sliceHeader.Data = uintptr(unsafe.Pointer(ctx.extradata))
+
+	// Return data
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -243,6 +274,25 @@ func (this *MMALSubpictureFormat) Offset() (uint32, uint32) {
 	return uint32(ctx.x_offset), uint32(ctx.y_offset)
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// PROPERTIES - EVENT
+
+func (this *MMALStreamFormatEvent) BufferMin() (uint32,uint32) {
+	ctx := (*C.MMAL_EVENT_FORMAT_CHANGED_T)(this)
+	return uint32(ctx.buffer_num_min), uint32(ctx.buffer_size_min)
+}
+
+func (this *MMALStreamFormatEvent) BufferPreferred() (uint32,uint32) {
+	ctx := (*C.MMAL_EVENT_FORMAT_CHANGED_T)(this)
+	return uint32(ctx.buffer_num_recommended), uint32(ctx.buffer_size_recommended)	
+}
+
+func (this *MMALStreamFormatEvent) Format() (*MMALStreamFormat) {
+	ctx := (*C.MMAL_EVENT_FORMAT_CHANGED_T)(this)
+	return (*MMALStreamFormat)(ctx.format)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -252,9 +302,9 @@ func (this *MMALStreamFormat) String() string {
 		str += " type=" + fmt.Sprint(t)
 	}
 	if enc := this.Encoding(); enc != 0 {
-		str += " enc=" + fmt.Sprint(enc)
+		str += " enc=" + fmt.Sprintf("%q",enc)
 		if encvar := this.Variant(); encvar != 0 {
-			str += ",var=" + fmt.Sprint(encvar)
+			str += ",var=" + fmt.Sprintf("%q",encvar)
 		}
 	}
 	if f := this.Flags(); f != 0 {
@@ -307,4 +357,17 @@ func (f MMALStreamFlags) String() string {
 	default:
 		return "[?? Invalid MMALStreamFlags value]"
 	}
+}
+
+
+func (this *MMALStreamFormatEvent) String() string {
+	str := "<mmal.formatchanged"
+	if n,s := this.BufferMin(); n >0 && s > 0 {
+		str += fmt.Sprintf(" min={%v,%v}",n,s)
+	}
+	if n,s := this.BufferPreferred(); n >0 && s > 0 {
+		str += fmt.Sprintf(" preferred={%v,%v}",n,s)
+	}
+	str += fmt.Sprintf(" format=%v",this.Format())
+	return str + ">"
 }

@@ -174,6 +174,17 @@ func (this *MMALPort) FormatCommit() error {
 	}
 }
 
+// FormatFullCopy fully copies a format structure, including the extradata buffer,
+// into port format. Requires a commit afterwards
+func (this *MMALPort) FormatFullCopy(src *MMALStreamFormat) error {
+	ctx := (*C.MMAL_PORT_T)(this)
+	if err := Error(C.mmal_format_full_copy(ctx.format, (*C.MMAL_ES_FORMAT_T)(src))); err == MMAL_SUCCESS {
+		return nil
+	} else {
+		return err
+	}
+}
+
 // BufferMin returns minimum number of buffers and size of each buffer
 func (this *MMALPort) BufferMin() (uint32, uint32) {
 	ctx := (*C.MMAL_PORT_T)(this)
