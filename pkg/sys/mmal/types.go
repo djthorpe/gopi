@@ -102,7 +102,7 @@ func (r MMALRect) IsZero() bool {
 func (r MMALRect) String() string {
 	x, y := r.Origin()
 	w, h := r.Size()
-	return fmt.Sprintf("<mmal.rect origin={ %d,%d } size={%d,%d}>", x, y, w, h)
+	return fmt.Sprintf("<mmal.rect origin={%d,%d} size={%d,%d}>", x, y, w, h)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

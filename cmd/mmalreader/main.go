@@ -7,6 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/djthorpe/gopi/v3/pkg/sys/mmal"
+	"github.com/djthorpe/gopi/v3/pkg/sys/rpi"
 )
 
 // https://github.com/t-moe/rpi_mmal_examples/blob/master/example_basic_2.c
@@ -17,6 +18,7 @@ const (
 )
 
 func main() {
+	rpi.BCMHostInit()
 	args := os.Args
 	if len(args) != 2 {
 		fmt.Fprintln(os.Stderr, "Expected file argument")
@@ -76,7 +78,7 @@ func Run(r io.ReadSeeker) error {
 
 	// Now we know the format of both ports and the requirements of the decoder, we can create
 	// our buffer headers and their associated memory buffers
-	pool_in := in.CreatePool(in.BufferPreferred())
+	pool_in := in.CreatePool(in.BufferMin())
 	if pool_in == nil {
 		return fmt.Errorf("Failed to create in_pool")
 	}
@@ -120,7 +122,7 @@ func Run(r io.ReadSeeker) error {
 	// Data processing loop, eof = end of input file, eoe = end of encoding
 	eof, eoe := false, false
 	i := 0
-	for eoe == false && i < 500 {
+	for eoe == false && i < 1000 {
 		fmt.Println("LOOP eof=", eof, " eoe=", eoe, " i=", i)
 		i++
 
@@ -155,25 +157,42 @@ func Run(r io.ReadSeeker) error {
 				break
 			}
 			if buffer.HasFlags(mmal.MMAL_BUFFER_HEADER_FLAG_EOS) {
-				fmt.Println("END OF DECODING")
+				fmt.Println("    END OF DECODING")
 				eoe = true
 			}
 			if evt := buffer.Event(); evt == 0 {
 				// We have a frame, do something with it
-				fmt.Println("    -> DATA=", buffer)
+				fmt.Println("    GOT DECODED DATA ->", buffer)
 			} else if buffer.Event() == mmal.MMAL_EVENT_FORMAT_CHANGED {
 				event := buffer.AsFormatChangeEvent()
-				fmt.Println("FORMAT CHANGED",event)
+				fmt.Println("    FORMAT CHANGED", event)
 
 				// Assume we can't reuse the buffers, so we resize
-				fmt.Println("  DISABLE OUTPUT PORT")
+				fmt.Println("      DISABLE OUTPUT PORT")
 				if err := out.Disable(); err != nil {
 					return err
 				}
 
-				// TODO: Resize pool
+				// Clear queue
+				fmt.Println("      RELEASE BUFFERS")
+				fmt.Println("      ->",pool_out)
+				for {
+					if buf := pool_out.Get(); buf == nil {
+						break
+					} else {
+						buf.Release()
+					}
+				}
+
+				// Resize pool based on new format
+				fmt.Println("      RESIZE POOL")
+				if err := pool_out.Resize(event.BufferMin()); err != nil {
+					return err
+				}
+				fmt.Println("      ->",pool_out)
 
 				// Copy over the new format and re-enable the port
+				fmt.Println("      FORMAT COPY")
 				if err := out.FormatFullCopy(event.Format()); err != nil {
 					return err
 				} else if err := out.FormatCommit(); err != nil {
@@ -181,8 +200,9 @@ func Run(r io.ReadSeeker) error {
 				} else if err := out.Enable(); err != nil {
 					return err
 				}
+				fmt.Println("      ->",out.Format())
 			} else {
-				fmt.Println("UNHANDLED EVENT", evt)
+				fmt.Println("    UNHANDLED EVENT", evt)
 			}
 			// Once we're done with it, we release it. It will magically go back
 			// to its original pool so it can be reused for a new video frame.
@@ -198,7 +218,7 @@ func Run(r io.ReadSeeker) error {
 			} else if err := out.SendBuffer(buffer); err != nil {
 				return err
 			} else {
-				fmt.Println("     -> ", buffer)
+				fmt.Println("     ",buffer," -> ",pool_out)
 			}
 		}
 	}
@@ -209,12 +229,14 @@ func Run(r io.ReadSeeker) error {
 	return nil
 }
 
+// input_callback is called when a buffer should be discarded on an input port
 func input_callback(port *mmal.MMALPort, buffer *mmal.MMALBuffer) {
 	// The decoder is done with the data, just recycle the buffer header into its pool
 	fmt.Println("input_callback done with buffer", buffer)
 	buffer.Release()
 }
-
+ 
+// output_callback is called when a buffer is available on an output port
 func output_callback(port *mmal.MMALPort, buffer *mmal.MMALBuffer) {
 	queue := (*mmal.MMALQueue)(unsafe.Pointer(port.Userdata()))
 	// Queue the decoded video frame

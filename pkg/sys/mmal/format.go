@@ -203,6 +203,7 @@ func (this *MMALVideoFormat) SetFrameRate(r MMALRational) {
 	ctx.frame_rate = (C.MMAL_RATIONAL_T)(r)
 }
 
+// Pixel Aspect Ratio
 func (this *MMALVideoFormat) Par() MMALRational {
 	ctx := (*C.MMAL_VIDEO_FORMAT_T)(this)
 	return MMALRational(ctx.par)
@@ -313,7 +314,7 @@ func (this *MMALStreamFormat) String() string {
 	switch this.Type() {
 	case MMAL_ES_TYPE_VIDEO:
 		if w, h := this.Video().Size(); w > 0 && h > 0 {
-			str += fmt.Sprintf(" size={ %d,%d }", w, h)
+			str += fmt.Sprintf(" size={%d,%d}", w, h)
 		}
 		if crop := this.Video().Crop(); crop.IsZero() == false {
 			str += " crop=" + fmt.Sprint(crop)
@@ -325,7 +326,7 @@ func (this *MMALStreamFormat) String() string {
 			str += " par=" + fmt.Sprint(p)
 		}
 		if cs := this.Video().ColorSpace(); cs != 0 {
-			str += " color_space=" + fmt.Sprint(cs)
+			str += " color_space=" + fmt.Sprintf("%q",cs)
 		}
 	case MMAL_ES_TYPE_AUDIO:
 	case MMAL_ES_TYPE_SUBPICTURE:
