@@ -197,8 +197,11 @@ gx: builddir rpi egl drm gbm
 mmaltest: rpi mmal
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) test -v -tags "$(TAGS)" ./pkg/sys/mmal
 
-mmalreader: rpi mmal
+mmaldecoder: rpi mmal
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mmalreader -tags "$(TAGS)" ${GOFLAGS} ./cmd/mmalreader
+
+mmalplayer: rpi mmal
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mmalplayer -tags "$(TAGS)" ${GOFLAGS} ./cmd/mmalplayer
 
 # Build rules - dependencies
 nfpm:
