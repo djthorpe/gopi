@@ -82,6 +82,7 @@ func (this *renderers) Render(renderer gopi.HttpRenderer, req *http.Request) (in
 	if renderer == nil {
 		return nil, time.Time{}, gopi.ErrNotFound
 	}
+
 	// Get existing content and modified date
 	key := keyForRequest(req)
 	if content, modified := this.get(key); content != nil {

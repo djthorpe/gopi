@@ -21,9 +21,8 @@ type app struct {
 // LIFECYCLE
 
 func (this *app) Run(ctx context.Context) error {
+	// Serve all folders under the current working directory under "/"
 	if err := this.HttpStatic.ServeStatic("/"); err != nil {
-		return err
-	} else if err := this.HttpTemplate.ServeTemplate("/", "page.tmpl"); err != nil {
 		return err
 	}
 
@@ -34,20 +33,3 @@ func (this *app) Run(ctx context.Context) error {
 	// Return success
 	return nil
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// PRIVATE METHODS
-/*
-func (this *app) getFolderRoot() (string, error) {
-	args := this.Args()
-	if len(args) != 1 {
-		return "", gopi.ErrBadParameter.WithPrefix("Missing folder")
-	} else if stat, err := os.Stat(args[0]); err != nil {
-		return "", err
-	} else if stat.IsDir() == false {
-		return "", gopi.ErrBadParameter.WithPrefix("Missing folder")
-	} else {
-		return filepath.Clean(args[0]), nil
-	}
-}
-*/

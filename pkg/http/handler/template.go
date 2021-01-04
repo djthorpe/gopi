@@ -119,15 +119,17 @@ func (this *Template) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Get content and modified time from cache
 	content, modified = this.renderers.Get(req)
-	if content == nil && renderer != nil {
-		// No content in cache, so generate it
-		content, modified, err = this.renderers.Render(renderer, req)
-		if err != nil {
-			this.Debugf("  render content returns error: %v", err)
-		} else if content == nil {
-			this.Debugf("  render content returns no content")
-		} else {
-			this.Debugf("  render content returns modification date: %v", modified)
+	if renderer != nil {
+		if content == nil || renderer.IsModifiedSince(req, modified) {
+			// Content needs to be rendered
+			content, modified, err = this.renderers.Render(renderer, req)
+			if err != nil {
+				this.Debugf("  render content returns error: %v", err)
+			} else if content == nil {
+				this.Debugf("  render content returns no content")
+			} else {
+				this.Debugf("  render content returns modification date: %v", modified)
+			}
 		}
 
 		// Deal with any errors from generating content
