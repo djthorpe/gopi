@@ -3,6 +3,8 @@ package gopi
 import (
 	"context"
 	"net"
+	"net/http"
+	"time"
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -164,16 +166,41 @@ type HttpStatic interface {
 	ServeStatic(path string) error
 }
 
+// HttpTemplate loads and serves templates
+type HttpTemplate interface {
+	// Serve a template for a path
+	ServeTemplate(path, template string) error
+
+	// Register a document renderer for template
+	RegisterRenderer(string, HttpRenderer) error
+}
+
 // HttpLogger logs request and response metrics
 type HttpLogger interface {
 	// Log all requests as named measurement
 	Log(string) error
 }
 
-// HttpTemplate loads and serves templates
-type HttpTemplate interface {
-	// Serve a template for a path
-	ServeTemplate(path, template string) error
+// HttpRenderer returns content to process with template
+// for a request
+type HttpRenderer interface {
+	// IsModifiedSince should return true if content has
+	// been modified since a certain time
+	IsModifiedSince(time.Time) bool
+
+	// ServeContent should return the content object
+	// last modified time for caching or zero-time if no
+	// caching should occur, and an error. If the error is a
+	// HttpError then the error return to the client is sent
+	// correctly or else client gets InternalServerError
+	// on error
+	ServeContent(*http.Request) (interface{}, time.Time, error)
+}
+
+// HttpError provides the correct error code to the client
+type HttpError interface {
+	Code() int
+	Error() string
 }
 
 /////////////////////////////////////////////////////////////////////

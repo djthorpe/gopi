@@ -1,16 +1,11 @@
 package handler
 
 import (
-	"html/template"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
-	"sync"
+	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
-	multierror "github.com/hashicorp/go-multierror"
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -21,25 +16,16 @@ type Templates struct {
 	gopi.Server
 	gopi.Logger
 	*cache
+	*renderers
 
 	folder *string
 }
 
-type cached struct {
-	os.FileInfo
-	*template.Template
-}
-
-type cache struct {
-	sync.RWMutex
-
-	folder string
-	t      map[string]cached
-}
-
 type Template struct {
+	gopi.Logger
 	*cache
-	Name string
+	*renderers
+	name string
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -67,97 +53,17 @@ func (this *Templates) New(gopi.Config) error {
 		return err
 	} else {
 		this.cache = cache
+		this.renderers = NewRenderers()
 	}
 
 	// Return success
 	return nil
 }
 
-func NewCache(folder string) (*cache, error) {
-	// Read files in folder
-	files, err := ioutil.ReadDir(folder)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create cache
-	this := new(cache)
-	this.t = make(map[string]cached, len(files))
-	this.folder = folder
-
-	// Read templates into cache
-	var result error
-	for _, file := range files {
-		if strings.HasPrefix(file.Name(), ".") {
-			continue
-		}
-		if file.Mode().IsRegular() == false {
-			continue
-		}
-		if tmpl, err := template.ParseFiles(filepath.Join(folder, file.Name())); err != nil {
-			result = multierror.Append(result, err)
-		} else {
-			key := tmpl.Name()
-			this.t[key] = cached{file, tmpl}
-		}
-	}
-	if result != nil {
-		return nil, result
-	} else {
-		return this, nil
-	}
-}
-
-/////////////////////////////////////////////////////////////////////
-// METHODS - CACHE
-
-func (this *cache) Get(name string) (*template.Template, error) {
-	t := this.get(name)
-	path := filepath.Join(this.folder, name)
-	if t.Template == nil {
-		return nil, gopi.ErrNotFound.WithPrefix(name)
-	}
-
-	info, err := os.Stat(path)
-	if err != nil {
-		return t.Template, err
-	} else if info.ModTime() == t.ModTime() {
-		return t.Template, nil
-	}
-
-	tmpl, err := template.ParseFiles(path)
-	if err == nil {
-		return this.set(name, tmpl, info), nil
-	} else {
-		return t.Template, err
-	}
-}
-
-func (this *cache) get(name string) cached {
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
-	if this.t == nil {
-		return cached{}
-	} else if t, exists := this.t[name]; exists == false {
-		return cached{}
-	} else {
-		return t
-	}
-}
-
-func (this *cache) set(name string, t *template.Template, info os.FileInfo) *template.Template {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	this.t[name] = cached{info, t}
-	return t
-}
-
 /////////////////////////////////////////////////////////////////////
 // METHODS - TEMPLATES
 
-// Register a service to serve a template for a path
+// ServeTemplate registers a service to serve a template for a path
 func (this *Templates) ServeTemplate(path, name string) error {
 	if this.Server == nil {
 		return gopi.ErrInternalAppError.WithPrefix("Server")
@@ -167,23 +73,116 @@ func (this *Templates) ServeTemplate(path, name string) error {
 		return err
 	} else if err := this.Server.RegisterService(path, this.NewTemplateService(name)); err != nil {
 		return err
+	} else {
+		this.Debugf("Register Template %q => %q", path, name)
 	}
 
 	// Return success
 	return nil
 }
 
-// Create a new template handler
-func (this *Templates) NewTemplateService(name string) http.Handler {
-	return &Template{this.cache, name}
+// RegisterRenderer registers a document renderer for named template
+func (this *Templates) RegisterRenderer(name string, renderer gopi.HttpRenderer) error {
+	if this.cache == nil {
+		return gopi.ErrBadParameter.WithPrefix("-http.templates")
+	} else if _, err := this.cache.Get(name); err != nil {
+		return err
+	} else if err := this.renderers.Register(name, renderer); err != nil {
+		return err
+	} else {
+		this.Debugf("Register Renderer %q => %v", name, renderer)
+	}
+
+	// Return success
+	return nil
 }
 
+/////////////////////////////////////////////////////////////////////
+// METHODS - TEMPLATE HANDLER
+
+// Create a new template handler
+func (this *Templates) NewTemplateService(name string) http.Handler {
+	return &Template{this.Logger, this.cache, this.renderers, name}
+}
+
+// Serve a template through a renderer
 func (this *Template) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if tmpl, err := this.cache.Get(this.Name); err != nil {
+	var content interface{}
+	var modified time.Time
+	var err error
+
+	// Get renderer
+	renderer := this.renderers.Renderer(this.name)
+
+	this.Debugf("req=%v renderer=%v", req.URL, renderer)
+	this.Debugf("  template=%v", this.name)
+
+	// Get content and modified time from cache
+	content, modified = this.renderers.Get(req)
+	if content == nil && renderer != nil {
+		// No content in cache, so generate it
+		content, modified, err = this.renderers.Render(renderer, req)
+		if err != nil {
+			this.Debugf("  render content returns error: %v", err)
+		} else if content == nil {
+			this.Debugf("  render content returns no content")
+		} else {
+			this.Debugf("  render content returns modification date: %v", modified)
+		}
+
+		// Deal with any errors from generating content
+		if err != nil {
+			this.ServeError(w, err)
+			return
+		} else if content == nil {
+			// If content is nil then return NoContent error
+			http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+			return
+		}
+	}
+
+	// Update modification time if template modification time is later
+	if modtime := this.cache.Modified(this.name); modtime.IsZero() == false {
+		if modified.IsZero() || modtime.After(modified) {
+			this.Debugf("  template updates modification time: %v", modtime)
+			modified = modtime
+		}
+	}
+
+	// Check for If-Modified-Since header
+	if ifmodified := req.Header.Get("If-Modified-Since"); ifmodified != "" {
+		if date, err := time.Parse(http.TimeFormat, ifmodified); err == nil {
+			if date.After(modified) {
+				this.Debugf("  If-Modified-Since %v: Returning %v", ifmodified, http.StatusNotModified)
+				http.Error(w, http.StatusText(http.StatusNotModified), http.StatusNotModified)
+				return
+			}
+		}
+	}
+
+	// Set cache headers
+	if modified.IsZero() == false {
+		w.Header().Set("Last-Modified", modified.Format(http.TimeFormat))
+	} else {
+		w.Header().Set("Cache-Control", "no-cache")
+	}
+
+	// Here we have content and a modified date set, so serve template
+	// with content
+	if tmpl, err := this.cache.Get(this.name); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
-	} else if err := tmpl.Execute(w, nil); err != nil {
+	} else if err := tmpl.Execute(w, content); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+}
+
+// Serve error
+func (this *Template) ServeError(w http.ResponseWriter, err error) {
+	if err_, ok := err.(gopi.HttpError); ok {
+		http.Error(w, err_.Error(), err_.Code())
+	} else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

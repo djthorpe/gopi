@@ -86,6 +86,8 @@ func (this *Static) ServeStatic(path string) error {
 		folder := filepath.Join(*this.folder, child)
 		if err := this.Server.RegisterService(child, NewStaticHandler(child, folder)); err != nil {
 			return err
+		} else {
+			this.Debugf("Register Static %q => %v", child, folder)
 		}
 	}
 
