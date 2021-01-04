@@ -184,9 +184,10 @@ type HttpLogger interface {
 // HttpRenderer returns content to process with template
 // for a request
 type HttpRenderer interface {
-	// IsModifiedSince should return true if content has
-	// been modified since a certain time
-	IsModifiedSince(time.Time) bool
+	// IsModifiedSince should return true if content that
+	// would be served by a request has been modified since
+	// a certain time
+	IsModifiedSince(*http.Request, time.Time) bool
 
 	// ServeContent should return the content object
 	// last modified time for caching or zero-time if no

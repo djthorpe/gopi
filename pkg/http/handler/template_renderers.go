@@ -86,7 +86,7 @@ func (this *renderers) Render(renderer gopi.HttpRenderer, req *http.Request) (in
 	key := keyForRequest(req)
 	if content, modified := this.get(key); content != nil {
 		// Serve from cache if not modified
-		if renderer.IsModifiedSince(modified) == false {
+		if renderer.IsModifiedSince(req, modified) == false {
 			return content, modified, nil
 		}
 	}
