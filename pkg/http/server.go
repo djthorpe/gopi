@@ -240,6 +240,7 @@ func (this *Server) RegisterService(path interface{}, service gopi.Service) erro
 		if path_, ok := path.(string); ok == false {
 			return gopi.ErrBadParameter.WithPrefix("RegisterService", "path")
 		} else {
+			fmt.Println("Set mux", path_)
 			this.mux.Handle(path_, handler_)
 		}
 	}
@@ -249,9 +250,9 @@ func (this *Server) RegisterService(path interface{}, service gopi.Service) erro
 }
 
 func (this *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// If any handlers are installed call them, or else call the default
-	// multiplexer
+	// If any handlers are installed call them, or else call the default multiplexer
 	if this.handler == nil {
+		fmt.Println("Serve mux", req.RequestURI)
 		this.mux.ServeHTTP(w, req)
 	} else {
 		this.handler.ServeHTTP(w, req)

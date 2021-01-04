@@ -160,8 +160,8 @@ type MetricsStub interface {
 
 // HttpStatic serves files and folders from the filesystem
 type HttpStatic interface {
-	// Serve a folder and child folders with root URL as "path"
-	ServeFolder(path, folder string) error
+	// Serve a child folders with root URL as "path"
+	ServeStatic(path string) error
 }
 
 // HttpLogger logs request and response metrics
