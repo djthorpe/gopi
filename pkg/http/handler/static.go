@@ -34,9 +34,14 @@ func (this *Static) Define(cfg gopi.Config) error {
 }
 
 func (this *Static) New(gopi.Config) error {
-	// Where there is no static argument
+	// Where there is no static argument, use current working
+	// directory
 	if *this.folder == "" {
-		return nil
+		if wd, err := os.Getwd(); err != nil {
+			return err
+		} else {
+			*this.folder = wd
+		}
 	}
 
 	// Check static folder
@@ -58,7 +63,9 @@ func (this *Static) New(gopi.Config) error {
 // Register a service to serve static files with root of path
 func (this *Static) ServeStatic(path string) error {
 	if this.Server == nil {
-		return gopi.ErrInternalAppError.WithPrefix("ServeFolder")
+		return gopi.ErrInternalAppError.WithPrefix("ServeStatic")
+	} else if *this.folder == "" {
+		return gopi.ErrBadParameter.WithPrefix("ServeStatic")
 	}
 
 	files, err := ioutil.ReadDir(*this.folder)
@@ -72,12 +79,13 @@ func (this *Static) ServeStatic(path string) error {
 		if file.IsDir() == false {
 			continue
 		}
-		child := filepath.Join(path, file.Name()) + "/"
+		child := filepath.Join(path, file.Name())
+		if strings.HasSuffix(child, "/") == false {
+			child = child + "/"
+		}
 		folder := filepath.Join(*this.folder, child)
 		if err := this.Server.RegisterService(child, NewStaticHandler(child, folder)); err != nil {
 			return err
-		} else {
-			this.Printf("Serving %q => %q", child, folder)
 		}
 	}
 

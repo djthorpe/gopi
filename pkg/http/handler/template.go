@@ -137,7 +137,9 @@ func (this *cache) get(name string) cached {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	if t, exists := this.t[name]; exists == false {
+	if this.t == nil {
+		return cached{}
+	} else if t, exists := this.t[name]; exists == false {
 		return cached{}
 	} else {
 		return t
@@ -159,12 +161,12 @@ func (this *cache) set(name string, t *template.Template, info os.FileInfo) *tem
 func (this *Templates) ServeTemplate(path, name string) error {
 	if this.Server == nil {
 		return gopi.ErrInternalAppError.WithPrefix("Server")
+	} else if this.cache == nil {
+		return gopi.ErrBadParameter.WithPrefix("-http.templates")
 	} else if _, err := this.cache.Get(name); err != nil {
 		return err
 	} else if err := this.Server.RegisterService(path, this.NewTemplateService(name)); err != nil {
 		return err
-	} else {
-		this.Printf("Serving %q => %q", path, name)
 	}
 
 	// Return success
