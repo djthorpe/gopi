@@ -205,7 +205,7 @@ mmalplayer: rpi mmal
 
 # Build rules - dependencies
 nfpm:
-	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm
+	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm@v1.10.1
 
 pkgcloud:
 	$(GO) get github.com/mlafeldt/pkgcloud/cmd/pkgcloud-push
