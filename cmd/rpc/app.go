@@ -100,7 +100,7 @@ func (this *app) Define(cfg gopi.Config) error {
 	this.service = cfg.FlagString("srv", "", "name, service:name or host:port")
 
 	// Set flags for cast functions
-	this.castId = cfg.FlagString("id", "", "Chromecast Id", "cast app", "cast load", "cast seek", "cast pause", "cast vol")
+	this.castId = cfg.FlagString("id", "", "Chromecast Id", "cast", "cast app", "cast load", "cast seek", "cast pause", "cast vol")
 
 	// Set watch flag
 	this.watch = cfg.FlagBool("watch", false, "Watch for events", "cast")

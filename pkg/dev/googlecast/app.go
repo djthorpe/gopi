@@ -19,6 +19,18 @@ type App struct {
 ////////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION
 
+func (a App) Id() string {
+	return a.AppId
+}
+
+func (a App) Name() string {
+	return a.DisplayName
+}
+
+func (a App) Status() string {
+	return a.StatusText
+}
+
 func (a App) Equals(other App) bool {
 	if a.AppId != other.AppId {
 		return false

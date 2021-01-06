@@ -47,6 +47,28 @@ func (this *stub) ListCasts(ctx context.Context) ([]gopi.Cast, error) {
 	return result, nil
 }
 
+func (this *stub) Volume(ctx context.Context, castId string) (float32, bool, error) {
+	if resp, err := this.ManagerClient.Get(ctx, &CastRequest{
+		Id: castId,
+	}); err != nil {
+		return 0, false, err
+	} else if resp.Volume == nil {
+		return 0, false, nil
+	} else {
+		return resp.Volume.Level, resp.Volume.Muted, nil
+	}
+}
+
+func (this *stub) App(ctx context.Context, castId string) (gopi.CastApp, error) {
+	if resp, err := this.ManagerClient.Get(ctx, &CastRequest{
+		Id: castId,
+	}); err != nil {
+		return nil, err
+	} else {
+		return fromProtoApp(resp.App), nil
+	}
+}
+
 func (this *stub) SetApp(ctx context.Context, castId, appId string) error {
 	if _, err := this.ManagerClient.SetApp(ctx, &AppRequest{
 		Id:    castId,

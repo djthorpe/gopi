@@ -116,6 +116,26 @@ func (this *service) getCastEx(ctx context.Context, key string) gopi.Cast {
 	return this.getCast(key)
 }
 
+func (this *service) toProtoCastState(cast gopi.Cast) (*CastState, error) {
+	var err error
+
+	// Retrieve state information
+	level, muted, err := this.CastManager.Volume(cast)
+	if err != nil {
+		return nil, err
+	}
+	app, err := this.CastManager.App(cast)
+	if err != nil {
+		return nil, err
+	}
+	// Return cast state
+	return &CastState{
+		Cast:   toProtoCast(cast),
+		Volume: toProtoVolume(level, muted),
+		App:    toProtoApp(app),
+	}, nil
+}
+
 /////////////////////////////////////////////////////////////////////
 // RPC METHODS
 
@@ -137,7 +157,7 @@ func (this *service) ListCasts(ctx context.Context, _ *empty.Empty) (*ListRespon
 	return reply, nil
 }
 
-func (this *service) SetApp(ctx context.Context, req *AppRequest) (*CastResponse, error) {
+func (this *service) SetApp(ctx context.Context, req *AppRequest) (*CastState, error) {
 	this.Debug("<SetApp ", req, ">")
 
 	// Retrieve Chromecast, LaunchApp
@@ -148,13 +168,11 @@ func (this *service) SetApp(ctx context.Context, req *AppRequest) (*CastResponse
 		return nil, err
 	}
 
-	// Return success
-	return &CastResponse{
-		Cast: toProtoCast(cast),
-	}, nil
+	// Return cast state
+	return this.toProtoCastState(cast)
 }
 
-func (this *service) LoadURL(ctx context.Context, req *LoadRequest) (*CastResponse, error) {
+func (this *service) LoadURL(ctx context.Context, req *LoadRequest) (*CastState, error) {
 	this.Debug("<LoadURL ", req, ">")
 
 	// Retrieve Chromecast, LoadURL
@@ -167,13 +185,11 @@ func (this *service) LoadURL(ctx context.Context, req *LoadRequest) (*CastRespon
 		return nil, err
 	}
 
-	// Return success
-	return &CastResponse{
-		Cast: toProtoCast(cast),
-	}, nil
+	// Return cast state
+	return this.toProtoCastState(cast)
 }
 
-func (this *service) SetVolume(ctx context.Context, req *VolumeRequest) (*CastResponse, error) {
+func (this *service) SetVolume(ctx context.Context, req *VolumeRequest) (*CastState, error) {
 	this.Debug("<SetVolume ", req, ">")
 
 	// Retrieve Chromecast, SetVolume
@@ -184,13 +200,11 @@ func (this *service) SetVolume(ctx context.Context, req *VolumeRequest) (*CastRe
 		return nil, err
 	}
 
-	// Return success
-	return &CastResponse{
-		Cast: toProtoCast(cast),
-	}, nil
+	// Return cast state
+	return this.toProtoCastState(cast)
 }
 
-func (this *service) SetMute(ctx context.Context, req *MuteRequest) (*CastResponse, error) {
+func (this *service) SetMute(ctx context.Context, req *MuteRequest) (*CastState, error) {
 	this.Debug("<SetMute ", req, ">")
 
 	// Retrieve Chromecast, SetMuted
@@ -201,13 +215,24 @@ func (this *service) SetMute(ctx context.Context, req *MuteRequest) (*CastRespon
 		return nil, err
 	}
 
-	// Return success
-	return &CastResponse{
-		Cast: toProtoCast(cast),
-	}, nil
+	// Return cast state
+	return this.toProtoCastState(cast)
 }
 
-func (this *service) Stop(ctx context.Context, req *CastRequest) (*CastResponse, error) {
+func (this *service) Get(ctx context.Context, req *CastRequest) (*CastState, error) {
+	this.Debug("<Get ", req, ">")
+
+	// Retrieve Chromecast
+	cast := this.getCastEx(ctx, req.Id)
+	if cast == nil {
+		return nil, gopi.ErrNotFound.WithPrefix(req.Id)
+	}
+
+	// Return cast state
+	return this.toProtoCastState(cast)
+}
+
+func (this *service) Stop(ctx context.Context, req *CastRequest) (*CastState, error) {
 	this.Debug("<Stop ", req, ">")
 
 	// Retrieve Chromecast, Play
@@ -218,13 +243,11 @@ func (this *service) Stop(ctx context.Context, req *CastRequest) (*CastResponse,
 		return nil, err
 	}
 
-	// Return success
-	return &CastResponse{
-		Cast: toProtoCast(cast),
-	}, nil
+	// Return cast state
+	return this.toProtoCastState(cast)
 }
 
-func (this *service) Play(ctx context.Context, req *CastRequest) (*CastResponse, error) {
+func (this *service) Play(ctx context.Context, req *CastRequest) (*CastState, error) {
 	this.Debug("<Play ", req, ">")
 
 	// Retrieve Chromecast, Play
@@ -235,13 +258,11 @@ func (this *service) Play(ctx context.Context, req *CastRequest) (*CastResponse,
 		return nil, err
 	}
 
-	// Return success
-	return &CastResponse{
-		Cast: toProtoCast(cast),
-	}, nil
+	// Return cast state
+	return this.toProtoCastState(cast)
 }
 
-func (this *service) Pause(ctx context.Context, req *CastRequest) (*CastResponse, error) {
+func (this *service) Pause(ctx context.Context, req *CastRequest) (*CastState, error) {
 	this.Debug("<Pause ", req, ">")
 
 	// Retrieve Chromecast, Play
@@ -252,13 +273,11 @@ func (this *service) Pause(ctx context.Context, req *CastRequest) (*CastResponse
 		return nil, err
 	}
 
-	// Return success
-	return &CastResponse{
-		Cast: toProtoCast(cast),
-	}, nil
+	// Return cast state
+	return this.toProtoCastState(cast)
 }
 
-func (this *service) SeekAbs(ctx context.Context, req *SeekRequest) (*CastResponse, error) {
+func (this *service) SeekAbs(ctx context.Context, req *SeekRequest) (*CastState, error) {
 	this.Debug("<SeekAbs ", req, ">")
 
 	// Retrieve Chromecast, Seek
@@ -269,13 +288,11 @@ func (this *service) SeekAbs(ctx context.Context, req *SeekRequest) (*CastRespon
 		return nil, err
 	}
 
-	// Return success
-	return &CastResponse{
-		Cast: toProtoCast(cast),
-	}, nil
+	// Return cast state
+	return this.toProtoCastState(cast)
 }
 
-func (this *service) SeekRel(ctx context.Context, req *SeekRequest) (*CastResponse, error) {
+func (this *service) SeekRel(ctx context.Context, req *SeekRequest) (*CastState, error) {
 	this.Debug("<SeekRel ", req, ">")
 
 	// Retrieve Chromecast, Seek
@@ -286,10 +303,8 @@ func (this *service) SeekRel(ctx context.Context, req *SeekRequest) (*CastRespon
 		return nil, err
 	}
 
-	// Return success
-	return &CastResponse{
-		Cast: toProtoCast(cast),
-	}, nil
+	// Return cast state
+	return this.toProtoCastState(cast)
 }
 
 // Stream measuremets to client

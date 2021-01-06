@@ -21,7 +21,32 @@ func (this *event) Name() string {
 }
 
 func (this *event) Cast() gopi.Cast {
-	return fromProtoCast(this.GetCast())
+	state := this.GetState()
+	if state == nil {
+		return nil
+	} else {
+		return fromProtoCast(state.GetCast())
+	}
+}
+
+func (this *event) Volume() (float32, bool) {
+	state := this.GetState()
+	if state == nil {
+		return 0, false
+	} else if volume := state.GetVolume(); volume == nil {
+		return 0, false
+	} else {
+		return volume.GetLevel(), volume.GetMuted()
+	}
+}
+
+func (this *event) App() gopi.CastApp {
+	state := this.GetState()
+	if state == nil {
+		return nil
+	} else {
+		return fromProtoApp(state.GetApp())
+	}
 }
 
 func (this *event) Flags() gopi.CastFlag {
@@ -74,6 +99,33 @@ func (this *cast) State() uint {
 }
 
 /////////////////////////////////////////////////////////////////////
+// APPLICATION INTERFACE
+
+type app struct {
+	*App
+}
+
+func fromProtoApp(pb *App) gopi.CastApp {
+	if pb == nil {
+		return nil
+	} else {
+		return &app{pb}
+	}
+}
+
+func (this *app) Id() string {
+	return this.GetId()
+}
+
+func (this *app) Name() string {
+	return this.GetName()
+}
+
+func (this *app) Status() string {
+	return this.GetStatus()
+}
+
+/////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
 func fromProtoCast(pb *Cast) gopi.Cast {
@@ -104,6 +156,24 @@ func toProtoState(cast gopi.Cast) Cast_CastState {
 	}
 }
 
+func toProtoVolume(level float32, muted bool) *Volume {
+	return &Volume{
+		Level: level,
+		Muted: muted,
+	}
+}
+
+func toProtoApp(app gopi.CastApp) *App {
+	if app == nil {
+		return nil
+	}
+	return &App{
+		Id:     app.Id(),
+		Name:   app.Name(),
+		Status: app.Status(),
+	}
+}
+
 func toProtoDuration(value time.Duration) *duration.Duration {
 	return ptypes.DurationProto(value)
 }
@@ -113,13 +183,17 @@ func toProtoEvent(evt gopi.CastEvent) *CastEvent {
 		return nil
 	}
 	return &CastEvent{
-		Cast:    toProtoCast(evt.Cast()),
+		State: &CastState{
+			Cast:   toProtoCast(evt.Cast()),
+			Volume: toProtoVolume(evt.Volume()),
+			App:    toProtoApp(evt.App()),
+		},
 		Changed: CastEvent_Flag(evt.Flags()),
 	}
 }
 
 func fromProtoEvent(evt *CastEvent) gopi.CastEvent {
-	if evt == nil || evt.Cast == nil {
+	if evt == nil || evt.State == nil || evt.State.Cast == nil {
 		return nil
 	} else {
 		return &event{evt}

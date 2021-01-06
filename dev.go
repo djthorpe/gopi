@@ -117,6 +117,12 @@ type CastManager interface {
 	// calling, to set the transport, or else returns an OutOfOrder
 	// error
 	LoadURL(Cast, *url.URL, bool) error
+
+	// Returns current volume state (level and muted)
+	Volume(Cast) (float32, bool, error)
+
+	// Returns app state
+	App(Cast) (CastApp, error)
 }
 
 // Cast represents a Google Chromecast device
@@ -137,11 +143,25 @@ type Cast interface {
 	State() uint
 }
 
+// CastApp represents an application running on the Chromecast
+type CastApp interface {
+	// Id returns the identifier for the application
+	Id() string
+
+	// Name returns the name of the application
+	Name() string
+
+	// Status is the current status of the application
+	Status() string
+}
+
 type CastEvent interface {
 	Event
 
-	Cast() Cast
 	Flags() CastFlag
+	Cast() Cast
+	App() CastApp
+	Volume() (float32, bool)
 }
 
 type CastService interface {
@@ -154,14 +174,20 @@ type CastStub interface {
 	// ListCasts returns all discovered Chromecast devices
 	ListCasts(ctx context.Context) ([]Cast, error)
 
-	// SetApp loads an application into the Chromecast
-	SetApp(ctx context.Context, castId, appId string) error
+	// Return Volume
+	Volume(ctx context.Context, castId string) (float32, bool, error)
 
 	// SetVolume sets the Chromecast sound volume
 	SetVolume(ctx context.Context, castId string, value float32) error
 
 	// SetMute mutes and unmutes the sound
 	SetMute(ctx context.Context, castId string, value bool) error
+
+	// Return App
+	App(ctx context.Context, castId string) (CastApp, error)
+
+	// SetApp loads an application into the Chromecast
+	SetApp(ctx context.Context, castId, appId string) error
 
 	// LoadURL loads a video, audio or image onto the Chromecast,
 	// assuming an application has already been loaded

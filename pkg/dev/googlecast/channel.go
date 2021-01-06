@@ -208,9 +208,10 @@ func (this *channel) Stop() (int, []byte, error) {
 
 // encode message and return it
 func (this *channel) encode(source, dest, ns string, payload Payload) ([]byte, error) {
-	//if debug, err := json.MarshalIndent(payload, "", "  "); err == nil {
-	//	fmt.Println(string(debug))
-	//}
+	if debug, err := json.MarshalIndent(payload, "", "  "); err == nil {
+		fmt.Printf("src=%q dest=%q ns=%q msg=", source, dest, ns)
+		fmt.Println(string(debug))
+	}
 	json, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -320,14 +321,14 @@ func (this *channel) rcvConnection(message *pb.CastMessage) ([]byte, error) {
 		return nil, err
 	}
 	switch header.Type {
-	//case "CLOSE":
-	//	this.ch <- NewState(this.key, header.RequestId, "CLOSE")
+	case "CLOSE":
+		this.ch <- Close(this.key)
 	default:
 		return nil, fmt.Errorf("Ignoring message %q in namespace %q", header.Type, message.GetNamespace())
 	}
 
 	// Return success
-	//return nil, nil
+	return nil, nil
 }
 
 // process media messages

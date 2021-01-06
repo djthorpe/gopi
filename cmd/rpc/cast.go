@@ -30,6 +30,13 @@ func (this *app) RunCast(ctx context.Context, stub gopi.CastStub) error {
 	}
 	table.Render(os.Stdout)
 
+	// List cast state
+	if *this.castId != "" {
+		if err := this.GetCastWithId(ctx, stub, *this.castId); err != nil {
+			return err
+		}
+	}
+
 	// If watch is set
 	if *this.watch {
 		ch := make(chan gopi.CastEvent)
@@ -44,6 +51,25 @@ func (this *app) RunCast(ctx context.Context, stub gopi.CastStub) error {
 	}
 
 	// Return success
+	return nil
+}
+
+func (this *app) GetCastWithId(ctx context.Context, stub gopi.CastStub, id string) error {
+	level, muted, err := stub.Volume(ctx, id)
+	if err != nil {
+		return err
+	}
+	app, err := stub.App(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	table := table.New()
+	table.SetHeader(header{"Id"}, header{"Vol"}, header{"Muted"}, header{"App"}, header{"Id"}, header{"Status"})
+	table.Append(
+		id, level, muted, app.Id(), app.Name(), app.Status(),
+	)
+	table.Render(os.Stdout)
 	return nil
 }
 

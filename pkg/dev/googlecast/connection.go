@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -63,19 +64,23 @@ func (this *connection) Connect(key, addr string, timeout time.Duration, state c
 	this.channel.Init(key, state)
 
 	// Start the receive loop, which will end on cancel()
-	this.WaitGroup.Add(1)
 	ctx, cancel := context.WithCancel(context.Background())
+	this.cancel = cancel
+	this.WaitGroup.Add(1)
 	go func(ctx context.Context) {
 		defer this.WaitGroup.Done()
+		fmt.Println("RECV START")
 		this.recv(ctx, state)
+		fmt.Println("RECV STOP")
 	}(ctx)
-	this.cancel = cancel
 
 	// Send CONNECT message. Errors here require disconnect
 	if _, data, err := this.channel.Connect(); err != nil {
 		return err
 	} else if err := this.send(data); err != nil {
 		return err
+	} else {
+		this.channel.ping = time.Time{}
 	}
 
 	// Success
@@ -93,24 +98,27 @@ func (this *connection) Disconnect() error {
 
 	var result error
 
-	// Send CLOSE message
+	// Send CLOSE message, reset ping time
 	if _, data, err := this.channel.Disconnect(); err != nil {
 		result = multierror.Append(result, err)
 	} else if err := this.send(data); err != nil {
 		result = multierror.Append(result, err)
+	} else {
+		this.channel.ping = time.Time{}
+	}
+
+	// Close connection
+	if err := this.conn.Close(); err != nil {
+		result = multierror.Append(result, err)
+	} else {
+		this.conn = nil
 	}
 
 	// End receive loop and wait
 	this.cancel()
 	this.WaitGroup.Wait()
 
-	// Close connection
-	if err := this.conn.Close(); err != nil {
-		result = multierror.Append(result, err)
-	}
-
 	// Release resources
-	this.conn = nil
 	this.cancel = nil
 
 	// Return any errors
@@ -147,6 +155,8 @@ func (this *connection) String() string {
 func (this *connection) send(data []byte) error {
 	if len(data) == 0 {
 		return nil
+	} else if this.conn == nil {
+		return gopi.ErrOutOfOrder
 	} else if err := binary.Write(this.conn, binary.BigEndian, uint32(len(data))); err != nil {
 		return err
 	} else if _, err := this.conn.Write(data); err != nil {
@@ -164,19 +174,38 @@ func (this *connection) recv(ctx context.Context, state chan<- state) {
 			return
 		default:
 			timeout := time.Now().Add(recvTimeout)
-			if err := this.conn.SetReadDeadline(timeout); err != nil {
-				state <- NewError(this.channel.key, err)
+			if this.conn == nil {
+				// Do not read
+			} else if err := this.conn.SetReadDeadline(timeout); err != nil {
+				this.recverror(err)
 			} else if err := binary.Read(this.conn, binary.BigEndian, &length); err != nil {
 				if err == io.EOF || os.IsTimeout(err) {
 					// Ignore error
+				} else if strings.HasSuffix(err.Error(), "use of closed network connection") {
+					// HACK! Ignore error
 				} else {
-					state <- NewError(this.channel.key, err)
+					this.recverror(err)
 				}
 			} else if err := this.decode(length); err != nil {
-				state <- NewError(this.channel.key, err)
+				this.recverror(err)
 			}
 		}
 	}
+}
+
+func (this *connection) recverror(err error) {
+	go func() {
+		select {
+		case this.ch <- NewError(this.channel.key, err):
+			break
+		default:
+			fmt.Println("[DEADLOCK]", err)
+		}
+	}()
+}
+
+func (this *connection) isConnected() bool {
+	return this.conn != nil
 }
 
 func (this *connection) decode(length uint32) error {

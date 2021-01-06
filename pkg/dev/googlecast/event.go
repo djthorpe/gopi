@@ -10,31 +10,43 @@ import (
 // TYPES
 
 type event struct {
-	cast  *Cast
-	reqId int
-	flags gopi.CastFlag
+	cast   *Cast
+	app    *App
+	volume *Volume
+	reqId  int
+	flags  gopi.CastFlag
 }
 
 type state struct {
 	key    string
 	req    int
 	err    error
+	dbg    string
+	close  bool
 	values []interface{}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewEvent(device *Cast, flags gopi.CastFlag, reqId int) gopi.CastEvent {
-	return &event{device, reqId, flags}
+func NewEvent(device *Cast, app *App, volume *Volume, flags gopi.CastFlag, reqId int) gopi.CastEvent {
+	return &event{device, app, volume, reqId, flags}
 }
 
 func NewState(key string, req int, values ...interface{}) state {
-	return state{key, req, nil, values}
+	return state{key, req, nil, "", false, values}
 }
 
 func NewError(key string, err error) state {
-	return state{key, 0, err, nil}
+	return state{key, 0, err, "", false, nil}
+}
+
+func Close(key string) state {
+	return state{key, 0, nil, "", true, nil}
+}
+
+func Debug(key string, format string, a ...interface{}) state {
+	return state{key, 0, nil, fmt.Sprintf(format, a...), false, nil}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,6 +62,18 @@ func (this *event) Name() string {
 
 func (this *event) Cast() gopi.Cast {
 	return this.cast
+}
+
+func (this *event) App() gopi.CastApp {
+	return this.app
+}
+
+func (this *event) Volume() (float32, bool) {
+	if this.volume != nil {
+		return this.volume.Level, this.volume.Muted
+	} else {
+		return 0, false
+	}
 }
 
 func (this *event) Flags() gopi.CastFlag {

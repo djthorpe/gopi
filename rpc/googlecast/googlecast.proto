@@ -10,11 +10,8 @@ message ListResponse {
     repeated Cast cast = 1; 
 }
 
-message CastResponse {
-    Cast cast = 1; 
-    string appid = 2;
-    float volume = 3;
-    bool muted = 4;
+message CastRequest {
+    string id = 1;     
 }
 
 message VolumeRequest {
@@ -37,14 +34,9 @@ message AppRequest {
     string appid = 2;
 }
 
-
 message SeekRequest {
     string id = 1;     
     google.protobuf.Duration position = 2;
-}
-
-message CastRequest {
-    string id = 1;     
 }
 
 message Cast {
@@ -66,31 +58,77 @@ message Cast {
     }
 }
 
+message Volume {
+    float level = 1;
+    bool muted = 2;
+}
+
+message App {
+    string id = 1;
+    string name = 2;
+    string status = 3;
+}
+
+message Player {
+    Cast.CastState state = 1;
+    string idle_reason = 2;
+    google.protobuf.Duration current_time = 3;
+    google.protobuf.Duration total_time = 4;
+    string stream_type = 7;
+    int32 current_item_id = 9;
+    int32 loading_item_id = 10;
+}
+
+message Media {
+    string content_id = 1;
+    string content_type = 2;
+    string title = 3;
+    string subtitle = 4;
+    string artist = 5;
+    string date = 6;
+    repeated Image image = 7;
+}
+
+message Image {
+    string url = 1;
+    int32 width = 2;
+    int32 height = 3;
+}
+
 message CastEvent {
-    Cast cast = 1; 
-    Flag changed = 2;
+    Flag changed = 1;
+    CastState state = 2; 
 
     enum Flag {
         NONE = 0x00;
         CONNECT = 0x01;
-        VOLUME = 0x02;
-        MUTE = 0x04;
-        MEDIA = 0x08;
-        APP = 0x10;
-        DISCONNECT = 0x20;
+        DISCONNECT = 0x02;
+        VOLUME = 0x04;
+        APP = 0x08;
+        PLAYER = 0x10;
+        MEDIA = 0x20;
     }
+}
+
+message CastState {
+    Cast cast = 1;
+    Volume volume = 2;
+    App app = 3;
+    //Player player = 4;
+    //Media media = 5;
 }
 
 service Manager {
     rpc ListCasts(google.protobuf.Empty) returns (ListResponse);
-    rpc SetApp(AppRequest) returns (CastResponse);
-    rpc SetVolume(VolumeRequest) returns (CastResponse);
-    rpc SetMute(MuteRequest) returns (CastResponse);
-    rpc LoadURL(LoadRequest) returns (CastResponse);
-    rpc Stop(CastRequest) returns (CastResponse);
-    rpc Play(CastRequest) returns (CastResponse);
-    rpc Pause(CastRequest) returns (CastResponse);
-    rpc SeekAbs(SeekRequest) returns (CastResponse);
-    rpc SeekRel(SeekRequest) returns (CastResponse);
+    rpc Get(CastRequest) returns (CastState);
+    rpc Stop(CastRequest) returns (CastState);
+    rpc Play(CastRequest) returns (CastState);
+    rpc Pause(CastRequest) returns (CastState);
+    rpc SetApp(AppRequest) returns (CastState);
+    rpc SetVolume(VolumeRequest) returns (CastState);
+    rpc SetMute(MuteRequest) returns (CastState);
+    rpc LoadURL(LoadRequest) returns (CastState);
+    rpc SeekAbs(SeekRequest) returns (CastState);
+    rpc SeekRel(SeekRequest) returns (CastState);
     rpc Stream(CastRequest) returns (stream CastEvent);
 }

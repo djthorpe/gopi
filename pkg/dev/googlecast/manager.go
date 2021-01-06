@@ -156,7 +156,8 @@ func (this *Manager) Connect(device gopi.Cast) error {
 
 	// Emit connect
 	if this.Publisher != nil {
-		this.Publisher.Emit(NewEvent(this.dev[key], gopi.CAST_FLAG_CONNECT, 0), true)
+		cast := this.dev[key]
+		this.Publisher.Emit(NewEvent(cast, nil, nil, gopi.CAST_FLAG_CONNECT, 0), true)
 	}
 
 	// Return success
@@ -181,7 +182,7 @@ func (this *Manager) Disconnect(device gopi.Cast) error {
 
 	// Emit disconnect
 	if this.Publisher != nil {
-		this.Publisher.Emit(NewEvent(this.dev[key], gopi.CAST_FLAG_DISCONNECT, 0), true)
+		this.Publisher.Emit(NewEvent(this.dev[key], nil, nil, gopi.CAST_FLAG_DISCONNECT, 0), true)
 	}
 
 	// Remove device
@@ -189,6 +190,34 @@ func (this *Manager) Disconnect(device gopi.Cast) error {
 
 	// Return any errors
 	return result
+}
+
+func (this *Manager) Volume(cast gopi.Cast) (float32, bool, error) {
+	if cast == nil {
+		return 0, false, gopi.ErrBadParameter.WithPrefix("SetVolume")
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		if err := this.Connect(cast); err != nil {
+			return 0, false, err
+		}
+	}
+
+	return 0, false, gopi.ErrNotImplemented
+}
+
+func (this *Manager) App(cast gopi.Cast) (gopi.CastApp, error) {
+	if cast == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("SetVolume")
+	}
+
+	if device := this.getConnectedDevice(cast); device == nil {
+		if err := this.Connect(cast); err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, gopi.ErrNotImplemented
 }
 
 func (this *Manager) LaunchAppWithId(cast gopi.Cast, appId string) error {
@@ -427,7 +456,9 @@ func (this *Manager) updateStatus() error {
 
 	var result error
 	for _, device := range this.dev {
-		if err := device.UpdateState(); err != nil {
+		if device.isConnected() == false {
+			// ignore device
+		} else if err := device.UpdateState(); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
@@ -446,13 +477,23 @@ func (this *Manager) setState(s state) error {
 
 	// Check for error
 	if s.err != nil {
-		// Disconnect if system error with connection
-		if isDroppedConnection(s.err) {
-			this.Print(device.Id(), ": Disconnecting: ", s.err)
-			go this.Disconnect(device)
-		} else {
-			this.Print(device.Id(), ": ", s.err)
-		}
+		this.Print("Error: ", device.Id(), ": ", s.err)
+		return nil
+	}
+
+	// Output any debug messages
+	if s.dbg != "" {
+		this.Debug(s.key, ": ", s.dbg)
+	}
+
+	// If close, then disconnect
+	if s.close {
+		this.Print(device.Id(), ": Disconnecting after CLOSE message received")
+		go this.Disconnect(device)
+	}
+
+	// Return if no state
+	if len(s.values) == 0 {
 		return nil
 	}
 
@@ -460,7 +501,7 @@ func (this *Manager) setState(s state) error {
 	if flags, err := device.SetState(s); err != nil {
 		return err
 	} else if flags != gopi.CAST_FLAG_NONE && this.Publisher != nil {
-		this.Publisher.Emit(NewEvent(device, flags, s.req), true)
+		this.Publisher.Emit(NewEvent(device, device.app, device.volume, flags, s.req), true)
 
 		if flags&gopi.CAST_FLAG_APP != 0 {
 			this.Debug("App:", device.id, "=>", device.app)
