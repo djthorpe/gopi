@@ -31,11 +31,13 @@ func (this *app) RunCast(ctx context.Context, stub gopi.CastStub) error {
 	table.Render(os.Stdout)
 
 	// List cast state
-	if *this.castId != "" {
-		if err := this.GetCastWithId(ctx, stub, *this.castId); err != nil {
-			return err
+	/*
+		if *this.castId != "" {
+			if err := this.GetCastWithId(ctx, stub, *this.castId); err != nil {
+				return err
+			}
 		}
-	}
+	*/
 
 	// If watch is set
 	if *this.watch {

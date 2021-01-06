@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
@@ -25,6 +27,7 @@ type connection struct {
 	channel
 
 	conn   *tls.Conn
+	lock   sync.RWMutex // Additional lock just for conn value
 	cancel context.CancelFunc
 }
 
@@ -69,9 +72,7 @@ func (this *connection) Connect(key, addr string, timeout time.Duration, state c
 	this.WaitGroup.Add(1)
 	go func(ctx context.Context) {
 		defer this.WaitGroup.Done()
-		fmt.Println("RECV START")
 		this.recv(ctx, state)
-		fmt.Println("RECV STOP")
 	}(ctx)
 
 	// Send CONNECT message. Errors here require disconnect
@@ -91,14 +92,13 @@ func (this *connection) Disconnect() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	// If already connected, return
-	if this.conn == nil {
+	// If already disconnected, return
+	if this.isConnected() == false {
 		return nil
 	}
 
-	var result error
-
 	// Send CLOSE message, reset ping time
+	var result error
 	if _, data, err := this.channel.Disconnect(); err != nil {
 		result = multierror.Append(result, err)
 	} else if err := this.send(data); err != nil {
@@ -131,7 +131,7 @@ func (this *connection) Disconnect() error {
 func (this *connection) Addr() string {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
-	if this.conn != nil {
+	if this.isConnected() {
 		return this.conn.RemoteAddr().String()
 	} else {
 		return ""
@@ -155,7 +155,7 @@ func (this *connection) String() string {
 func (this *connection) send(data []byte) error {
 	if len(data) == 0 {
 		return nil
-	} else if this.conn == nil {
+	} else if this.isConnected() == false {
 		return gopi.ErrOutOfOrder
 	} else if err := binary.Write(this.conn, binary.BigEndian, uint32(len(data))); err != nil {
 		return err
@@ -174,15 +174,13 @@ func (this *connection) recv(ctx context.Context, state chan<- state) {
 			return
 		default:
 			timeout := time.Now().Add(recvTimeout)
-			if this.conn == nil {
+			if this.isConnected() == false {
 				// Do not read
 			} else if err := this.conn.SetReadDeadline(timeout); err != nil {
 				this.recverror(err)
 			} else if err := binary.Read(this.conn, binary.BigEndian, &length); err != nil {
 				if err == io.EOF || os.IsTimeout(err) {
 					// Ignore error
-				} else if strings.HasSuffix(err.Error(), "use of closed network connection") {
-					// HACK! Ignore error
 				} else {
 					this.recverror(err)
 				}
@@ -194,6 +192,14 @@ func (this *connection) recv(ctx context.Context, state chan<- state) {
 }
 
 func (this *connection) recverror(err error) {
+	if strings.HasSuffix(err.Error(), "use of closed network connection") {
+		// HACK! Ignore error
+		return
+	} else if errors.Is(err, syscall.EPIPE) {
+		// Broken pipe, disconnect
+		this.ch <- Close(this.channel.key)
+		return
+	}
 	go func() {
 		select {
 		case this.ch <- NewError(this.channel.key, err):
@@ -205,6 +211,8 @@ func (this *connection) recverror(err error) {
 }
 
 func (this *connection) isConnected() bool {
+	this.lock.RLock()
+	defer this.lock.RUnlock()
 	return this.conn != nil
 }
 
@@ -217,7 +225,9 @@ func (this *connection) decode(length uint32) error {
 	}
 
 	// Receive, decode and send any follow-ups
-	if size, err := io.ReadFull(this.conn, payload); err != nil {
+	if this.isConnected() == false {
+		// Ignore when no connection
+	} else if size, err := io.ReadFull(this.conn, payload); err != nil {
 		return err
 	} else if uint32(size) != length {
 		return fmt.Errorf("Received different number of bytes %v read, expected %v", size, length)

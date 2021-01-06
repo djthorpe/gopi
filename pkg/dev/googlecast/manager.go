@@ -185,7 +185,7 @@ func (this *Manager) Disconnect(device gopi.Cast) error {
 		this.Publisher.Emit(NewEvent(this.dev[key], nil, nil, gopi.CAST_FLAG_DISCONNECT, 0), true)
 	}
 
-	// Remove device
+	// Remove device from list of devices
 	delete(this.dev, key)
 
 	// Return any errors
@@ -472,7 +472,8 @@ func (this *Manager) setState(s state) error {
 	// Find device to change state on
 	device, exists := this.dev[s.key]
 	if exists == false {
-		return gopi.ErrNotFound.WithPrefix(s.key)
+		this.Debug("Debug: ", device.Id(), ": ", gopi.ErrNotFound)
+		return nil
 	}
 
 	// Check for error
@@ -483,7 +484,7 @@ func (this *Manager) setState(s state) error {
 
 	// Output any debug messages
 	if s.dbg != "" {
-		this.Debug(s.key, ": ", s.dbg)
+		this.Debug("Debug: ", s.key, ": ", s.dbg)
 	}
 
 	// If close, then disconnect

@@ -220,7 +220,9 @@ func (this *Cast) UpdateState() error {
 	// If no ping/pong has been done recently then disconnect
 	if this.channel.ping.IsZero() == false && time.Since(this.channel.ping) > pingTimeout {
 		this.Debugf("Stale Ping, Disconnecting")
-		return this.Disconnect()
+		go func() {
+			this.ch <- Close(this.channel.key)
+		}()
 	}
 
 	// Return success
@@ -245,6 +247,13 @@ func (this *Cast) SetState(s state) (gopi.CastFlag, error) {
 				return flags, err
 			} else {
 				flags |= f
+			}
+			if this.app == nil || this.app.IsIdleScreen {
+				if f, err := this.SetMedia(Media{}); err != nil {
+					return flags, err
+				} else {
+					flags |= f
+				}
 			}
 		case Media:
 			this.Debugf("SetState: Media: %v", value)
@@ -297,6 +306,7 @@ func (this *Cast) SetMedia(m Media) (gopi.CastFlag, error) {
 
 	if this.player == nil || this.player.Equals(m) == false {
 		this.player = &m
+		// TODO: Equals
 		return gopi.CAST_FLAG_MEDIA, nil
 	} else {
 		return gopi.CAST_FLAG_NONE, nil
