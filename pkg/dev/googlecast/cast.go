@@ -43,7 +43,7 @@ type Cast struct {
 
 const (
 	promiseTimeout = 2 * time.Second
-	pingTimeout    = time.Minute
+	pingTimeout    = 20 * time.Second
 )
 
 ////////////////////////////////////////////////////////////////////////////////

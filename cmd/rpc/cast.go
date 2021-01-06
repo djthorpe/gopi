@@ -31,13 +31,11 @@ func (this *app) RunCast(ctx context.Context, stub gopi.CastStub) error {
 	table.Render(os.Stdout)
 
 	// List cast state
-	/*
-		if *this.castId != "" {
-			if err := this.GetCastWithId(ctx, stub, *this.castId); err != nil {
-				return err
-			}
+	if *this.castId != "" {
+		if err := this.GetCastWithId(ctx, stub, *this.castId); err != nil {
+			return err
 		}
-	*/
+	}
 
 	// If watch is set
 	if *this.watch {
@@ -68,9 +66,15 @@ func (this *app) GetCastWithId(ctx context.Context, stub gopi.CastStub, id strin
 
 	table := table.New()
 	table.SetHeader(header{"Id"}, header{"Vol"}, header{"Muted"}, header{"App"}, header{"Id"}, header{"Status"})
-	table.Append(
-		id, level, muted, app.Id(), app.Name(), app.Status(),
-	)
+	if app == nil {
+		table.Append(
+			id, level, muted,
+		)
+	} else {
+		table.Append(
+			id, level, muted, app.Name(), app.Id(), app.Status(),
+		)
+	}
 	table.Render(os.Stdout)
 	return nil
 }

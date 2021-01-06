@@ -197,13 +197,21 @@ func (this *Manager) Volume(cast gopi.Cast) (float32, bool, error) {
 		return 0, false, gopi.ErrBadParameter.WithPrefix("SetVolume")
 	}
 
-	if device := this.getConnectedDevice(cast); device == nil {
+	device := this.getConnectedDevice(cast)
+	if device == nil {
 		if err := this.Connect(cast); err != nil {
 			return 0, false, err
 		}
 	}
+	if device == nil {
+		device = this.getConnectedDevice(cast)
+	}
 
-	return 0, false, gopi.ErrNotImplemented
+	if device == nil || device.volume == nil {
+		return 0, false, nil
+	} else {
+		return device.volume.Level, device.volume.Muted, nil
+	}
 }
 
 func (this *Manager) App(cast gopi.Cast) (gopi.CastApp, error) {
@@ -211,13 +219,21 @@ func (this *Manager) App(cast gopi.Cast) (gopi.CastApp, error) {
 		return nil, gopi.ErrBadParameter.WithPrefix("SetVolume")
 	}
 
-	if device := this.getConnectedDevice(cast); device == nil {
+	device := this.getConnectedDevice(cast)
+	if device == nil {
 		if err := this.Connect(cast); err != nil {
 			return nil, err
 		}
 	}
+	if device == nil {
+		device = this.getConnectedDevice(cast)
+	}
 
-	return nil, gopi.ErrNotImplemented
+	if device == nil || device.app == nil || device.app.AppId == "" {
+		return nil, nil
+	} else {
+		return device.app, nil
+	}
 }
 
 func (this *Manager) LaunchAppWithId(cast gopi.Cast, appId string) error {
