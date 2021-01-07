@@ -195,11 +195,13 @@ func (this *connection) recverror(err error) {
 	if strings.HasSuffix(err.Error(), "use of closed network connection") {
 		// HACK! Ignore error
 		return
-	} else if errors.Is(err, syscall.EPIPE) {
+	} else if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNABORTED) || errors.Is(err, syscall.ENETUNREACH) {
 		// Broken pipe, disconnect
 		this.ch <- Close(this.channel.key)
 		return
 	}
+
+	// Report other errors in the background, unless channel is full
 	go func() {
 		select {
 		case this.ch <- NewError(this.channel.key, err):

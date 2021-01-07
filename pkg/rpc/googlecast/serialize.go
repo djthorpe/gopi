@@ -164,7 +164,7 @@ func toProtoVolume(level float32, muted bool) *Volume {
 }
 
 func toProtoApp(app gopi.CastApp) *App {
-	if app == nil || app.Id() == "" {
+	if app == nil || app.(gopi.CastApp) == nil {
 		return nil
 	}
 	return &App{

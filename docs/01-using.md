@@ -32,3 +32,25 @@ brew install pulseaudio
 brew install chromaprint
 brew install protobuf
 ```
+
+## Building Examples
+
+There are some examples in the `cmd` folder which demonstrate features of the units, some of which can be built for Raspberry Pi and some which can also be build for other Linux operating systems and Macintosh. Building currently uses the `Makefile`
+with the following targets:
+
+  * `make all` will make all the examples;
+  * `make clean` will clean the build caches;
+  * `make debian` will generate `.deb` packages for the examples;
+  * `make test` will run tests in the `pkg` folder.
+
+Build outpput is placed in a temporary `build` folder in the repository. Cross-compiling to other platforms is generally not
+supported due to the complexities of binding with libraries,
+but where no binding is necessary, you can build for ARM and x64 processors as follows:
+
+```
+GOBIN="" GOOS=linux GOARCH=arm make debian 
+GOBIN="" GOOS=linux GOARCH=amd64 make debian 
+```
+
+
+
