@@ -4,6 +4,11 @@ import (
 	"time"
 )
 
+/*
+	This file contains definitions for transmission of measurement
+	data and querying data
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
@@ -42,6 +47,19 @@ type MetricWriter interface {
 	Ping() (time.Duration, error) // Ping the database and return latency
 	Write(...Measurement) error   // Write one or more measurements to the database
 }
+
+// MetricReader implements a database query
+type MetricReader interface {
+	Ping() (time.Duration, error) // Ping the database and return latency
+
+	// NewQuery constructs a query with measurement name and the
+	// names of tags which are grouped. By default, all metrics are returned
+	NewQuery(string, ...string) MetricQuery
+}
+
+// MetricQuery constructs queries which can be executed by the MetricReader,
+// TODO methods which modify the basic query
+type MetricQuery interface{}
 
 // Measurement is a single data point
 type Measurement interface {

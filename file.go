@@ -2,6 +2,15 @@ package gopi
 
 import "strings"
 
+/*
+	This file contains interface defininitons for filesystem
+	interface:
+
+	* Polling files for read and write conitions
+	* Polling filesystems for changes (TODO)
+
+*/
+
 /////////////////////////////////////////////////////////////////////
 // TYPES
 

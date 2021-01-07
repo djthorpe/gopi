@@ -7,6 +7,18 @@ import (
 	"time"
 )
 
+/*
+	This file contains definitions for communication over networks
+	and implementation of services available over networks:
+
+	* HTTP and gRPC Servers
+	* Services
+	* Service Discovery
+
+	There are also some example gRPC services (Ping, Input, Metrics)
+	which can be used "out of the box".
+*/
+
 /////////////////////////////////////////////////////////////////////
 // TYPES
 

@@ -6,6 +6,15 @@ import (
 	"time"
 )
 
+/*
+	This file contains interface defininitons for hardware implementations:
+
+	* Information about the underlying hardware platform
+	* Pixel-based displays
+	* SPI, I2C and GPIO
+	* Infrared sending and receiving
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 

@@ -8,6 +8,16 @@ import (
 	"time"
 )
 
+/*
+	This file contains interface defininitons for example devices:
+
+	* Argon One case for Raspberry Pi (GPIO, Infrared, Fan Control)
+	* eInk Paper Displays (GPIO, SPI, Bitmaps)
+	* Google Chromecast control (mDNS, RPC, Protocol Buffers)
+
+	Ultimately these should be split out into separate repos...
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 // ARGON ONE CASE
 

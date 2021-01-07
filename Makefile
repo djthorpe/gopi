@@ -36,7 +36,7 @@ ifeq ($(shell test -d /opt/vc/lib/pkgconfig; echo $$?),0)
 	$(eval PKG_CONFIG_PATH += /opt/vc/lib/pkgconfig)
 endif
 
-# MMAL package
+# MMAL bindings
 mmal: rpi
 	$(eval MMAL = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion mmal))
 ifneq ($strip $(MMAL)),)
@@ -44,7 +44,7 @@ ifneq ($strip $(MMAL)),)
 	$(eval TAGS += mmal)
 endif
 
-# EGL package
+# EGL bindings
 egl: gbm
 	$(eval EGL = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion egl))
 ifneq ($strip $(EGL)),)
@@ -52,7 +52,7 @@ ifneq ($strip $(EGL)),)
 	$(eval TAGS += egl)
 endif
 
-# GBM package
+# GBM bindings
 gbm:
 	$(eval GBM = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion gbm))
 ifneq ($strip $(GBM)),)
@@ -60,7 +60,7 @@ ifneq ($strip $(GBM)),)
 	$(eval TAGS += gbm)
 endif
 
-# DRM package
+# DRM bindings
 drm:
 	$(eval DRM = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion drm))
 ifneq ($strip $(DRM)),)
@@ -68,7 +68,7 @@ ifneq ($strip $(DRM)),)
 	$(eval TAGS += drm)
 endif
 
-# Freetype package
+# Freetype bindings
 freetype: darwin rpi
 	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion freetype2))
 ifneq ($strip $(FT)),)
@@ -76,7 +76,7 @@ ifneq ($strip $(FT)),)
 	$(eval TAGS += freetype)
 endif
 
-# FFmpeg package
+# FFmpeg bindings
 ffmpeg: darwin
 	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion libavcodec))
 ifneq ($strip $(FT)),)
@@ -84,7 +84,7 @@ ifneq ($strip $(FT)),)
 	$(eval TAGS += ffmpeg)
 endif
 
-# Chromaprint package
+# Chromaprint bindings
 chromaprint: darwin
 	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion libchromaprint))
 ifneq ($strip $(FT)),)
@@ -92,7 +92,7 @@ ifneq ($strip $(FT)),)
 	$(eval TAGS += chromaprint)
 endif
 
-# Create build
+# Create build folder
 builddir:
 	install -d $(BUILDDIR)
 

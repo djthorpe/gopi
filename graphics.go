@@ -8,6 +8,16 @@ import (
 	"strings"
 )
 
+/*
+	This file contains interface defininitons for graphics implementation:
+
+	* Graphic surfaces
+	* Pixel Formats, Bitmaps
+	* Fonts
+
+	There is yet to be interfaces for drawable surfaces (3D and 2D)
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 

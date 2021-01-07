@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+/*
+	This file contains definitions for media devices:
+
+	* Video and Audio decoding
+	* Input and output media devices
+
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 

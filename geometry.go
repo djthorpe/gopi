@@ -4,6 +4,16 @@ import (
 	"fmt"
 )
 
+/*
+	This file contains interface defininitons for graphics geometry:
+
+	* Points
+	* Rectangles
+
+	Dimensions are defined in float32 rather than uint to support
+	vector graphics.
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 

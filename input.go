@@ -2,6 +2,12 @@ package gopi
 
 import "strings"
 
+/*
+	This file contains definitions for input devices:
+
+	* Keyboard, Mouse, Joystick and Touchscreen
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
