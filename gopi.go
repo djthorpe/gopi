@@ -2,6 +2,9 @@ package gopi
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -96,3 +99,16 @@ func (this *Unit) Define(Config) error       { /* NOOP */ return nil }
 func (this *Unit) New(Config) error          { /* NOOP */ return nil }
 func (this *Unit) Run(context.Context) error { /* NOOP */ return nil }
 func (this *Unit) Dispose() error            { /* NOOP */ return nil }
+
+/////////////////////////////////////////////////////////////////////
+// REQUIRE
+
+// Call Require with a set of values and if any of them are nil then panic
+func (this *Unit) Require(units ...interface{}) {
+	for _, v := range units {
+		if v == nil {
+			fmt.Fprintf(os.Stderr, "Require: %v not satisfied\n", reflect.TypeOf(v))
+			os.Exit(-1)
+		}
+	}
+}

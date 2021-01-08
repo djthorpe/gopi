@@ -181,12 +181,12 @@ func (this *MMALBuffer) AsFormatChangeEvent() *MMALStreamFormatEvent {
 }
 
 // Fill buffer with data from file
-func (this *MMALBuffer) Fill(r io.Reader) error {
+func (this *MMALBuffer) Fill(r io.Reader) (uint, error) {
 	ctx := (*C.MMAL_BUFFER_HEADER_T)(this)
 	n, err := r.Read(this.Bytes())
 	ctx.offset = C.uint32_t(0)
 	ctx.length = C.uint32_t(n)
-	return err
+	return uint(n), err
 }
 
 ////////////////////////////////////////////////////////////////////////////////

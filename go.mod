@@ -10,7 +10,9 @@ require (
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/miekg/dns v1.1.35
+	github.com/mlafeldt/pkgcloud v0.0.0-20200630152107-54067fd37496 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
+	github.com/peterhellberg/link v1.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/image v0.0.0-20201208152932-35266b937fa6
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
@@ -22,4 +24,5 @@ require (
 	google.golang.org/grpc v1.34.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.0.1 // indirect
 	google.golang.org/protobuf v1.25.0
+	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 )

@@ -82,8 +82,8 @@ func (this *Manager) Dispose() error {
 	this.in = nil
 	this.out = nil
 
-	// Return success
-	return nil
+	// Return any errors
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
