@@ -1,0 +1,40 @@
+syntax = "proto3";
+package gopi.metrics;
+
+option go_package = "github.com/djthorpe/gopi/v3/rpc/metrics";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+message Measurements {
+    repeated Measurement metric = 1;
+}
+
+message Name {
+    string name = 1;
+}
+
+message Measurement {
+    string name = 1;
+    google.protobuf.Timestamp ts = 2;
+    repeated Field tags = 3;
+    repeated Field metrics = 4;
+}
+
+message Field {
+    string name = 1;
+    string kind = 2;
+    oneof value {
+        string str = 3;
+        uint64 uint = 4;
+        int64 int = 5;
+        bool bool = 6;
+        double float = 7;
+        google.protobuf.Timestamp time = 8;
+    }
+}
+
+service Metrics {
+    rpc List(google.protobuf.Empty) returns (Measurements);
+    rpc Stream(Name) returns (stream Measurement);
+}

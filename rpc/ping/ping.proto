@@ -1,0 +1,21 @@
+syntax = "proto3";
+package gopi.ping;
+
+option go_package = "github.com/djthorpe/gopi/v3/rpc/ping";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+message VersionResponse {
+    string name = 1;
+    string tag = 2;
+    string branch = 3;
+    string hash = 4;
+    string goversion = 5;
+    google.protobuf.Timestamp buildtime = 6;
+}
+
+service Ping {
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+    rpc Version(google.protobuf.Empty) returns (VersionResponse);
+}
