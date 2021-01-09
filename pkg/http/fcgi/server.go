@@ -3,6 +3,7 @@ package fcgi
 // This file implements FastCGI from the perspective of a child process.
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -21,7 +22,9 @@ type Server struct {
 	// handler to invoke, http.DefaultServeMux if nil
 	Handler http.Handler
 
-	ch chan struct{}
+	// Private variables to flag shutdown
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func (s *Server) ListenAndServe() error {
@@ -61,10 +64,10 @@ func (s *Server) ListenAndServe() error {
 	}
 
 	// Set up semapore which when closed ends the loop
-	s.ch = make(chan struct{})
+	s.ctx, s.cancel = context.WithCancel(context.Background())
 
 	// Continue accepting requests until shutdown
-	for range s.ch {
+	for range s.ctx.Done() {
 		rw, err := l.Accept()
 		if err != nil {
 			return err
@@ -85,6 +88,8 @@ func (s *Server) ListenAndServe() error {
 }
 
 func (s *Server) Close() error {
-	close(s.ch)
+	if s.cancel != nil {
+		s.cancel()
+	}
 	return nil
 }

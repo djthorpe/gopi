@@ -191,6 +191,9 @@ func (this *Server) StartInBackground(network, addr string) error {
 		}
 	}
 
+	// Timeout for server is 500ms
+	errs := make(chan error)
+
 	// Start server in background
 	this.WaitGroup.Add(1)
 	go func() {
@@ -203,13 +206,27 @@ func (this *Server) StartInBackground(network, addr string) error {
 			result = this.httpserver.ListenAndServe()
 		}
 		if errors.Is(result, http.ErrServerClosed) == false {
-			this.Print(result)
+			// Pass the error condition
+			select {
+			case errs <- result:
+				break
+			default:
+				this.Debug("StartInBackground:", result)
+			}
 		}
 		this.WaitGroup.Done()
 	}()
 
-	// Return success
-	return nil
+	// Wait for an error to occur in the server for 0.5s or else
+	// return success
+	timer := time.NewTimer(500 * time.Millisecond)
+	defer timer.Stop()
+	select {
+	case err := <-errs:
+		return err
+	case <-timer.C:
+		return nil
+	}
 }
 
 func (this *Server) Stop(force bool) error {
