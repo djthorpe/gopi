@@ -10,8 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/djthorpe/gopi/v3"
-	"github.com/hashicorp/go-multierror"
+	gopi "github.com/djthorpe/gopi/v3"
+	fcgi "github.com/djthorpe/gopi/v3/pkg/http/fcgi"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -23,12 +24,14 @@ type Server struct {
 	sync.RWMutex
 	sync.WaitGroup
 
-	cert, key *string
-	ssl       bool
-	server    *http.Server
-	mux       *http.ServeMux
-	timeout   *time.Duration
-	handler   http.Handler
+	cert, key  *string
+	fcgi       *bool
+	ssl        bool
+	httpserver *http.Server
+	fcgiserver *fcgi.Server
+	mux        *http.ServeMux
+	timeout    *time.Duration
+	handler    http.Handler
 }
 
 type Transport interface {
@@ -43,6 +46,7 @@ func (this *Server) Define(cfg gopi.Config) error {
 	this.cert = cfg.FlagString("ssl.cert", "", "SSL Certificate")
 	this.key = cfg.FlagString("ssl.key", "", "SSL Key")
 	this.timeout = cfg.FlagDuration("http.timeout", 15*time.Second, "HTTP server read and write timeout")
+	this.fcgi = cfg.FlagBool("http.fcgi", false, "Serve over FastCGI unix socket")
 	return nil
 }
 
@@ -56,6 +60,11 @@ func (this *Server) New(cfg gopi.Config) error {
 		} else {
 			this.ssl = true
 		}
+	}
+
+	// FCGI will not work with SSL
+	if *this.fcgi && this.ssl {
+		return fmt.Errorf("SSL and FCGI are not compatible")
 	}
 
 	// Set multiplexer and handler chain
@@ -75,7 +84,8 @@ func (this *Server) Dispose() error {
 	defer this.RWMutex.Unlock()
 
 	// Release resources
-	this.server = nil
+	this.httpserver = nil
+	this.fcgiserver = nil
 	this.mux = nil
 
 	// Return any errors
@@ -89,83 +99,108 @@ func (this *Server) Addr() string {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	if this.server == nil {
-		return ""
+	if this.httpserver != nil {
+		return this.httpserver.Addr
+	} else if this.fcgiserver != nil {
+		return this.fcgiserver.Path
 	} else {
-		return this.server.Addr
+		return ""
 	}
 }
 
-func (this *Server) SSL() bool {
+func (this *Server) Flags() gopi.ServiceFlag {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	if this.server == nil {
-		return false
-	} else {
-		return this.ssl
+	f := gopi.SERVICE_FLAG_NONE
+	if this.httpserver != nil {
+		f |= gopi.SERVICE_FLAG_HTTP
 	}
+	if this.ssl {
+		f |= gopi.SERVICE_FLAG_TLS
+	}
+	if this.fcgiserver != nil {
+		f |= gopi.SERVICE_FLAG_FCGI | gopi.SERVICE_FLAG_SOCKET
+	}
+	return f
 }
 
 func (this *Server) Service() string {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	if this.server != nil {
+	if this.httpserver != nil {
 		return "_http._tcp"
 	} else {
 		return ""
 	}
 }
 
-// Start serves HTTP in foreground. Network should always be "tcp"
-// and address is either empty (using standard ports) or ":0" which
-// means a free port is used and can be determined using the Addr
-// method once the server has started.
+// Start serves HTTP in foreground. Network should be empty or "unix"
+// for FGCI or "tcp" otherwise, In the former case, the address is
+// either empty (using standard ports) or ":0" which means a free
+// port is used and can be determined using the Addr method once the
+// server has started. In the case for fcgi it should be a filename
+// so that a unix socket can be created for communication.
 func (this *Server) StartInBackground(network, addr string) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
 	// If already started, return out of order error
-	if this.server != nil {
+	if this.httpserver != nil || this.fcgiserver != nil {
 		return gopi.ErrOutOfOrder.WithPrefix("StartInBackground")
 	}
 
-	// Only accept "tcp" as network argument
-	if network != "tcp" {
-		return gopi.ErrBadParameter.WithPrefix("StartInBackground", network)
+	// Check network parameter
+	if network == "" {
+		// Don't check network
+	} else if *this.fcgi && network != "unix" {
+		return gopi.ErrBadParameter.WithPrefix("StartInBackground: ", network)
+	} else if network != "tcp" {
+		return gopi.ErrBadParameter.WithPrefix("StartInBackground: ", network)
 	}
-	if addr == "" {
-		if this.ssl {
-			addr = ":https"
-		} else {
-			addr = ":http"
+	// Set addr parameter
+	if *this.fcgi {
+		// Set server object
+		this.fcgiserver = &fcgi.Server{
+			Path:    addr,
+			Handler: this,
 		}
-	} else if addr == ":0" {
-		if port, err := getFreePort(); err != nil {
-			return err
-		} else {
-			addr = ":" + fmt.Sprint(port)
+	} else {
+		if addr == "" {
+			if this.ssl {
+				addr = ":https"
+			} else {
+				addr = ":http"
+			}
+		} else if addr == ":0" {
+			if port, err := getFreePort(); err != nil {
+				return err
+			} else {
+				addr = ":" + fmt.Sprint(port)
+			}
 		}
-	}
 
-	// Set server object
-	this.server = &http.Server{
-		Addr:              addr,
-		Handler:           this,
-		ReadHeaderTimeout: *this.timeout,
-		WriteTimeout:      *this.timeout,
-		IdleTimeout:       *this.timeout,
+		// Set server object
+		this.httpserver = &http.Server{
+			Addr:              addr,
+			Handler:           this,
+			ReadHeaderTimeout: *this.timeout,
+			WriteTimeout:      *this.timeout,
+			IdleTimeout:       *this.timeout,
+		}
 	}
 
 	// Start server in background
 	this.WaitGroup.Add(1)
 	go func() {
 		var result error
-		if this.ssl {
-			result = this.server.ListenAndServeTLS(*this.cert, *this.key)
+		if this.fcgiserver != nil {
+			result = this.fcgiserver.ListenAndServe()
+		} else if this.ssl {
+			result = this.httpserver.ListenAndServeTLS(*this.cert, *this.key)
 		} else {
-			result = this.server.ListenAndServe()
+			result = this.httpserver.ListenAndServe()
 		}
 		if errors.Is(result, http.ErrServerClosed) == false {
 			this.Print(result)
@@ -182,29 +217,37 @@ func (this *Server) Stop(force bool) error {
 	defer this.RWMutex.Unlock()
 
 	// If not started, return nil
-	if this.server == nil {
+	if this.httpserver == nil && this.fcgiserver == nil {
 		return nil
 	}
 
 	// Close or Shutdown
 	var result error
-	if force {
-		if err := this.server.Close(); err != nil {
+	if this.fcgiserver != nil {
+		if err := this.fcgiserver.Close(); err != nil {
 			result = multierror.Append(result, err)
 		}
-	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), *this.timeout)
-		defer cancel()
-		if err := this.server.Shutdown(ctx); err != nil {
-			result = multierror.Append(result, err)
+	}
+	if this.httpserver != nil {
+		if force {
+			if err := this.httpserver.Close(); err != nil {
+				result = multierror.Append(result, err)
+			}
+		} else {
+			ctx, cancel := context.WithTimeout(context.Background(), *this.timeout)
+			defer cancel()
+			if err := this.httpserver.Shutdown(ctx); err != nil {
+				result = multierror.Append(result, err)
+			}
 		}
 	}
 
 	// Wait for server stop
 	this.WaitGroup.Wait()
 
-	// Set server object as nil and return any errors
-	this.server = nil
+	// Set server objects as nil and return any errors
+	this.httpserver = nil
+	this.fcgiserver = nil
 
 	return result
 }
@@ -262,6 +305,9 @@ func (this *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (this *Server) String() string {
 	str := "<server.http"
+	if f := this.Flags(); f != 0 {
+		str += " flags=" + fmt.Sprint(f)
+	}
 	if addr := this.Addr(); addr != "" {
 		str += " addr=" + strconv.Quote(addr)
 	}
