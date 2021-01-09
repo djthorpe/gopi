@@ -61,7 +61,7 @@ func (this *server) New(cfg gopi.Config) error {
 
 func (this *server) Run(ctx context.Context) error {
 	// Start server in background
-	if err := this.Server.StartInBackground("tcp", *this.addr); err != nil {
+	if err := this.Server.StartInBackground("", *this.addr); err != nil {
 		return err
 	} else {
 		this.Debug("Started server: ", this.Server)
@@ -80,7 +80,7 @@ func (this *server) Run(ctx context.Context) error {
 
 	// Set TXT record
 	txt := []string{}
-	if this.Server.SSL() {
+	if this.Server.Flags()&gopi.SERVICE_FLAG_TLS != 0 {
 		txt = append(txt, "ssl=1")
 	} else {
 		txt = append(txt, "ssl=0")
@@ -89,25 +89,27 @@ func (this *server) Run(ctx context.Context) error {
 		txt = append(txt, "v="+*this.version)
 	}
 
-	// Register if ServiceDisovery is enabled
+	// Register if ServiceDisovery is enabled and not socket-based
 	ctx2, cancel := context.WithCancel(ctx)
 	defer cancel()
-	if this.ServiceDiscovery != nil && port != 0 {
-		record, err := this.ServiceDiscovery.NewServiceRecord(service, *this.name, port, txt, 0)
-		if err != nil {
-			this.Debug("Error: ", err)
-		} else {
-			this.Debug("Advertising server: ", record)
-		}
-		go func() {
-			if this.ServiceDiscovery != nil && record != nil {
-				if err := this.ServiceDiscovery.Serve(ctx2, []gopi.ServiceRecord{record}); err != nil {
-					this.Print("Error: ", err)
-				}
+	if port != 0 {
+		if this.ServiceDiscovery != nil {
+			record, err := this.ServiceDiscovery.NewServiceRecord(service, *this.name, port, txt, 0)
+			if err != nil {
+				this.Debug("Error: ", err)
+			} else {
+				this.Debug("Advertising server: ", record)
 			}
-		}()
-	} else {
-		this.Debug("Notice: ServiceDiscovery is not enabled")
+			go func() {
+				if this.ServiceDiscovery != nil && record != nil {
+					if err := this.ServiceDiscovery.Serve(ctx2, []gopi.ServiceRecord{record}); err != nil {
+						this.Print("Error: ", err)
+					}
+				}
+			}()
+		} else {
+			this.Debug("Notice: ServiceDiscovery is not enabled")
+		}
 	}
 
 	// Wait for interupt

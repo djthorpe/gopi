@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -39,13 +40,15 @@ type Server interface {
 	// Stop server, when argument is true forcefully disconnects any clients
 	Stop(bool) error
 
-	// Addr returns the address of the server, or empty if not connected
+	// Addr returns the address of the server, the path for the file socket
+	// or empty if not connected
 	Addr() string
 
-	// SSL returns true if SSL is enabled
-	SSL() bool
+	// Returns information about the server
+	Flags() ServiceFlag
 
-	// Service returns _http._net or _grpc._net
+	// Service returns _http._net or _grpc._net or empty if networking
+	// is file socket based
 	Service() string
 
 	// NewStreamContext returns a streaming context which should be used
@@ -220,8 +223,53 @@ type HttpError interface {
 // GLOBALS
 
 const (
-	SERVICE_FLAG_NONE ServiceFlag = 0
-	SERVICE_FLAG_IP4  ServiceFlag = (1 << iota)
-	SERVICE_FLAG_IP6
-	SERVICE_FLAG_MAX = SERVICE_FLAG_IP6
+	SERVICE_FLAG_NONE   ServiceFlag = 0
+	SERVICE_FLAG_IP4    ServiceFlag = (1 << iota) // IP4 Addressing
+	SERVICE_FLAG_IP6                              // IP6 Addressing
+	SERVICE_FLAG_SOCKET                           // Unix File Socket transport
+	SERVICE_FLAG_TLS                              // TLS (SSL) Communication
+	SERVICE_FLAG_FCGI                             // FastCGI Communiction
+	SERVICE_FLAG_HTTP                             // HTTP Protocol
+	SERVICE_FLAG_GRPC                             // gRPC Protocol
+	SERVICE_FLAG_MIN    = SERVICE_FLAG_IP4
+	SERVICE_FLAG_MAX    = SERVICE_FLAG_GRPC
 )
+
+/////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (f ServiceFlag) String() string {
+	if f == SERVICE_FLAG_NONE {
+		return f.String()
+	}
+	str := ""
+	for v := SERVICE_FLAG_MIN; v <= SERVICE_FLAG_MAX; v <<= 1 {
+		if f&v == v {
+			str += v.String() + "|"
+		}
+	}
+	return strings.Trim(str, "|")
+}
+
+func (f ServiceFlag) FlagString() string {
+	switch f {
+	case SERVICE_FLAG_NONE:
+		return "SERVICE_FLAG_NONE"
+	case SERVICE_FLAG_IP4:
+		return "SERVICE_FLAG_IP4"
+	case SERVICE_FLAG_IP6:
+		return "SERVICE_FLAG_IP6"
+	case SERVICE_FLAG_SOCKET:
+		return "SERVICE_FLAG_SOCKET"
+	case SERVICE_FLAG_TLS:
+		return "SERVICE_FLAG_TLS"
+	case SERVICE_FLAG_FCGI:
+		return "SERVICE_FLAG_FCGI"
+	case SERVICE_FLAG_HTTP:
+		return "SERVICE_FLAG_HTTP"
+	case SERVICE_FLAG_GRPC:
+		return "SERVICE_FLAG_GRPC"
+	default:
+		return "[?? Invalid ServiceFlag value]"
+	}
+}
