@@ -240,12 +240,12 @@ const (
 
 func (f ServiceFlag) String() string {
 	if f == SERVICE_FLAG_NONE {
-		return f.String()
+		return f.FlagString()
 	}
 	str := ""
 	for v := SERVICE_FLAG_MIN; v <= SERVICE_FLAG_MAX; v <<= 1 {
 		if f&v == v {
-			str += v.String() + "|"
+			str += v.FlagString() + "|"
 		}
 	}
 	return strings.Trim(str, "|")

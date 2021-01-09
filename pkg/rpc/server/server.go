@@ -172,12 +172,13 @@ func (this *server) Addr() string {
 	}
 }
 
-func (this *server) SSL() bool {
-	if this.listener != nil {
-		return this.ssl
-	} else {
-		return false
+// Returns information about the server
+func (this *server) Flags() gopi.ServiceFlag {
+	f := gopi.SERVICE_FLAG_GRPC
+	if this.listener != nil && this.ssl {
+		f |= gopi.SERVICE_FLAG_TLS
 	}
+	return f
 }
 
 func (this *server) Service() string {
@@ -196,7 +197,12 @@ func (this *server) String() string {
 	if this.listener != nil {
 		str += fmt.Sprintf(" addr=%q", this.listener.Addr())
 	}
-
+	if f := this.Flags(); f != 0 {
+		str += fmt.Sprintf(" flags=%v", f)
+	}
+	if s := this.Service(); s != "" {
+		str += fmt.Sprintf(" service=%q", s)
+	}
 	for k, v := range this.srv.GetServiceInfo() {
 		str += " " + k + "=["
 		for i, method := range v.Methods {
