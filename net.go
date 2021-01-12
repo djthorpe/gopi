@@ -132,7 +132,7 @@ type ServiceRecord interface {
 }
 
 /////////////////////////////////////////////////////////////////////
-// gRPC SERVICES
+// GRPC SERVICES
 
 type PingService interface {
 	Service
@@ -177,17 +177,17 @@ type MetricsStub interface {
 
 // HttpStatic serves files and folders from the filesystem
 type HttpStatic interface {
-	// Serve a child folders with root URL as "path"
-	ServeStatic(path string) error
+	// Serve static files in child folders with root URL as "path"
+	Serve(string) error
 }
 
 // HttpTemplate loads and serves templates
 type HttpTemplate interface {
-	// Serve a template for a path
-	ServeTemplate(path, template string) error
+	// Serve templates with root URL as "path"
+	Serve(string) error
 
-	// Register a document renderer for template
-	RegisterRenderer(string, HttpRenderer) error
+	// Register a document renderer
+	RegisterRenderer(HttpRenderer) error
 }
 
 // HttpLogger logs request and response metrics
@@ -200,22 +200,41 @@ type HttpLogger interface {
 // for a request
 type HttpRenderer interface {
 	// IsModifiedSince should return true if content that
-	// would be served by a request has been modified since
-	// a certain time
+	// would be served for this request by the renderer and has
+	// been modified since a certain time and rendering should
+	// occur for that path. It should return false if this
+	// renderer should not serve the request
 	IsModifiedSince(*http.Request, time.Time) bool
 
-	// ServeContent should return the content object
+	// ServeContent returns the serving contexttemplate name, content object
 	// last modified time for caching or zero-time if no
 	// caching should occur, and an error. If the error is a
 	// HttpError then the error return to the client is sent
 	// correctly or else client gets InternalServerError
 	// on error
-	ServeContent(*http.Request) (interface{}, time.Time, error)
+	ServeContent(*http.Request) (HttpRenderContext, error)
 }
 
-// HttpError provides the correct error code to the client
+// HttpRenderContext represents information used to render
+// a response through a template. If no template is returned
+// then the content is served without a template. The type
+// is returned on the Content-Type field of the response.
+// The response is cached if the Modified field is not zero.
+type HttpRenderContext struct {
+	Template string
+	Type     string
+	Content  interface{}
+	Modified time.Time
+}
+
+// HttpError provides the correct error code to the client which
+// can be returned by the ServeContent method in order to more correctly
+// respond to the client
 type HttpError interface {
+	// Code returns the HTTP status code
 	Code() int
+
+	// Error returns the error message to be returned to the client
 	Error() string
 }
 

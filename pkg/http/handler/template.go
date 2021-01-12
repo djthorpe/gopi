@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
+	"html/template"
 	"net/http"
-	"os"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -15,176 +17,143 @@ type Templates struct {
 	gopi.Unit
 	gopi.Server
 	gopi.Logger
-	*cache
-	*renderers
-
-	folder *string
-}
-
-type Template struct {
-	gopi.Logger
-	*cache
-	*renderers
-	name string
+	*TemplateCache
+	*RenderCache
 }
 
 /////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func (this *Templates) Define(cfg gopi.Config) error {
-	this.folder = cfg.FlagString("http.templates", "", "Path to HTML Templates")
-	return nil
-}
-
 func (this *Templates) New(gopi.Config) error {
-	// Where there is no templates argument
-	if *this.folder == "" {
-		return nil
-	}
-
-	// Read all templates
-	if stat, err := os.Stat(*this.folder); os.IsNotExist(err) {
-		return gopi.ErrNotFound.WithPrefix(*this.folder)
-	} else if err != nil {
-		return gopi.ErrBadParameter.WithPrefix(*this.folder)
-	} else if stat.IsDir() == false {
-		return gopi.ErrBadParameter.WithPrefix(*this.folder)
-	} else if cache, err := NewCache(*this.folder); err != nil {
-		return err
-	} else {
-		this.cache = cache
-		this.renderers = NewRenderers()
-	}
+	this.Require(this.Server, this.Logger, this.TemplateCache, this.RenderCache)
 
 	// Return success
 	return nil
 }
 
 /////////////////////////////////////////////////////////////////////
-// METHODS - TEMPLATES
+// PUBLIC METHODS
 
-// ServeTemplate registers a service to serve a template for a path
-func (this *Templates) ServeTemplate(path, name string) error {
-	if this.Server == nil {
-		return gopi.ErrInternalAppError.WithPrefix("Server")
-	} else if this.cache == nil {
-		return gopi.ErrBadParameter.WithPrefix("-http.templates")
-	} else if _, err := this.cache.Get(name); err != nil {
+// Serve registers a service to serve templates for a path
+func (this *Templates) Serve(path string) error {
+	if err := this.Server.RegisterService(path, this); err != nil {
 		return err
-	} else if err := this.Server.RegisterService(path, this.NewTemplateService(name)); err != nil {
-		return err
-	} else {
-		this.Debugf("Register Template %q => %q", path, name)
 	}
 
 	// Return success
 	return nil
 }
 
-// RegisterRenderer registers a document renderer for named template
-func (this *Templates) RegisterRenderer(name string, renderer gopi.HttpRenderer) error {
-	if this.cache == nil {
-		return gopi.ErrBadParameter.WithPrefix("-http.templates")
-	} else if _, err := this.cache.Get(name); err != nil {
-		return err
-	} else if err := this.renderers.Register(name, renderer); err != nil {
-		return err
-	} else {
-		this.Debugf("Register Renderer %q => %v", name, renderer)
-	}
-
-	// Return success
-	return nil
-}
-
-/////////////////////////////////////////////////////////////////////
-// METHODS - TEMPLATE HANDLER
-
-// Create a new template handler
-func (this *Templates) NewTemplateService(name string) http.Handler {
-	return &Template{this.Logger, this.cache, this.renderers, name}
-}
-
-// Serve a template through a renderer
-func (this *Template) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	var content interface{}
-	var modified time.Time
-	var err error
-
-	// Get renderer
-	renderer := this.renderers.Renderer(this.name)
-
-	this.Debugf("req=%v renderer=%v", req.URL, renderer)
-	this.Debugf("  template=%v", this.name)
-
-	// Get content and modified time from cache
-	content, modified = this.renderers.Get(req)
-	if renderer != nil {
-		if content == nil || renderer.IsModifiedSince(req, modified) {
-			// Content needs to be rendered
-			content, modified, err = this.renderers.Render(renderer, req)
-			if err != nil {
-				this.Debugf("  render content returns error: %v", err)
-			} else if content == nil {
-				this.Debugf("  render content returns no content")
-			} else {
-				this.Debugf("  render content returns modification date: %v", modified)
-			}
-		}
-
-		// Deal with any errors from generating content
-		if err != nil {
-			this.ServeError(w, err)
-			return
-		} else if content == nil {
-			// If content is nil then return NoContent error
-			http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
-			return
-		}
-	}
-
-	// Update modification time if template modification time is later
-	if modtime := this.cache.Modified(this.name); modtime.IsZero() == false {
-		if modified.IsZero() || modtime.After(modified) {
-			this.Debugf("  template updates modification time: %v", modtime)
-			modified = modtime
-		}
-	}
-
-	// Check for If-Modified-Since header
-	if ifmodified := req.Header.Get("If-Modified-Since"); ifmodified != "" {
-		if date, err := time.Parse(http.TimeFormat, ifmodified); err == nil {
-			if date.After(modified) {
-				this.Debugf("  If-Modified-Since %v: Returning %v", ifmodified, http.StatusNotModified)
-				http.Error(w, http.StatusText(http.StatusNotModified), http.StatusNotModified)
-				return
-			}
-		}
-	}
-
-	// Set cache headers
-	if modified.IsZero() == false {
-		w.Header().Set("Last-Modified", modified.Format(http.TimeFormat))
-	} else {
-		w.Header().Set("Cache-Control", "no-cache")
-	}
-
-	// Here we have content and a modified date set, so serve template
-	// with content
-	if tmpl, err := this.cache.Get(this.name); err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	} else if err := tmpl.Execute(w, content); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+// RegisterRenderer registers a document renderer
+func (this *Templates) RegisterRenderer(r gopi.HttpRenderer) error {
+	return this.RenderCache.Register(r)
 }
 
 // Serve error
-func (this *Template) ServeError(w http.ResponseWriter, err error) {
+func (this *Templates) ServeError(w http.ResponseWriter, err error) {
 	if err_, ok := err.(gopi.HttpError); ok {
 		http.Error(w, err_.Error(), err_.Code())
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// Serve a template through a renderer
+func (this *Templates) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// Get renderer or return NOT IMPLEMENTED error
+	renderer := this.RenderCache.Get(req)
+	if renderer == nil {
+		this.ServeError(w, Error(req, http.StatusNotImplemented))
+		return
+	}
+
+	this.Debugf("ServeHTTP: req=%v renderer=%v", req.URL, renderer)
+
+	// Check for If-Modified-Since header on content
+	if ifmodified := req.Header.Get("If-Modified-Since"); ifmodified != "" {
+		if date, err := time.Parse(http.TimeFormat, ifmodified); err == nil {
+			if renderer.IsModifiedSince(req, date) == false {
+				this.Debugf("  If-Modified-Since %v: Returning %v", ifmodified, http.StatusNotModified)
+				this.ServeError(w, Error(req, http.StatusNotModified))
+				return
+			}
+		}
+	}
+
+	// Render Content
+	ctx, err := renderer.ServeContent(req)
+	if err != nil {
+		this.ServeError(w, err)
+		return
+	} else if ctx.Content == nil {
+		this.ServeError(w, Error(req, http.StatusNoContent))
+		return
+	}
+
+	// Get template and template modification time
+	var tmpl *template.Template
+	var modtime time.Time
+	if ctx.Template != "" {
+		if tmpl, modtime, err = this.TemplateCache.Get(ctx.Template); err != nil {
+			this.Debugf("  Template %q: Error: %v", ctx.Template, err)
+			this.ServeError(w, Error(req, http.StatusNotFound, err.Error()))
+			return
+		}
+	}
+
+	// Update modification time for page if the template is later
+	if ctx.Modified.IsZero() == false && modtime.After(ctx.Modified) {
+		this.Debugf("  Template updates modification time: %v", modtime)
+		ctx.Modified = modtime
+	}
+
+	// Set default type
+	if ctx.Type == "" {
+		ctx.Type = "application/octet-stream"
+	}
+
+	// Set headers
+	w.Header().Set("Content-Type", ctx.Type)
+	if ctx.Modified.IsZero() == false {
+		w.Header().Set("Last-Modified", ctx.Modified.Format(http.TimeFormat))
+	} else {
+		w.Header().Set("Cache-Control", "no-cache")
+	}
+
+	// If no template then we expect the content to be []byte
+	if tmpl == nil {
+		if data, ok := ctx.Content.([]byte); ok {
+			w.Header().Set("Content-Length", fmt.Sprint(len(data)))
+			if req.Method != http.MethodHead {
+				w.Write(data)
+			}
+		} else {
+			this.ServeError(w, Error(req, http.StatusInternalServerError))
+			return
+		}
+		return
+	}
+
+	// Debugging
+	if this.Logger.IsDebug() {
+		if json, err := json.MarshalIndent(ctx.Content, "  ", "  "); err == nil {
+			this.Debugf(string(json))
+		}
+	}
+
+	// Execute through a template
+	if err := tmpl.Execute(w, ctx.Content); err != nil {
+		this.ServeError(w, Error(req, http.StatusInternalServerError, err.Error()))
+		return
+	}
+}
+
+/////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (this *Templates) String() string {
+	str := "<http.templates"
+	str += " " + this.TemplateCache.String()
+	str += " " + this.RenderCache.String()
+	return str + ">"
 }

@@ -60,12 +60,13 @@ func (this *Static) New(gopi.Config) error {
 /////////////////////////////////////////////////////////////////////
 // METHODS
 
-// Register a service to serve static files with root of path
-func (this *Static) ServeStatic(path string) error {
+// Serve registers a service to serve static files from all folders
+// under the named path
+func (this *Static) Serve(path string) error {
 	if this.Server == nil {
-		return gopi.ErrInternalAppError.WithPrefix("ServeStatic")
+		return gopi.ErrInternalAppError.WithPrefix("Serve")
 	} else if *this.folder == "" {
-		return gopi.ErrBadParameter.WithPrefix("ServeStatic")
+		return gopi.ErrBadParameter.WithPrefix("Serve")
 	}
 
 	files, err := ioutil.ReadDir(*this.folder)

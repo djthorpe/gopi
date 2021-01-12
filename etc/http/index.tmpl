@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{ template "metadata" . }}
+</head>
+<body>
+    {{ ssi "include" "header.inc" }}
+    <ul>
+    {{ range $file := .Content }}
+        <li><pre><a href="{{ $file.Name }}">{{ $file.Name }}</a></pre></li>
+    {{ end }}
+    </ul>
+</body>
+</html>
+
+{{ define "metadata" }}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ .Path }}</title>
+{{ end }}
