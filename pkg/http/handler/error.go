@@ -12,6 +12,7 @@ type err struct {
 	req    *http.Request
 	code   int
 	reason string
+	path   string
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -28,11 +29,23 @@ func Error(req *http.Request, code int, reason ...string) error {
 	return this
 }
 
+func Redirect(req *http.Request, code int, path string) error {
+	this := new(err)
+	this.code = code
+	this.reason = http.StatusText(code)
+	this.path = path
+	return this
+}
+
 /////////////////////////////////////////////////////////////////////
 // PROPERTIES
 
 func (this *err) Code() int {
 	return this.code
+}
+
+func (this *err) Path() string {
+	return this.path
 }
 
 func (this *err) Error() string {

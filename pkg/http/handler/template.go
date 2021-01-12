@@ -51,10 +51,16 @@ func (this *Templates) RegisterRenderer(r gopi.HttpRenderer) error {
 
 // Serve error
 func (this *Templates) ServeError(w http.ResponseWriter, err error) {
-	if err_, ok := err.(gopi.HttpError); ok {
+	if err_, ok := err.(gopi.HttpError); ok == false {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else if err_.Code() == http.StatusPermanentRedirect || err_.Code() == http.StatusTemporaryRedirect {
+		this.Debugf("  Code: %v", err_.Error())
+		this.Debugf("  Location: %v", err_.Path())
+
+		w.Header().Set("Location", err_.Path())
 		http.Error(w, err_.Error(), err_.Code())
 	} else {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err_.Error(), err_.Code())
 	}
 }
 

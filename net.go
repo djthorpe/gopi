@@ -236,6 +236,9 @@ type HttpError interface {
 
 	// Error returns the error message to be returned to the client
 	Error() string
+
+	// Path returns the redirect path for http.PermanentRedirect status
+	Path() string
 }
 
 /////////////////////////////////////////////////////////////////////

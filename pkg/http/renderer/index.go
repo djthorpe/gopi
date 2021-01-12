@@ -11,6 +11,7 @@ import (
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
+	"github.com/djthorpe/gopi/v3/pkg/http/handler"
 )
 
 /////////////////////////////////////////////////////////////////////
@@ -27,6 +28,7 @@ type HttpIndexContent struct {
 }
 
 type IndexContent struct {
+	Path    string    `json:"path"`
 	Name    string    `json:"name"`
 	IsDir   bool      `json:"isdir"`
 	Size    int64     `json:"size"`
@@ -61,6 +63,12 @@ func NewIndexRenderer(folder, template string) gopi.HttpRenderer {
 // PUBLIC METHODS
 
 func (this *HttpIndexRenderer) ServeContent(req *http.Request) (gopi.HttpRenderContext, error) {
+	// Add a slash if not at the end
+	if strings.HasSuffix(req.URL.Path, "/") == false {
+		return gopi.HttpRenderContext{}, handler.Redirect(req, http.StatusPermanentRedirect, req.URL.Path+"/")
+	}
+
+	// Compute physical path
 	path := filepath.Join(this.folder, req.URL.Path)
 
 	// Update modified time based on all eligible files
@@ -70,6 +78,7 @@ func (this *HttpIndexRenderer) ServeContent(req *http.Request) (gopi.HttpRenderC
 
 	if mtime, err := filesForFolder(path, func(file os.FileInfo) error {
 		content.Content = append(content.Content, IndexContent{
+			Path:    filepath.Join(content.Path, file.Name()),
 			Name:    file.Name(),
 			IsDir:   file.IsDir(),
 			Size:    file.Size(),

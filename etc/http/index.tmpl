@@ -7,7 +7,7 @@
     {{ ssi "include" "header.inc" }}
     <ul>
     {{ range $file := .Content }}
-        <li><pre><a href="{{ $file.Name }}">{{ $file.Name }}</a></pre></li>
+        <li><pre><a href="{{ $file.Path }}">{{ $file.Name }}</a></pre></li>
     {{ end }}
     </ul>
 </body>
