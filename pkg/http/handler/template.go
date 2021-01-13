@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"net/http/fcgi"
 	"os"
 	"strings"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
+	fcgi "github.com/djthorpe/gopi/v3/pkg/http/fcgi"
 )
 
 /////////////////////////////////////////////////////////////////////

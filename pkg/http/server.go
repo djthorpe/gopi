@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -102,7 +103,7 @@ func (this *Server) Addr() string {
 	if this.httpserver != nil {
 		return this.httpserver.Addr
 	} else if this.fcgiserver != nil {
-		return this.fcgiserver.Path
+		return this.fcgiserver.Addr
 	} else {
 		return ""
 	}
@@ -120,7 +121,10 @@ func (this *Server) Flags() gopi.ServiceFlag {
 		f |= gopi.SERVICE_FLAG_TLS
 	}
 	if this.fcgiserver != nil {
-		f |= gopi.SERVICE_FLAG_FCGI | gopi.SERVICE_FLAG_SOCKET
+		f |= gopi.SERVICE_FLAG_FCGI
+		if this.fcgiserver.Network == "unix" {
+			f |= gopi.SERVICE_FLAG_SOCKET
+		}
 	}
 	return f
 }
@@ -129,8 +133,10 @@ func (this *Server) Service() string {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	if this.httpserver != nil {
+	if f := this.Flags(); f&gopi.SERVICE_FLAG_HTTP != 0 {
 		return "_http._tcp"
+	} else if f&gopi.SERVICE_FLAG_FCGI != 0 {
+		return "_fcgi._tcp"
 	} else {
 		return ""
 	}
@@ -153,20 +159,17 @@ func (this *Server) StartInBackground(network, addr string) error {
 
 	// Check network parameter
 	if network == "" {
-		// Don't check network
-	} else if *this.fcgi && network != "unix" {
+		// Set network from addr
+		if _, _, err := net.SplitHostPort(addr); err == nil {
+			network = "tcp"
+		}
+	} else if *this.fcgi && (network != "unix" && network != "tcp") {
 		return gopi.ErrBadParameter.WithPrefix("StartInBackground: ", network)
 	} else if network != "tcp" {
 		return gopi.ErrBadParameter.WithPrefix("StartInBackground: ", network)
 	}
-	// Set addr parameter
-	if *this.fcgi {
-		// Set server object
-		this.fcgiserver = &fcgi.Server{
-			Path:    addr,
-			Handler: this,
-		}
-	} else {
+	// Set addr parameter if TCP
+	if network == "tcp" {
 		if addr == "" {
 			if this.ssl {
 				addr = ":https"
@@ -180,8 +183,15 @@ func (this *Server) StartInBackground(network, addr string) error {
 				addr = ":" + fmt.Sprint(port)
 			}
 		}
-
-		// Set server object
+	}
+	// Create server
+	if *this.fcgi {
+		this.fcgiserver = &fcgi.Server{
+			Network: network,
+			Addr:    addr,
+			Handler: this,
+		}
+	} else {
 		this.httpserver = &http.Server{
 			Addr:              addr,
 			Handler:           this,

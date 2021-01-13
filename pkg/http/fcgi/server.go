@@ -15,9 +15,9 @@ import (
 // The zero value for Server is a valid configuration, which responds
 // to requests over stdin
 type Server struct {
-	// Path is the path to the socket, which is used to create the
-	// listener. If path is empty, os.Stdin is used
-	Path string
+	// Network and Addr is the address or path to the socket, which
+	// are used to create the listener
+	Network, Addr string
 
 	// handler to invoke, http.DefaultServeMux if nil
 	Handler http.Handler
@@ -31,27 +31,30 @@ type Server struct {
 func (s *Server) ListenAndServe() error {
 	var wg sync.WaitGroup
 
-	// Create listender
-	if s.Path == "" {
+	// Remove existing socket
+	if (s.Network == "unix" || s.Network == "") && s.Addr != "" {
+		// Check for existing file and remove it. Cannot use a directory
+		// as a socket
+		if stat, err := os.Stat(s.Addr); os.IsNotExist(err) {
+			// File does not exist, so no nothing
+		} else if err != nil {
+			return err
+		} else if stat.IsDir() {
+			return fmt.Errorf("Cannot use an existing directory")
+		} else if err := os.Remove(s.Addr); err != nil {
+			return err
+		}
+	}
+
+	// If Network and Addr are empty, use os.Stdin
+	if (s.Network == "unix" || s.Network == "") && s.Addr == "" {
 		if l, err := net.FileListener(os.Stdin); err != nil {
 			return err
 		} else {
 			s.listener = l
 		}
 	} else {
-		// Check for existing file and remove it. Cannot use a directory
-		// as a socket
-		if stat, err := os.Stat(s.Path); os.IsNotExist(err) {
-			// File does not exist, so no nothing
-		} else if err != nil {
-			return err
-		} else if stat.IsDir() {
-			return fmt.Errorf("Cannot use an existing directory")
-		} else if err := os.RemoveAll(s.Path); err != nil {
-			return err
-		}
-
-		if l, err := net.Listen("unix", s.Path); err != nil {
+		if l, err := net.Listen(s.Network, s.Addr); err != nil {
 			return err
 		} else {
 			s.listener = l

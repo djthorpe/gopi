@@ -67,7 +67,6 @@ func (this *HttpTextRenderer) IsModifiedSince(docroot string, req *http.Request,
 	// Check file extension
 	ext := filepath.Ext(req.URL.Path)
 	if _, exists := this.ext[ext]; exists == false {
-		this.Logger.Debugf("HttpTextRenderer: Does not handle: %q", ext)
 		return false
 	}
 	// Must exist and be a regular file, not starting with a period "."
