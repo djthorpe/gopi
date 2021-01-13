@@ -15,9 +15,12 @@ import (
 type app struct {
 	gopi.Unit
 	gopi.HttpTemplate
+
+	// Renderers
 	*renderer.HttpIndexRenderer
 	*renderer.HttpTextRenderer
 
+	// Document Root
 	docroot string
 }
 
