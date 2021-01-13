@@ -4,7 +4,7 @@
     {{ template "metadata" . }}
 </head>
 <body>
-    {{ ssi "include" "header.inc" }}
+{{ ssi "include" "/inc/test" "wait" }}
     <ul>
     {{ range $file := .Content }}
         <li><pre><a href="{{ $file.Path }}">{{ $file.Name }}</a></pre></li>

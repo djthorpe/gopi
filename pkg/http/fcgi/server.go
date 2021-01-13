@@ -23,20 +23,20 @@ type Server struct {
 	Handler http.Handler
 
 	// Private variables to flag shutdown
-	ctx    context.Context
-	cancel context.CancelFunc
+	listener net.Listener
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 func (s *Server) ListenAndServe() error {
-	var l net.Listener
-	var err error
 	var wg sync.WaitGroup
 
 	// Create listender
 	if s.Path == "" {
-		l, err = net.FileListener(os.Stdin)
-		if err != nil {
+		if l, err := net.FileListener(os.Stdin); err != nil {
 			return err
+		} else {
+			s.listener = l
 		}
 	} else {
 		// Check for existing file and remove it. Cannot use a directory
@@ -51,12 +51,13 @@ func (s *Server) ListenAndServe() error {
 			return err
 		}
 
-		l, err = net.Listen("unix", s.Path)
-		if err != nil {
+		if l, err := net.Listen("unix", s.Path); err != nil {
 			return err
+		} else {
+			s.listener = l
 		}
 	}
-	defer l.Close()
+	defer s.listener.Close()
 
 	// Set default handler
 	if s.Handler == nil {
@@ -67,17 +68,23 @@ func (s *Server) ListenAndServe() error {
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 
 	// Continue accepting requests until shutdown
-	for range s.ctx.Done() {
-		rw, err := l.Accept()
-		if err != nil {
-			return err
+FOR_LOOP:
+	for {
+		select {
+		case <-s.ctx.Done():
+			break FOR_LOOP
+		default:
+			rw, err := s.listener.Accept()
+			if err != nil {
+				return err
+			}
+			c := newChild(rw, s.Handler)
+			wg.Add(1)
+			go func() {
+				c.serve()
+				wg.Done()
+			}()
 		}
-		c := newChild(rw, s.Handler)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			c.serve()
-		}()
 	}
 
 	// Wait until all connections served
@@ -89,6 +96,7 @@ func (s *Server) ListenAndServe() error {
 
 func (s *Server) Close() error {
 	if s.cancel != nil {
+		s.listener.Close()
 		s.cancel()
 	}
 	return nil

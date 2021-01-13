@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -130,27 +130,38 @@ func (this *Templates) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if tmpl == nil {
 		if data, ok := ctx.Content.([]byte); ok {
 			w.Header().Set("Content-Length", fmt.Sprint(len(data)))
+			w.WriteHeader(http.StatusOK)
 			if req.Method != http.MethodHead {
 				w.Write(data)
 			}
+			return
 		} else {
 			this.ServeError(w, Error(req, http.StatusInternalServerError))
 			return
 		}
-		return
 	}
 
 	// Debugging
-	if this.Logger.IsDebug() {
-		if json, err := json.MarshalIndent(ctx.Content, "  ", "  "); err == nil {
-			this.Debugf(string(json))
+	/*
+		if this.Logger.IsDebug() {
+			if json, err := json.MarshalIndent(ctx.Content, "  ", "  "); err == nil {
+				this.Debugf(string(json))
+			}
 		}
-	}
+	*/
 
 	// Execute through a template
-	if err := tmpl.Execute(w, ctx.Content); err != nil {
+	data := new(bytes.Buffer)
+	if err := tmpl.Execute(data, ctx.Content); err != nil {
 		this.ServeError(w, Error(req, http.StatusInternalServerError, err.Error()))
 		return
+	}
+
+	// Set content length and write data
+	w.Header().Set("Content-Length", fmt.Sprint(data.Len()))
+	w.WriteHeader(http.StatusOK)
+	if req.Method != http.MethodHead {
+		w.Write(data.Bytes())
 	}
 }
 

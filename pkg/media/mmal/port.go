@@ -5,6 +5,7 @@ package mmal
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/djthorpe/gopi/v3"
 	mmal "github.com/djthorpe/gopi/v3/pkg/sys/mmal"
@@ -21,6 +22,7 @@ type Port struct {
 	r        io.Reader
 	w        io.Writer
 	eor, eow bool
+	debug    chan<- string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -115,22 +117,39 @@ func (this *Port) Disable() error {
 }
 
 func (this *Port) Read() (uint, error) {
-	var n uint
-	var err error
+	// Send empty buffers to the output port of the decoder
+	// to allow the decoder to start producing frames as soon as
+	// it gets input data
+	if this.w != nil {
+		for {
+			if buffer := this.pool.Get(); buffer == nil {
+				break
+			} else if err := this.port.SendBuffer(buffer); err != nil {
+				return 0, err
+			}
+		}
+	}
 
+	// If not a reader or EOF on read, then return
 	if this.r == nil || this.eor {
 		return 0, nil
 	}
 
-	// Obtain a free buffer from the pool and fill it
+	// Fill input queue
+	var n uint
+
 	buffer := this.pool.Get()
 	if buffer == nil {
 		return 0, nil
-	} else if n, err = buffer.Fill(this.r); err == io.EOF {
+	} else if n_, err := buffer.Fill(this.r); err == io.EOF {
 		buffer.SetFlags(mmal.MMAL_BUFFER_HEADER_FLAG_EOS)
 		this.eor = true
+		this.Debugf("EOR: %v", buffer)
 	} else if err != nil {
-		return 0, err
+		buffer.Release()
+		return n, err
+	} else {
+		n = n + uint(n_)
 	}
 
 	// Send buffer to port
@@ -139,26 +158,15 @@ func (this *Port) Read() (uint, error) {
 		return 0, err
 	}
 
-	// Return success
+	// Release buffer
+	buffer.Release()
+
+	// Return numof of bytes read
 	return n, nil
 }
 
 func (this *Port) Write() (uint, error) {
 	var n uint
-
-	if this.w == nil || this.queue == nil {
-		return 0, nil
-	}
-
-	// Send empty buffers to the output port of the decoder to allow the decoder to start
-	// producing frames as soon as it gets input data
-	for {
-		if buffer := this.pool.Get(); buffer == nil {
-			break
-		} else if err := this.port.SendBuffer(buffer); err != nil {
-			return n, err
-		}
-	}
 
 	// Obtain free buffers from the queue to process
 	for {
@@ -166,31 +174,31 @@ func (this *Port) Write() (uint, error) {
 		if buffer == nil {
 			return n, nil
 		}
-		this.Debug("Write: ", buffer)
+		this.Debugf("Write: %v", buffer)
 		if buffer.HasFlags(mmal.MMAL_BUFFER_HEADER_FLAG_EOS) {
-			this.Debug("  -> EOW")
+			this.Debugf("  -> EOW: %v", buffer)
 			this.eow = true
 		}
 		if evt := buffer.Event(); evt == 0 {
-			this.Debug("  -> WRITE ", buffer)
+			this.Debugf("  -> WRITE")
 			if n_, err := this.w.Write(buffer.AsData()); err != nil {
 				buffer.Release()
 				return n, err
 			} else {
 				n = n + uint(n_)
 			}
-		} else if buffer.Event() == mmal.MMAL_EVENT_FORMAT_CHANGED {
+		} else if evt == mmal.MMAL_EVENT_FORMAT_CHANGED {
 			event := buffer.AsFormatChangeEvent()
-			this.Debug("  FORMAT CHANGED ", event)
-			/* RESIZE POOL HERE, COPY FORMAT */
+			this.Debugf("  -> FORMAT CHANGED: %v", event)
 
 			// Copy over the new format and re-enable the port
+			// TODO: RESIZE POOL HERE
 			if err := this.change_format(event); err != nil {
 				buffer.Release()
 				return n, err
 			}
 		} else {
-			this.Debug("  UNHANDLED EVENT ", evt)
+			this.Debugf("  -> UNHANDLED EVENT: %v", evt)
 		}
 	}
 
@@ -198,21 +206,49 @@ func (this *Port) Write() (uint, error) {
 	return n, nil
 }
 
-func (this *Port) Debug(a ...interface{}) {
-	fmt.Println(a...)
+func (this *Port) EOR() bool {
+	if this.r == nil {
+		return true
+	} else {
+		return this.eor
+	}
+}
+
+func (this *Port) EOW() bool {
+	if this.w == nil {
+		return true
+	} else {
+		return this.eow
+	}
+}
+
+func (this *Port) Debugf(format string, a ...interface{}) {
+	s := fmt.Sprintf(format, a...)
+	if this.debug != nil {
+		select {
+		case this.debug <- s:
+			break
+		default:
+			fmt.Fprintln(os.Stderr, "[DEADLOCK]", s)
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // CALLBACKS
 
 // reader_callback is called when a buffer should be discarded on an input port
-func (this *Port) reader_callback(_ *mmal.MMALPort, buffer *mmal.MMALBuffer) {
+func (this *Port) reader_callback(port *mmal.MMALPort, buffer *mmal.MMALBuffer) {
+	this.Debugf("reader_callback: %v: %v", port.Name(), buffer)
+	this.Debugf("  release used buffer")
 	buffer.Release()
 }
 
 // writer_callback is called when a buffer should be placed in output queue
-func (this *Port) writer_callback(_ *mmal.MMALPort, buffer *mmal.MMALBuffer) {
+func (this *Port) writer_callback(port *mmal.MMALPort, buffer *mmal.MMALBuffer) {
+	this.Debugf("writer_callback: %v: %v", port.Name(), buffer)
 	this.queue.Put(buffer)
+	this.Debugf("  queue output: %v", this.queue)
 }
 
 func (this *Port) change_format(event *mmal.MMALStreamFormatEvent) error {

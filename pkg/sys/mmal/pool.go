@@ -176,7 +176,7 @@ func mmal_pool_callback(ctx *C.MMAL_POOL_T, bufferctx *C.MMAL_BUFFER_HEADER_T, u
 	} else {
 		// Empty buffer is available - queue it
 		pool.Put(buffer)
-		fmt.Println("mmal_pool_callback: Queued empty buffer:",pool)
+		fmt.Println("mmal_pool_callback: Queue empty buffer:", pool)
 		return MMAL_BOOL_FALSE
 	}
 }

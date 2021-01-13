@@ -4,10 +4,8 @@
     {{ template "metadata" . }}
 </head>
 <body>
-    {{ ssi "include" "header.inc" }}
-    <pre>
-        {{ .Content }}
-    </pre>
+{{ ssi "include" "/inc/test" "wait" }}
+<pre>{{ .Content }}</pre>
 </body>
 </html>
 

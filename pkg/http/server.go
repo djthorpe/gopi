@@ -211,7 +211,7 @@ func (this *Server) StartInBackground(network, addr string) error {
 			case errs <- result:
 				break
 			default:
-				this.Debug("StartInBackground:", result)
+				this.Debug("StartInBackground: ", result)
 			}
 		}
 		this.WaitGroup.Done()
@@ -284,10 +284,10 @@ func (this *Server) RegisterService(path interface{}, service gopi.Service) erro
 	if this.mux == nil {
 		return gopi.ErrOutOfOrder.WithPrefix("RegisterService")
 	} else if handler_, ok := service.(http.Handler); ok == false {
-		return gopi.ErrBadParameter.WithPrefix("RegisterService", "service")
+		return gopi.ErrBadParameter.WithPrefix("RegisterService: ", "service")
 	} else if path == nil {
 		if handler_, ok := service.(Transport); ok == false {
-			return gopi.ErrBadParameter.WithPrefix("RegisterService", "Does not implement SetHandler")
+			return gopi.ErrBadParameter.WithPrefix("RegisterService: ", "Does not implement SetHandler")
 		} else {
 			if this.handler == nil {
 				handler_.SetHandler(this.mux)
@@ -298,7 +298,7 @@ func (this *Server) RegisterService(path interface{}, service gopi.Service) erro
 		}
 	} else {
 		if path_, ok := path.(string); ok == false {
-			return gopi.ErrBadParameter.WithPrefix("RegisterService", "path")
+			return gopi.ErrBadParameter.WithPrefix("RegisterService: ", "path")
 		} else {
 			this.mux.Handle(path_, handler_)
 		}
