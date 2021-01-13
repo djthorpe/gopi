@@ -66,11 +66,7 @@ func (this *Templates) RegisterRenderer(r gopi.HttpRenderer) error {
 
 // Env returns the process environment for a request
 func (this *Templates) Env(req *http.Request) map[string]string {
-	if this.Server.Flags()&gopi.SERVICE_FLAG_FCGI != 0 {
-		return fcgi.ProcessEnv(req)
-	} else {
-		return nil
-	}
+	return fcgi.ProcessEnv(req)
 }
 
 /////////////////////////////////////////////////////////////////////
