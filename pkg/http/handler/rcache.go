@@ -81,7 +81,7 @@ func (this *RenderCache) Register(renderer gopi.HttpRenderer) error {
 
 // Get returns a renderer for an incoming request, or nil if there is
 // no renderer which matches the request
-func (this *RenderCache) Get(req *http.Request) gopi.HttpRenderer {
+func (this *RenderCache) Get(docroot string, req *http.Request) gopi.HttpRenderer {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
@@ -98,7 +98,7 @@ func (this *RenderCache) Get(req *http.Request) gopi.HttpRenderer {
 
 	// Round robin the renderers to find the correct one
 	for _, renderer := range this.r {
-		if renderer.IsModifiedSince(req, time.Time{}) {
+		if renderer.IsModifiedSince(docroot, req, time.Time{}) {
 			// If we have found the right renderer, then cache it
 			// for this specific request. Also prunes the size of the map
 			// so we do it in the background
@@ -116,7 +116,7 @@ func (this *RenderCache) Get(req *http.Request) gopi.HttpRenderer {
 }
 
 // Render will return the render context for a renderer and a request
-func (this *RenderCache) Render(renderer gopi.HttpRenderer, req *http.Request) (gopi.HttpRenderContext, error) {
+func (this *RenderCache) Render(docroot string, renderer gopi.HttpRenderer, req *http.Request) (gopi.HttpRenderContext, error) {
 	// Check incoming arguments
 	if renderer == nil || req == nil {
 		return gopi.HttpRenderContext{}, gopi.ErrNotFound
@@ -126,13 +126,13 @@ func (this *RenderCache) Render(renderer gopi.HttpRenderer, req *http.Request) (
 	key := keyForRequest(req)
 	if ctx := this.getc(key); ctx.Content != nil {
 		// Serve from cache if not modified
-		if renderer.IsModifiedSince(req, ctx.Modified) == false {
+		if renderer.IsModifiedSince(docroot, req, ctx.Modified) == false {
 			return ctx, nil
 		}
 	}
 
 	// Generate content
-	if ctx, err := renderer.ServeContent(req); err != nil {
+	if ctx, err := renderer.ServeContent(docroot, req); err != nil {
 		// Remove the content from the cache
 		this.setc(key, gopi.HttpRenderContext{})
 		// Return the error

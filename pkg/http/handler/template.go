@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
@@ -21,6 +23,15 @@ type Templates struct {
 	*RenderCache
 }
 
+type TemplateHandler struct {
+	gopi.Logger
+	*TemplateCache
+	*RenderCache
+
+	path    string
+	docroot string
+}
+
 /////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
@@ -35,8 +46,11 @@ func (this *Templates) New(gopi.Config) error {
 // PUBLIC METHODS
 
 // Serve registers a service to serve templates for a path
-func (this *Templates) Serve(path string) error {
-	if err := this.Server.RegisterService(path, this); err != nil {
+func (this *Templates) Serve(path, docroot string) error {
+	// Crete a TemplateHandler
+	if handler, err := this.NewTemplateHandler(path, docroot); err != nil {
+		return err
+	} else if err := this.Server.RegisterService(path, handler); err != nil {
 		return err
 	}
 
@@ -49,25 +63,39 @@ func (this *Templates) RegisterRenderer(r gopi.HttpRenderer) error {
 	return this.RenderCache.Register(r)
 }
 
-// Serve error
-func (this *Templates) ServeError(w http.ResponseWriter, err error) {
-	if err_, ok := err.(gopi.HttpError); ok == false {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	} else if err_.Code() == http.StatusPermanentRedirect || err_.Code() == http.StatusTemporaryRedirect {
-		this.Debugf("  Code: %v", err_.Error())
-		this.Debugf("  Location: %v", err_.Path())
+/////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS
 
-		w.Header().Set("Location", err_.Path())
-		http.Error(w, err_.Error(), err_.Code())
+func (this *Templates) NewTemplateHandler(path, docroot string) (http.Handler, error) {
+	h := new(TemplateHandler)
+	h.TemplateCache = this.TemplateCache
+	h.RenderCache = this.RenderCache
+	h.Logger = this.Logger
+
+	// Check path argument
+	if strings.HasPrefix(path, "/") == false {
+		return nil, gopi.ErrBadParameter.WithPrefix("NewTemplateHandler: ", path)
 	} else {
-		http.Error(w, err_.Error(), err_.Code())
+		h.path = path
 	}
+
+	// Check docroot argument
+	if stat, err := os.Stat(docroot); err != nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("NewTemplateHandler: ", err)
+	} else if stat.IsDir() == false {
+		return nil, gopi.ErrBadParameter.WithPrefix("NewTemplateHandler: ", docroot)
+	} else {
+		h.docroot = docroot
+	}
+
+	// Return success
+	return h, nil
 }
 
 // Serve a template through a renderer
-func (this *Templates) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (this *TemplateHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Get renderer or return NOT IMPLEMENTED error
-	renderer := this.RenderCache.Get(req)
+	renderer := this.RenderCache.Get(this.docroot, req)
 	if renderer == nil {
 		this.ServeError(w, Error(req, http.StatusNotImplemented))
 		return
@@ -78,7 +106,7 @@ func (this *Templates) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Check for If-Modified-Since header on content
 	if ifmodified := req.Header.Get("If-Modified-Since"); ifmodified != "" {
 		if date, err := time.Parse(http.TimeFormat, ifmodified); err == nil {
-			if renderer.IsModifiedSince(req, date) == false {
+			if renderer.IsModifiedSince(this.docroot, req, date) == false {
 				this.Debugf("  If-Modified-Since %v: Returning %v", ifmodified, http.StatusNotModified)
 				this.ServeError(w, Error(req, http.StatusNotModified))
 				return
@@ -87,7 +115,7 @@ func (this *Templates) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Render Content
-	ctx, err := renderer.ServeContent(req)
+	ctx, err := renderer.ServeContent(this.docroot, req)
 	if err != nil {
 		this.ServeError(w, err)
 		return
@@ -162,6 +190,21 @@ func (this *Templates) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if req.Method != http.MethodHead {
 		w.Write(data.Bytes())
+	}
+}
+
+// Serve error
+func (this *TemplateHandler) ServeError(w http.ResponseWriter, err error) {
+	if err_, ok := err.(gopi.HttpError); ok == false {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else if err_.Code() == http.StatusPermanentRedirect || err_.Code() == http.StatusTemporaryRedirect {
+		this.Debugf("  Code: %v", err_.Error())
+		this.Debugf("  Location: %v", err_.Path())
+
+		w.Header().Set("Location", err_.Path())
+		http.Error(w, err_.Error(), err_.Code())
+	} else {
+		http.Error(w, err_.Error(), err_.Code())
 	}
 }
 

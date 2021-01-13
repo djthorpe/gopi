@@ -18,8 +18,11 @@ import (
 // TYPES
 
 type HttpTextRenderer struct {
+	gopi.Unit
+	gopi.Logger
+	gopi.HttpTemplate
+
 	ext      map[string]bool
-	folder   string
 	template string
 }
 
@@ -38,44 +41,37 @@ const (
 /////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewTextRenderer(folder, template string) gopi.HttpRenderer {
-	this := new(HttpTextRenderer)
-	if folder == "" {
-		return nil
-	} else if stat, err := os.Stat(folder); err != nil {
-		return nil
-	} else if stat.IsDir() == false {
-		return nil
+func (this *HttpTextRenderer) New(gopi.Config) error {
+	this.Require(this.Logger, this.HttpTemplate)
+
+	if err := this.HttpTemplate.RegisterRenderer(this); err != nil {
+		return err
 	} else {
-		this.folder = folder
-	}
-	if template == "" {
-		return nil
-	} else {
-		this.template = template
+		this.template = "page.tmpl"
 	}
 
-	// Set extension map
+	// Set up extensions supported
 	this.ext = make(map[string]bool, 10)
 	for _, ext := range strings.Fields(EXT) {
 		this.ext[ext] = true
 	}
 
 	// Return success
-	return this
+	return nil
 }
 
 /////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *HttpTextRenderer) IsModifiedSince(req *http.Request, t time.Time) bool {
+func (this *HttpTextRenderer) IsModifiedSince(docroot string, req *http.Request, t time.Time) bool {
 	// Check file extension
 	ext := filepath.Ext(req.URL.Path)
 	if _, exists := this.ext[ext]; exists == false {
+		this.Logger.Debugf("HttpTextRenderer: Does not handle: %q", ext)
 		return false
 	}
 	// Must exist and be a regular file, not starting with a period "."
-	path := filepath.Join(this.folder, req.URL.Path)
+	path := filepath.Join(docroot, req.URL.Path)
 	if stat, err := os.Stat(path); err != nil {
 		return false
 	} else if stat.Mode().IsRegular() == false {
@@ -91,8 +87,8 @@ func (this *HttpTextRenderer) IsModifiedSince(req *http.Request, t time.Time) bo
 	}
 }
 
-func (this *HttpTextRenderer) ServeContent(req *http.Request) (gopi.HttpRenderContext, error) {
-	path := filepath.Join(this.folder, req.URL.Path)
+func (this *HttpTextRenderer) ServeContent(docroot string, req *http.Request) (gopi.HttpRenderContext, error) {
+	path := filepath.Join(docroot, req.URL.Path)
 
 	// Check file
 	stat, err := os.Stat(path)
@@ -134,9 +130,6 @@ func (this *HttpTextRenderer) ServeContent(req *http.Request) (gopi.HttpRenderCo
 
 func (this *HttpTextRenderer) String() string {
 	str := "<http.textrenderer"
-	if this.folder != "" {
-		str += fmt.Sprintf(" folder=%q", this.folder)
-	}
 	if this.template != "" {
 		str += fmt.Sprintf(" template=%q", this.template)
 	}

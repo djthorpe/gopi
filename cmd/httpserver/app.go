@@ -15,20 +15,22 @@ import (
 type app struct {
 	gopi.Unit
 	gopi.HttpTemplate
+	*renderer.HttpIndexRenderer
+	*renderer.HttpTextRenderer
+
+	docroot string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
 func (this *app) New(cfg gopi.Config) error {
-	this.Require(this.HttpTemplate)
+	this.Require(this.HttpTemplate, this.HttpIndexRenderer, this.HttpTextRenderer)
 
 	if docroot, err := docRoot(cfg.Args()); err != nil {
 		return err
-	} else if err := this.HttpTemplate.RegisterRenderer(renderer.NewIndexRenderer(docroot, "index.tmpl")); err != nil {
-		return err
-	} else if err := this.HttpTemplate.RegisterRenderer(renderer.NewTextRenderer(docroot, "page.tmpl")); err != nil {
-		return err
+	} else {
+		this.docroot = docroot
 	}
 
 	// Return success
@@ -38,7 +40,7 @@ func (this *app) New(cfg gopi.Config) error {
 func (this *app) Run(ctx context.Context) error {
 
 	// Serve templates under "/"
-	if err := this.HttpTemplate.Serve("/"); err != nil {
+	if err := this.HttpTemplate.Serve("/", this.docroot); err != nil {
 		return err
 	}
 

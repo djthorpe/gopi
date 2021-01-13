@@ -18,7 +18,10 @@ import (
 // TYPES
 
 type HttpIndexRenderer struct {
-	folder   string
+	gopi.Unit
+	gopi.Logger
+	gopi.HttpTemplate
+
 	template string
 }
 
@@ -38,38 +41,30 @@ type IndexContent struct {
 /////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewIndexRenderer(folder, template string) gopi.HttpRenderer {
-	this := new(HttpIndexRenderer)
-	if folder == "" {
-		return nil
-	} else if stat, err := os.Stat(folder); err != nil {
-		return nil
-	} else if stat.IsDir() == false {
-		return nil
+func (this *HttpIndexRenderer) New(gopi.Config) error {
+	this.Require(this.Logger, this.HttpTemplate)
+
+	if err := this.HttpTemplate.RegisterRenderer(this); err != nil {
+		return err
 	} else {
-		this.folder = folder
-	}
-	if template == "" {
-		return nil
-	} else {
-		this.template = template
+		this.template = "index.tmpl"
 	}
 
 	// Return success
-	return this
+	return nil
 }
 
 /////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *HttpIndexRenderer) ServeContent(req *http.Request) (gopi.HttpRenderContext, error) {
+func (this *HttpIndexRenderer) ServeContent(docroot string, req *http.Request) (gopi.HttpRenderContext, error) {
 	// Add a slash if not at the end
 	if strings.HasSuffix(req.URL.Path, "/") == false {
 		return gopi.HttpRenderContext{}, handler.Redirect(req, http.StatusPermanentRedirect, req.URL.Path+"/")
 	}
 
 	// Compute physical path
-	path := filepath.Join(this.folder, req.URL.Path)
+	path := filepath.Join(docroot, req.URL.Path)
 
 	// Update modified time based on all eligible files
 	content := HttpIndexContent{
@@ -97,8 +92,8 @@ func (this *HttpIndexRenderer) ServeContent(req *http.Request) (gopi.HttpRenderC
 	}
 }
 
-func (this *HttpIndexRenderer) IsModifiedSince(req *http.Request, t time.Time) bool {
-	path := filepath.Join(this.folder, req.URL.Path)
+func (this *HttpIndexRenderer) IsModifiedSince(docroot string, req *http.Request, t time.Time) bool {
+	path := filepath.Join(docroot, req.URL.Path)
 
 	// Update modified time based on all eligible files
 	if mtime, err := filesForFolder(path, nil); err != nil {
@@ -113,9 +108,6 @@ func (this *HttpIndexRenderer) IsModifiedSince(req *http.Request, t time.Time) b
 
 func (this *HttpIndexRenderer) String() string {
 	str := "<http.indexrenderer"
-	if this.folder != "" {
-		str += fmt.Sprintf(" folder=%q", this.folder)
-	}
 	if this.template != "" {
 		str += fmt.Sprintf(" template=%q", this.template)
 	}

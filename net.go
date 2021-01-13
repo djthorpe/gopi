@@ -183,8 +183,9 @@ type HttpStatic interface {
 
 // HttpTemplate loads and serves templates
 type HttpTemplate interface {
-	// Serve templates with root URL as "path"
-	Serve(string) error
+	// Serve templates with root URL as "path" with files
+	// in folder "docroot"
+	Serve(path, docroot string) error
 
 	// Register a document renderer
 	RegisterRenderer(HttpRenderer) error
@@ -204,7 +205,7 @@ type HttpRenderer interface {
 	// been modified since a certain time and rendering should
 	// occur for that path. It should return false if this
 	// renderer should not serve the request
-	IsModifiedSince(*http.Request, time.Time) bool
+	IsModifiedSince(docroot string, req *http.Request, t time.Time) bool
 
 	// ServeContent returns the serving contexttemplate name, content object
 	// last modified time for caching or zero-time if no
@@ -212,7 +213,7 @@ type HttpRenderer interface {
 	// HttpError then the error return to the client is sent
 	// correctly or else client gets InternalServerError
 	// on error
-	ServeContent(*http.Request) (HttpRenderContext, error)
+	ServeContent(docroot string, req *http.Request) (HttpRenderContext, error)
 }
 
 // HttpRenderContext represents information used to render
