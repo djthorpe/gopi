@@ -15,6 +15,7 @@ import (
 	* HTTP and gRPC Servers
 	* Services
 	* Service Discovery
+	* HTML Templating and content rendering
 
 	There are also some example gRPC services (Ping, Input, Metrics)
 	which can be used "out of the box".
@@ -189,6 +190,10 @@ type HttpTemplate interface {
 
 	// Register a document renderer
 	RegisterRenderer(HttpRenderer) error
+
+	// Return environment for request for FastCGI
+	// or return nil otherwise
+	Env(req *http.Request) map[string]string
 }
 
 // HttpLogger logs request and response metrics

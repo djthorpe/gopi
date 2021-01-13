@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/http/fcgi"
 	"os"
 	"strings"
 	"time"
@@ -61,6 +62,15 @@ func (this *Templates) Serve(path, docroot string) error {
 // RegisterRenderer registers a document renderer
 func (this *Templates) RegisterRenderer(r gopi.HttpRenderer) error {
 	return this.RenderCache.Register(r)
+}
+
+// Env returns the process environment for a request
+func (this *Templates) Env(req *http.Request) map[string]string {
+	if this.Server.Flags()&gopi.SERVICE_FLAG_FCGI != 0 {
+		return fcgi.ProcessEnv(req)
+	} else {
+		return nil
+	}
 }
 
 /////////////////////////////////////////////////////////////////////
