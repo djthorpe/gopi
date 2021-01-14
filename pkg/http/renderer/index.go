@@ -119,7 +119,7 @@ func (this *HttpIndexRenderer) GetContent(base, relpath string, file os.FileInfo
 		if c, err := this.HttpTemplate.Render(r); err != nil {
 			this.Debugf("GetContent: %q: %v", r.URL, err)
 		} else {
-			result.Content = c
+			result.Content = c.Content
 		}
 	}
 
