@@ -31,11 +31,12 @@ type HttpIndexContent struct {
 }
 
 type IndexContent struct {
-	Path    string    `json:"path"`
-	Name    string    `json:"name"`
-	IsDir   bool      `json:"isdir"`
-	Size    int64     `json:"size"`
-	ModTime time.Time `json:"modtime"`
+	Path    string      `json:"path"`
+	Name    string      `json:"name"`
+	IsDir   bool        `json:"isdir"`
+	Size    int64       `json:"size"`
+	ModTime time.Time   `json:"modtime"`
+	Content interface{} `json:"content"`
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -64,21 +65,19 @@ func (this *HttpIndexRenderer) ServeContent(docroot string, req *http.Request) (
 	}
 
 	// Compute physical path
-	path := filepath.Join(docroot, req.URL.Path)
+	abspath := filepath.Join(docroot, req.URL.Path)
 
 	// Update modified time based on all eligible files
 	content := HttpIndexContent{
 		Path: req.URL.Path,
 	}
 
-	if mtime, err := filesForFolder(path, func(file os.FileInfo) error {
-		content.Content = append(content.Content, IndexContent{
-			Path:    filepath.Join(content.Path, file.Name()),
-			Name:    file.Name(),
-			IsDir:   file.IsDir(),
-			Size:    file.Size(),
-			ModTime: file.ModTime(),
-		})
+	if mtime, err := filesForFolder(abspath, func(file os.FileInfo) error {
+		if relpath, err := filepath.Rel(docroot, abspath); err != nil {
+			return err
+		} else {
+			content.Content = append(content.Content, this.GetContent(content.Path, relpath, file))
+		}
 		return nil
 	}); err != nil {
 		return gopi.HttpRenderContext{}, err
@@ -101,6 +100,31 @@ func (this *HttpIndexRenderer) IsModifiedSince(docroot string, req *http.Request
 	} else {
 		return mtime.After(t)
 	}
+}
+
+func (this *HttpIndexRenderer) GetContent(base, relpath string, file os.FileInfo) IndexContent {
+	// Don't render directories
+	result := IndexContent{
+		Path:    filepath.Join(base, relpath, file.Name()),
+		Name:    file.Name(),
+		IsDir:   file.IsDir(),
+		Size:    file.Size(),
+		ModTime: file.ModTime(),
+	}
+
+	// Read content if it's not a directory
+	if file.IsDir() {
+		result.Path += "/"
+	} else if r, err := http.NewRequest(http.MethodGet, result.Path, nil); err == nil {
+		if c, err := this.HttpTemplate.Render(r); err != nil {
+			this.Debugf("GetContent: %q: %v", r.URL, err)
+		} else {
+			result.Content = c
+		}
+	}
+
+	// Return result
+	return result
 }
 
 /////////////////////////////////////////////////////////////////////

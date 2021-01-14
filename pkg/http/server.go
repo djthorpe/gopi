@@ -142,6 +142,10 @@ func (this *Server) Service() string {
 	}
 }
 
+func (this *Server) Mux() *http.ServeMux {
+	return this.mux
+}
+
 // Start serves HTTP in foreground. Network should be empty or "unix"
 // for FGCI or "tcp" otherwise, In the former case, the address is
 // either empty (using standard ports) or ":0" which means a free

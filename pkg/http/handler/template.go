@@ -33,6 +33,12 @@ type TemplateHandler struct {
 	docroot string
 }
 
+type httpServer interface {
+	gopi.Server
+
+	Mux() *http.ServeMux
+}
+
 /////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
@@ -69,6 +75,16 @@ func (this *Templates) Env(req *http.Request) map[string]string {
 	return fcgi.ProcessEnv(req)
 }
 
+// Render returns content and modified time for a path
+func (this *Templates) Render(req *http.Request) (gopi.HttpRenderContext, error) {
+	handler, _ := this.Server.(httpServer).Mux().Handler(req)
+	if handler_, ok := handler.(*TemplateHandler); ok == false {
+		return gopi.HttpRenderContext{}, Error(req, http.StatusNotFound)
+	} else {
+		return handler_.Serve(req)
+	}
+}
+
 /////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
@@ -98,7 +114,18 @@ func (this *Templates) NewTemplateHandler(path, docroot string) (http.Handler, e
 	return h, nil
 }
 
-// Serve a template through a renderer
+// Serve is internal version of renderer
+func (this *TemplateHandler) Serve(req *http.Request) (gopi.HttpRenderContext, error) {
+	// Get renderer or return NOT IMPLEMENTED error
+	renderer := this.RenderCache.Get(this.docroot, req)
+	if renderer == nil {
+		return gopi.HttpRenderContext{}, Error(req, http.StatusNotImplemented)
+	} else {
+		return renderer.ServeContent(this.docroot, req)
+	}
+}
+
+// ServeHTTP a template through a renderer
 func (this *TemplateHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Get renderer or return NOT IMPLEMENTED error
 	renderer := this.RenderCache.Get(this.docroot, req)

@@ -194,6 +194,10 @@ type HttpTemplate interface {
 	// Return environment for request for FastCGI
 	// or return nil otherwise
 	Env(req *http.Request) map[string]string
+
+	// Return content for request, which had passed through
+	// a renderer
+	Render(req *http.Request) (HttpRenderContext, error)
 }
 
 // HttpLogger logs request and response metrics

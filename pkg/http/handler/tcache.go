@@ -2,8 +2,10 @@ package handler
 
 import (
 	"fmt"
+	"html"
 	"html/template"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -177,8 +179,23 @@ func (this *TemplateCache) set(name string, t *template.Template, info os.FileIn
 
 func (this *TemplateCache) funcmap() template.FuncMap {
 	return template.FuncMap{
-		"ssi": funcSSI,
+		"ssi":         funcSSI,
+		"pathescape":  funcPathEscape,
+		"queryescape": funcQueryEscape,
+		"textescape":  funcTextEscape,
 	}
+}
+
+func funcPathEscape(value string) string {
+	return url.PathEscape(value)
+}
+
+func funcQueryEscape(value string) string {
+	return url.QueryEscape(value)
+}
+
+func funcTextEscape(value string) string {
+	return html.EscapeString(value)
 }
 
 func funcSSI(cmd string, args ...string) template.HTML {
