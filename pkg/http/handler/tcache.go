@@ -183,6 +183,7 @@ func (this *TemplateCache) funcmap() template.FuncMap {
 		"pathescape":  funcPathEscape,
 		"queryescape": funcQueryEscape,
 		"textescape":  funcTextEscape,
+		"contains":    funcContains,
 	}
 }
 
@@ -196,6 +197,15 @@ func funcQueryEscape(value string) string {
 
 func funcTextEscape(value string) string {
 	return html.EscapeString(value)
+}
+
+func funcContains(arr []string, value string) bool {
+	for _, item := range arr {
+		if item == value {
+			return true
+		}
+	}
+	return false
 }
 
 func funcSSI(cmd string, args ...string) template.HTML {
