@@ -3,7 +3,6 @@
 package dvb
 
 import (
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -22,7 +21,8 @@ type Device struct {
 // CONSTANTS
 
 const (
-	DVB_ADAPTER_GLOB = "/dev/dvb/adapter"
+	DVB_ADAPTER_GLOB  = "/dev/dvb/adapter"
+	DVB_ADAPTER_UNITS = "demux,dvr,frontend,net"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -40,10 +40,6 @@ func Devices() []*Device {
 		}
 	}
 	return devices, nil
-}
-
-func Open(d *Device, sys string, m uint) (*os.File, error) {
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
