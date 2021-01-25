@@ -5,7 +5,7 @@
 syntax = "proto2";
 
 option optimize_for = LITE_RUNTIME;
-option go_package = "github.com/djthorpe/mutablehome/protobuf/castchannel";
+option go_package = "github.com/djthorpe/gopi/v3/rpc/castchannel";
 
 package castchannel;
 // EDITED: Was extensions.api.cast_channel 

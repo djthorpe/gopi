@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/djthorpe/gopi/v3"
-	"github.com/hashicorp/go-multierror"
+	gopi "github.com/djthorpe/gopi/v3"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

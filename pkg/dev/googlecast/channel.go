@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/djthorpe/gopi/v3"
+	gopi "github.com/djthorpe/gopi/v3"
 	pb "github.com/djthorpe/gopi/v3/pkg/rpc/castchannel"
 	proto "github.com/golang/protobuf/proto"
 )

@@ -3,7 +3,7 @@ package googlecast
 import (
 	"fmt"
 
-	"github.com/djthorpe/gopi/v3"
+	gopi "github.com/djthorpe/gopi/v3"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
