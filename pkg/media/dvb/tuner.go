@@ -3,6 +3,9 @@
 package dvb
 
 import (
+	"fmt"
+	"os"
+
 	dvb "github.com/djthorpe/gopi/v3/pkg/sys/dvb"
 )
 
@@ -31,4 +34,17 @@ func (this *Tuner) Id() uint {
 
 func (this *Tuner) Name() string {
 	return "TODO"
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS
+
+func (this *Tuner) OpenFrontend() (*os.File, error) {
+	return this.Device.FEOpen()
+}
+
+func (this *Tuner) Validate(*Params) error {
+	fmt.Println("TODO: Validate")
+	// TODO
+	return nil
 }

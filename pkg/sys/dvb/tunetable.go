@@ -105,7 +105,11 @@ func ReadTuneParamsTable(r io.Reader) ([]*TuneParams, error) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// SET PROPERTIES
+// PROPERTIES
+
+func (this *TuneParams) Name() string {
+	return this.name
+}
 
 func (this *TuneParams) SetDeliverySystem(value FEDeliverySystem) {
 	this.DeliverySystem = value

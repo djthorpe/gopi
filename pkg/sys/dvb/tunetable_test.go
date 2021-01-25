@@ -22,7 +22,7 @@ var (
 		"/usr/share/dvb/dvb-t",
 	}
 )
- 
+
 func Test_Tunetable_000(t *testing.T) {
 	for _, file := range FILES {
 		if _, err := os.Stat(file); os.IsNotExist(err) {

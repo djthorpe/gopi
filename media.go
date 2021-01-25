@@ -3,6 +3,7 @@ package gopi
 import (
 	"context"
 	"image"
+	"io"
 	"net/url"
 	"strings"
 )
@@ -141,9 +142,22 @@ type AudioContext interface {
 ////////////////////////////////////////////////////////////////////////////////
 // DVB INTERFACES
 
+// DVBManager encapsulates methods for DVB reception
 type DVBManager interface {
-	// Return all tuners
+	// Tuners returns all tuners
 	Tuners() []DVBTuner
+
+	// ParseTunerParams returns a list of tuner parameters
+	ParseTunerParams(r io.Reader) ([]DVBTunerParams, error)
+
+	// Tune to parameters with timeout
+	Tune(context.Context, DVBTuner, DVBTunerParams) error
+}
+
+// DVBTunerParams represents tune parameters
+type DVBTunerParams interface {
+	// Name returns name for tune parameters
+	Name() string
 }
 
 type DVBTuner interface {
