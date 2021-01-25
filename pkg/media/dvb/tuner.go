@@ -1,0 +1,34 @@
+// +build dvb
+
+package dvb
+
+import (
+	dvb "github.com/djthorpe/gopi/v3/pkg/sys/dvb"
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
+type Tuner struct {
+	dvb.Device
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// LIFECYCLE
+
+func NewTuner(d dvb.Device) *Tuner {
+	this := new(Tuner)
+	this.Device = d
+	return this
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PROPERTIES
+
+func (this *Tuner) Id() uint {
+	return this.Device.Adapter
+}
+
+func (this *Tuner) Name() string {
+	return "TODO"
+}

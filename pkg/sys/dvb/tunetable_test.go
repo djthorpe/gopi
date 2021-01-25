@@ -14,15 +14,15 @@ import (
 
 var (
 	FILES = []string{
-		"/usr/share/dvb/dvb-t/de-Berlin",
 		"/usr/share/dvb/dvb-c/de-Berlin",
+		"/usr/share/dvb/dvb-t/de-Berlin",
 	}
 	FOLDERS = []string{
-		"/usr/share/dvb/dvb-t",
 		"/usr/share/dvb/dvb-c",
+		"/usr/share/dvb/dvb-t",
 	}
 )
-
+ 
 func Test_Tunetable_000(t *testing.T) {
 	for _, file := range FILES {
 		if _, err := os.Stat(file); os.IsNotExist(err) {

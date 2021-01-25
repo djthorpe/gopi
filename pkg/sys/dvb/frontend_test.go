@@ -3,7 +3,6 @@
 package dvb_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -115,9 +114,9 @@ func Test_Frontend_004(t *testing.T) {
 		defer dev.Close()
 		t.Log("Tuning for", params[0])
 		if err := dvb.FETune(dev.Fd(), params[0]); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
-		ticker := time.NewTicker(time.Millisecond * 500)
+		ticker := time.NewTicker(time.Millisecond * 100)
 		timer := time.NewTimer(5 * time.Second)
 		defer ticker.Stop()
 		defer timer.Stop()
@@ -131,10 +130,10 @@ func Test_Frontend_004(t *testing.T) {
 				if status, err := dvb.FEReadStatus(dev.Fd()); err != nil {
 					t.Fatal(err)
 				} else if status != dvb.FE_NONE {
-					fmt.Print("  status=", status)
+					t.Log("  status=", status)
 					if status&dvb.FE_HAS_LOCK == dvb.FE_HAS_LOCK {
 						break FOR_LOOP
-					}
+					} 
 				}
 			}
 		}

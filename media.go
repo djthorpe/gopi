@@ -12,7 +12,7 @@ import (
 
 	* Video and Audio decoding
 	* Input and output media devices
-
+	* DVB tuning and decoding
 */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -136,6 +136,22 @@ type AudioManager interface {
 type AudioContext interface {
 	// Write data to audio output device
 	Write(MediaFrame) error
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// DVB INTERFACES
+
+type DVBManager interface {
+	// Return all tuners
+	Tuners() []DVBTuner
+}
+
+type DVBTuner interface {
+	// Return tuner identifier
+	Id() uint
+
+	// Return tuner name
+	Name() string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
