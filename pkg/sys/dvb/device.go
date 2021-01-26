@@ -83,12 +83,12 @@ func (d Device) Path(unit string, m uint) string {
 }
 
 // Open frontend, return file
-func (d Device) FEOpen() (*os.File, error) {
+func (d Device) FEOpen(mode int) (*os.File, error) {
 	if len(d.Frontend) == 0 {
 		return nil, gopi.ErrNotFound
 	} else if path := d.Path("frontend", d.Frontend[0]); path == "" {
 		return nil, gopi.ErrNotFound
-	} else if fh, err := os.OpenFile(path, os.O_SYNC|os.O_RDWR, 0); err != nil {
+	} else if fh, err := os.OpenFile(path, mode, 0); err != nil {
 		return nil, err
 	} else {
 		return fh, nil
@@ -101,7 +101,7 @@ func (d Device) DMXOpen() (*os.File, error) {
 		return nil, gopi.ErrNotFound
 	} else if path := d.Path("demux", d.Demux[0]); path == "" {
 		return nil, gopi.ErrNotFound
-	} else if fh, err := os.OpenFile(path, os.O_SYNC|os.O_RDWR, 0); err != nil {
+	} else if fh, err := os.OpenFile(path, os.O_RDWR, 0); err != nil {
 		return nil, err
 	} else {
 		return fh, nil

@@ -3,6 +3,7 @@
 package dvb_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/djthorpe/gopi/v3/pkg/sys/dvb"
@@ -24,7 +25,7 @@ func Test_Device_001(t *testing.T) {
 		t.Skip("Skipping test, no devices available")
 	}
 	for _, device := range devices {
-		file, err := device.FEOpen()
+		file, err := device.FEOpen(os.O_RDONLY)
 		if err != nil {
 			t.Error(err)
 		}

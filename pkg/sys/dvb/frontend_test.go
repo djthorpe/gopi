@@ -16,7 +16,7 @@ func Test_Frontend_000(t *testing.T) {
 		t.Skip("Skipping test, no devices available")
 	}
 	for _, device := range devices {
-		file, err := device.FEOpen()
+		file, err := device.FEOpen(os.O_RDONLY)
 		if err != nil {
 			t.Error(err)
 		}
@@ -36,7 +36,7 @@ func Test_Frontend_001(t *testing.T) {
 		t.Skip("Skipping test, no devices available")
 	}
 	for _, device := range devices {
-		file, err := device.FEOpen()
+		file, err := device.FEOpen(os.O_RDONLY)
 		if err != nil {
 			t.Error(err)
 		}
@@ -55,7 +55,7 @@ func Test_Frontend_002(t *testing.T) {
 		t.Skip("Skipping test, no devices available")
 	}
 	for _, device := range devices {
-		file, err := device.FEOpen()
+		file, err := device.FEOpen(os.O_RDONLY)
 		if err != nil {
 			t.Error(err)
 		}
@@ -83,7 +83,7 @@ func Test_Frontend_003(t *testing.T) {
 		t.Fatal(err)
 	} else if len(params) == 0 {
 		t.Fatal("No tune parameters in", FILES[0])
-	} else if dev, err := devices[0].FEOpen(); err != nil {
+	} else if dev, err := devices[0].FEOpen(os.O_RDWR); err != nil {
 		t.Fatal(err)
 	} else {
 		defer dev.Close()
@@ -108,7 +108,7 @@ func Test_Frontend_004(t *testing.T) {
 		t.Fatal(err)
 	} else if len(params) == 0 {
 		t.Fatal("No tune parameters in", FILES[0])
-	} else if dev, err := devices[0].FEOpen(); err != nil {
+	} else if dev, err := devices[0].FEOpen(os.O_RDWR); err != nil {
 		t.Fatal(err)
 	} else {
 		defer dev.Close()
@@ -133,7 +133,7 @@ func Test_Frontend_004(t *testing.T) {
 					t.Log("  status=", status)
 					if status&dvb.FE_HAS_LOCK == dvb.FE_HAS_LOCK {
 						break FOR_LOOP
-					} 
+					}
 				}
 			}
 		}

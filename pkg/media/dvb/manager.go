@@ -24,6 +24,7 @@ type Manager struct {
 	sync.RWMutex
 
 	frontend map[uint]*os.File
+	demux    map[uint]*os.File
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,8 +33,9 @@ type Manager struct {
 func (this *Manager) New(gopi.Config) error {
 	this.Require(this.Logger)
 
-	// Set up frontend map
+	// Set up file descriptor maps
 	this.frontend = make(map[uint]*os.File)
+	this.demux = make(map[uint]*os.File)
 
 	// Return success
 	return nil
@@ -44,6 +46,13 @@ func (this *Manager) Dispose() error {
 	defer this.RWMutex.Unlock()
 
 	var result error
+
+	// Close file descriptors
+	for _, fh := range this.demux {
+		if err := fh.Close(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
 	for _, fh := range this.frontend {
 		if err := fh.Close(); err != nil {
 			result = multierror.Append(result, err)
@@ -51,6 +60,7 @@ func (this *Manager) Dispose() error {
 	}
 
 	// Release resources
+	this.demux = nil
 	this.frontend = nil
 
 	// Return any errors
@@ -66,7 +76,11 @@ func (this *Manager) Tuners() []gopi.DVBTuner {
 
 	tuners := []gopi.DVBTuner{}
 	for _, device := range dvb.Devices() {
-		tuners = append(tuners, NewTuner(device))
+		if tuner, err := NewTuner(device); err != nil {
+			this.Debug("Tuners:", err)
+		} else {
+			tuners = append(tuners, tuner)
+		}
 	}
 	return tuners
 }
@@ -165,6 +179,26 @@ func (this *Manager) getFrontend(tuner *Tuner) (uintptr, error) {
 	}
 }
 
+// getDemux returns file descriptor for demux
+func (this *Manager) getDemux(tuner *Tuner) (uintptr, error) {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if tuner == nil {
+		return 0, gopi.ErrBadParameter.WithPrefix("GetDemux")
+	}
+
+	key := tuner.Id()
+	if fh, exists := this.demux[key]; exists {
+		return fh.Fd(), nil
+	} else if fh, err := tuner.OpenDemux(); err != nil {
+		return 0, err
+	} else {
+		this.demux[key] = fh
+		return fh.Fd(), nil
+	}
+}
+
 // disposeFrontend closes file descriptor for frontend
 func (this *Manager) disposeFrontend(tuner *Tuner) error {
 	this.RWMutex.Lock()
@@ -180,6 +214,29 @@ func (this *Manager) disposeFrontend(tuner *Tuner) error {
 		return gopi.ErrNotFound
 	}
 	defer delete(this.frontend, key)
+	if err := fh.Close(); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
+}
+
+// disposeDemux closes file descriptor for demux
+func (this *Manager) disposeDemux(tuner *Tuner) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if tuner == nil {
+		return gopi.ErrBadParameter.WithPrefix("DisposeDemux")
+	}
+
+	key := tuner.Id()
+	fh, exists := this.demux[key]
+	if exists == false {
+		return gopi.ErrNotFound
+	}
+	defer delete(this.demux, key)
 	if err := fh.Close(); err != nil {
 		return err
 	}

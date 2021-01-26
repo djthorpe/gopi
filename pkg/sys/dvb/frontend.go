@@ -468,7 +468,7 @@ func (i FEInfo) Caps() FECaps {
 // STRINGIFY
 
 func (i FEInfo) String() string {
-	str := "<dvb.feinfo"
+	str := "<dvb.fe.info"
 	str += " name=" + strconv.Quote(i.Name())
 	str += " caps=" + fmt.Sprint(i.Caps())
 	str += " frequency=" + fmt.Sprintf("{ %v,%v }", i.FrequencyMin(), i.FrequencyMax())
