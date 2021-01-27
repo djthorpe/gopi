@@ -150,11 +150,22 @@ type DVBManager interface {
 	// ParseTunerParams returns a list of tuner parameters
 	ParseTunerParams(r io.Reader) ([]DVBTunerParams, error)
 
-	// Tune to parameters with timeout
-	Tune(context.Context, DVBTuner, DVBTunerParams) error
+	// Tune to parameters with context, which can be used to cancel
+	// or timeout the tuning process
+	Tune(context.Context, DVBTuner, DVBTunerParams, DVBTuneCallack) error
 
-	// Temporary methods
-	ScanNIT(DVBTuner) error
+	// Close tuner
+	Close(DVBTuner) error
+}
+
+// DVBTunerCallack is called when tuning has completed, so that set-up
+// can begin. Any error return will close down the tuner
+type DVBTuneCallack func(DVBContext) error
+
+// DVBTuneContext represents information obtained during the tuning
+// process
+type DVBContext interface {
+	//	Services() []DVBService
 }
 
 // DVBTunerParams represents tune parameters
@@ -163,12 +174,20 @@ type DVBTunerParams interface {
 	Name() string
 }
 
+// DVBTuner represents a tuning device, some hardware
+// comtains more than one tuner. Each is represented by
+// a unique identifier
 type DVBTuner interface {
 	// Return tuner identifier
 	Id() uint
 
 	// Return tuner name
 	Name() string
+}
+
+// DVBService represents a service that can be received
+type DVBService interface {
+	Id() uint16
 }
 
 ////////////////////////////////////////////////////////////////////////////////

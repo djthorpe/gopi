@@ -10,7 +10,7 @@ import (
 // TYPES
 
 type Header struct {
-	NetworkId   uint16
+	Id          uint16
 	Version     uint8
 	Section     uint8
 	LastSection uint8
@@ -19,28 +19,27 @@ type Header struct {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func NewHeader(r io.Reader) (*Header, error) {
-	this := new(Header)
-
-	if err := binary.Read(r, binary.LittleEndian, this); err != nil {
-		return nil, err
+func (h *Header) Read(r io.Reader) error {
+	if err := binary.Read(r, binary.BigEndian, h); err != nil {
+		return err
 	} else {
 		// TODO: Current
 		//Current = this.Version&0x01 != 0x00
-		this.Version = (this.Version >> 1) & 0x1F
+		h.Version = (h.Version >> 1) & 0x1F
 	}
 
-	return this, nil
+	// Return success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *Header) String() string {
+func (h Header) String() string {
 	str := "<header"
-	str += fmt.Sprintf(" network_id=0x%04X", this.NetworkId)
-	str += fmt.Sprintf(" version=0x%02X", this.Version)
-	str += fmt.Sprintf(" section=0x%02X", this.Section)
-	str += fmt.Sprintf(" last_section=0x%02X", this.LastSection)
+	str += fmt.Sprintf(" id=0x%04X", h.Id)
+	str += fmt.Sprintf(" version=0x%02X", h.Version)
+	str += fmt.Sprintf(" section=0x%02X", h.Section)
+	str += fmt.Sprintf(" last_section=0x%02X", h.LastSection)
 	return str + ">"
 }

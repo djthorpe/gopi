@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/djthorpe/gopi/v3"
 )
 
 // Ref: https://www.etsi.org/deliver/etsi_ts/101200_101299/101211/01.11.01_60/ts_101211v011101p.pdf
@@ -22,7 +24,10 @@ type SectionHeader struct {
 
 type Section struct {
 	SectionHeader
-	*NITSection
+	PATSection
+	PMTSection
+	NITSection
+	crc uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,33 +47,50 @@ const (
 	TDT       TableType = 0x70
 )
 
+const (
+	SECTION_BUFFER_SIZE = 4096
+)
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func NewSection(r io.Reader) (*Section, error) {
+func NewSection(r io.Reader, data []byte) (*Section, error) {
 	this := new(Section)
 
 	// Read table type and length
-	if err := binary.Read(r, binary.LittleEndian, &this.SectionHeader); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &this.SectionHeader); err != nil {
 		return nil, err
 	} else {
-		this.Length = this.Length & 0x0FFF
+		this.Length &= 0x0FFF
 	}
 
-	// Read buffer of data
-	data := make([]byte, this.Length)
-	if _, err := r.Read(data); err != nil {
+	// Read buffer
+	if n, err := r.Read(data); err != nil {
 		return nil, err
+	} else if n != int(this.Length) {
+		return nil, gopi.ErrUnexpectedResponse.WithPrefix("NewSection")
 	}
 
-	// Parse data
+	// Read section data
+	r2 := bytes.NewReader(data)
 	switch this.TableId {
-	case NIT, NIT_OTHER:
-		if nit, err := NewNITSection(bytes.NewReader(data)); err != nil {
+	case PAT:
+		if err := this.PATSection.Read(r2, int(this.Length)-4); err != nil {
 			return nil, err
-		} else {
-			this.NITSection = nit
 		}
+	case PMT:
+		if err := this.PMTSection.Read(r2, int(this.Length)-4); err != nil {
+			return nil, err
+		}
+	case NIT, NIT_OTHER:
+		if err := this.NITSection.Read(r2, int(this.Length)-4); err != nil {
+			return nil, err
+		}
+	}
+
+	// Read CRC
+	if err := binary.Read(r2, binary.BigEndian, &this.crc); err != nil {
+		return nil, err
 	}
 
 	// Success
@@ -82,6 +104,10 @@ func (this *Section) String() string {
 	str := "<dvb.section"
 	str += " table_id=" + fmt.Sprint(this.TableId)
 	switch this.TableId {
+	case PAT:
+		str += " " + fmt.Sprint(this.PATSection)
+	case PMT:
+		str += " " + fmt.Sprint(this.PMTSection)
 	case NIT, NIT_OTHER:
 		str += " " + fmt.Sprint(this.NITSection)
 	default:

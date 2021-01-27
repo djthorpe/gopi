@@ -9,35 +9,34 @@ import (
 // TYPES
 
 type NITSection struct {
-	*Header
-	*Table
+	Header
+	DTable
+	STable
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func NewNITSection(r io.Reader) (*NITSection, error) {
-	this := new(NITSection)
-
-	if header, err := NewHeader(r); err != nil {
-		return nil, err
-	} else if rows, err := NewTable(r); err != nil {
-		return nil, err
-	} else {
-		this.Header = header
-		this.Table = rows
+func (n *NITSection) Read(r io.Reader, length int) error {
+	if err := n.Header.Read(r); err != nil {
+		return err
+	} else if err := n.DTable.Read(r); err != nil {
+		return err
+	} else if err := n.STable.Read(r); err != nil {
+		return err
 	}
 
 	// Return success
-	return this, nil
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
-func (this *NITSection) String() string {
+func (n NITSection) String() string {
 	str := "<nit"
-	str += fmt.Sprint(" ", this.Header)
-	str += fmt.Sprint(" ", this.Table)
+	str += fmt.Sprint(" ", n.Header)
+	str += fmt.Sprint(" ", n.DTable)
+	str += fmt.Sprint(" ", n.STable)
 	return str + ">"
 }

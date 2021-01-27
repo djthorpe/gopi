@@ -19,7 +19,8 @@ import (
 
 type Filter struct {
 	sync.RWMutex
-	dev *os.File
+	dev  *os.File
+	data []byte
 }
 
 type SectionFilter struct {
@@ -35,14 +36,11 @@ type StreamFilter struct {
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewSectionFilter(tuner *Tuner, pid uint16, tids ...ts.TableType) (*SectionFilter, error) {
+func NewSectionFilter(tuner *Tuner, pid uint16, tid ts.TableType, flags dvb.DMXFlag) (*SectionFilter, error) {
 	this := new(SectionFilter)
 
 	// Check incoming parameters
 	if tuner == nil {
-		return nil, gopi.ErrBadParameter.WithPrefix("NewSectionFilter")
-	}
-	if len(tids) == 0 {
 		return nil, gopi.ErrBadParameter.WithPrefix("NewSectionFilter")
 	}
 
@@ -54,16 +52,19 @@ func NewSectionFilter(tuner *Tuner, pid uint16, tids ...ts.TableType) (*SectionF
 	}
 
 	// Create filter with 0ms timeout (no timeout)
-	this.DMXSectionFilter = dvb.NewSectionFilter(pid, 0, dvb.DMX_NONE)
-	for i, tid := range tids {
-		this.DMXSectionFilter.Set(i, uint8(tid), 0xFF, 0x00)
-	}
+	this.DMXSectionFilter = dvb.NewSectionFilter(pid, 0, flags)
+
+	// Zero'th byte of section should match the TID
+	this.DMXSectionFilter.Set(0, uint8(tid), 0xFF, 0x00)
 
 	// Set filter
 	if err := dvb.DMXSetSectionFilter(this.dev.Fd(), this.DMXSectionFilter); err != nil {
 		this.dev.Close()
 		return nil, err
 	}
+
+	// Allocate buffer for read
+	this.data = make([]byte, ts.SECTION_BUFFER_SIZE)
 
 	// Return success
 	return this, nil
@@ -110,6 +111,7 @@ func (this *Filter) Dispose() error {
 
 	// Release resources
 	this.dev = nil
+	this.data = nil
 
 	// Return success
 	return result
@@ -204,6 +206,19 @@ func (this *Filter) RemovePid(pid uint16) error {
 	}
 
 	return dvb.DMXRemovePid(this.dev.Fd(), pid)
+}
+
+func (this *Filter) Read() (*ts.Section, error) {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	// Check state
+	if this.dev == nil {
+		return nil, gopi.ErrOutOfOrder.WithPrefix("Read")
+	}
+
+	// Read section data into buffer and return file handle
+	return ts.NewSection(this.dev, this.data)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

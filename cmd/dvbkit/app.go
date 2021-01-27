@@ -68,23 +68,30 @@ func (this *app) Run(ctx context.Context) error {
 
 	// Tune all channels
 	for _, param := range this.params {
+		if ctx.Err() != nil {
+			break
+		}
+
 		fmt.Println("Tune:", this.DVBTuner, param.Name())
 		tunectx, cancel := context.WithTimeout(ctx, *this.timeout)
 		defer cancel()
 
-		if err := this.Tune(tunectx, this.DVBTuner, param); err != nil {
+		if err := this.Tune(tunectx, this.DVBTuner, param, this.Tuned); err != nil {
 			fmt.Println("  Error:", err)
-		} else if tunectx.Err() == nil {
-			fmt.Println("  SCAN")
-			this.ScanNIT(this.DVBTuner)
+		} else {
+			// Wait until tuning timeout
 			<-tunectx.Done()
-
 		}
 	}
 
 	// Wait for interrupt
-	fmt.Println("Press CTRL+C to end")
-	<-ctx.Done()
+	//fmt.Println("Press CTRL+C to end")
+	//<-ctx.Done()
 
 	return ctx.Err()
+}
+
+func (this *app) Tuned(ctx gopi.DVBContext) error {
+	fmt.Println("Tuned=", ctx)
+	return nil
 }
