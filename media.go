@@ -152,6 +152,9 @@ type DVBManager interface {
 
 	// Tune to parameters with timeout
 	Tune(context.Context, DVBTuner, DVBTunerParams) error
+
+	// Temporary methods
+	ScanNIT(DVBTuner) error
 }
 
 // DVBTunerParams represents tune parameters

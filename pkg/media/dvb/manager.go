@@ -11,8 +11,9 @@ import (
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
+	ts "github.com/djthorpe/gopi/v3/pkg/media/internal/ts"
 	dvb "github.com/djthorpe/gopi/v3/pkg/sys/dvb"
-	"github.com/hashicorp/go-multierror"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -21,31 +22,55 @@ import (
 type Manager struct {
 	gopi.Unit
 	gopi.Logger
+	gopi.FilePoll
 	sync.RWMutex
 
 	frontend map[uint]*os.File
 	demux    map[uint]*os.File
+	section  map[uint][]*SectionFilter
+	stream   map[uint][]*StreamFilter
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
 func (this *Manager) New(gopi.Config) error {
-	this.Require(this.Logger)
+	this.Require(this.Logger, this.FilePoll)
 
 	// Set up file descriptor maps
 	this.frontend = make(map[uint]*os.File)
 	this.demux = make(map[uint]*os.File)
+
+	// Set up filter maps
+	this.section = make(map[uint][]*SectionFilter)
+	this.stream = make(map[uint][]*StreamFilter)
 
 	// Return success
 	return nil
 }
 
 func (this *Manager) Dispose() error {
+	var result error
+
+	// Close filters
+	for key, filters := range this.section {
+		for _, filter := range filters {
+			if err := this.StopSectionFilter(key, filter); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}
+	for key, filters := range this.stream {
+		for _, filter := range filters {
+			if err := this.StopStreamFilter(key, filter); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}
+
+	// Lock for exclusive access
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
-
-	var result error
 
 	// Close file descriptors
 	for _, fh := range this.demux {
@@ -62,6 +87,8 @@ func (this *Manager) Dispose() error {
 	// Release resources
 	this.demux = nil
 	this.frontend = nil
+	this.section = nil
+	this.stream = nil
 
 	// Return any errors
 	return result
@@ -109,6 +136,8 @@ func (this *Manager) Tune(ctx context.Context, tuner gopi.DVBTuner, params gopi.
 		return err
 	} else if err := tuner_.Validate(params_); err != nil {
 		return err
+	} else if err := this.StopFilters(tuner_); err != nil {
+		return err
 	} else if err := dvb.FETune(fd, params_.TuneParams); err != nil {
 		return err
 	}
@@ -132,17 +161,142 @@ func (this *Manager) Tune(ctx context.Context, tuner gopi.DVBTuner, params gopi.
 			}
 			switch {
 			case status&dvb.FE_HAS_LOCK == dvb.FE_HAS_LOCK:
+				this.Debug("  ", status)
 				return nil
 			case status == dvb.FE_NONE:
 				// Do nothing, no tune status
 			default:
-				this.Debug("  status=", status)
+				this.Debug("  ", status)
 			}
 		}
 	}
 
 	// Return success
 	return nil
+}
+
+// StartSectionFilter starts scanning for specific pid & tid
+func (this *Manager) StartSectionFilter(tuner *Tuner, pid uint16, tids ...ts.TableType) (*SectionFilter, error) {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	// Create filter
+	filter, err := NewSectionFilter(tuner, pid, tids...)
+	if err != nil {
+		return nil, err
+	}
+	this.Debug("StartSectionFilter", filter)
+
+	// Watch for read
+	if err := this.FilePoll.Watch(filter.Fd(), gopi.FILEPOLL_FLAG_READ, func(uintptr, gopi.FilePollFlags) {
+		// Parse data
+		if section, err := ts.NewSection(filter.dev); err != nil {
+			this.Print("ERROR:", err)
+		} else {
+			this.Print(section)
+		}
+	}); err != nil {
+		filter.Dispose()
+		return nil, err
+	}
+
+	// Start filtering
+	if err := filter.Start(); err != nil {
+		this.FilePoll.Unwatch(filter.Fd())
+		filter.Dispose()
+		return nil, err
+	} else {
+		key := tuner.Id()
+		this.section[key] = append(this.section[key], filter)
+	}
+
+	// Return success
+	return filter, nil
+}
+
+// StopFilters stops all filters for a tuner
+func (this *Manager) StopFilters(tuner *Tuner) error {
+	// Check parameters
+	if tuner == nil {
+		return gopi.ErrBadParameter.WithPrefix("StopFilters")
+	}
+
+	// Tuner key
+	key := tuner.Id()
+
+	// Sensitive section - get filters
+	this.RWMutex.RLock()
+	sections, _ := this.section[key]
+	streams, _ := this.stream[key]
+	this.RWMutex.RUnlock()
+
+	// Stop filters
+	var result error
+	for _, filter := range sections {
+		if err := this.StopSectionFilter(key, filter); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+	for _, filter := range streams {
+		if err := this.StopStreamFilter(key, filter); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	// Return any errors
+	return result
+}
+
+// StopSectionFilter stops section filter
+func (this *Manager) StopSectionFilter(key uint, filter *SectionFilter) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	// Check parameters
+	if filter == nil {
+		return gopi.ErrBadParameter.WithPrefix("StopSectionFilter")
+	}
+	if _, exists := this.section[key]; exists == false {
+		return gopi.ErrBadParameter.WithPrefix("StopSectionFilter")
+	}
+
+	// Remove from list of filters
+	this.section[key] = removeSectionFilter(this.section[key], filter)
+
+	// Debug
+	this.Debug("StopSectionFilter", filter)
+
+	var result error
+	// Unwatch
+	if err := this.FilePoll.Unwatch(filter.Fd()); err != nil {
+		result = multierror.Append(result, err)
+	}
+	// Stop filtering
+	if err := filter.Stop(); err != nil {
+		result = multierror.Append(result, err)
+	}
+	// Dispose filter
+	if err := filter.Dispose(); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	return result
+}
+
+// StopStreamFilter stops stream filter
+func (this *Manager) StopStreamFilter(key uint, filter *StreamFilter) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+	return gopi.ErrNotImplemented
+}
+
+// ScanNIT looks for a NIT table section
+func (this *Manager) ScanNIT(tuner gopi.DVBTuner) error {
+	if _, err := this.StartSectionFilter(tuner.(*Tuner), uint16(0x10), ts.NIT); err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,6 +312,17 @@ func (this *Manager) String() string {
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
+
+// removeSectionFilter
+func removeSectionFilter(arr []*SectionFilter, filter *SectionFilter) []*SectionFilter {
+	for i, elem := range arr {
+		if elem == filter {
+			return append(arr[:i], arr[i+1:]...)
+		}
+	}
+	// Filter not in array
+	return arr
+}
 
 // getFrontend returns file descriptor for frontend
 func (this *Manager) getFrontend(tuner *Tuner) (uintptr, error) {

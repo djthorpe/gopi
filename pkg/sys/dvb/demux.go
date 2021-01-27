@@ -103,6 +103,7 @@ var (
 // PUBLIC METHODS
 
 func DMXStart(fd uintptr) error {
+	fmt.Println("DMXStart", fd)
 	if err := dvb_ioctl(fd, DMX_START, unsafe.Pointer(nil)); err != 0 {
 		return os.NewSyscallError("DMX_START", err)
 	} else {
@@ -111,6 +112,7 @@ func DMXStart(fd uintptr) error {
 }
 
 func DMXStop(fd uintptr) error {
+	fmt.Println("DMXStop", fd)
 	if err := dvb_ioctl(fd, DMX_STOP, unsafe.Pointer(nil)); err != 0 {
 		return os.NewSyscallError("DMX_STOP", err)
 	} else {
@@ -126,16 +128,17 @@ func DMXSetBufferSize(fd uintptr, size uint32) error {
 	}
 }
 
-func DMXSetSectionFilter(fd uintptr, filter DMXSectionFilter) error {
-	if err := dvb_ioctl(fd, DMX_SET_FILTER, unsafe.Pointer(&filter)); err != 0 {
+func DMXSetSectionFilter(fd uintptr, filter *DMXSectionFilter) error {
+	fmt.Println("DMXSetSectionFilter", fd, filter)
+	if err := dvb_ioctl(fd, DMX_SET_FILTER, unsafe.Pointer(filter)); err != 0 {
 		return os.NewSyscallError("DMX_SET_FILTER", err)
 	} else {
 		return nil
 	}
 }
 
-func DMXSetStreamFilter(fd uintptr, filter DMXStreamFilter) error {
-	if err := dvb_ioctl(fd, DMX_SET_PES_FILTER, unsafe.Pointer(&filter)); err != 0 {
+func DMXSetStreamFilter(fd uintptr, filter *DMXStreamFilter) error {
+	if err := dvb_ioctl(fd, DMX_SET_PES_FILTER, unsafe.Pointer(filter)); err != 0 {
 		return os.NewSyscallError("DMX_SET_PES_FILTER", err)
 	} else {
 		return nil
@@ -176,8 +179,8 @@ func DMXGetStreamPids(fd uintptr) (map[DMXStreamType]uint16, error) {
 ////////////////////////////////////////////////////////////////////////////////
 // DMXSectionFilter
 
-func NewSectionFilter(pid uint16, timeout uint32, flags DMXFlags) DMXSectionFilter {
-	filter := DMXSectionFilter{
+func NewSectionFilter(pid uint16, timeout uint32, flags DMXFlags) *DMXSectionFilter {
+	filter := &DMXSectionFilter{
 		pid:     C.__u16(pid),
 		filter:  C.struct_dmx_filter{},
 		timeout: C.__u32(timeout),
@@ -186,7 +189,13 @@ func NewSectionFilter(pid uint16, timeout uint32, flags DMXFlags) DMXSectionFilt
 	return filter
 }
 
-func (f DMXSectionFilter) String() string {
+func (f *DMXSectionFilter) Set(i int, tid, mask, mode uint8) {
+	f.filter.filter[i] = C.__u8(tid)
+	f.filter.mask[i] = C.__u8(mask)
+	f.filter.mode[i] = C.__u8(mode)
+}
+
+func (f *DMXSectionFilter) String() string {
 	str := "<dvb.dmx.sectionfilter"
 	str += fmt.Sprintf(" pid=0x%04X", f.pid)
 	str += fmt.Sprint(" filter=", f.filter)
@@ -202,8 +211,8 @@ func (f DMXSectionFilter) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // DMXStreamFilter
 
-func NewStreamFilter(pid uint16, in DMXInput, out DMXOutput, stream DMXStreamType, flags DMXFlags) DMXStreamFilter {
-	filter := DMXStreamFilter{
+func NewStreamFilter(pid uint16, in DMXInput, out DMXOutput, stream DMXStreamType, flags DMXFlags) *DMXStreamFilter {
+	filter := &DMXStreamFilter{
 		pid:      C.__u16(pid),
 		input:    C.enum_dmx_input(in),
 		output:   C.enum_dmx_output(out),
@@ -213,7 +222,7 @@ func NewStreamFilter(pid uint16, in DMXInput, out DMXOutput, stream DMXStreamTyp
 	return filter
 }
 
-func (f DMXStreamFilter) String() string {
+func (f *DMXStreamFilter) String() string {
 	str := "<dvb.dmx.streamfilter"
 	str += fmt.Sprintf(" pid=0x%04X", f.pid)
 	str += fmt.Sprint(" in=", DMXInput(f.input))

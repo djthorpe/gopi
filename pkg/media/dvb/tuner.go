@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/djthorpe/gopi/v3"
+	gopi "github.com/djthorpe/gopi/v3"
 	dvb "github.com/djthorpe/gopi/v3/pkg/sys/dvb"
 )
 

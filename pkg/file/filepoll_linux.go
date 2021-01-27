@@ -178,8 +178,6 @@ func (this *filepoll) call(fd uintptr, flags gopi.FilePollFlags) {
 		}
 	} else if handler, exists := this.funcs[fd]; exists {
 		handler(fd, flags)
-	} else {
-		this.Print("Filepoll: Unable to handle fd=", fd, " flags=", flags)
 	}
 }
 

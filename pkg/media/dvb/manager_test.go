@@ -3,6 +3,8 @@
 package dvb_test
 
 import (
+	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -10,7 +12,6 @@ import (
 	gopi "github.com/djthorpe/gopi/v3"
 	_ "github.com/djthorpe/gopi/v3/pkg/media/dvb"
 	tool "github.com/djthorpe/gopi/v3/pkg/tool"
-	"golang.org/x/net/context"
 )
 
 type ManagerApp struct {
@@ -72,7 +73,9 @@ func Test_Manager_003(t *testing.T) {
 			t.Log("Tuning", param.Name())
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 			defer cancel()
-			if err := app.DVBManager.Tune(ctx, devices[0], param); err != nil {
+			if err := app.DVBManager.Tune(ctx, devices[0], param); errors.Is(err, context.DeadlineExceeded) {
+				t.Log("  Tune Timeout")
+			} else if err != nil {
 				t.Error(err)
 			} else {
 				t.Log("  Tune OK")

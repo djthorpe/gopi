@@ -84,6 +84,11 @@ ifneq ($strip $(FT)),)
 	$(eval TAGS += ffmpeg)
 endif
 
+# DVB bindings
+dvb:
+	@echo "Targetting dvb"
+	$(eval TAGS += dvb)
+
 # Chromaprint bindings
 chromaprint: darwin
 	$(eval FT = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion libchromaprint))
@@ -190,6 +195,9 @@ googlecast: builddir protogen
 # In testing
 mediakit: builddir ffmpeg chromaprint
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit
+
+dvbkit: builddir dvb
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/dvbkit -tags "$(TAGS)" ${GOFLAGS} ./cmd/dvbkit
 
 gx: builddir rpi egl drm gbm
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/gx -tags "$(TAGS)" ${GOFLAGS} ./cmd/gx
