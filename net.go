@@ -48,7 +48,7 @@ type Server interface {
 	// Returns information about the server
 	Flags() ServiceFlag
 
-	// Service returns _http._net or _grpc._net or empty if networking
+	// Service returns _http._tcp or _grpc._tcp or empty if networking
 	// is file socket based
 	Service() string
 

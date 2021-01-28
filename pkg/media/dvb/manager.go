@@ -32,6 +32,14 @@ type Manager struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// CONSTANTS
+
+const (
+	// deltaStats defines interval that frontend measurements are taken
+	deltaStats = 4 * time.Second
+)
+
+////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
 func (this *Manager) New(gopi.Config) error {
@@ -92,6 +100,23 @@ func (this *Manager) Dispose() error {
 
 	// Return any errors
 	return result
+}
+
+func (this *Manager) Run(ctx context.Context) error {
+	stats := time.NewTimer(time.Second)
+	defer stats.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-stats.C:
+			if err := this.emitStats(); err != nil {
+				this.Print("GetStats:", err)
+			}
+			stats.Reset(deltaStats)
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -368,6 +393,31 @@ func removeSectionFilter(arr []*SectionFilter, filter *SectionFilter) []*Section
 	}
 	// Filter not in array
 	return arr
+}
+
+// emitStats
+func (this *Manager) emitStats() error {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	var result error
+	for id, fh := range this.frontend {
+		if status, err := dvb.FEReadStatus(fh.Fd()); err != nil {
+			result = multierror.Append(result, err)
+		} else if status == dvb.FE_NONE {
+			continue
+		} else {
+			this.Print(id, "->", status)
+			if stats, err := dvb.FEGetPropStats(fh.Fd(), dvb.DTV_STAT_SIGNAL_STRENGTH, dvb.DTV_STAT_CNR); err != nil {
+				result = multierror.Append(result, err)
+			} else {
+				this.Print(id, "->", stats)
+			}
+		}
+	}
+
+	// Return any errors
+	return result
 }
 
 // getFrontend returns file descriptor for frontend
