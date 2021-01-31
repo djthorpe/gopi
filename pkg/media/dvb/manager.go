@@ -148,16 +148,18 @@ func (this *Manager) Tune(ctx context.Context, tuner gopi.DVBTuner, params gopi.
 	} else if err := this.StartSectionFilter(filter, func(section *ts.Section) {
 		// Oneshot filter
 		this.Debug("PAT: ", section)
-		if err := this.RemoveSectionFilter(tuner_, filter); err != nil {
+		// Create context
+		if ctx, err := this.CreateContext(tuner_, section); err != nil {
 			this.Debug("Tune: ", err)
+		} else {
+			cb(ctx)
 		}
-
-		/*
-			this.RWMutex.Lock()
-			defer this.RWMutex.Unlock()
-			// Create context, callback
-			this.context[tuner_] = NewContext(section)
-			cb(this.context[tuner_])*/
+		// Remove section filter sometime in the future
+		go func() {
+			if err := this.RemoveSectionFilter(tuner_, filter); err != nil {
+				this.Debug("Tune: ", err)
+			}
+		}()
 	}); err != nil {
 		return err
 	}
@@ -193,14 +195,12 @@ func (this *Manager) StartSectionFilter(filter *SectionFilter, cb func(*ts.Secti
 
 	// Filewatch for sections, and read them as they appear
 	if err := this.FilePoll.Watch(filter.Fd(), gopi.FILEPOLL_FLAG_READ, func(uintptr, gopi.FilePollFlags) {
-		go func() {
-			if section, err := filter.Read(); err != nil {
-				this.Debug("SectionFilter: ", err)
-				cb(nil)
-			} else {
-				cb(section)
-			}
-		}()
+		if section, err := filter.Read(); err != nil {
+			this.Debug("SectionFilter: ", err)
+			cb(nil)
+		} else {
+			cb(section)
+		}
 	}); err != nil {
 		filter.Dispose()
 		return err
@@ -230,6 +230,46 @@ func (this *Manager) RemoveSectionFilter(tuner *Tuner, filter *SectionFilter) er
 
 	// Return any errors
 	return result
+}
+
+func (this *Manager) CreateContext(tuner *Tuner, pat *ts.Section) (*Context, error) {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if tuner == nil || pat == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("CreateContext")
+	}
+
+	// Create context
+	ctx := NewContext(pat)
+	if ctx == nil {
+		return nil, gopi.ErrInternalAppError.WithPrefix("CreateContext")
+	} else {
+		this.context[tuner] = ctx
+	}
+
+	// Return context
+	return ctx, nil
+}
+
+func (this *Manager) ScanPMT(tuner *Tuner, pid uint16) error {
+	if filter, err := tuner.NewSectionFilter(pid, ts.PMT, dvb.DMX_ONESHOT); err != nil {
+		return err
+	} else if err := this.StartSectionFilter(filter, func(section *ts.Section) {
+		// Oneshot filter
+		this.Debug("PMT: ", section)
+		// Remove section filter sometime in the future
+		go func() {
+			if err := this.RemoveSectionFilter(tuner, filter); err != nil {
+				this.Debug("Tune: ", err)
+			}
+		}()
+	}); err != nil {
+		return err
+	}
+
+	// Return success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -262,33 +302,19 @@ func (this *Manager) getTunerForId(key uint) *Tuner {
 func (this *Manager) updateState() error {
 	var result error
 	for tuner, ctx := range this.context {
-		fmt.Println("TODO:", tuner, ctx)
-	}
-	/*
-			if service := ctx.NextServiceScan(); service != nil {
-				this.Debug("ScanPMT for tuner:", tuner.Id(), " service: ", service)
-				if err := this.ScanPMT(tuner, service.Pid()); err != nil {
-					result = multierror.Append(result, err)
-				}
+		if service := ctx.NextServiceScan(); service != nil {
+			this.Debug("ScanPMT for tuner:", tuner.Id(), " service: ", service)
+			if err := this.ScanPMT(tuner, service.Pid()); err != nil {
+				result = multierror.Append(result, err)
 			}
 		}
-	*/
+	}
+
 	// Return any errors
 	return result
 }
 
 /*
-// removeSectionFilter
-func removeSectionFilter(arr []*SectionFilter, filter *SectionFilter) []*SectionFilter {
-	for i, elem := range arr {
-		if elem == filter {
-			return append(arr[:i], arr[i+1:]...)
-		}
-	}
-	// Filter not in array
-	return arr
-}
-
 
 // emitStats
 func (this *Manager) emitStats() error {
@@ -318,106 +344,4 @@ func (this *Manager) emitStats() error {
 	return result
 }
 
-// getFrontend returns file descriptor for frontend
-func (this *Manager) getFrontend(tuner *Tuner) (uintptr, error) {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if tuner == nil {
-		return 0, gopi.ErrBadParameter.WithPrefix("GetFrontend")
-	}
-
-	key := tuner.Id()
-	if fh, exists := this.frontend[key]; exists {
-		return fh.Fd(), nil
-	} else if fh, err := tuner.OpenFrontend(); err != nil {
-		return 0, err
-	} else {
-		this.frontend[key] = fh
-		return fh.Fd(), nil
-	}
-}
-
-// getDemux returns file descriptor for demux
-func (this *Manager) getDemux(tuner *Tuner) (uintptr, error) {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if tuner == nil {
-		return 0, gopi.ErrBadParameter.WithPrefix("GetDemux")
-	}
-
-	key := tuner.Id()
-	if fh, exists := this.demux[key]; exists {
-		return fh.Fd(), nil
-	} else if fh, err := tuner.OpenDemux(); err != nil {
-		return 0, err
-	} else {
-		this.demux[key] = fh
-		return fh.Fd(), nil
-	}
-}
-
-// disposeFrontend closes file descriptor for frontend
-func (this *Manager) disposeFrontend(tuner *Tuner) error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if tuner == nil {
-		return gopi.ErrBadParameter.WithPrefix("DisposeFrontend")
-	}
-
-	key := tuner.Id()
-	fh, exists := this.frontend[key]
-	if exists == false {
-		return nil
-	}
-	defer delete(this.frontend, key)
-	if err := fh.Close(); err != nil {
-		return err
-	}
-
-	// Return success
-	return nil
-}
-
-// disposeDemux closes file descriptor for demux
-func (this *Manager) disposeDemux(tuner *Tuner) error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if tuner == nil {
-		return gopi.ErrBadParameter.WithPrefix("DisposeDemux")
-	}
-
-	key := tuner.Id()
-	fh, exists := this.demux[key]
-	if exists == false {
-		return nil
-	}
-	defer delete(this.demux, key)
-	if err := fh.Close(); err != nil {
-		return err
-	}
-
-	// Return success
-	return nil
-}
-
-// disposeContext removes state
-func (this *Manager) disposeContext(tuner *Tuner) error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if tuner == nil {
-		return gopi.ErrBadParameter.WithPrefix("DisposeDemux")
-	} else if _, exists := this.context[tuner]; exists == false {
-		return gopi.ErrBadParameter.WithPrefix("DisposeDemux")
-	} else {
-		delete(this.context, tuner)
-	}
-
-	// Return success
-	return nil
-}
 */

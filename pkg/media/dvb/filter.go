@@ -135,46 +135,22 @@ func (this *Filter) Fd() uintptr {
 // PUBLIC METHODS
 
 func (this *Filter) Start() error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if this.dev == nil {
-		return gopi.ErrOutOfOrder.WithPrefix("Start")
-	}
-
 	return dvb.DMXStart(this.dev.Fd())
 }
 
 func (this *Filter) Stop() error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if this.dev == nil {
-		return gopi.ErrOutOfOrder.WithPrefix("Stop")
+	if err := dvb.DMXStop(this.dev.Fd()); err != nil {
+		return err
+	} else {
+		return nil
 	}
-
-	return dvb.DMXStop(this.dev.Fd())
 }
 
 func (this *Filter) AddPid(pid uint16) error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if this.dev == nil {
-		return gopi.ErrOutOfOrder.WithPrefix("AddPid")
-	}
-
 	return dvb.DMXAddPid(this.dev.Fd(), pid)
 }
 
 func (this *Filter) AddPids(pids []uint16) error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if this.dev == nil {
-		return gopi.ErrOutOfOrder.WithPrefix("AddPids")
-	}
-
 	var result error
 	for _, pid := range pids {
 		if err := dvb.DMXAddPid(this.dev.Fd(), pid); err != nil {
@@ -182,42 +158,19 @@ func (this *Filter) AddPids(pids []uint16) error {
 		}
 	}
 
-	// Success
+	// Return any errors
 	return result
 }
 
 func (this *Filter) SetBufferSize(size uint32) error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if this.dev == nil {
-		return gopi.ErrOutOfOrder.WithPrefix("SetBufferSize")
-	}
-
 	return dvb.DMXSetBufferSize(this.dev.Fd(), size)
 }
 
 func (this *Filter) RemovePid(pid uint16) error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	if this.dev == nil {
-		return gopi.ErrOutOfOrder.WithPrefix("RemovePid")
-	}
-
 	return dvb.DMXRemovePid(this.dev.Fd(), pid)
 }
 
 func (this *Filter) Read() (*ts.Section, error) {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	// Check state
-	if this.dev == nil {
-		return nil, gopi.ErrOutOfOrder.WithPrefix("Read")
-	}
-
-	// Read section data into buffer and return file handle
 	return ts.NewSection(this.dev, this.data)
 }
 

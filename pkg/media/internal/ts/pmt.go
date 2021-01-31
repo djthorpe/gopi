@@ -1,11 +1,9 @@
 package ts
 
 import (
-	"encoding/hex"
+	"encoding/binary"
 	"fmt"
 	"io"
-
-	"github.com/djthorpe/gopi/v3"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,20 +21,18 @@ type PMTSection struct {
 // PUBLIC METHODS
 
 func (s *PMTSection) Read(r io.Reader, length int) error {
-	return gopi.ErrNotImplemented
+	if err := s.Header.Read(r); err != nil {
+		return err
+	} else if err := binary.Read(r, binary.BigEndian, &s.ClockPid); err != nil {
+		return err
+	} else if err := binary.Read(r, binary.BigEndian, &s.Length); err != nil {
+		return err
+	} else {
+		s.ClockPid &= 0x1FFF
+		s.Length &= 0x03FF
+	}
 
 	/*
-		if err := s.Header.Read(r); err != nil {
-			return err
-		} else if err := binary.Read(r, binary.BigEndian, &s.ClockPid); err != nil {
-			return err
-		} else if err := binary.Read(r, binary.BigEndian, &s.Length); err != nil {
-			return err
-		} else {
-			s.ClockPid &= 0x1FFF
-			s.Length &= 0x03FF
-		}
-
 		// Read descriptors
 		s.D = make([]byte, s.Length)
 		if err := binary.Read(r, binary.BigEndian, &s.D); err != nil {
@@ -59,10 +55,10 @@ func (s *PMTSection) Read(r io.Reader, length int) error {
 				length -= 5 + row.header.Length
 			}
 		}
-
-		// Return success
-		return nil
 	*/
+
+	// Return success
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +68,6 @@ func (s PMTSection) String() string {
 	str := "<pmt"
 	str += fmt.Sprint(" ", s.Header)
 	str += fmt.Sprintf(" pcr_pid=0x%04X", s.ClockPid)
-	str += fmt.Sprint(" D=", hex.EncodeToString(s.D))
-	str += fmt.Sprint(" S=", s.Streams)
+	str += fmt.Sprintf(" length=%v", s.Length)
 	return str + ">"
 }
