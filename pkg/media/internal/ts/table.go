@@ -1,10 +1,8 @@
 package ts
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"io"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -13,8 +11,7 @@ import (
 type Tag uint8
 
 type DTable struct {
-	Length uint16
-	Rows   []DRow
+	Rows []DRow
 }
 
 type STable struct {
@@ -34,6 +31,16 @@ type SRow struct {
 	header struct {
 		StreamId  uint16
 		NetworkId uint16
+		Length    uint16
+	}
+	DTable
+}
+
+type ESRow struct {
+	header struct {
+		ESType        // 8 bits
+		Pid    uint16 // 13 bits
+		Length uint16 // 10 bits
 	}
 	DTable
 }
@@ -83,18 +90,10 @@ const (
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
-
-func (t *DTable) Read(r io.Reader) error {
-	// Read length of table that follows in bytes
-	if err := binary.Read(r, binary.BigEndian, &t.Length); err != nil {
-		return err
-	} else {
-		// Top four bits are reserved for future use, length is 12 bits
-		t.Length &= 0x0FFF
-	}
-
+/*
+func (t *DTable) Read(r io.Reader, length uint16) error {
 	// Read rows until length is zero
-	for length := t.Length; length > 0; {
+	for i := length; i > 0; {
 		var row DRow
 		if err := binary.Read(r, binary.LittleEndian, &row.header); err != nil {
 			return err
@@ -105,7 +104,7 @@ func (t *DTable) Read(r io.Reader) error {
 		}
 		// Append row, decrement by 2 bytes and length of data
 		t.Rows = append(t.Rows, row)
-		length -= 2 + uint16(row.header.Length)
+		i -= 2 + uint16(row.header.Length)
 	}
 
 	// Return success
@@ -137,7 +136,7 @@ func (t *STable) Read(r io.Reader) error {
 	// Return success
 	return nil
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -247,7 +246,7 @@ func (t Tag) String() string {
 	case data_broadcast_id:
 		return "data_broadcast_id"
 	default:
-		return fmt.Sprint("0x%02X", uint8(t))
+		return fmt.Sprintf("0x%02X", uint8(t))
 	}
 
 }

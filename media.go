@@ -158,9 +158,9 @@ type DVBManager interface {
 	Close(DVBTuner) error
 }
 
-// DVBTunerCallack is called when tuning has completed, so that set-up
-// can begin. Any error return will close down the tuner
-type DVBTuneCallack func(DVBContext) error
+// DVBTunerCallack is called when tuning has completed, so that
+// set-up can begin
+type DVBTuneCallack func(DVBContext)
 
 // DVBTuneContext represents information obtained during the tuning
 // process

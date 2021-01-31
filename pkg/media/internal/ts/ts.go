@@ -15,7 +15,10 @@ import (
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
-type TableType uint8
+type (
+	TableType uint8
+	ESType    uint8
+)
 
 type SectionHeader struct {
 	TableId TableType
@@ -48,6 +51,29 @@ const (
 )
 
 const (
+	ES_TYPE_NONE ESType = iota
+	ES_TYPE_MPEG1_VIDEO
+	ES_TYPE_MPEG2_VIDEO
+	ES_TYPE_MPEG1_AUDIO
+	ES_TYPE_MPEG2_AUDIO
+	ES_TYPE_PRIV_SECT
+	ES_TYPE_PRIV_PES
+	ES_TYPE_MHEG
+	ES_TYPE_DSMCC
+	ES_TYPE_H222_1
+	ES_TYPE_DSMCC_A
+	ES_TYPE_DSMCC_B
+	ES_TYPE_DSMCC_C
+	ES_TYPE_DSMCC_D
+	ES_TYPE_MPEG2_AUX
+	ES_TYPE_AAC
+	ES_TYPE_MPEG4_VIDEO
+	ES_TYPE_MPEG4_AUDIO
+	ES_TYPE_H264_VIDEO ESType = 0x1B
+	ES_TYPE_H265_VIDEO ESType = 0x24
+)
+
+const (
 	SECTION_BUFFER_SIZE = 4096
 )
 
@@ -61,13 +87,13 @@ func NewSection(r io.Reader, data []byte) (*Section, error) {
 	if err := binary.Read(r, binary.BigEndian, &this.SectionHeader); err != nil {
 		return nil, err
 	} else {
-		this.Length &= 0x0FFF
+		this.SectionHeader.Length &= 0x0FFF
 	}
 
 	// Read buffer
 	if n, err := r.Read(data); err != nil {
 		return nil, err
-	} else if n != int(this.Length) {
+	} else if n != int(this.SectionHeader.Length) {
 		return nil, gopi.ErrUnexpectedResponse.WithPrefix("NewSection")
 	}
 
@@ -75,15 +101,15 @@ func NewSection(r io.Reader, data []byte) (*Section, error) {
 	r2 := bytes.NewReader(data)
 	switch this.TableId {
 	case PAT:
-		if err := this.PATSection.Read(r2, int(this.Length)-4); err != nil {
+		if err := this.PATSection.Read(r2, int(this.SectionHeader.Length)-4); err != nil {
 			return nil, err
 		}
 	case PMT:
-		if err := this.PMTSection.Read(r2, int(this.Length)-4); err != nil {
+		if err := this.PMTSection.Read(r2, int(this.SectionHeader.Length)-4); err != nil {
 			return nil, err
 		}
 	case NIT, NIT_OTHER:
-		if err := this.NITSection.Read(r2, int(this.Length)-4); err != nil {
+		if err := this.NITSection.Read(r2, int(this.SectionHeader.Length)-4); err != nil {
 			return nil, err
 		}
 	}
@@ -111,7 +137,7 @@ func (this *Section) String() string {
 	case NIT, NIT_OTHER:
 		str += " " + fmt.Sprint(this.NITSection)
 	default:
-		str += " length=" + fmt.Sprint(this.Length)
+		str += " length=" + fmt.Sprint(this.SectionHeader.Length)
 	}
 	return str + ">"
 }

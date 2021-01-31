@@ -3,6 +3,8 @@ package ts
 import (
 	"fmt"
 	"io"
+
+	"github.com/djthorpe/gopi/v3"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -18,16 +20,18 @@ type NITSection struct {
 // PUBLIC METHODS
 
 func (n *NITSection) Read(r io.Reader, length int) error {
-	if err := n.Header.Read(r); err != nil {
-		return err
-	} else if err := n.DTable.Read(r); err != nil {
-		return err
-	} else if err := n.STable.Read(r); err != nil {
-		return err
-	}
+	return gopi.ErrNotImplemented
+	/*
+		if err := n.Header.Read(r); err != nil {
+			return err
+		} else if err := n.DTable.Read(r); err != nil {
+			return err
+		} else if err := n.STable.Read(r); err != nil {
+			return err
+		}
 
-	// Return success
-	return nil
+		// Return success
+		return nil*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////

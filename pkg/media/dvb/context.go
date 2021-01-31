@@ -5,27 +5,26 @@ package dvb
 import (
 	"fmt"
 
-	gopi "github.com/djthorpe/gopi/v3"
 	ts "github.com/djthorpe/gopi/v3/pkg/media/internal/ts"
 )
 
+////////////////////////////////////////////////////////////////////////////////
+// TYPES
+
 type Context struct {
-	err     error
 	nit     uint16
 	service map[uint16]*Service
 }
 
-type Service struct {
-	pid uint16
-}
+////////////////////////////////////////////////////////////////////////////////
+// LIFECYCLE
 
-func NewContext(pat *ts.Section, err error) gopi.DVBContext {
+func NewContext(pat *ts.Section) *Context {
 	if pat.TableId != ts.PAT {
 		return nil
 	}
 
 	this := new(Context)
-	this.err = err
 	this.nit = uint16(0x0010)
 	this.service = make(map[uint16]*Service, len(pat.PATSection.Programs))
 
@@ -37,7 +36,7 @@ func NewContext(pat *ts.Section, err error) gopi.DVBContext {
 				this.nit = program.Pid
 			}
 		} else {
-			this.service[key] = NewService(program.Pid)
+			this.service[key] = NewService(key, program.Pid)
 		}
 	}
 
@@ -45,30 +44,31 @@ func NewContext(pat *ts.Section, err error) gopi.DVBContext {
 	return this
 }
 
-func NewService(pid uint16) *Service {
-	return &Service{pid}
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS
+
+func (this *Context) NextServiceScan() *Service {
+	// Returns a service which hasn't been populated with PMT information (streams)
+	// yet or nil if all services have been scanned
+	for _, service := range this.service {
+		if service.pmt == false {
+			service.pmt = true
+			return service
+		}
+	}
+	return nil
 }
 
-func (this *Context) Err() error {
-	return this.err
-}
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
 
 func (this *Context) String() string {
 	str := "<dvb.context"
-	if err := this.Err(); err != nil {
-		str += fmt.Sprint(" err=", err)
-	}
 	if nit := this.nit; nit != 0 {
 		str += fmt.Sprintf(" nit_pid=0x%04X", nit)
 	}
-	for id, service := range this.service {
-		str += fmt.Sprintf(" %04X=%v", id, service)
+	for _, service := range this.service {
+		str += fmt.Sprintf(" %v", service)
 	}
-	return str + ">"
-}
-
-func (this *Service) String() string {
-	str := "<dvb.service"
-	str += fmt.Sprintf(" pid=0x%04X", this.pid)
 	return str + ">"
 }
