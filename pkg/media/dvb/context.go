@@ -5,6 +5,7 @@ package dvb
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	ts "github.com/djthorpe/gopi/v3/pkg/media/internal/ts"
@@ -58,10 +59,18 @@ func (this *Context) NextServiceScan() *Service {
 	// Returns a service which hasn't been populated with PMT information (streams)
 	// yet or nil if all services have been scanned
 	for _, service := range this.service {
-		if service.Streams() == false {
+		// Ignore if streams has been set
+		if service.streams != nil {
+			continue
+		}
+		// Return if streams is nil
+		if service.ts.IsZero() || time.Now().After(service.ts) {
+			service.ts = time.Now().Add(5 * time.Second)
 			return service
 		}
 	}
+
+	// No services to scan
 	return nil
 }
 
@@ -74,11 +83,22 @@ func (this *Context) SetPMT(pid uint16, section *ts.Section) error {
 	} else if section.TableId != ts.PMT {
 		return gopi.ErrInternalAppError.WithPrefix("SetPMT")
 	} else {
-		service.SetStreams(section.PMTSection.ESTable.Rows)
+		service.streams = section.PMTSection.ESTable.Rows
 	}
 
 	// Return success
 	return nil
+}
+
+func (this *Context) GetService(pid uint16) gopi.DVBService {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if service, exists := this.service[pid]; exists == false {
+		return nil
+	} else {
+		return service
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

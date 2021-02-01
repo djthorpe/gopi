@@ -293,7 +293,7 @@ func (this *Manager) SetPMT(tuner *Tuner, pid uint16, section *ts.Section) error
 	} else if err := ctx.SetPMT(pid, section); err != nil {
 		return err
 	} else {
-		this.Printf("PID=0x%04X PMT=%v\n", pid, section)
+		this.Print("  service=", ctx.GetService(pid))
 	}
 
 	// Return success

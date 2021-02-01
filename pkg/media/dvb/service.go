@@ -4,6 +4,7 @@ package dvb
 
 import (
 	"fmt"
+	"time"
 
 	ts "github.com/djthorpe/gopi/v3/pkg/media/internal/ts"
 )
@@ -14,6 +15,7 @@ import (
 type Service struct {
 	pid     uint16
 	id      uint16
+	ts      time.Time
 	streams []ts.ESRow
 }
 
@@ -21,7 +23,10 @@ type Service struct {
 // LIFECYCLE
 
 func NewService(pid, id uint16) *Service {
-	return &Service{pid, id, nil}
+	this := new(Service)
+	this.id = id
+	this.pid = pid
+	return this
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -50,5 +55,8 @@ func (this *Service) String() string {
 	str := "<dvb.service"
 	str += fmt.Sprintf(" id=0x%04X", this.id)
 	str += fmt.Sprintf(" pid=0x%04X", this.pid)
+	for _, stream := range this.streams {
+		str += fmt.Sprint(" stream=", stream)
+	}
 	return str + ">"
 }
