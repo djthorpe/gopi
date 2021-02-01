@@ -13,7 +13,6 @@ import (
 type NITSection struct {
 	Header
 	DTable
-	STable
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +40,5 @@ func (n NITSection) String() string {
 	str := "<nit"
 	str += fmt.Sprint(" ", n.Header)
 	str += fmt.Sprint(" ", n.DTable)
-	str += fmt.Sprint(" ", n.STable)
 	return str + ">"
 }

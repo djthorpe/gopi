@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/djthorpe/gopi/v3"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -12,9 +14,9 @@ import (
 type PMTSection struct {
 	Header
 	ClockPid uint16 // 13 bits
-	Length   uint16 // 10 bits
-	D        []byte
-	Streams  []ESRow
+	Length   uint16 // 12 bits
+	DTable
+	ESTable
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -28,34 +30,24 @@ func (s *PMTSection) Read(r io.Reader, length int) error {
 	} else if err := binary.Read(r, binary.BigEndian, &s.Length); err != nil {
 		return err
 	} else {
-		s.ClockPid &= 0x1FFF
-		s.Length &= 0x03FF
+		s.ClockPid &= 0x1FFF // 13 bits
+		s.Length &= 0x0FFF   // 12 bits
 	}
 
-	/*
-		// Read descriptors
-		s.D = make([]byte, s.Length)
-		if err := binary.Read(r, binary.BigEndian, &s.D); err != nil {
-			return err
-		}
+	/* Section and Last Section should always be zero */
+	if s.Header.Section != 0 || s.Header.LastSection != 0 {
+		return gopi.ErrUnexpectedResponse.WithPrefix("PMT")
+	}
 
-		// Read elementary streams
-		for length := uint16(length) - (4 + s.Length); length > 0; {
-			var row ESRow
-			if err := binary.Read(r, binary.BigEndian, &row.header); err != nil {
-				return err
-			} else {
-				row.header.Pid &= 0x1FFF    // 13 bits
-				row.header.Length &= 0x03FF // 10 bits
-			}
-			if err := row.DTable.Read(r, row.header.Length); err != nil {
-				return err
-			} else {
-				s.Streams = append(s.Streams, row)
-				length -= 5 + row.header.Length
-			}
-		}
-	*/
+	/* Read descriptors */
+	if err := s.DTable.Read(r, s.Length); err != nil {
+		return err
+	}
+
+	/* Read elementary streams */
+	if err := s.ESTable.Read(r, uint16(length)-(s.Length+4)); err != nil {
+		return err
+	}
 
 	// Return success
 	return nil
@@ -68,6 +60,7 @@ func (s PMTSection) String() string {
 	str := "<pmt"
 	str += fmt.Sprint(" ", s.Header)
 	str += fmt.Sprintf(" pcr_pid=0x%04X", s.ClockPid)
-	str += fmt.Sprintf(" length=%v", s.Length)
+	str += fmt.Sprintf(" d=%v", s.DTable)
+	str += fmt.Sprintf(" es=%v", s.ESTable)
 	return str + ">"
 }

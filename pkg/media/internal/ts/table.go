@@ -1,8 +1,10 @@
 package ts
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -14,9 +16,8 @@ type DTable struct {
 	Rows []DRow
 }
 
-type STable struct {
-	Length uint16
-	Rows   []SRow
+type ESTable struct {
+	Rows []ESRow
 }
 
 type DRow struct {
@@ -27,20 +28,11 @@ type DRow struct {
 	data []byte
 }
 
-type SRow struct {
-	header struct {
-		StreamId  uint16
-		NetworkId uint16
-		Length    uint16
-	}
-	DTable
-}
-
 type ESRow struct {
 	header struct {
 		ESType        // 8 bits
 		Pid    uint16 // 13 bits
-		Length uint16 // 10 bits
+		Length uint16 // 12 bits
 	}
 	DTable
 }
@@ -90,12 +82,12 @@ const (
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
-/*
+
 func (t *DTable) Read(r io.Reader, length uint16) error {
 	// Read rows until length is zero
 	for i := length; i > 0; {
 		var row DRow
-		if err := binary.Read(r, binary.LittleEndian, &row.header); err != nil {
+		if err := binary.Read(r, binary.BigEndian, &row.header); err != nil {
 			return err
 		}
 		row.data = make([]byte, int(row.header.Length))
@@ -111,32 +103,39 @@ func (t *DTable) Read(r io.Reader, length uint16) error {
 	return nil
 }
 
-func (t *STable) Read(r io.Reader) error {
-	// Read length of descriptor that follow in bytes
-	if err := binary.Read(r, binary.BigEndian, &t.Length); err != nil {
-		return err
-	} else {
-		// Top four bits are reserved for future use, length is 12 bits
-		t.Length &= 0x0FFF
-	}
-
+func (t *ESTable) Read(r io.Reader, length uint16) error {
 	// Read rows until length is zero
-	for length := t.Length; length > 0; {
-		var row SRow
-		if err := binary.Read(r, binary.LittleEndian, &row.header); err != nil {
+	fmt.Println("estable length=", length)
+	for i := length; i > 5; {
+		var row ESRow
+		if err := binary.Read(r, binary.BigEndian, &row.header); err != nil {
 			return err
-		} else if err := row.DTable.Read(r); err != nil {
-			return err
+		} else {
+			row.header.Pid &= 0x1FFF    // 13 bits
+			row.header.Length &= 0x0FFF // 12 bits
 		}
-		// Append row, decrement by 3 x uint16 and length of descriptor table
+
+		fmt.Println("  esrow type=", row.header.ESType)
+		fmt.Printf("        pid=0x%04X\n", row.header.Pid)
+		fmt.Println("        length=", row.header.Length)
+
+		if row.header.Length > 0 {
+			if err := row.DTable.Read(r, row.header.Length); err != nil {
+				return err
+			}
+			fmt.Println("        desc=", row.DTable)
+		}
+
+		// Append row, decrement by 5 bytes and length of data
 		t.Rows = append(t.Rows, row)
-		length -= 6 + uint16(row.DTable.Length)
+		i -= (row.header.Length + 5)
+		fmt.Println("        remaining=", i)
 	}
 
 	// Return success
 	return nil
 }
-*/
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -148,7 +147,7 @@ func (t DTable) String() string {
 	return str + ">"
 }
 
-func (t STable) String() string {
+func (t ESTable) String() string {
 	str := "<dvb.streams"
 	for _, row := range t.Rows {
 		str += fmt.Sprint(" ", row)
@@ -165,8 +164,12 @@ func (r DRow) String() string {
 	}
 }
 
-func (r SRow) String() string {
-	return fmt.Sprintf("<stream_id=0x%04X network_id=0x%04X %v>", r.header.StreamId, r.header.NetworkId, r.DTable)
+func (r ESRow) String() string {
+	str := "<"
+	str += fmt.Sprint(r.header.ESType)
+	str += fmt.Sprintf(" pid=0x%04X", r.header.Pid)
+	str += fmt.Sprint(" ", r.DTable)
+	return str + ">"
 }
 
 func (t Tag) String() string {

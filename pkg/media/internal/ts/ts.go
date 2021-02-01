@@ -170,3 +170,50 @@ func (f TableType) String() string {
 		return fmt.Sprintf("0x%02X", uint8(f))
 	}
 }
+
+func (f ESType) String() string {
+	switch f {
+	case ES_TYPE_NONE:
+		return "ES_TYPE_NONE"
+	case ES_TYPE_MPEG1_VIDEO:
+		return "ES_TYPE_MPEG1_VIDEO"
+	case ES_TYPE_MPEG2_VIDEO:
+		return "ES_TYPE_MPEG2_VIDEO"
+	case ES_TYPE_MPEG1_AUDIO:
+		return "ES_TYPE_MPEG1_AUDIO"
+	case ES_TYPE_MPEG2_AUDIO:
+		return "ES_TYPE_MPEG2_AUDIO"
+	case ES_TYPE_PRIV_SECT:
+		return "ES_TYPE_PRIV_SECT"
+	case ES_TYPE_PRIV_PES:
+		return "ES_TYPE_PRIV_PES"
+	case ES_TYPE_MHEG:
+		return "ES_TYPE_MHEG"
+	case ES_TYPE_DSMCC:
+		return "ES_TYPE_DSMCC"
+	case ES_TYPE_H222_1:
+		return "ES_TYPE_H222_1"
+	case ES_TYPE_DSMCC_A:
+		return "ES_TYPE_DSMCC_A"
+	case ES_TYPE_DSMCC_B:
+		return "ES_TYPE_DSMCC_B"
+	case ES_TYPE_DSMCC_C:
+		return "ES_TYPE_DSMCC_C"
+	case ES_TYPE_DSMCC_D:
+		return "ES_TYPE_DSMCC_D"
+	case ES_TYPE_MPEG2_AUX:
+		return "ES_TYPE_MPEG2_AUX"
+	case ES_TYPE_AAC:
+		return "ES_TYPE_AAC"
+	case ES_TYPE_MPEG4_VIDEO:
+		return "ES_TYPE_MPEG4_VIDEO"
+	case ES_TYPE_MPEG4_AUDIO:
+		return "ES_TYPE_MPEG4_AUDIO"
+	case ES_TYPE_H264_VIDEO:
+		return "ES_TYPE_H264_VIDEO"
+	case ES_TYPE_H265_VIDEO:
+		return "ES_TYPE_H265_VIDEO"
+	default:
+		return fmt.Sprintf("ES_TYPE_0x%02X", uint(f))
+	}
+}

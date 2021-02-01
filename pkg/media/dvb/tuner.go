@@ -70,22 +70,23 @@ func NewTuner(d dvb.Device) (*Tuner, error) {
 }
 
 func (this *Tuner) Dispose(fp gopi.FilePoll) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
 	var result error
 
 	for filter := range this.section {
-		if err := this.RemoveSectionFilter(fp, filter); err != nil {
+		if err := this.unwatchSectionFilter(fp, filter); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
 	for filter := range this.stream {
-		if err := this.RemoveStreamFilter(fp, filter); err != nil {
+		if err := this.unwatchStreamFilter(fp, filter); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
 
 	// Close device
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
 	if this.dev != nil {
 		if err := this.dev.Close(); err != nil {
 			result = multierror.Append(result, err)
@@ -94,8 +95,10 @@ func (this *Tuner) Dispose(fp gopi.FilePoll) error {
 
 	// Release resources
 	this.dev = nil
-	this.section = nil
-	this.stream = nil
+
+	// Re-create section and stream maps
+	this.section = make(map[*SectionFilter]bool)
+	this.stream = make(map[*StreamFilter]bool)
 
 	// Return any errors
 	return result
@@ -127,6 +130,11 @@ func (this *Tuner) NewSectionFilter(pid uint16, tid ts.TableType, flags dvb.DMXF
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
+	// Check for disposed tuner
+	if this.dev == nil {
+		return nil, gopi.ErrOutOfOrder.WithPrefix("NewSectionFilter")
+	}
+
 	// Create filter
 	filter, err := NewSectionFilter(this, pid, tid, flags)
 	if err != nil {
@@ -143,6 +151,11 @@ func (this *Tuner) NewSectionFilter(pid uint16, tid ts.TableType, flags dvb.DMXF
 func (this *Tuner) NewStreamFilter(pid uint16, in dvb.DMXInput, out dvb.DMXOutput, stream dvb.DMXStreamType) (*StreamFilter, error) {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
+
+	// Check for disposed tuner
+	if this.dev == nil {
+		return nil, gopi.ErrOutOfOrder.WithPrefix("NewStreamFilter")
+	}
 
 	// Create filter
 	filter, err := NewStreamFilter(this, pid, in, out, stream)
@@ -161,15 +174,24 @@ func (this *Tuner) RemoveSectionFilter(fp gopi.FilePoll, filter *SectionFilter) 
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	// Check parameters
+	// Check for disposed tuner
+	if this.dev == nil {
+		return gopi.ErrOutOfOrder.WithPrefix("RemoveSectionFilter")
+	}
+
+	// Delete section filter
 	if _, exists := this.section[filter]; exists == false {
 		return gopi.ErrNotFound.WithPrefix("RemoveSectionFilter")
 	} else {
 		delete(this.section, filter)
 	}
 
-	// Unwatch, dispose
+	return this.unwatchSectionFilter(fp, filter)
+}
+
+func (this *Tuner) unwatchSectionFilter(fp gopi.FilePoll, filter *SectionFilter) error {
 	var result error
+
 	if err := fp.Unwatch(filter.Fd()); err != nil {
 		result = multierror.Append(result, err)
 	}
@@ -185,6 +207,11 @@ func (this *Tuner) RemoveStreamFilter(fp gopi.FilePoll, filter *StreamFilter) er
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
+	// Check for disposed tuner
+	if this.dev == nil {
+		return gopi.ErrOutOfOrder.WithPrefix("RemoveStreamFilter")
+	}
+
 	// Check parameters
 	if _, exists := this.stream[filter]; exists == false {
 		return gopi.ErrNotFound.WithPrefix("RemoveStreamFilter")
@@ -192,8 +219,12 @@ func (this *Tuner) RemoveStreamFilter(fp gopi.FilePoll, filter *StreamFilter) er
 		delete(this.stream, filter)
 	}
 
-	// Unwatch, dispose
+	return this.unwatchStreamFilter(fp, filter)
+}
+
+func (this *Tuner) unwatchStreamFilter(fp gopi.FilePoll, filter *StreamFilter) error {
 	var result error
+
 	if err := fp.Unwatch(filter.Fd()); err != nil {
 		result = multierror.Append(result, err)
 	}

@@ -71,12 +71,12 @@ func (this *app) Run(ctx context.Context) error {
 			break
 		}
 
-		this.Print("Tune:", this.DVBTuner, param.Name())
+		this.Print("Tune: ", this.DVBTuner, param.Name())
 		tunectx, cancel := context.WithTimeout(ctx, *this.timeout)
 		defer cancel()
 
 		if err := this.Tune(tunectx, this.DVBTuner, param, this.Tuned); err != nil {
-			this.Print("  Error:", err)
+			this.Print("Error: ", err)
 		} else {
 			// Wait until tuning timeout
 			<-tunectx.Done()

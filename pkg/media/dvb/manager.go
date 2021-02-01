@@ -23,6 +23,7 @@ type Manager struct {
 	gopi.Logger
 	gopi.FilePoll
 	sync.RWMutex
+	sync.WaitGroup
 
 	context map[*Tuner]*Context
 }
@@ -53,6 +54,9 @@ func (this *Manager) New(gopi.Config) error {
 func (this *Manager) Dispose() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
+
+	// Wait for goroutines to end
+	this.WaitGroup.Wait()
 
 	// Dispose of any open tuners
 	var result error
@@ -155,9 +159,11 @@ func (this *Manager) Tune(ctx context.Context, tuner gopi.DVBTuner, params gopi.
 			cb(ctx)
 		}
 		// Remove section filter sometime in the future
+		this.WaitGroup.Add(1)
 		go func() {
+			defer this.WaitGroup.Done()
 			if err := this.RemoveSectionFilter(tuner_, filter); err != nil {
-				this.Debug("Tune: ", err)
+				this.Print("Tune: ", err)
 			}
 		}()
 	}); err != nil {
@@ -196,7 +202,7 @@ func (this *Manager) StartSectionFilter(filter *SectionFilter, cb func(*ts.Secti
 	// Filewatch for sections, and read them as they appear
 	if err := this.FilePoll.Watch(filter.Fd(), gopi.FILEPOLL_FLAG_READ, func(uintptr, gopi.FilePollFlags) {
 		if section, err := filter.Read(); err != nil {
-			this.Debug("SectionFilter: ", err)
+			this.Print("SectionFilter: ", filter, err)
 			cb(nil)
 		} else {
 			cb(section)
@@ -256,16 +262,38 @@ func (this *Manager) ScanPMT(tuner *Tuner, pid uint16) error {
 	if filter, err := tuner.NewSectionFilter(pid, ts.PMT, dvb.DMX_ONESHOT); err != nil {
 		return err
 	} else if err := this.StartSectionFilter(filter, func(section *ts.Section) {
-		// Oneshot filter
-		this.Debug("PMT: ", section)
+		// Update services with stream information
+		if err := this.SetPMT(tuner, pid, section); err != nil {
+			this.Print("ScanPMT: ", err)
+		}
 		// Remove section filter sometime in the future
+		this.WaitGroup.Add(1)
 		go func() {
+			defer this.WaitGroup.Done()
 			if err := this.RemoveSectionFilter(tuner, filter); err != nil {
-				this.Debug("Tune: ", err)
+				this.Print("Tune: ", err)
 			}
 		}()
 	}); err != nil {
 		return err
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *Manager) SetPMT(tuner *Tuner, pid uint16, section *ts.Section) error {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if section == nil {
+		return gopi.ErrBadParameter.WithPrefix("SetPMT")
+	} else if ctx, exists := this.context[tuner]; exists == false {
+		return gopi.ErrInternalAppError.WithPrefix("SetPMT")
+	} else if err := ctx.SetPMT(pid, section); err != nil {
+		return err
+	} else {
+		this.Printf("PID=0x%04X PMT=%v\n", pid, section)
 	}
 
 	// Return success
