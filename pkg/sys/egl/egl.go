@@ -1,4 +1,4 @@
-// +build egl,gbm
+// +build egl
 
 package egl
 
@@ -7,15 +7,14 @@ import (
 
 	// Frameworks
 	gopi "github.com/djthorpe/gopi/v3"
-	gbm "github.com/djthorpe/gopi/v3/pkg/sys/gbm"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // CGO
 
 /*
-#cgo pkg-config: egl
-#include <EGL/egl.h>
+  #cgo pkg-config: brcmegl
+  #include <EGL/egl.h>
 */
 import "C"
 
@@ -60,11 +59,6 @@ var (
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
-
-func EGLGetDisplay(device *gbm.GBMDevice) EGLDisplay {
-	disp := C.EGLNativeDisplayType(unsafe.Pointer(device))
-	return EGLDisplay(C.eglGetDisplay(disp))
-}
 
 func EGLInitialize(display EGLDisplay) (int, int, error) {
 	var major, minor C.EGLint
@@ -242,6 +236,19 @@ func EGLMakeCurrent(display EGLDisplay, draw, read EGLSurface, context EGLContex
 
 func EGLCreateSurface(display EGLDisplay, config EGLConfig, window EGLNativeWindow) (EGLSurface, error) {
 	if surface := EGLSurface(C.eglCreateWindowSurface(C.EGLDisplay(display), C.EGLConfig(config), C.EGLNativeWindowType(window), nil)); surface == nil {
+		return nil, EGLGetError()
+	} else {
+		return surface, nil
+	}
+}
+
+func EGLCreatePbufferSurface(display EGLDisplay, config EGLConfig, w, h uint) (EGLSurface, error) {
+	attribs := []C.EGLint{
+		C.EGLint(EGL_WIDTH), C.EGLint(w),
+		C.EGLint(EGL_HEIGHT), C.EGLint(h),
+		C.EGLint(EGL_NONE),
+	}
+	if surface := EGLSurface(C.eglCreatePbufferSurface(C.EGLDisplay(display), C.EGLConfig(config), &attribs[0])); surface == nil {
 		return nil, EGLGetError()
 	} else {
 		return surface, nil

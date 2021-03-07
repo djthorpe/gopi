@@ -36,6 +36,14 @@ ifeq ($(shell test -d /opt/vc/lib/pkgconfig; echo $$?),0)
 	$(eval PKG_CONFIG_PATH += /opt/vc/lib/pkgconfig)
 endif
 
+# Older Broadcom Graphics (dispmanx)
+dispmanx: rpi
+	$(eval DX = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion bcm_host))
+ifneq ($strip $(DX)),)
+	@echo "Targetting dispmanx"
+	$(eval TAGS += dispmanx)
+endif
+
 # MMAL bindings
 mmal: rpi
 	$(eval MMAL = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion mmal))
@@ -45,15 +53,15 @@ ifneq ($strip $(MMAL)),)
 endif
 
 # OpenVG bindings
-openvg: rpi
+openvg: rpi dispmanx
 	$(eval OPENVG = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion brcmvg))
 ifneq ($strip $(OPENVG)),)
-	@echo "Targetting OpenVG"
+	@echo "Targetting openvg"
 	$(eval TAGS += openvg)
 endif
 
 # EGL bindings
-egl: gbm
+egl:
 	$(eval EGL = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion egl))
 ifneq ($strip $(EGL)),)
 	@echo "Targetting egl"
@@ -218,6 +226,12 @@ mmaldecoder: rpi mmal
 
 mmalplayer: rpi mmal
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mmalplayer -tags "$(TAGS)" ${GOFLAGS} ./cmd/mmalplayer
+
+openvgtest: rpi dispmanx openvg egl
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) test -v -tags "$(TAGS)" ${GOFLAGS} ./pkg/sys/openvg
+
+dxtest: dispmanx
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) test -v -tags "$(TAGS)" ${GOFLAGS} ./pkg/sys/dispmanx
 
 # Build rules - dependencies
 nfpm:

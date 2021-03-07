@@ -6,8 +6,8 @@ package egl
 // CGO
 
 /*
-#cgo pkg-config: egl
-#include <EGL/egl.h>
+  #cgo pkg-config: brcmegl
+  #include <EGL/egl.h>
 */
 import "C"
 

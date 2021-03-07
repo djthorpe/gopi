@@ -474,16 +474,19 @@ VG_API_CALL void VG_API_ENTRY vgPathTransformedBounds(VGPath path,
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - HARDWARE QUERIES
 
-func HardwareQuery(query QueryType, setting int32) QueryResult {
-	return QueryResult(C.vgHardwareQuery(C.VGHardwareQueryType(query), C.VGint(setting)))
+func HardwareQuery(query QueryType, setting int32) (QueryResult, error) {
+	result := QueryResult(C.vgHardwareQuery(C.VGHardwareQueryType(query), C.VGint(setting)))
+	return result, vgGetError()
 }
 
-func GetString(query QueryString) string {
+func GetString(query QueryString) (string, error) {
 	str := (*C.char)(C.vgGetString(C.VGStringID(query)))
 	if str == nil {
-		return ""
+		return "", VG_NO_CONTEXT_ERROR
+	} else if err := vgGetError(); err != nil {
+		return "", err
 	} else {
-		return C.GoString(str)
+		return C.GoString(str), nil
 	}
 }
 
