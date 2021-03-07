@@ -44,6 +44,14 @@ ifneq ($strip $(MMAL)),)
 	$(eval TAGS += mmal)
 endif
 
+# OpenVG bindings
+openvg: rpi
+	$(eval OPENVG = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion openvg))
+ifneq ($strip $(OPENVG)),)
+	@echo "Targetting OpenVG"
+	$(eval TAGS += openvg)
+endif
+
 # EGL bindings
 egl: gbm
 	$(eval EGL = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --silence-errors --modversion egl))
