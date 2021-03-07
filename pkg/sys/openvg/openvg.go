@@ -5,8 +5,7 @@ package openvg
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
-  #cgo CFLAGS:   -I/opt/vc/include
-  #cgo LDFLAGS:  -L/opt/vc/lib -lOpenVG
+  #cgo pkg-config: brcmvg
   #include <VG/openvg.h>
   #include <VG/vgu.h>
 */
