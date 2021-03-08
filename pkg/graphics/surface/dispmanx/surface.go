@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
+	dx "github.com/djthorpe/gopi/v3/pkg/sys/dispmanx"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -14,32 +16,65 @@ import (
 
 type Surface struct {
 	sync.RWMutex
+	dx.Element
 
-	x, y, w, h uint32
-	layer      uint16
+	x, y  int32
+	w, h  uint32
+	layer uint16
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewSurface(x, y, w, h uint32) (*Surface, error) {
+func NewSurface(ctx dx.Update, display dx.Display, x, y int32, w, h uint32) (*Surface, error) {
 	this := new(Surface)
 
 	// Check parameters
-	if w == 0 || h == 0 {
+	if ctx == 0 || w == 0 || h == 0 {
 		return nil, gopi.ErrBadParameter.WithPrefix("NewSurface")
+	}
+
+	// Create resource for surface
+	r := dx.NewRect(x, y, w, h)
+	layer := uint16(100)
+	if resource, err := dx.ResourceCreate(dx.VC_IMAGE_RGBA32, w, h); err != nil {
+		return nil, err
+	} else if element, err := dx.ElementAdd(ctx, display, layer, r, resource, r, 0, dx.NewAlphaFromSource(), nil, dx.DISPMANX_NO_ROTATE); err != nil {
+		dx.ResourceDelete(resource)
+		return nil, err
+	} else {
+		this.Element = element
+		this.x, this.y = x, y
+		this.w, this.h = w, h
+		this.layer = layer
 	}
 
 	// Return success
 	return this, nil
 }
 
-func (this *Surface) Dispose() error {
+func (this *Surface) Dispose(ctx dx.Update) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	// TODO
-	return nil
+	// Check state
+	if this.Element == 0 || ctx == 0 {
+		return gopi.ErrOutOfOrder
+	}
+
+	// Remove the element
+	var result error
+	if err := dx.ElementRemove(ctx, this.Element); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	// Release any resources
+	this.Element = 0
+	this.x, this.y, this.w, this.h = 0, 0, 0, 0
+	this.layer = 0
+
+	// Return any errors
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////

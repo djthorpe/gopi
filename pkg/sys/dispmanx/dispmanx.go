@@ -3,6 +3,7 @@
 package dispmanx
 
 import (
+	"fmt"
 	"unsafe"
 
 	"github.com/djthorpe/gopi/v3"
@@ -23,9 +24,16 @@ import "C"
 type (
 	Display     C.DISPMANX_DISPLAY_HANDLE_T
 	DisplayInfo C.DISPMANX_MODEINFO_T
+	Element     C.DISPMANX_ELEMENT_HANDLE_T
 	Resource    C.DISPMANX_RESOURCE_HANDLE_T
+	Update      C.DISPMANX_UPDATE_HANDLE_T
 	PixFormat   C.VC_IMAGE_TYPE_T
 	Transform   C.DISPMANX_TRANSFORM_T
+	Rect        C.VC_RECT_T
+	Protection  C.DISPMANX_PROTECTION_T
+	Alpha       C.VC_DISPMANX_ALPHA_T
+	AlphaFlag   C.DISPMANX_FLAGS_ALPHA_T
+	Clamp       C.DISPMANX_CLAMP_T
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,6 +106,116 @@ const (
 	VC_IMAGE_YUV10COL     PixFormat = C.VC_IMAGE_YUV10COL     /* 10-bit YUV 420 column image format */
 	VC_IMAGE_RGBA1010102  PixFormat = C.VC_IMAGE_RGBA1010102  /* 32-bpp, 10-bit R/G/B, 2-bit Alpha */
 )
+
+const (
+	DISPMANX_FLAGS_ALPHA_FROM_SOURCE          AlphaFlag = C.DISPMANX_FLAGS_ALPHA_FROM_SOURCE
+	DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS     AlphaFlag = C.DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS
+	DISPMANX_FLAGS_ALPHA_FIXED_NON_ZERO       AlphaFlag = C.DISPMANX_FLAGS_ALPHA_FIXED_NON_ZERO
+	DISPMANX_FLAGS_ALPHA_FIXED_EXCEED_0X07    AlphaFlag = C.DISPMANX_FLAGS_ALPHA_FIXED_EXCEED_0X07
+	DISPMANX_FLAGS_ALPHA_PREMULT              AlphaFlag = C.DISPMANX_FLAGS_ALPHA_PREMULT
+	DISPMANX_FLAGS_ALPHA_MIX                  AlphaFlag = C.DISPMANX_FLAGS_ALPHA_MIX
+	DISPMANX_FLAGS_ALPHA_DISCARD_LOWER_LAYERS AlphaFlag = C.DISPMANX_FLAGS_ALPHA_DISCARD_LOWER_LAYERS
+)
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - RECT
+
+func NewRect(x, y int32, w, h uint32) *Rect {
+	r := new(Rect)
+	C.vc_dispmanx_rect_set((*C.VC_RECT_T)(r), C.uint32_t(x), C.uint32_t(y), C.uint32_t(w), C.uint32_t(h))
+	return r
+}
+
+func (r *Rect) Origin() (int32, int32) {
+	return int32(r.x), int32(r.y)
+}
+
+func (r *Rect) Size() (uint32, uint32) {
+	return uint32(r.width), uint32(r.height)
+}
+
+func (r *Rect) String() string {
+	str := "<rect"
+	x, y := r.Origin()
+	str += fmt.Sprintf(" origin={%d,%d}", x, y)
+	w, h := r.Size()
+	str += fmt.Sprintf(" size={%d,%d}", w, h)
+	return str + ">"
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - UPDATES
+
+func UpdateStart(priority int32) (Update, error) {
+	if ctx := C.vc_dispmanx_update_start(C.int32_t(priority)); ctx == 0 {
+		return 0, gopi.ErrBadParameter
+	} else {
+		return Update(ctx), nil
+	}
+}
+
+/*
+func UpdateSubmit(cb callback, userInfo uintptr) error {
+	if err := C.vc_dispmanx_update_submit(C.DISPMANX_UPDATE_HANDLE_T(ctx)); err != 0 {
+		return gopi.ErrUnexpectedResponse
+	} else {
+		return nil
+	}
+}
+*/
+
+func UpdateSubmitSync(ctx Update) error {
+	if err := C.vc_dispmanx_update_submit_sync(C.DISPMANX_UPDATE_HANDLE_T(ctx)); err != 0 {
+		return gopi.ErrUnexpectedResponse
+	} else {
+		return nil
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - ALPHA
+
+func NewAlphaFromSource() *Alpha {
+	this := new(Alpha)
+	this.flags = (C.DISPMANX_FLAGS_ALPHA_T)(DISPMANX_FLAGS_ALPHA_FROM_SOURCE)
+	return this
+}
+
+func NewAlphaFixed(opacity uint32) *Alpha {
+	this := new(Alpha)
+	this.flags = (C.DISPMANX_FLAGS_ALPHA_T)(DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS)
+	this.opacity = C.uint32_t(opacity)
+	return this
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - ELEMENTS
+
+func ElementAdd(ctx Update, display Display, layer uint16, destrect *Rect, src Resource, srcrect *Rect, protection Protection, alpha *Alpha, clamp *Clamp, transform Transform) (Element, error) {
+	if element := C.vc_dispmanx_element_add(
+		C.DISPMANX_UPDATE_HANDLE_T(ctx),
+		C.DISPMANX_DISPLAY_HANDLE_T(display),
+		C.int32_t(layer),
+		(*C.VC_RECT_T)(destrect),
+		C.DISPMANX_RESOURCE_HANDLE_T(src),
+		(*C.VC_RECT_T)(srcrect),
+		C.DISPMANX_PROTECTION_T(protection),
+		(*C.VC_DISPMANX_ALPHA_T)(alpha),
+		(*C.DISPMANX_CLAMP_T)(clamp),
+		C.DISPMANX_TRANSFORM_T(transform),
+	); element == 0 {
+		return 0, gopi.ErrBadParameter
+	} else {
+		return Element(element), nil
+	}
+}
+
+func ElementRemove(ctx Update, element Element) error {
+	if err := C.vc_dispmanx_element_remove(C.DISPMANX_UPDATE_HANDLE_T(ctx), C.DISPMANX_ELEMENT_HANDLE_T(element)); err != 0 {
+		return gopi.ErrBadParameter
+	}
+	return nil
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - RESOURCES
