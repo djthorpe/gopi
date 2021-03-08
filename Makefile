@@ -218,6 +218,9 @@ dvbkit: builddir dvb
 gx: builddir rpi egl drm gbm
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/gx -tags "$(TAGS)" ${GOFLAGS} ./cmd/gx
 
+dx: builddir rpi egl dispmanx
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/dx -tags "$(TAGS)" ${GOFLAGS} ./cmd/dx
+
 mmaltest: rpi mmal
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) test -v -tags "$(TAGS)" ./pkg/sys/mmal
 

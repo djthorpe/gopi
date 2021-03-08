@@ -18,9 +18,10 @@ type Surface struct {
 	sync.RWMutex
 	dx.Element
 
-	x, y  int32
-	w, h  uint32
-	layer uint16
+	x, y   int32
+	w, h   uint32
+	layer  uint16
+	bitmap *Bitmap
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,8 +43,13 @@ func NewSurface(ctx dx.Update, display dx.Display, x, y int32, w, h uint32) (*Su
 	} else if element, err := dx.ElementAdd(ctx, display, layer, r, resource, r, 0, dx.NewAlphaFromSource(), nil, dx.DISPMANX_NO_ROTATE); err != nil {
 		dx.ResourceDelete(resource)
 		return nil, err
+	} else if bitmap, err := NewBitmapFromResource(resource, dx.VC_IMAGE_RGBA32, w, h); err != nil {
+		dx.ElementRemove(ctx, element)
+		return nil, err
 	} else {
+		bitmap.Retain()
 		this.Element = element
+		this.bitmap = bitmap
 		this.x, this.y = x, y
 		this.w, this.h = w, h
 		this.layer = layer
@@ -68,8 +74,19 @@ func (this *Surface) Dispose(ctx dx.Update) error {
 		result = multierror.Append(result, err)
 	}
 
+	// Release bitmap
+	if this.bitmap != nil {
+		if this.bitmap.Release() {
+			// Dispose of bitmap
+			if err := this.bitmap.Dispose(); err != nil {
+				result = multierror.Append(result, err)
+			}
+		}
+	}
+
 	// Release any resources
 	this.Element = 0
+	this.bitmap = nil
 	this.x, this.y, this.w, this.h = 0, 0, 0, 0
 	this.layer = 0
 
@@ -99,6 +116,10 @@ func (this *Surface) Layer() uint16 {
 	return this.layer
 }
 
+func (this *Surface) Bitmap() gopi.Bitmap {
+	return this.bitmap
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
@@ -109,6 +130,8 @@ func (this *Surface) String() string {
 	str := "<surface"
 	str += fmt.Sprintf(" origin={%d,%d} size={%d,%d}", this.x, this.y, this.w, this.h)
 	str += fmt.Sprint(" layer=", this.layer)
-
+	if this.bitmap != nil {
+		str += fmt.Sprint(" bitmap=", this.bitmap)
+	}
 	return str + ">"
 }

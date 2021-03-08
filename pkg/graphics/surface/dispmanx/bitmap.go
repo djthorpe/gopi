@@ -21,14 +21,13 @@ type Bitmap struct {
 	dx.PixFormat
 
 	w, h, stride uint32
+	count        uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
 func NewBitmap(f dx.PixFormat, w, h uint32) (*Bitmap, error) {
-	this := new(Bitmap)
-
 	// Check parameters
 	if w == 0 || h == 0 {
 		return nil, gopi.ErrBadParameter.WithPrefix("NewBitmap")
@@ -36,14 +35,20 @@ func NewBitmap(f dx.PixFormat, w, h uint32) (*Bitmap, error) {
 	// Create resource
 	if resource, err := dx.ResourceCreate(f, w, h); err != nil {
 		return nil, err
+	} else if bitmap, err := NewBitmapFromResource(resource, f, w, h); err != nil {
+		dx.ResourceDelete(resource)
+		return nil, err
 	} else {
-		this.Resource = resource
-		this.PixFormat = f
-		this.w, this.h = w, h
-		this.stride = dx.ResourceStride(this.w)
+		return bitmap, nil
 	}
+}
 
-	// Return success
+func NewBitmapFromResource(handle dx.Resource, f dx.PixFormat, w, h uint32) (*Bitmap, error) {
+	this := new(Bitmap)
+	this.Resource = handle
+	this.PixFormat = f
+	this.w, this.h = w, h
+	this.stride = dx.ResourceStride(this.w)
 	return this, nil
 }
 
@@ -62,6 +67,22 @@ func (this *Bitmap) Dispose() error {
 
 	// Return success
 	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RETAIN AND RELEASE
+
+func (this *Bitmap) Retain() {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+	this.count += 1
+}
+
+func (this *Bitmap) Release() bool {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+	this.count -= 1
+	return this.count == 0
 }
 
 ////////////////////////////////////////////////////////////////////////////////

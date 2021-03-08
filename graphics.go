@@ -67,6 +67,7 @@ type SurfaceManager interface {
 type Surface interface {
 	Origin() Point
 	Size() Size
+	Bitmap() Bitmap
 }
 
 // GraphicsContext is an opaque type
