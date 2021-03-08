@@ -26,6 +26,7 @@ type Manager struct {
 	egl     egl.EGLDisplay
 	info    dx.DisplayInfo
 	bitmap  map[*Bitmap]bool
+	surface map[*Surface]uint16
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -63,8 +64,9 @@ func (this *Manager) New(gopi.Config) error {
 		return err
 	}
 
-	// Create bitmaps
+	// Create bitmapsand surfaces
 	this.bitmap = make(map[*Bitmap]bool)
+	this.surface = make(map[*Surface]uint16)
 
 	// Return success
 	return nil
@@ -83,6 +85,13 @@ func (this *Manager) Dispose() error {
 		}
 	}
 
+	// Remove surfaces
+	for surface := range this.surface {
+		if err := surface.Dispose(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
 	// Terminate EGL
 	if err := egl.EGLTerminate(this.egl); err != nil {
 		result = multierror.Append(result, err)
@@ -94,6 +103,7 @@ func (this *Manager) Dispose() error {
 	}
 
 	// Release resources
+	this.surface = nil
 	this.bitmap = nil
 	this.egl = 0
 	this.handle = 0
@@ -120,6 +130,7 @@ func (this *Manager) Size() gopi.Size {
 // METHODS
 
 func (this *Manager) CreateBackground(gopi.SurfaceFlags) (gopi.Surface, error) {
+	// TODO
 	return nil, gopi.ErrNotImplemented
 }
 
@@ -128,8 +139,22 @@ func (this *Manager) CreateSurface(flags gopi.SurfaceFlags, opacity float32, lay
 	return nil, gopi.ErrNotImplemented
 }
 
-func (this *Manager) DisposeSurface(gopi.Surface) error {
-	return gopi.ErrNotImplemented
+func (this *Manager) DisposeSurface(surface gopi.Surface) error {
+	surface_, ok := surface.(*Surface)
+	if ok == false {
+		return gopi.ErrBadParameter.WithPrefix("DisposeSurface")
+	}
+
+	var result error
+	if err := surface_.Dispose(); err != nil {
+		result = multierror.Append(result, err)
+	}
+	if err := this.delSurface(surface_); err != nil {
+		result = multierror.Append(result, err)
+	}
+
+	// Return any errors
+	return result
 }
 
 func (this *Manager) CreateBitmap(format gopi.SurfaceFormat, size gopi.Size) (gopi.Bitmap, error) {
@@ -192,6 +217,20 @@ func (this *Manager) addBitmap(bitmap *Bitmap) error {
 	return nil
 }
 
+func (this *Manager) addSurface(surface *Surface) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if _, exists := this.surface[surface]; exists {
+		return gopi.ErrDuplicateEntry
+	} else {
+		this.surface[surface] = surface.Layer()
+	}
+
+	// Return success
+	return nil
+}
+
 func (this *Manager) delBitmap(bitmap *Bitmap) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
@@ -200,6 +239,20 @@ func (this *Manager) delBitmap(bitmap *Bitmap) error {
 		return gopi.ErrNotFound
 	} else {
 		delete(this.bitmap, bitmap)
+	}
+
+	// Return success
+	return nil
+}
+
+func (this *Manager) delSurface(surface *Surface) error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if _, exists := this.surface[surface]; exists == false {
+		return gopi.ErrNotFound
+	} else {
+		delete(this.surface, surface)
 	}
 
 	// Return success
