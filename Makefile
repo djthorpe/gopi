@@ -230,8 +230,8 @@ mmalplayer: rpi mmal
 openvgtest: rpi dispmanx openvg egl
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) test -v -tags "$(TAGS)" ${GOFLAGS} ./pkg/sys/openvg
 
-dxtest: dispmanx
-	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) test -v -tags "$(TAGS)" ${GOFLAGS} ./pkg/sys/dispmanx
+dxtest: dispmanx egl rpi
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) test -v -tags "$(TAGS)" ${GOFLAGS} ./pkg/graphics/surface/dispmanx
 
 # Build rules - dependencies
 nfpm:
