@@ -19,7 +19,3 @@ import "C"
 func EGLGetDisplay(display uint) EGLDisplay {
 	return EGLDisplay(C.eglGetDisplay(C.EGLNativeDisplayType(uintptr(display))))
 }
-
-func EGLCreatePixmapSurface() EGLSurface {
-
-}

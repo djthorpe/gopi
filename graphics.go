@@ -43,11 +43,11 @@ type FontSize struct {
 // SurfaceManager to manage graphics surfaces
 type SurfaceManager interface {
 	CreateBackground(SurfaceFlags) (Surface, error)
+	CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 	DisposeSurface(Surface) error
 
 	/*
 		CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
-		CreateSurface(SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 	*/
 
 	// CreateBitmap returns a new bitmap with a specific pixel format

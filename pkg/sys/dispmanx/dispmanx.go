@@ -120,6 +120,14 @@ func ResourceDelete(handle Resource) error {
 	}
 }
 
+func ResourceStride(w uint32) uint32 {
+	return alignUp(w, 4)
+}
+
+func alignUp(value, alignment uint32) uint32 {
+	return ((value - 1) & ^(alignment - 1)) + alignment
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - DISPLAYS
 
