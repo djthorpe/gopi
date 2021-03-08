@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"image/color"
 
 	"github.com/djthorpe/gopi/v3"
 )
@@ -31,7 +32,8 @@ func (this *app) Run(ctx context.Context) error {
 		if surface, err := this.SurfaceManager.CreateSurface(ctx, 0, 1.0, 100, gopi.ZeroPoint, gopi.Size{100, 100}); err != nil {
 			return err
 		} else {
-			this.Print(surface)
+			bitmap := surface.Bitmap()
+			bitmap.ClearToColor(color.White)
 		}
 		return nil
 	})
