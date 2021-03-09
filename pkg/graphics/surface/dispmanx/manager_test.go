@@ -1,8 +1,9 @@
 // +build dispmanx,rpi,egl
 
-package surface_test
+package dispmanx_test
 
 import (
+	"image/color"
 	"testing"
 
 	// Frameworks
@@ -55,6 +56,7 @@ func Test_Manager_003(t *testing.T) {
 				return err
 			} else {
 				t.Log("surface=", surface)
+				surface.Bitmap().ClearToColor(color.RGBA{0xFF, 0x00, 0x00, 0xFF})
 			}
 			return nil
 		})

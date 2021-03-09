@@ -1,6 +1,6 @@
 // +build dispmanx
 
-package surface
+package dispmanx
 
 import (
 	"fmt"

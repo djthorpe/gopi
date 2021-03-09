@@ -44,13 +44,10 @@ type SurfaceManagerCallback func(GraphicsContext) error
 
 // SurfaceManager to manage graphics surfaces
 type SurfaceManager interface {
-	CreateBackground(GraphicsContext, SurfaceFlags) (Surface, error)
+	//CreateBackground(GraphicsContext, SurfaceFlags) (Surface, error)
 	CreateSurface(GraphicsContext, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
+	//CreateSurfaceWithBitmap(GraphicsContext, SurfaceFlags, Bitmap, float32, uint16, Point, Size) (Surface, error)
 	DisposeSurface(GraphicsContext, Surface) error
-
-	/*
-		CreateSurfaceWithBitmap(Bitmap, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
-	*/
 
 	// CreateBitmap returns a new bitmap with a specific pixel format
 	// and size. The size cannot be zero

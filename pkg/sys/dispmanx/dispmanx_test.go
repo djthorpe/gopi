@@ -83,7 +83,7 @@ func Test_DX_005(t *testing.T) {
 
 		if update, err := dx.UpdateStart(0); err != nil {
 			t.Error("UpdateStart:", err)
-		} else if element, err := dx.ElementAdd(update, display, 100, dest, resource, src, 0, dx.NewAlphaFromSource(), nil, dx.DISPMANX_NO_ROTATE); err != nil {
+		} else if element, err := dx.ElementAdd(update, display, 100, dest, resource, src, 0, dx.NewAlphaFromSource(0xFF), nil, dx.DISPMANX_NO_ROTATE); err != nil {
 			t.Error("ElementAdd:", err)
 		} else if err := dx.UpdateSubmitSync(update); err != nil {
 			t.Error("UpdateSubmitSync:", err)

@@ -1,6 +1,6 @@
 // +build dispmanx
 
-package surface
+package dispmanx
 
 import (
 	"fmt"
@@ -31,16 +31,18 @@ func NewSurface(ctx dx.Update, display dx.Display, x, y int32, w, h uint32) (*Su
 	this := new(Surface)
 
 	// Check parameters
-	if ctx == 0 || w == 0 || h == 0 {
+	if ctx == 0 || w == 0 || h == 0 || w > 0xFFFF || h > 0xFFFF {
 		return nil, gopi.ErrBadParameter.WithPrefix("NewSurface")
 	}
 
 	// Create resource for surface
-	r := dx.NewRect(x, y, w, h)
-	layer := uint16(100)
+	dest := dx.NewRect(x, y, w, h)
+	src := dx.NewRect(0, 0, w<<16, h<<16)
+	layer := uint16(2000)
+	opacity := uint8(0xFF)
 	if resource, err := dx.ResourceCreate(dx.VC_IMAGE_RGBA32, w, h); err != nil {
 		return nil, err
-	} else if element, err := dx.ElementAdd(ctx, display, layer, r, resource, r, 0, dx.NewAlphaFromSource(), nil, dx.DISPMANX_NO_ROTATE); err != nil {
+	} else if element, err := dx.ElementAdd(ctx, display, layer, dest, resource, src, 0, dx.NewAlphaFromSource(opacity), nil, dx.DISPMANX_NO_ROTATE); err != nil {
 		dx.ResourceDelete(resource)
 		return nil, err
 	} else if bitmap, err := NewBitmapFromResource(resource, dx.VC_IMAGE_RGBA32, w, h); err != nil {

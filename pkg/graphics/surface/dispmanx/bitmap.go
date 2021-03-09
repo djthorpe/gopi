@@ -1,6 +1,6 @@
 // +build dispmanx
 
-package surface
+package dispmanx
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 
 	gopi "github.com/djthorpe/gopi/v3"
 	dx "github.com/djthorpe/gopi/v3/pkg/sys/dispmanx"
+	"github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -18,10 +19,11 @@ import (
 type Bitmap struct {
 	sync.RWMutex
 	dx.Resource
-	dx.PixFormat
+	*Model
 
-	w, h, stride uint32
-	count        uint32
+	w, h   uint32
+	stride uint32
+	count  uint32
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -46,9 +48,19 @@ func NewBitmap(f dx.PixFormat, w, h uint32) (*Bitmap, error) {
 func NewBitmapFromResource(handle dx.Resource, f dx.PixFormat, w, h uint32) (*Bitmap, error) {
 	this := new(Bitmap)
 	this.Resource = handle
-	this.PixFormat = f
 	this.w, this.h = w, h
-	this.stride = dx.ResourceStride(this.w)
+
+	// set color model
+	if model := ColorModel(f); model == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("NewBitmapFromResource")
+	} else {
+		this.Model = model
+	}
+
+	// Bits per pixel and align up to 16-byte boundary
+	this.stride = dx.ResourceStride(this.Model.BytesPerLine(this.w))
+
+	// Return success
 	return this, nil
 }
 
@@ -56,17 +68,19 @@ func (this *Bitmap) Dispose() error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
+	// Delete resource
+	var result error
 	if err := dx.ResourceDelete(this.Resource); err != nil {
-		return err
+		result = multierror.Append(result, err)
 	}
 
 	// Release resources
 	this.Resource = 0
-	this.PixFormat = 0
+	this.Model = nil
 	this.w, this.h, this.stride = 0, 0, 0
 
-	// Return success
-	return nil
+	// Return any errors
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,7 +103,7 @@ func (this *Bitmap) Release() bool {
 // PROPERTIES
 
 func (this *Bitmap) Format() gopi.SurfaceFormat {
-	return surfaceFormat(this.PixFormat)
+	return surfaceFormat(this.Model.Format())
 }
 
 func (this *Bitmap) Size() gopi.Size {
@@ -100,13 +114,15 @@ func (this *Bitmap) Size() gopi.Size {
 // PUBLIC METHODS
 
 func (this *Bitmap) At(x, y int) color.Color {
+	if x < 0 || y < 0 || x >= int(this.w) || y >= int(this.h) {
+		return color.Black
+	}
 	// TODO
 	return color.Black
 }
 
 func (this *Bitmap) ColorModel() color.Model {
-	// TODO
-	return nil
+	return this.Model
 }
 
 func (this *Bitmap) Bounds() image.Rectangle {
@@ -116,11 +132,45 @@ func (this *Bitmap) Bounds() image.Rectangle {
 	}
 }
 
-func (this *Bitmap) ClearToColor(color.Color) {
+func (this *Bitmap) ClearToColor(c color.Color) {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
-	// TODO
+	// Make a row of data (bytes per line, number of lines)
+	data := dx.NewData(this.stride)
+	if data == nil {
+		return
+	}
+
+	// TODO: Write color
+	buf := data.Bytes()
+	for i := range buf {
+		buf[i] = 0xFF
+	}
+
+	// Write in all rows with the same data
+	for y := uint32(0); y < this.h; y++ {
+		if err := this.Write(data, this.Resource, y, 1); err != nil {
+			return
+		}
+	}
+
+	// Dispose of data
+	data.Dispose()
+}
+
+// Write data to GPU memory with the y-axis bounds as y and h
+func (this *Bitmap) Write(src *dx.Data, dest dx.Resource, y, h uint32) error {
+	stride := src.Stride()
+	rect := dx.NewRect(0, int32(y), stride, h)
+	return dx.ResourceWrite(dest, 0, stride, src.PtrMinusOffset(y*stride), rect)
+}
+
+// Read data from GPU to buffer
+func (this *Bitmap) Read(src dx.Resource, dest *dx.Data, y, h uint32) error {
+	stride := dest.Stride()
+	rect := dx.NewRect(0, int32(y), stride, h)
+	return dx.ResourceRead(src, rect, dest.PtrMinusOffset(y*stride), stride)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -128,7 +178,7 @@ func (this *Bitmap) ClearToColor(color.Color) {
 
 func (this *Bitmap) String() string {
 	str := "<bitmap"
-	str += fmt.Sprint("fmt=", this.PixFormat)
-	str += fmt.Sprintf("size={%d,%d} stride=%d", this.w, this.h, this.stride)
+	str += fmt.Sprint(" fmt=", this.Model.Format())
+	str += fmt.Sprintf(" size={%d,%d} stride=%d", this.w, this.h, this.stride)
 	return str + ">"
 }

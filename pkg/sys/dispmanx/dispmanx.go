@@ -4,6 +4,7 @@ package dispmanx
 
 import (
 	"fmt"
+	"reflect"
 	"unsafe"
 
 	"github.com/djthorpe/gopi/v3"
@@ -35,6 +36,12 @@ type (
 	AlphaFlag   C.DISPMANX_FLAGS_ALPHA_T
 	Clamp       C.DISPMANX_CLAMP_T
 )
+
+type Data struct {
+	buf   uintptr
+	cap   uint32
+	data8 []byte
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -175,13 +182,14 @@ func UpdateSubmitSync(ctx Update) error {
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - ALPHA
 
-func NewAlphaFromSource() *Alpha {
+func NewAlphaFromSource(opacity uint8) *Alpha {
 	this := new(Alpha)
-	this.flags = (C.DISPMANX_FLAGS_ALPHA_T)(DISPMANX_FLAGS_ALPHA_FROM_SOURCE)
+	this.flags = (C.DISPMANX_FLAGS_ALPHA_T)(DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS | DISPMANX_FLAGS_ALPHA_FROM_SOURCE)
+	this.opacity = C.uint32_t(opacity)
 	return this
 }
 
-func NewAlphaFixed(opacity uint32) *Alpha {
+func NewAlphaFixed(opacity uint8) *Alpha {
 	this := new(Alpha)
 	this.flags = (C.DISPMANX_FLAGS_ALPHA_T)(DISPMANX_FLAGS_ALPHA_FIXED_ALL_PIXELS)
 	this.opacity = C.uint32_t(opacity)
@@ -238,11 +246,27 @@ func ResourceDelete(handle Resource) error {
 	}
 }
 
-func ResourceStride(w uint32) uint32 {
-	return alignUp(w, 4)
+func ResourceRead(handle Resource, r *Rect, dest uintptr, pitch uint32) error {
+	if C.vc_dispmanx_resource_read_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), (*C.VC_RECT_T)(r), unsafe.Pointer(dest), C.uint32_t(pitch)) == 0 {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
 }
 
-func alignUp(value, alignment uint32) uint32 {
+func ResourceWrite(handle Resource, f PixFormat, pitch uint32, source uintptr, r *Rect) error {
+	if C.vc_dispmanx_resource_write_data(C.DISPMANX_RESOURCE_HANDLE_T(handle), C.VC_IMAGE_TYPE_T(f), C.int(pitch), unsafe.Pointer(source), (*C.VC_RECT_T)(r)) == 0 {
+		return nil
+	} else {
+		return gopi.ErrBadParameter
+	}
+}
+
+func ResourceStride(w uint32) uint32 {
+	return AlignUp(w, 16)
+}
+
+func AlignUp(value, alignment uint32) uint32 {
 	return ((value - 1) & ^(alignment - 1)) + alignment
 }
 
@@ -322,4 +346,188 @@ func (d DisplayInfo) PixFormat() PixFormat {
 
 func (d DisplayInfo) Num() uint32 {
 	return uint32(d.display_num)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS: BYTE BUFFER
+
+func NewData(size uint32) *Data {
+	// Align to 4-byte boundaries
+	this := new(Data)
+	this.cap = AlignUp(size, 4)
+	this.buf = uintptr(C.malloc(C.uint(this.cap)))
+	if this.cap == 0 || this.buf == 0 {
+		return nil
+	}
+
+	// Set data8 slice to point to allocated bytes
+	h8 := (*reflect.SliceHeader)(unsafe.Pointer(&this.data8))
+	h8.Data = this.buf
+	h8.Len = int(size)
+	h8.Cap = int(this.cap)
+
+	return this
+}
+
+func (this *Data) Dispose() {
+	C.free(unsafe.Pointer(this.buf))
+	this.buf = 0
+	this.cap = 0
+}
+
+func (this *Data) Stride() uint32 {
+	return this.cap
+}
+
+func (this *Data) Bytes() []byte {
+	return this.data8
+}
+
+func (this *Data) Ptr() uintptr {
+	return this.buf
+}
+
+func (this *Data) PtrMinusOffset(offset uint32) uintptr {
+	return this.buf - uintptr(offset)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (t Transform) String() string {
+	switch t & 0x04 {
+	case DISPMANX_NO_ROTATE:
+		return "DISPMANX_NO_ROTATE"
+	case DISPMANX_ROTATE_90:
+		return "DISPMANX_ROTATE_90"
+	case DISPMANX_ROTATE_180:
+		return "DISPMANX_ROTATE_180"
+	case DISPMANX_ROTATE_270:
+		return "DISPMANX_ROTATE_270"
+	default:
+		return "[?? Invalid Transform value]"
+	}
+}
+
+func (f PixFormat) String() string {
+	switch f {
+	case VC_IMAGE_RGB565:
+		return "VC_IMAGE_RGB565"
+	case VC_IMAGE_1BPP:
+		return "VC_IMAGE_1BPP"
+	case VC_IMAGE_YUV420:
+		return "VC_IMAGE_YUV420"
+	case VC_IMAGE_48BPP:
+		return "VC_IMAGE_48BPP"
+	case VC_IMAGE_RGB888:
+		return "VC_IMAGE_RGB888"
+	case VC_IMAGE_8BPP:
+		return "VC_IMAGE_8BPP"
+	case VC_IMAGE_4BPP:
+		return "VC_IMAGE_4BPP"
+	case VC_IMAGE_3D32:
+		return "VC_IMAGE_3D32"
+	case VC_IMAGE_3D32B:
+		return "VC_IMAGE_3D32B"
+	case VC_IMAGE_3D32MAT:
+		return "VC_IMAGE_3D32MAT"
+	case VC_IMAGE_RGB2X9:
+		return "VC_IMAGE_RGB2X9"
+	case VC_IMAGE_RGB666:
+		return "VC_IMAGE_RGB666"
+	case VC_IMAGE_RGBA32:
+		return "VC_IMAGE_RGBA32"
+	case VC_IMAGE_YUV422:
+		return "VC_IMAGE_YUV422"
+	case VC_IMAGE_RGBA565:
+		return "VC_IMAGE_RGBA565"
+	case VC_IMAGE_RGBA16:
+		return "VC_IMAGE_RGBA16"
+	case VC_IMAGE_YUV_UV:
+		return "VC_IMAGE_YUV_UV"
+	case VC_IMAGE_TF_RGBA32:
+		return "VC_IMAGE_TF_RGBA32"
+	case VC_IMAGE_TF_RGBX32:
+		return "VC_IMAGE_TF_RGBX32"
+	case VC_IMAGE_TF_FLOAT:
+		return "VC_IMAGE_TF_FLOAT"
+	case VC_IMAGE_TF_RGBA16:
+		return "VC_IMAGE_TF_RGBA16"
+	case VC_IMAGE_TF_RGBA5551:
+		return "VC_IMAGE_TF_RGBA5551"
+	case VC_IMAGE_TF_RGB565:
+		return "VC_IMAGE_TF_RGB565"
+	case VC_IMAGE_TF_YA88:
+		return "VC_IMAGE_TF_YA88"
+	case VC_IMAGE_TF_BYTE:
+		return "VC_IMAGE_TF_BYTE"
+	case VC_IMAGE_TF_PAL8:
+		return "VC_IMAGE_TF_PAL8"
+	case VC_IMAGE_TF_PAL4:
+		return "VC_IMAGE_TF_PAL4"
+	case VC_IMAGE_TF_ETC1:
+		return "VC_IMAGE_TF_ETC1"
+	case VC_IMAGE_BGR888:
+		return "VC_IMAGE_BGR888"
+	case VC_IMAGE_BGR888_NP:
+		return "VC_IMAGE_BGR888_NP"
+	case VC_IMAGE_BAYER:
+		return "VC_IMAGE_BAYER"
+	case VC_IMAGE_CODEC:
+		return "VC_IMAGE_CODEC"
+	case VC_IMAGE_YUV_UV32:
+		return "VC_IMAGE_YUV_UV32"
+	case VC_IMAGE_TF_Y8:
+		return "VC_IMAGE_TF_Y8"
+	case VC_IMAGE_TF_A8:
+		return "VC_IMAGE_TF_A8"
+	case VC_IMAGE_TF_SHORT:
+		return "VC_IMAGE_TF_SHORT"
+	case VC_IMAGE_TF_1BPP:
+		return "VC_IMAGE_TF_1BPP"
+	case VC_IMAGE_OPENGL:
+		return "VC_IMAGE_OPENGL"
+	case VC_IMAGE_YUV444I:
+		return "VC_IMAGE_YUV444I"
+	case VC_IMAGE_YUV422PLANAR:
+		return "VC_IMAGE_YUV422PLANAR"
+	case VC_IMAGE_ARGB8888:
+		return "VC_IMAGE_ARGB8888"
+	case VC_IMAGE_XRGB8888:
+		return "VC_IMAGE_XRGB8888"
+	case VC_IMAGE_YUV422YUYV:
+		return "VC_IMAGE_YUV422YUYV"
+	case VC_IMAGE_YUV422YVYU:
+		return "VC_IMAGE_YUV422YVYU"
+	case VC_IMAGE_YUV422UYVY:
+		return "VC_IMAGE_YUV422UYVY"
+	case VC_IMAGE_YUV422VYUY:
+		return "VC_IMAGE_YUV422VYUY"
+	case VC_IMAGE_RGBX32:
+		return "VC_IMAGE_RGBX32"
+	case VC_IMAGE_RGBX8888:
+		return "VC_IMAGE_RGBX8888"
+	case VC_IMAGE_BGRX8888:
+		return "VC_IMAGE_BGRX8888"
+	case VC_IMAGE_YUV420SP:
+		return "VC_IMAGE_YUV420SP"
+	case VC_IMAGE_YUV444PLANAR:
+		return "VC_IMAGE_YUV444PLANAR"
+	case VC_IMAGE_TF_U8:
+		return "VC_IMAGE_TF_U8"
+	case VC_IMAGE_TF_V8:
+		return "VC_IMAGE_TF_V8"
+	case VC_IMAGE_YUV420_16:
+		return "VC_IMAGE_YUV420_16"
+	case VC_IMAGE_YUV_UV_16:
+		return "VC_IMAGE_YUV_UV_16"
+	case VC_IMAGE_YUV420_S:
+		return "VC_IMAGE_YUV420_S"
+	case VC_IMAGE_YUV10COL:
+		return "VC_IMAGE_YUV10COL"
+	case VC_IMAGE_RGBA1010102:
+		return "VC_IMAGE_RGBA1010102"
+	default:
+		return "[?? Invalid PixFormat value]"
+	}
 }

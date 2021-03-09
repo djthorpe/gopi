@@ -1,6 +1,6 @@
 // +build egl,dispmanx
 
-package surface
+package dispmanx
 
 import (
 	"fmt"
@@ -311,40 +311,4 @@ func (this *Manager) delSurface(surface *Surface) error {
 
 	// Return success
 	return nil
-}
-
-// Return dispmanx PixFormat for SurfaceFormat or zero
-func pixFormat(format gopi.SurfaceFormat) dx.PixFormat {
-	switch format {
-	case gopi.SURFACE_FMT_RGBA32:
-		return dx.VC_IMAGE_RGBA32
-	case gopi.SURFACE_FMT_XRGB32:
-		return dx.VC_IMAGE_RGBX32
-	case gopi.SURFACE_FMT_RGB888:
-		return dx.VC_IMAGE_RGB888
-	case gopi.SURFACE_FMT_RGB565:
-		return dx.VC_IMAGE_RGB565
-	case gopi.SURFACE_FMT_1BPP:
-		return dx.VC_IMAGE_1BPP
-	default:
-		return 0
-	}
-}
-
-// Return SurfaceFormat for dispmanx PixFormat or zero
-func surfaceFormat(format dx.PixFormat) gopi.SurfaceFormat {
-	switch format {
-	case dx.VC_IMAGE_RGBA32:
-		return gopi.SURFACE_FMT_RGBA32
-	case dx.VC_IMAGE_RGBX32:
-		return gopi.SURFACE_FMT_XRGB32
-	case dx.VC_IMAGE_RGB888:
-		return gopi.SURFACE_FMT_RGB888
-	case dx.VC_IMAGE_RGB565:
-		return gopi.SURFACE_FMT_RGB565
-	case dx.VC_IMAGE_1BPP:
-		return gopi.SURFACE_FMT_1BPP
-	default:
-		return 0
-	}
 }

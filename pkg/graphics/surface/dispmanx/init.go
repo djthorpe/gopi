@@ -1,6 +1,6 @@
 // +build egl,dispmanx
 
-package surface
+package dispmanx
 
 import (
 	"reflect"
