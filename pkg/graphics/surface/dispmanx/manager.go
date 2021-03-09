@@ -150,8 +150,33 @@ func (this *Manager) CreateSurface(ctx gopi.GraphicsContext, flags gopi.SurfaceF
 		return nil, gopi.ErrBadParameter.WithPrefix("CreateSurface")
 	}
 
+	// Convert width and height
+	w, h := uint32(size.W), uint32(size.H)
+	if w == 0 || h == 0 {
+		return nil, gopi.ErrBadParameter.WithPrefix("CreateSurface")
+	}
+
+	// Get color model for format
+	colormodel := ColorModel(dx.VC_IMAGE_RGBA32)
+
+	// Convert opacity to byte
+	opacity8 := byte(opacity * 255.0)
+
+	// Initialise bitmap
+	var bitmap *Bitmap
+	var err error
+	switch flags & gopi.SURFACE_FLAG_MASK {
+	case gopi.SURFACE_FLAG_BITMAP:
+		bitmap, err = NewBitmap(colormodel.Format(), w, h)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, gopi.ErrNotImplemented.WithPrefix("CreateSurface")
+	}
+
 	// Create surface
-	if surface, err := NewSurface(ctx_.Update, ctx_.Display, int32(origin.X), int32(origin.Y), uint32(size.W), uint32(size.H)); err != nil {
+	if surface, err := NewSurface(ctx_.Update, ctx_.Display, bitmap, int32(origin.X), int32(origin.Y), w, h, layer, opacity8); err != nil {
 		return nil, err
 	} else if err := this.addSurface(surface); err != nil {
 		surface.Dispose(ctx_.Update)

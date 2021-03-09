@@ -29,7 +29,7 @@ func (this *app) New(cfg gopi.Config) error {
 
 func (this *app) Run(ctx context.Context) error {
 	this.SurfaceManager.Do(func(ctx gopi.GraphicsContext) error {
-		if surface, err := this.SurfaceManager.CreateSurface(ctx, 0, 1.0, 100, gopi.Point{500, 500}, gopi.Size{100, 100}); err != nil {
+		if surface, err := this.SurfaceManager.CreateSurface(ctx, gopi.SURFACE_FLAG_BITMAP, 1.0, 100, gopi.Point{500, 500}, gopi.Size{100, 100}); err != nil {
 			return err
 		} else {
 			bitmap := surface.Bitmap()

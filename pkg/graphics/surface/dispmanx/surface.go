@@ -18,16 +18,17 @@ type Surface struct {
 	sync.RWMutex
 	dx.Element
 
-	x, y   int32
-	w, h   uint32
-	layer  uint16
-	bitmap *Bitmap
+	x, y    int32
+	w, h    uint32
+	opacity uint8
+	layer   uint16
+	bitmap  *Bitmap
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewSurface(ctx dx.Update, display dx.Display, x, y int32, w, h uint32) (*Surface, error) {
+func NewSurface(ctx dx.Update, display dx.Display, bitmap *Bitmap, x, y int32, w, h uint32, layer uint16, opacity uint8) (*Surface, error) {
 	this := new(Surface)
 
 	// Check parameters
@@ -35,27 +36,31 @@ func NewSurface(ctx dx.Update, display dx.Display, x, y int32, w, h uint32) (*Su
 		return nil, gopi.ErrBadParameter.WithPrefix("NewSurface")
 	}
 
-	// Create resource for surface
+	// Set bounds for src and dest
 	dest := dx.NewRect(x, y, w, h)
 	src := dx.NewRect(0, 0, w<<16, h<<16)
-	layer := uint16(2000)
-	opacity := uint8(0xFF)
-	if resource, err := dx.ResourceCreate(dx.VC_IMAGE_RGBA32, w, h); err != nil {
-		return nil, err
-	} else if element, err := dx.ElementAdd(ctx, display, layer, dest, resource, src, 0, dx.NewAlphaFromSource(opacity), nil, dx.DISPMANX_NO_ROTATE); err != nil {
+
+	// Set src to bitmap size
+	var resource dx.Resource
+	if bitmap != nil {
+		resource = bitmap.Resource
+		src = dx.NewRect(0, 0, bitmap.w<<16, bitmap.h<<16)
+	}
+
+	if element, err := dx.ElementAdd(ctx, display, layer, dest, resource, src, 0, dx.NewAlphaFromSource(opacity), nil, dx.DISPMANX_NO_ROTATE); err != nil {
 		dx.ResourceDelete(resource)
-		return nil, err
-	} else if bitmap, err := NewBitmapFromResource(resource, dx.VC_IMAGE_RGBA32, w, h); err != nil {
-		dx.ElementRemove(ctx, element)
 		return nil, err
 	} else {
 		bitmap.Retain()
 		this.Element = element
-		this.bitmap = bitmap
-		this.x, this.y = x, y
-		this.w, this.h = w, h
-		this.layer = layer
 	}
+
+	// Set surface parameters
+	this.bitmap = bitmap
+	this.x, this.y = x, y
+	this.w, this.h = w, h
+	this.opacity = opacity
+	this.layer = layer
 
 	// Return success
 	return this, nil
@@ -90,7 +95,7 @@ func (this *Surface) Dispose(ctx dx.Update) error {
 	this.Element = 0
 	this.bitmap = nil
 	this.x, this.y, this.w, this.h = 0, 0, 0, 0
-	this.layer = 0
+	this.layer, this.opacity = 0, 0
 
 	// Return any errors
 	return result
