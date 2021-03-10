@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"image/color"
 
 	"github.com/djthorpe/gopi/v3"
 )
@@ -28,16 +27,16 @@ func (this *app) New(cfg gopi.Config) error {
 }
 
 func (this *app) Run(ctx context.Context) error {
-	this.SurfaceManager.Do(func(ctx gopi.GraphicsContext) error {
-		if surface, err := this.SurfaceManager.CreateSurface(ctx, gopi.SURFACE_FLAG_BITMAP, 1.0, 100, gopi.Point{500, 500}, gopi.Size{100, 100}); err != nil {
+	if err := this.SurfaceManager.Do(func(ctx gopi.GraphicsContext) error {
+		if surface, err := this.SurfaceManager.CreateSurface(ctx, gopi.SURFACE_FLAG_OPENVG, 1.0, 100, gopi.Point{500, 500}, gopi.Size{100, 100}); err != nil {
 			return err
 		} else {
-			bitmap := surface.Bitmap()
-			bitmap.ClearToColor(color.Gray{0x80})
 			this.Print(surface)
 		}
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
 
 	// Wait for interrupt
 	fmt.Println("Press CTRL+C to end")

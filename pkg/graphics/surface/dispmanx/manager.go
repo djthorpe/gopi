@@ -157,13 +157,12 @@ func (this *Manager) CreateSurface(ctx gopi.GraphicsContext, flags gopi.SurfaceF
 	}
 
 	// Get color model for format
-	colormodel := ColorModel(dx.VC_IMAGE_RGBA32)
-
-	// Convert opacity to byte
+	colormodel := ColorModel(gopi.SURFACE_FMT_RGBA32)
 	opacity8 := byte(opacity * 255.0)
 
 	// Initialise bitmap
 	var bitmap *Bitmap
+	var context egl.EGLContext
 	var err error
 	switch flags & gopi.SURFACE_FLAG_MASK {
 	case gopi.SURFACE_FLAG_BITMAP:
@@ -171,17 +170,32 @@ func (this *Manager) CreateSurface(ctx gopi.GraphicsContext, flags gopi.SurfaceF
 		if err != nil {
 			return nil, err
 		}
+	case gopi.SURFACE_FLAG_OPENVG:
+		if bits := colormodel.EGLConfig(); len(bits) == 0 {
+			return nil, gopi.ErrNotImplemented.WithPrefix("CreateSurface")
+		} else if config, err := egl.EGLChooseConfig(this.egl, bits[0], bits[1], bits[2], bits[3], egl.EGL_SURFACETYPE_FLAG_WINDOW, egl.EGL_RENDERABLE_FLAG_OPENVG); err != nil {
+			return nil, err
+		} else if err := egl.EGLBindAPI(egl.EGL_API_OPENVG); err != nil {
+			return nil, err
+		} else if ctx, err := egl.EGLCreateContext(this.egl, config, nil, nil); err != nil {
+			return nil, err
+		} else {
+			context = ctx
+		}
 	default:
 		return nil, gopi.ErrNotImplemented.WithPrefix("CreateSurface")
 	}
 
-	// Create surface
-	if surface, err := NewSurface(ctx_.Update, ctx_.Display, bitmap, int32(origin.X), int32(origin.Y), w, h, layer, opacity8); err != nil {
+	// Create surface, retain bitmap
+	if surface, err := NewSurface(ctx_.Update, ctx_.Display, bitmap, context, int32(origin.X), int32(origin.Y), w, h, layer, opacity8); err != nil {
 		return nil, err
 	} else if err := this.addSurface(surface); err != nil {
 		surface.Dispose(ctx_.Update)
 		return nil, err
 	} else {
+		if bitmap != nil {
+			bitmap.Retain()
+		}
 		return surface, nil
 	}
 }
@@ -196,10 +210,23 @@ func (this *Manager) DisposeSurface(ctx gopi.GraphicsContext, surface gopi.Surfa
 		return gopi.ErrBadParameter.WithPrefix("DisposeSurface")
 	}
 
+	// Get bitmap
+	bitmap := surface_.bitmap
+
+	// Dispose surface
 	var result error
 	if err := surface_.Dispose(ctx_.Update); err != nil {
 		result = multierror.Append(result, err)
 	}
+
+	// Dispose bitmap
+	if bitmap != nil {
+		if err := this.releaseBitmap(bitmap); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	// Remove surface
 	if err := this.delSurface(surface_); err != nil {
 		result = multierror.Append(result, err)
 	}
@@ -209,35 +236,29 @@ func (this *Manager) DisposeSurface(ctx gopi.GraphicsContext, surface gopi.Surfa
 }
 
 func (this *Manager) CreateBitmap(format gopi.SurfaceFormat, size gopi.Size) (gopi.Bitmap, error) {
-	if fmt := pixFormat(format); fmt == 0 {
-		return nil, gopi.ErrBadParameter.WithPrefix("CreateBitmap")
-	} else if bitmap, err := NewBitmap(fmt, uint32(size.W), uint32(size.H)); err != nil {
+	bitmap, err := NewBitmap(format, uint32(size.W), uint32(size.H))
+	if err != nil {
 		return nil, err
-	} else if err := this.addBitmap(bitmap); err != nil {
+	}
+
+	if err := this.addBitmap(bitmap); err != nil {
 		bitmap.Dispose()
 		return nil, err
-	} else {
-		// Return success
-		return bitmap, nil
 	}
+
+	// Retain bitmap
+	bitmap.Retain()
+
+	// Return success
+	return bitmap, nil
 }
 
 func (this *Manager) DisposeBitmap(bitmap gopi.Bitmap) error {
-	bitmap_, ok := bitmap.(*Bitmap)
-	if ok == false {
+	if bitmap_, ok := bitmap.(*Bitmap); ok == false {
 		return gopi.ErrBadParameter.WithPrefix("DisposeBitmap")
+	} else {
+		return this.releaseBitmap(bitmap_)
 	}
-
-	var result error
-	if err := bitmap_.Dispose(); err != nil {
-		result = multierror.Append(result, err)
-	}
-	if err := this.delBitmap(bitmap_); err != nil {
-		result = multierror.Append(result, err)
-	}
-
-	// Return any errors
-	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -308,6 +329,22 @@ func (this *Manager) addSurface(surface *Surface) error {
 
 	// Return success
 	return nil
+}
+
+func (this *Manager) releaseBitmap(bitmap *Bitmap) error {
+	var result error
+
+	if bitmap.Release() {
+		if err := bitmap.Dispose(); err != nil {
+			result = multierror.Append(result, err)
+		}
+		if err := this.delBitmap(bitmap); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	// Return any errors
+	return result
 }
 
 func (this *Manager) delBitmap(bitmap *Bitmap) error {

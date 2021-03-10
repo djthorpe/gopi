@@ -29,15 +29,17 @@ type Bitmap struct {
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewBitmap(f dx.PixFormat, w, h uint32) (*Bitmap, error) {
+func NewBitmap(fmt gopi.SurfaceFormat, w, h uint32) (*Bitmap, error) {
 	// Check parameters
 	if w == 0 || h == 0 {
 		return nil, gopi.ErrBadParameter.WithPrefix("NewBitmap")
 	}
-	// Create resource
-	if resource, err := dx.ResourceCreate(f, w, h); err != nil {
+	// Get color model, create resource
+	if model := ColorModel(fmt); model == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("NewBitmap")
+	} else if resource, err := dx.ResourceCreate(model.PixFormat(), w, h); err != nil {
 		return nil, err
-	} else if bitmap, err := NewBitmapFromResource(resource, f, w, h); err != nil {
+	} else if bitmap, err := NewBitmapFromResource(resource, model, w, h); err != nil {
 		dx.ResourceDelete(resource)
 		return nil, err
 	} else {
@@ -45,20 +47,14 @@ func NewBitmap(f dx.PixFormat, w, h uint32) (*Bitmap, error) {
 	}
 }
 
-func NewBitmapFromResource(handle dx.Resource, f dx.PixFormat, w, h uint32) (*Bitmap, error) {
+func NewBitmapFromResource(handle dx.Resource, model *Model, w, h uint32) (*Bitmap, error) {
 	this := new(Bitmap)
 	this.Resource = handle
+	this.Model = model
 	this.w, this.h = w, h
 
-	// set color model
-	if model := ColorModel(f); model == nil {
-		return nil, gopi.ErrBadParameter.WithPrefix("NewBitmapFromResource")
-	} else {
-		this.Model = model
-	}
-
-	// Bits per pixel and align up to 16-byte boundary
-	this.stride = dx.ResourceStride(this.Model.BytesPerLine(this.w))
+	// Align up to 16-byte boundary
+	this.stride = dx.ResourceStride(this.Model.Pitch(this.w))
 
 	// Return success
 	return this, nil
@@ -103,7 +99,7 @@ func (this *Bitmap) Release() bool {
 // PROPERTIES
 
 func (this *Bitmap) Format() gopi.SurfaceFormat {
-	return surfaceFormat(this.Model.Format())
+	return this.Model.Format()
 }
 
 func (this *Bitmap) Size() gopi.Size {
@@ -143,7 +139,7 @@ func (this *Bitmap) ClearToColor(c color.Color) {
 	}
 
 	// TODO: Write color
-	buf := data.Bytes()
+	buf := data.Byte(0)
 	for i := range buf {
 		buf[i] = 0xFF
 	}
@@ -161,14 +157,14 @@ func (this *Bitmap) ClearToColor(c color.Color) {
 
 // Write data to GPU memory with the y-axis bounds as y and h
 func (this *Bitmap) Write(src *dx.Data, dest dx.Resource, y, h uint32) error {
-	stride := src.Stride()
+	stride := src.Cap()
 	rect := dx.NewRect(0, int32(y), stride, h)
 	return dx.ResourceWrite(dest, 0, stride, src.PtrMinusOffset(y*stride), rect)
 }
 
 // Read data from GPU to buffer
 func (this *Bitmap) Read(src dx.Resource, dest *dx.Data, y, h uint32) error {
-	stride := dest.Stride()
+	stride := dest.Cap()
 	rect := dx.NewRect(0, int32(y), stride, h)
 	return dx.ResourceRead(src, rect, dest.PtrMinusOffset(y*stride), stride)
 }

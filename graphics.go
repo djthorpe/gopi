@@ -235,6 +235,8 @@ func (f SurfaceFormat) String() string {
 		return "SURFACE_FMT_RGB888"
 	case SURFACE_FMT_RGB565:
 		return "SURFACE_FMT_RGB565"
+	case SURFACE_FMT_1BPP:
+		return "SURFACE_FMT_1BPP"
 	default:
 		return "[?? Invalid SurfaceFormat value]"
 	}

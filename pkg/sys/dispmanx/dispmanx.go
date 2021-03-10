@@ -4,7 +4,6 @@ package dispmanx
 
 import (
 	"fmt"
-	"reflect"
 	"unsafe"
 
 	"github.com/djthorpe/gopi/v3"
@@ -36,12 +35,6 @@ type (
 	AlphaFlag   C.DISPMANX_FLAGS_ALPHA_T
 	Clamp       C.DISPMANX_CLAMP_T
 )
-
-type Data struct {
-	buf   uintptr
-	cap   uint32
-	data8 []byte
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CONSTANTS
@@ -266,10 +259,6 @@ func ResourceStride(w uint32) uint32 {
 	return AlignUp(w, 16)
 }
 
-func AlignUp(value, alignment uint32) uint32 {
-	return ((value - 1) & ^(alignment - 1)) + alignment
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS - DISPLAYS
 
@@ -346,49 +335,6 @@ func (d DisplayInfo) PixFormat() PixFormat {
 
 func (d DisplayInfo) Num() uint32 {
 	return uint32(d.display_num)
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// PUBLIC METHODS: BYTE BUFFER
-
-func NewData(size uint32) *Data {
-	// Align to 4-byte boundaries
-	this := new(Data)
-	this.cap = AlignUp(size, 4)
-	this.buf = uintptr(C.malloc(C.uint(this.cap)))
-	if this.cap == 0 || this.buf == 0 {
-		return nil
-	}
-
-	// Set data8 slice to point to allocated bytes
-	h8 := (*reflect.SliceHeader)(unsafe.Pointer(&this.data8))
-	h8.Data = this.buf
-	h8.Len = int(size)
-	h8.Cap = int(this.cap)
-
-	return this
-}
-
-func (this *Data) Dispose() {
-	C.free(unsafe.Pointer(this.buf))
-	this.buf = 0
-	this.cap = 0
-}
-
-func (this *Data) Stride() uint32 {
-	return this.cap
-}
-
-func (this *Data) Bytes() []byte {
-	return this.data8
-}
-
-func (this *Data) Ptr() uintptr {
-	return this.buf
-}
-
-func (this *Data) PtrMinusOffset(offset uint32) uintptr {
-	return this.buf - uintptr(offset)
 }
 
 ////////////////////////////////////////////////////////////////////////////////

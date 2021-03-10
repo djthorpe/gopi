@@ -1,4 +1,4 @@
-// +build dispmanx
+// +build dispmanx,egl
 
 package dispmanx
 
@@ -8,6 +8,7 @@ import (
 
 	gopi "github.com/djthorpe/gopi/v3"
 	dx "github.com/djthorpe/gopi/v3/pkg/sys/dispmanx"
+	egl "github.com/djthorpe/gopi/v3/pkg/sys/egl"
 	multierror "github.com/hashicorp/go-multierror"
 )
 
@@ -23,6 +24,8 @@ type Surface struct {
 	opacity uint8
 	layer   uint16
 	bitmap  *Bitmap
+	context egl.EGLContext
+	surface egl.EGLSurface
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -47,16 +50,17 @@ func NewSurface(ctx dx.Update, display dx.Display, bitmap *Bitmap, x, y int32, w
 		src = dx.NewRect(0, 0, bitmap.w<<16, bitmap.h<<16)
 	}
 
+	// Create native surface
 	if element, err := dx.ElementAdd(ctx, display, layer, dest, resource, src, 0, dx.NewAlphaFromSource(opacity), nil, dx.DISPMANX_NO_ROTATE); err != nil {
 		dx.ResourceDelete(resource)
 		return nil, err
 	} else {
-		bitmap.Retain()
 		this.Element = element
 	}
 
 	// Set surface parameters
 	this.bitmap = bitmap
+	this.context = context
 	this.x, this.y = x, y
 	this.w, this.h = w, h
 	this.opacity = opacity
@@ -66,6 +70,7 @@ func NewSurface(ctx dx.Update, display dx.Display, bitmap *Bitmap, x, y int32, w
 	return this, nil
 }
 
+// TODO: Dispose of EGLSurface and EGLContext
 func (this *Surface) Dispose(ctx dx.Update) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
@@ -79,16 +84,6 @@ func (this *Surface) Dispose(ctx dx.Update) error {
 	var result error
 	if err := dx.ElementRemove(ctx, this.Element); err != nil {
 		result = multierror.Append(result, err)
-	}
-
-	// Release bitmap
-	if this.bitmap != nil {
-		if this.bitmap.Release() {
-			// Dispose of bitmap
-			if err := this.bitmap.Dispose(); err != nil {
-				result = multierror.Append(result, err)
-			}
-		}
 	}
 
 	// Release any resources
