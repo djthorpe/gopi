@@ -1,0 +1,16 @@
+[Unit]
+Description=Rotel Service
+Documentation=http://github.com/djthorpe/gopi/cmd/rotel
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User=gopi
+Group=gopi
+EnvironmentFile=/opt/gopi/etc/rotel.env
+ExecStart=/opt/gopi/bin/rotel -rotel.tty=${TTY}
+Restart=on-failure
+
+

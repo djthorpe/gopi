@@ -1,0 +1,35 @@
+
+# nfpm file to create debian package for rotel service
+name: "rotel"
+
+# arch, platform and version are replaced with GOARCH, GOOS and git tag
+arch: "arm"
+platform: "linux"
+version: "v0.0.0"
+
+replaces:
+  - rotel
+provides:
+  - rotel
+maintainer: "David Thorpe <djt@mutablelogic.com>"
+description: |
+  Control of Rotel Amplifer over RS232
+vendor: "mutablelogic.com"
+homepage: "http://github.com/djthorpe/gopi/cmd/rotel"
+license: "Apache 2.0"
+
+files:
+  build/rotel: /opt/gopi/bin/rotel
+  etc/systemd/rotel.service: /opt/gopi/etc/rotel.service
+
+symlinks:
+  /etc/systemd/system/rotel.service: /opt/gopi/etc/rotel.service
+
+config_files:
+  etc/systemd/rotel.env: /opt/gopi/etc/rotel.env
+
+scripts:
+  postinstall: etc/nfpm/rotel-postinstall.sh
+  preremove: etc/nfpm/rotel-preremove.sh
+
+
