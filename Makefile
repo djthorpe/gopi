@@ -118,7 +118,7 @@ builddir:
 	install -d $(BUILDDIR)
 
 # Make debian packages
-debian: clean builddir argonone dnsregister douglas httpserver rpc googlecast nfpm
+debian: clean builddir argonone dnsregister douglas httpserver rpc googlecast rotel nfpm
 	$(eval VERSION = $(shell git describe --tags))
 	$(eval ARCH = $(shell $(GO) env GOARCH))
 	$(eval PLATFORM = $(shell $(GO) env GOOS))
