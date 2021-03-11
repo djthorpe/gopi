@@ -14,6 +14,7 @@ import (
 	* Argon One case for Raspberry Pi (GPIO, Infrared, Fan Control)
 	* eInk Paper Displays (GPIO, SPI, Bitmaps)
 	* Google Chromecast control (mDNS, RPC, Protocol Buffers)
+	* Rotel Amplifer control (via RS232)
 
 	Ultimately these should be split out into separate repos...
 */
@@ -53,6 +54,12 @@ func (v ArgonOnePowerMode) String() string {
 	default:
 		return "[?? Invalid ArgonOnePowerMode value]"
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ROTEL AMPLIFIER (RS232) CONTROL
+
+type RotelManager interface {
 }
 
 ////////////////////////////////////////////////////////////////////////////////

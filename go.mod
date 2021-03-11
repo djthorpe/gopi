@@ -10,6 +10,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/miekg/dns v1.1.35
 	github.com/olekukonko/tablewriter v0.0.4
+	github.com/pkg/term v1.1.0
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/image v0.0.0-20201208152932-35266b937fa6
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
