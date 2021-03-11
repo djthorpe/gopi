@@ -10,5 +10,5 @@ import (
 func init() {
 	// Register gopi.InoutService and gopi.InputStub
 	graph.RegisterUnit(reflect.TypeOf(&service{}), reflect.TypeOf((*gopi.InputService)(nil)))
-	graph.RegisterServiceStub(_Input_serviceDesc.ServiceName, reflect.TypeOf(&stub{}))
+	graph.RegisterServiceStub(Input_ServiceDesc.ServiceName, reflect.TypeOf(&stub{}))
 }

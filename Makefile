@@ -165,6 +165,13 @@ debian: clean builddir argonone dnsregister douglas httpserver rpc googlecast nf
 		etc/nfpm/googlecast.yaml > $(BUILDDIR)/googlecast.yaml
 	@nfpm pkg -f $(BUILDDIR)/googlecast.yaml --packager deb --target $(BUILDDIR)
 
+	@sed \
+		-e 's/^version:.*$$/version: $(VERSION)/'  \
+		-e 's/^arch:.*$$/arch: $(ARCH)/' \
+		-e 's/^platform:.*$$/platform: $(PLATFORM)/' \
+		etc/nfpm/rotel.yaml > $(BUILDDIR)/rotel.yaml
+	@nfpm pkg -f $(BUILDDIR)/rotel.yaml --packager deb --target $(BUILDDIR)
+
 	@echo
 	@ls -1 $(BUILDDIR)/*.deb
 	@echo
