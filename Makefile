@@ -196,6 +196,9 @@ hw: rpi darwin freetype
 argonone: builddir protogen rpi
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/argonone -tags "$(TAGS)" ${GOFLAGS} ./cmd/argonone
 
+rotel: builddir protogen
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/rotel -tags "$(TAGS)" ${GOFLAGS} ./cmd/rotel
+
 douglas: builddir rpi
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/douglas -tags "$(TAGS)" ${GOFLAGS} ./cmd/douglas
 

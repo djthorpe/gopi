@@ -5,6 +5,7 @@ package rpc
 //go:generate protoc --go_out=../pkg/rpc --go_opt=paths=source_relative --go-grpc_out=../pkg/rpc --go-grpc_opt=paths=source_relative metrics/metrics.proto
 //go:generate protoc --go_out=../pkg/rpc --go_opt=paths=source_relative --go-grpc_out=../pkg/rpc --go-grpc_opt=paths=source_relative googlecast/googlecast.proto
 //go:generate protoc --go_out=../pkg/rpc --go_opt=paths=source_relative castchannel/castchannel.proto
+//go:generate protoc --go_out=../pkg/rpc --go_opt=paths=source_relative --go-grpc_out=../pkg/rpc --go-grpc_opt=paths=source_relative rotel/rotel.proto
 
 /*
 	This folder contains all the protocol buffer definitions. You

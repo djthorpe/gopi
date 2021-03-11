@@ -37,7 +37,6 @@ var (
 		{regexp.MustCompile("^power=(on|standby)$"), SetPower},
 		{regexp.MustCompile("^volume=(\\d+)$"), SetVolume},
 		{regexp.MustCompile("^update_mode=(auto|manual)$"), SetUpdateMode},
-		{regexp.MustCompile("^update_mode=(auto|manual)$"), SetUpdateMode},
 		{regexp.MustCompile("^bass=([\\+\\-]?\\d+)$"), SetBass},
 		{regexp.MustCompile("^treble=([\\+\\-]?\\d+)$"), SetTreble},
 		{regexp.MustCompile("^balance=([LR]?)(\\d+)$"), SetBalance},
@@ -70,12 +69,86 @@ func (this *State) Volume() uint {
 	return 0
 }
 
+func (this *State) Bass() int {
+	if this.power == "on" {
+		if bass, err := strconv.ParseInt(this.bass, 0, 32); err == nil {
+			return int(bass)
+		}
+	}
+	return 0
+}
+
+func (this *State) Treble() int {
+	if this.power == "on" {
+		if treble, err := strconv.ParseInt(this.treble, 0, 32); err == nil {
+			return int(treble)
+		}
+	}
+	return 0
+}
+
+func (this *State) Balance() (string, uint) {
+	if this.power == "on" && this.balance != nil {
+		if scalar, err := strconv.ParseUint(this.balance[1], 0, 32); err == nil {
+			return this.balance[0], uint(scalar)
+		}
+	}
+	return "", 0
+}
+
+func (this *State) Dimmer() uint {
+	if this.power == "on" {
+		if dimmer, err := strconv.ParseUint(this.dimmer, 0, 32); err == nil {
+			return uint(dimmer)
+		}
+	}
+	return 0
+}
+
+func (this *State) Muted() bool {
+	if this.power == "on" && this.mute == "on" {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (this *State) Bypass() bool {
+	if this.power == "on" && this.bypass == "on" {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (this *State) Source() string {
 	if this.power == "on" {
 		return this.source
 	} else {
 		return ""
 	}
+}
+
+func (this *State) Freq() string {
+	if this.power == "on" && this.freq != "off" {
+		return this.freq
+	} else {
+		return ""
+	}
+}
+
+func (this *State) Speakers() []string {
+	if this.power == "on" {
+		switch this.speaker {
+		case "a":
+			return []string{"A"}
+		case "b":
+			return []string{"B"}
+		case "a_b":
+			return []string{"A", "B"}
+		}
+	}
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,8 +214,33 @@ func (this *State) String() string {
 	if source := this.Source(); source != "" {
 		str += fmt.Sprintf(" source=%q", source)
 	}
+	if freq := this.Freq(); freq != "" {
+		str += fmt.Sprintf(" freq=%q", freq)
+	}
 	if vol := this.Volume(); vol != 0 {
 		str += fmt.Sprint(" vol=", vol)
+	}
+	if muted := this.Muted(); muted {
+		str += fmt.Sprint(" mute=", muted)
+	}
+	if bypass := this.Bypass(); bypass {
+		str += fmt.Sprint(" bypass=", bypass)
+	} else {
+		if bass := this.Bass(); bass != 0 {
+			str += fmt.Sprint(" bass=", bass)
+		}
+		if treble := this.Treble(); treble != 0 {
+			str += fmt.Sprint(" treble=", treble)
+		}
+	}
+	if speaker, scalar := this.Balance(); speaker != "" && scalar != 0 {
+		str += fmt.Sprint(" balance=", speaker, scalar)
+	}
+	if speakers := this.Speakers(); len(speakers) > 0 {
+		str += fmt.Sprint(" speakers=", speakers)
+	}
+	if dimmer := this.Dimmer(); dimmer != 0 {
+		str += fmt.Sprint(" dimmer=", dimmer)
 	}
 	return str + ">"
 }
@@ -179,7 +277,7 @@ func SetUpdateMode(this *State, args []string) (RotelFlag, error) {
 }
 
 func SetVolume(this *State, args []string) (RotelFlag, error) {
-	if volume, err := strconv.ParseUint(args[0], 0, 32); err != nil {
+	if volume, err := strconv.ParseUint(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if volume_ := fmt.Sprint(volume); volume_ != this.volume {
 		this.volume = volume_
@@ -189,7 +287,7 @@ func SetVolume(this *State, args []string) (RotelFlag, error) {
 }
 
 func SetBass(this *State, args []string) (RotelFlag, error) {
-	if bass, err := strconv.ParseInt(args[0], 0, 32); err != nil {
+	if bass, err := strconv.ParseInt(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if bass_ := fmt.Sprint(bass); bass_ != this.bass {
 		this.bass = bass_
@@ -199,7 +297,7 @@ func SetBass(this *State, args []string) (RotelFlag, error) {
 }
 
 func SetTreble(this *State, args []string) (RotelFlag, error) {
-	if treble, err := strconv.ParseInt(args[0], 0, 32); err != nil {
+	if treble, err := strconv.ParseInt(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if treble_ := fmt.Sprint(treble); treble_ != this.treble {
 		this.treble = treble_
@@ -209,7 +307,7 @@ func SetTreble(this *State, args []string) (RotelFlag, error) {
 }
 
 func SetBalance(this *State, args []string) (RotelFlag, error) {
-	if scalar, err := strconv.ParseUint(args[1], 0, 32); err != nil {
+	if scalar, err := strconv.ParseUint(args[1], 10, 32); err != nil {
 		return 0, err
 	} else {
 		scalar_ := fmt.Sprint(scalar)
@@ -262,7 +360,7 @@ func SetSpeaker(this *State, args []string) (RotelFlag, error) {
 }
 
 func SetDimmer(this *State, args []string) (RotelFlag, error) {
-	if dimmer, err := strconv.ParseUint(args[0], 0, 32); err != nil {
+	if dimmer, err := strconv.ParseUint(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if dimmer_ := fmt.Sprint(dimmer); this.dimmer != dimmer_ {
 		this.dimmer = dimmer_

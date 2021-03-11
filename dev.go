@@ -59,7 +59,33 @@ func (v ArgonOnePowerMode) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // ROTEL AMPLIFIER (RS232) CONTROL
 
+// RotelManager controls a connected Rotel Amplifier
 type RotelManager interface {
+	Publisher
+
+	// Get model number
+	Model() string
+
+	// Get properties
+	Power() bool
+	Volume() uint
+	Source() string
+	Freq() string
+	Bass() int
+	Treble() int
+	Balance() (string, uint)
+	Muted() bool
+	Bypass() bool
+	Speakers() []string
+	Dimmer() uint
+
+	// Set properties
+	SetPower(bool) error // SetPower sets amplifier to standby or on
+}
+
+// RotelService defines an RPC service connected to the Rotel Amplifer
+type RotelService interface {
+	Service
 }
 
 ////////////////////////////////////////////////////////////////////////////////

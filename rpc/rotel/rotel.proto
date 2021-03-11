@@ -1,0 +1,30 @@
+syntax = "proto3";
+package gopi.rotel;
+
+option go_package = "github.com/djthorpe/gopi/v3/rpc/rotel";
+
+import "google/protobuf/empty.proto";
+//import "google/protobuf/duration.proto";
+
+
+service Manager {
+    rpc Stream(google.protobuf.Empty) returns (stream RotelEvent);
+}
+
+message RotelEvent {
+    enum Flag {
+        NONE    = 0x000;
+        POWER   = 0x001;
+        VOLUME  = 0x002;
+        MUTE    = 0x004;
+        BASS    = 0x008;
+        TREBLE  = 0x010; 
+        BALANCE = 0x020;
+        SOURCE  = 0x040;
+        FREQ    = 0x080;
+        BYPASS  = 0x100;
+        SPEAKER = 0x200;
+        DIMMER  = 0x400;
+        MODEL   = 0x800;
+    }
+}

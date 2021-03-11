@@ -84,11 +84,15 @@ func (this *server) StartInBackground(network, addr string) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
+	if network == "" {
+		network = "tcp"
+	}
+
 	// Create listener
 	if this.listener != nil {
 		return gopi.ErrOutOfOrder
 	} else if listener, err := net.Listen(network, addr); err != nil {
-		return err
+		return fmt.Errorf("network %q: address %q: %w", network, addr, err)
 	} else {
 		this.listener = listener
 	}
