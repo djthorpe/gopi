@@ -1,7 +1,7 @@
 package rotel
 
 import (
-	"fmt"
+	"context"
 	"sync"
 	"time"
 
@@ -35,7 +35,150 @@ func (this *service) mustEmbedUnimplementedManagerServer() {}
 /////////////////////////////////////////////////////////////////////
 // RPC METHODS
 
-// Stream rotel events to client
+// Change Power State
+func (this *service) SetPower(_ context.Context, req *Bool) (*State, error) {
+	this.Logger.Debug("<SetPower ", req, ">")
+
+	if err := this.RotelManager.SetPower(req.Value); err != nil {
+		return nil, err
+	} else {
+		return toProtoState(this.RotelManager), nil
+	}
+}
+
+// Change Input Source
+func (this *service) SetSource(_ context.Context, req *String) (*State, error) {
+	this.Logger.Debug("<SetSource ", req, ">")
+
+	if err := this.RotelManager.SetSource(req.Value); err != nil {
+		return nil, err
+	} else {
+		return toProtoState(this.RotelManager), nil
+	}
+}
+
+// Change Volume
+func (this *service) SetVolume(_ context.Context, req *Uint) (*State, error) {
+	this.Logger.Debug("<SetVolume ", req, ">")
+
+	if err := this.RotelManager.SetVolume(uint(req.Value)); err != nil {
+		return nil, err
+	} else {
+		return toProtoState(this.RotelManager), nil
+	}
+}
+
+func (this *service) SetMute(_ context.Context, req *Bool) (*State, error) {
+	this.Logger.Debug("<SetMute ", req, ">")
+
+	if err := this.RotelManager.SetMute(req.Value); err != nil {
+		return nil, err
+	} else {
+		return toProtoState(this.RotelManager), nil
+	}
+}
+
+func (this *service) SetBypass(_ context.Context, req *Bool) (*State, error) {
+	this.Logger.Debug("<SetBypass ", req, ">")
+
+	if err := this.RotelManager.SetBypass(req.Value); err != nil {
+		return nil, err
+	} else {
+		return toProtoState(this.RotelManager), nil
+	}
+}
+
+func (this *service) SetTreble(_ context.Context, req *Int) (*State, error) {
+	this.Logger.Debug("<SetTreble ", req, ">")
+
+	if err := this.RotelManager.SetTreble(int(req.Value)); err != nil {
+		return nil, err
+	} else {
+		return toProtoState(this.RotelManager), nil
+	}
+}
+
+func (this *service) SetBass(_ context.Context, req *Int) (*State, error) {
+	this.Logger.Debug("<SetBass ", req, ">")
+
+	if err := this.RotelManager.SetBass(int(req.Value)); err != nil {
+		return nil, err
+	} else {
+		return toProtoState(this.RotelManager), nil
+	}
+}
+
+func (this *service) SetBalance(_ context.Context, req *Balance) (*State, error) {
+	this.Logger.Debug("<SetBalance ", req, ">")
+
+	if err := this.RotelManager.SetBalance(req.Location, uint(req.Value)); err != nil {
+		return nil, err
+	} else {
+		return toProtoState(this.RotelManager), nil
+	}
+}
+
+func (this *service) SetDimmer(_ context.Context, req *Uint) (*State, error) {
+	this.Logger.Debug("<SetDimmer ", req, ">")
+
+	if err := this.RotelManager.SetDimmer(uint(req.Value)); err != nil {
+		return nil, err
+	} else {
+		return toProtoState(this.RotelManager), nil
+	}
+}
+
+func (this *service) Play(context.Context, *empty.Empty) (*empty.Empty, error) {
+	this.Logger.Debug("<Play>")
+
+	if err := this.RotelManager.Play(); err != nil {
+		return nil, err
+	} else {
+		return &empty.Empty{}, nil
+	}
+}
+
+func (this *service) Stop(context.Context, *empty.Empty) (*empty.Empty, error) {
+	this.Logger.Debug("<Stop>")
+
+	if err := this.RotelManager.Stop(); err != nil {
+		return nil, err
+	} else {
+		return &empty.Empty{}, nil
+	}
+}
+
+func (this *service) Pause(context.Context, *empty.Empty) (*empty.Empty, error) {
+	this.Logger.Debug("<Pause>")
+
+	if err := this.RotelManager.Pause(); err != nil {
+		return nil, err
+	} else {
+		return &empty.Empty{}, nil
+	}
+}
+
+func (this *service) NextTrack(context.Context, *empty.Empty) (*empty.Empty, error) {
+	this.Logger.Debug("<NextTrack>")
+
+	if err := this.RotelManager.NextTrack(); err != nil {
+		return nil, err
+	} else {
+		return &empty.Empty{}, nil
+	}
+}
+
+func (this *service) PrevTrack(context.Context, *empty.Empty) (*empty.Empty, error) {
+	this.Logger.Debug("<PrevTrack>")
+
+	if err := this.RotelManager.PrevTrack(); err != nil {
+		return nil, err
+	} else {
+		return &empty.Empty{}, nil
+	}
+}
+
+// Stream Rotel events to client
 func (this *service) Stream(_ *empty.Empty, stream Manager_StreamServer) error {
 	this.Logger.Debug("<Stream>")
 
@@ -55,12 +198,17 @@ func (this *service) Stream(_ *empty.Empty, stream Manager_StreamServer) error {
 	for {
 		select {
 		case evt := <-ch:
-			fmt.Println("TODO: Emit: ", evt)
+			if evt.Name() == "rotel" {
+				this.Debug("Stream: ", evt)
+				if err := stream.Send(toProtoEvent(evt)); err != nil {
+					this.Print("Stream: ", err)
+				}
+			}
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
 			if err := stream.Send(toProtoNull()); err != nil {
-				this.Logger.Debug("Error sending null event, ending stream")
+				this.Debug("Stream: ", "Error sending null event, ending stream")
 				return err
 			}
 		}

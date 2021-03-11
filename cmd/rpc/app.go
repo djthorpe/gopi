@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -96,6 +98,167 @@ func (this *app) Define(cfg gopi.Config) error {
 		}
 	})
 
+	// Rotel
+	cfg.Command("rotel", "List Rotel state", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else {
+			ch := make(chan gopi.RotelEvent)
+			go func() {
+				fmt.Println("Watching for events, press CTRL+C to end")
+				for evt := range ch {
+					fmt.Println(evt)
+				}
+			}()
+			stub.Stream(ctx, ch)
+			close(ch)
+			return nil
+		}
+	})
+	cfg.Command("rotel off", "Power Off", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else {
+			return stub.SetPower(ctx, false)
+		}
+	})
+	cfg.Command("rotel on", "Power On", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else {
+			return stub.SetPower(ctx, true)
+		}
+	})
+	cfg.Command("rotel source", "Set Source", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 1 {
+			return gopi.ErrBadParameter
+		} else {
+			return stub.SetSource(ctx, args[0])
+		}
+	})
+	cfg.Command("rotel vol", "Set Volume (1-96)", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 1 {
+			return gopi.ErrBadParameter
+		} else if vol, err := strconv.ParseUint(args[0], 10, 32); err != nil {
+			return err
+		} else {
+			return stub.SetVolume(ctx, uint(vol))
+		}
+	})
+	cfg.Command("rotel mute", "Mute Volume", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else {
+			return stub.SetMute(ctx, true)
+		}
+	})
+	cfg.Command("rotel bass", "Set Bass (-10 <> +10)", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 1 {
+			return gopi.ErrBadParameter
+		} else if value, err := strconv.ParseInt(args[0], 10, 32); err != nil {
+			return err
+		} else {
+			return stub.SetBass(ctx, int(value))
+		}
+	})
+	cfg.Command("rotel treble", "Set Treble (-10 <> +10)", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 1 {
+			return gopi.ErrBadParameter
+		} else if value, err := strconv.ParseInt(args[0], 10, 32); err != nil {
+			return err
+		} else {
+			return stub.SetTreble(ctx, int(value))
+		}
+	})
+	cfg.Command("rotel bypass", "Set Bypass (0,1)", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 1 {
+			return gopi.ErrBadParameter
+		} else if value, err := strconv.ParseBool(args[0]); err != nil {
+			return err
+		} else {
+			return stub.SetBypass(ctx, value)
+		}
+	})
+	cfg.Command("rotel balance", "Set Balance (L,R) (1 <> 15)", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) == 0 {
+			return stub.SetBalance(ctx, "L", 0)
+		} else if len(args) != 2 {
+			return gopi.ErrBadParameter
+		} else if value, err := strconv.ParseUint(args[1], 10, 32); err != nil {
+			return err
+		} else {
+			return stub.SetBalance(ctx, args[0], uint(value))
+		}
+	})
+	cfg.Command("rotel dimmer", "Set Dimmer (0,6)", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 1 {
+			return gopi.ErrBadParameter
+		} else if value, err := strconv.ParseUint(args[0], 10, 32); err != nil {
+			return err
+		} else {
+			return stub.SetDimmer(ctx, uint(value))
+		}
+	})
+	cfg.Command("rotel play", "Send Play Command", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 0 {
+			return gopi.ErrBadParameter
+		} else {
+			return stub.Play(ctx)
+		}
+	})
+	cfg.Command("rotel stop", "Send Stop Command", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 0 {
+			return gopi.ErrBadParameter
+		} else {
+			return stub.Stop(ctx)
+		}
+	})
+	cfg.Command("rotel pause", "Send Pause Command", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 0 {
+			return gopi.ErrBadParameter
+		} else {
+			return stub.Stop(ctx)
+		}
+	})
+	cfg.Command("rotel next", "Send Next Track Command", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 0 {
+			return gopi.ErrBadParameter
+		} else {
+			return stub.NextTrack(ctx)
+		}
+	})
+	cfg.Command("rotel prev", "Send Previous Track Command", func(ctx context.Context) error {
+		if stub, err := this.GetRotelStub(); err != nil {
+			return err
+		} else if args := this.Command.Args(); len(args) != 0 {
+			return gopi.ErrBadParameter
+		} else {
+			return stub.PrevTrack(ctx)
+		}
+	})
+
 	// Global flags
 	this.service = cfg.FlagString("srv", "", "name, service:name or host:port")
 
@@ -170,6 +333,14 @@ func (this *app) GetGoogleCastStub() (gopi.CastStub, error) {
 		return nil, err
 	} else {
 		return stub.(gopi.CastStub), nil
+	}
+}
+
+func (this *app) GetRotelStub() (gopi.RotelStub, error) {
+	if stub, err := this.GetStub("gopi.rotel.Manager"); err != nil {
+		return nil, err
+	} else {
+		return stub.(gopi.RotelStub), nil
 	}
 }
 

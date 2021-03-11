@@ -9,5 +9,6 @@ import (
 	_ "github.com/djthorpe/gopi/v3/pkg/rpc/googlecast" // Googlecast Service
 	_ "github.com/djthorpe/gopi/v3/pkg/rpc/metrics"    // Metrics Service
 	_ "github.com/djthorpe/gopi/v3/pkg/rpc/ping"       // Ping Service
+	_ "github.com/djthorpe/gopi/v3/pkg/rpc/rotel"      // Rotel Service
 	_ "github.com/djthorpe/gopi/v3/pkg/rpc/server"     // gRPC Server
 )

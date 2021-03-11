@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	os.Exit(tool.CommandLine("rpcping", os.Args[1:], new(app)))
+	os.Exit(tool.CommandLine("rpc", os.Args[1:], new(app)))
 }

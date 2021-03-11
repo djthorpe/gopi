@@ -68,24 +68,70 @@ type RotelManager interface {
 
 	// Get properties
 	Power() bool
-	Volume() uint
 	Source() string
+	Volume() uint
 	Freq() string
 	Bass() int
 	Treble() int
-	Balance() (string, uint)
 	Muted() bool
 	Bypass() bool
+	Balance() (string, uint)
 	Speakers() []string
 	Dimmer() uint
 
 	// Set properties
-	SetPower(bool) error // SetPower sets amplifier to standby or on
+	SetPower(bool) error           // SetPower sets amplifier to standby or on
+	SetSource(string) error        // SetSource sets input source
+	SetVolume(uint) error          // SetVolume sets the volume between 1 and 96 inclusive
+	SetMute(bool) error            // SetMute mutes and unmutes
+	SetBypass(bool) error          // SetBypass sets preamp bypass
+	SetTreble(int) error           // SetTreble sets treble -10 <> +10
+	SetBass(int) error             // SetBass sets bass -10 <> +10
+	SetBalance(string, uint) error // L,R between 0 and 15
+	SetDimmer(uint) error          // SetDimmer display between 0 and 6 (0 is brightest)
+
+	// Actions
+	Play() error
+	Stop() error
+	Pause() error
+	NextTrack() error
+	PrevTrack() error
 }
 
 // RotelService defines an RPC service connected to the Rotel Amplifer
 type RotelService interface {
 	Service
+}
+
+// RotelEvent is emitted on change of amplifier state
+type RotelEvent interface {
+	Event
+}
+
+// RotelStub is an RPC client which connects to the RPC service
+type RotelStub interface {
+	ServiceStub
+
+	// Set Properties
+	SetPower(context.Context, bool) error // SetPower to on or standby
+	SetSource(context.Context, string) error
+	SetVolume(context.Context, uint) error
+	SetMute(context.Context, bool) error
+	SetBypass(context.Context, bool) error
+	SetTreble(context.Context, int) error
+	SetBass(context.Context, int) error
+	SetBalance(context.Context, string, uint) error
+	SetDimmer(context.Context, uint) error
+
+	// Actions
+	Play(context.Context) error
+	Stop(context.Context) error
+	Pause(context.Context) error
+	NextTrack(context.Context) error
+	PrevTrack(context.Context) error
+
+	// Stream change events
+	Stream(context.Context, chan<- RotelEvent) error
 }
 
 ////////////////////////////////////////////////////////////////////////////////
