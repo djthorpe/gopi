@@ -10,7 +10,7 @@ import (
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
-	"github.com/hashicorp/go-multierror"
+	multierror "github.com/hashicorp/go-multierror"
 	term "github.com/pkg/term"
 )
 

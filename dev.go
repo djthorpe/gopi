@@ -3,6 +3,7 @@ package gopi
 import (
 	"context"
 	"image"
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -54,6 +55,42 @@ func (v ArgonOnePowerMode) String() string {
 	default:
 		return "[?? Invalid ArgonOnePowerMode value]"
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// IKEA TRADFRI GATEWAY
+
+// TradfriManager communicates with an Ikea Tradfri gateway
+type TradfriManager interface {
+	// Connect to a gateway with gateway id, hostname and port
+	Connect(string, string, uint16) error
+
+	// Disconnect from a gateway
+	Disconnect() error
+
+	// Return all devices
+	Devices(context.Context) ([]TradfriDevice, error)
+
+	// Observe for device changes
+	ObserveDevice(context.Context, TradfriDevice) error
+
+	// Properties
+	Addr() net.Addr  // Return IP Address for Gateway
+	Id() string      // Return ID for authentication to gateway
+	Version() string // Return version of gateway
+}
+
+// TradfriDevice is a device connected to the gateway
+type TradfriDevice interface {
+	Name() string
+	Id() uint
+	Type() uint
+	Created() time.Time
+	Updated() time.Time
+	Active() bool
+	Vendor() string
+	Product() string
+	Version() string
 }
 
 ////////////////////////////////////////////////////////////////////////////////

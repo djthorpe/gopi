@@ -218,6 +218,9 @@ rpc: builddir protogen
 googlecast: builddir protogen
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/googlecast -tags "$(TAGS)" ${GOFLAGS} ./cmd/googlecast
 
+tradfri: builddir
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/tradfri -tags "$(TAGS)" ${GOFLAGS} ./cmd/tradfri
+
 # In testing
 mediakit: builddir ffmpeg chromaprint
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/mediakit -tags "$(TAGS)" ${GOFLAGS} ./cmd/mediakit

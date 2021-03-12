@@ -8,6 +8,6 @@ import (
 )
 
 func init() {
-	// Register gopi.CastManager
+	// Register gopi.RotelManager
 	graph.RegisterUnit(reflect.TypeOf(&Manager{}), reflect.TypeOf((*gopi.RotelManager)(nil)))
 }
