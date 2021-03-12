@@ -118,15 +118,15 @@ type RotelManager interface {
 	Dimmer() uint
 
 	// Set properties
-	SetPower(bool) error           // SetPower sets amplifier to standby or on
-	SetSource(string) error        // SetSource sets input source
-	SetVolume(uint) error          // SetVolume sets the volume between 1 and 96 inclusive
-	SetMute(bool) error            // SetMute mutes and unmutes
-	SetBypass(bool) error          // SetBypass sets preamp bypass
-	SetTreble(int) error           // SetTreble sets treble -10 <> +10
-	SetBass(int) error             // SetBass sets bass -10 <> +10
-	SetBalance(string, uint) error // L,R between 0 and 15
-	SetDimmer(uint) error          // SetDimmer display between 0 and 6 (0 is brightest)
+	SetPower(bool) error     // SetPower sets amplifier to standby or on
+	SetSource(string) error  // SetSource sets input source
+	SetVolume(uint) error    // SetVolume sets the volume between 1 and 96 inclusive
+	SetMute(bool) error      // SetMute mutes and unmutes
+	SetBypass(bool) error    // SetBypass sets preamp bypass
+	SetTreble(int) error     // SetTreble sets treble -10 <> +10
+	SetBass(int) error       // SetBass sets bass -10 <> +10
+	SetBalance(string) error // SetBalance L,R or 0
+	SetDimmer(uint) error    // SetDimmer display between 0 and 6 (0 is brightest)
 
 	// Actions
 	Play() error
@@ -144,7 +144,12 @@ type RotelService interface {
 // RotelEvent is emitted on change of amplifier state
 type RotelEvent interface {
 	Event
+
+	Flags() RotelFlag // Flags returns the state that has changed
 }
+
+// RotelFlag provides flags on state changes
+type RotelFlag uint16
 
 // RotelStub is an RPC client which connects to the RPC service
 type RotelStub interface {
@@ -158,7 +163,7 @@ type RotelStub interface {
 	SetBypass(context.Context, bool) error
 	SetTreble(context.Context, int) error
 	SetBass(context.Context, int) error
-	SetBalance(context.Context, string, uint) error
+	SetBalance(context.Context, string) error // L, R or 0
 	SetDimmer(context.Context, uint) error
 
 	// Actions
@@ -170,6 +175,67 @@ type RotelStub interface {
 
 	// Stream change events
 	Stream(context.Context, chan<- RotelEvent) error
+}
+
+const (
+	ROTEL_FLAG_POWER RotelFlag = (1 << iota)
+	ROTEL_FLAG_VOLUME
+	ROTEL_FLAG_MUTE
+	ROTEL_FLAG_BASS
+	ROTEL_FLAG_TREBLE
+	ROTEL_FLAG_BALANCE
+	ROTEL_FLAG_SOURCE
+	ROTEL_FLAG_FREQ
+	ROTEL_FLAG_BYPASS
+	ROTEL_FLAG_SPEAKER
+	ROTEL_FLAG_DIMMER
+	ROTEL_FLAG_NONE RotelFlag = 0
+	ROTEL_FLAG_MIN            = ROTEL_FLAG_POWER
+	ROTEL_FLAG_MAX            = ROTEL_FLAG_DIMMER
+)
+
+func (f RotelFlag) String() string {
+	if f == ROTEL_FLAG_NONE {
+		return f.FlagString()
+	}
+	str := ""
+	for v := ROTEL_FLAG_MIN; v <= ROTEL_FLAG_MAX; v <<= 1 {
+		if v&f == v {
+			str += "|" + v.FlagString()
+		}
+	}
+	return strings.TrimPrefix(str, "|")
+}
+
+func (f RotelFlag) FlagString() string {
+	switch f {
+	case ROTEL_FLAG_NONE:
+		return "ROTEL_FLAG_NONE"
+	case ROTEL_FLAG_POWER:
+		return "ROTEL_FLAG_POWER"
+	case ROTEL_FLAG_VOLUME:
+		return "ROTEL_FLAG_VOLUME"
+	case ROTEL_FLAG_MUTE:
+		return "ROTEL_FLAG_MUTE"
+	case ROTEL_FLAG_BASS:
+		return "ROTEL_FLAG_BASS"
+	case ROTEL_FLAG_TREBLE:
+		return "ROTEL_FLAG_TREBLE"
+	case ROTEL_FLAG_BALANCE:
+		return "ROTEL_FLAG_BALANCE"
+	case ROTEL_FLAG_SOURCE:
+		return "ROTEL_FLAG_SOURCE"
+	case ROTEL_FLAG_FREQ:
+		return "ROTEL_FLAG_FREQ"
+	case ROTEL_FLAG_BYPASS:
+		return "ROTEL_FLAG_BYPASS"
+	case ROTEL_FLAG_SPEAKER:
+		return "ROTEL_FLAG_SPEAKER"
+	case ROTEL_FLAG_DIMMER:
+		return "ROTEL_FLAG_DIMMER"
+	default:
+		return "[?? Invalid RotelFlag value]"
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

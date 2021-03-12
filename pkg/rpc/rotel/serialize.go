@@ -11,7 +11,7 @@ import (
 // TYPES
 
 type event struct {
-	*Event
+	pb *Event
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -22,7 +22,10 @@ func toProtoNull() *Event {
 }
 
 func toProtoEvent(evt gopi.RotelEvent) *Event {
-	return &Event{}
+	return &Event{
+		Name:  evt.Name(),
+		Flags: Event_Flag(evt.Flags()),
+	}
 }
 
 func fromProtoEvent(evt *Event) gopi.RotelEvent {
@@ -42,27 +45,43 @@ func toProtoState(dev gopi.RotelManager) *State {
 		return nil
 	}
 	return &State{
-		Model:  dev_.Model(),
-		Power:  dev_.Power(),
-		Source: dev_.Source(),
-		Volume: uint32(dev_.Volume()),
-		Muted:  dev_.Muted(),
-		Bypass: dev_.Bypass(),
-		Bass:   int32(dev_.Bass()),
-		Treble: int32(dev_.Treble()),
+		Power:   dev_.Power(),
+		Source:  dev_.Source(),
+		Volume:  uint32(dev_.Volume()),
+		Muted:   dev_.Muted(),
+		Bypass:  dev_.Bypass(),
+		Bass:    int32(dev_.Bass()),
+		Treble:  int32(dev_.Treble()),
+		Balance: toProtoBalance(dev_.Balance()),
+		Dimmer:  uint32(dev_.Dimmer()),
+	}
+}
+
+func toProtoBalance(location string, value uint) *Balance {
+	return &Balance{
+		Location: location,
+		Value:    uint32(value),
 	}
 }
 
 /////////////////////////////////////////////////////////////////////
 // EVENT IMPLEMENTATION
 
-func (*event) Name() string {
-	return "rotel"
+func (this *event) Name() string {
+	return this.pb.Name
+}
+
+func (this *event) Flags() gopi.RotelFlag {
+	return gopi.RotelFlag(this.pb.Flags)
 }
 
 func (this *event) String() string {
 	str := "<event"
-	str += fmt.Sprintf(" name=%q", this.Name())
-	str += fmt.Sprintf(" ", this.Event)
+	if name := this.Name(); name != "" {
+		str += fmt.Sprintf(" name=%q", this.Name())
+	}
+	if flags := this.Flags(); flags != gopi.ROTEL_FLAG_NONE {
+		str += fmt.Sprint(" flags=", this.Flags())
+	}
 	return str + ">"
 }

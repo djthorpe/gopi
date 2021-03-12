@@ -137,6 +137,12 @@ func (this *Manager) SetPower(state bool) error {
 }
 
 func (this *Manager) SetSource(value string) error {
+	// Cannot set value when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetSource")
+	}
+
+	// Check parameter and send command
 	switch value {
 	case "pc_usb":
 		return this.writetty("pcusb!")
@@ -148,6 +154,12 @@ func (this *Manager) SetSource(value string) error {
 }
 
 func (this *Manager) SetVolume(value uint) error {
+	// Cannot set value when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetVolume")
+	}
+
+	// Check parameter and send command
 	if value < 1 || value > 96 {
 		return gopi.ErrBadParameter.WithPrefix("SetVolume")
 	} else {
@@ -156,6 +168,12 @@ func (this *Manager) SetVolume(value uint) error {
 }
 
 func (this *Manager) SetMute(state bool) error {
+	// Cannot set value when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetMute")
+	}
+
+	// Check parameter and send command
 	if state {
 		return this.writetty("mute_on!")
 	} else {
@@ -164,6 +182,12 @@ func (this *Manager) SetMute(state bool) error {
 }
 
 func (this *Manager) SetBypass(state bool) error {
+	// Cannot set value when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetBypass")
+	}
+
+	// Check parameter and send command
 	if state {
 		return this.writetty("bypass_on!")
 	} else {
@@ -172,6 +196,12 @@ func (this *Manager) SetBypass(state bool) error {
 }
 
 func (this *Manager) SetTreble(value int) error {
+	// Cannot set value when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetTreble")
+	}
+
+	// Check parameter and send command
 	if value < -10 || value > 10 {
 		return gopi.ErrBadParameter.WithPrefix("SetTreble")
 	} else if value == 0 {
@@ -184,6 +214,12 @@ func (this *Manager) SetTreble(value int) error {
 }
 
 func (this *Manager) SetBass(value int) error {
+	// Cannot set value when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetBass")
+	}
+
+	// Check parameter and send command
 	if value < -10 || value > 10 {
 		return gopi.ErrBadParameter.WithPrefix("SetBass")
 	} else if value == 0 {
@@ -195,23 +231,30 @@ func (this *Manager) SetBass(value int) error {
 	}
 }
 
-func (this *Manager) SetBalance(loc string, value uint) error {
-	if value > 15 {
-		return gopi.ErrBadParameter.WithPrefix("SetBalance")
+func (this *Manager) SetBalance(loc string) error {
+	// Cannot set value when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetBalance")
 	}
+
+	// Check parameter and send command
 	switch loc {
+	case "0":
+		return this.writetty("balance_000!")
 	case "L", "R":
-		if value == 0 {
-			return this.writetty("balance_000!")
-		} else {
-			return this.writetty(fmt.Sprintf("balance_%v%02d!", loc, value))
-		}
+		return this.writetty(fmt.Sprintf("balance_%v!", strings.ToLower(loc)))
 	default:
 		return gopi.ErrBadParameter.WithPrefix("SetBalance")
 	}
 }
 
 func (this *Manager) SetDimmer(value uint) error {
+	// Cannot set value when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("SetDimmer")
+	}
+
+	// Check parameter and send command
 	if value > 6 {
 		return gopi.ErrBadParameter.WithPrefix("SetDimmer")
 	} else {
@@ -220,22 +263,52 @@ func (this *Manager) SetDimmer(value uint) error {
 }
 
 func (this *Manager) Play() error {
+	// Cannot perform action when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("Play")
+	}
+
+	// Send command
 	return this.writetty("play!")
 }
 
 func (this *Manager) Stop() error {
+	// Cannot perform action when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("Stop")
+	}
+
+	// Send command
 	return this.writetty("stop!")
 }
 
 func (this *Manager) Pause() error {
+	// Cannot perform action when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("Pause")
+	}
+
+	// Send command
 	return this.writetty("pause!")
 }
 
 func (this *Manager) NextTrack() error {
+	// Cannot perform action when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("NextTrack")
+	}
+
+	// Send command
 	return this.writetty("trkf!")
 }
 
 func (this *Manager) PrevTrack() error {
+	// Cannot perform action when power is off
+	if this.Power() == false {
+		return gopi.ErrOutOfOrder.WithPrefix("PrevTrack")
+	}
+
+	// Send command
 	return this.writetty("trkb!")
 }
 
@@ -243,7 +316,7 @@ func (this *Manager) PrevTrack() error {
 // STRINGIFY
 
 func (this *Manager) String() string {
-	str := "<rotelmanager"
+	str := "<rotel.manager"
 	str += fmt.Sprintf(" tty=%q", *this.tty)
 	str += fmt.Sprint(" baud=", *this.baud)
 	str += fmt.Sprint(" ", this.State.String())
@@ -254,26 +327,21 @@ func (this *Manager) String() string {
 // PRIVATE METHDOS
 
 func (this *Manager) readtty() error {
-	n, err := this.fd.Available()
-	if err != nil {
-		return err
-	} else if n == 0 {
-		return nil
-	}
+	var result error
+	var flags gopi.RotelFlag
 
 	// Append data to the buffer and parse any parameters
-	var result error
-	var flags RotelFlag
-	buf := make([]byte, n)
-	if _, err := this.fd.Read(buf); err == io.EOF {
+	buf := make([]byte, 1024)
+	if n, err := this.fd.Read(buf); err == io.EOF {
 		return nil
 	} else if err != nil {
 		return err
-	} else if _, err := this.buf.Write(buf); err != nil {
+	} else if _, err := this.buf.Write(buf[:n]); err != nil {
 		return err
 	} else if fields := strings.Split(this.buf.String(), "$"); len(fields) > 0 {
 		// Parse each field and update state
 		for _, param := range fields[0 : len(fields)-1] {
+			this.Debugf("readtty: %q", param)
 			if flag, err := this.State.Set(param); err != nil {
 				result = multierror.Append(result, fmt.Errorf("%q: %w", param, err))
 			} else {
@@ -286,8 +354,8 @@ func (this *Manager) readtty() error {
 	}
 
 	// If any flags set, then emit an event
-	if flags != FLAG_NONE {
-		if err := this.Emit(NewEvent(&this.State, flags), false); err != nil {
+	if flags != gopi.ROTEL_FLAG_NONE {
+		if err := this.Emit(NewEvent(flags, &this.State), false); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}

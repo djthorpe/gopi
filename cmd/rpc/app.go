@@ -189,17 +189,15 @@ func (this *app) Define(cfg gopi.Config) error {
 			return stub.SetBypass(ctx, value)
 		}
 	})
-	cfg.Command("rotel balance", "Set Balance (L,R) (1 <> 15)", func(ctx context.Context) error {
+	cfg.Command("rotel balance", "Set Balance (L,R,0)", func(ctx context.Context) error {
 		if stub, err := this.GetRotelStub(); err != nil {
 			return err
 		} else if args := this.Command.Args(); len(args) == 0 {
-			return stub.SetBalance(ctx, "L", 0)
-		} else if len(args) != 2 {
+			return stub.SetBalance(ctx, "0")
+		} else if len(args) != 1 {
 			return gopi.ErrBadParameter
-		} else if value, err := strconv.ParseUint(args[1], 10, 32); err != nil {
-			return err
 		} else {
-			return stub.SetBalance(ctx, args[0], uint(value))
+			return stub.SetBalance(ctx, args[0])
 		}
 	})
 	cfg.Command("rotel dimmer", "Set Dimmer (0,6)", func(ctx context.Context) error {
@@ -237,7 +235,7 @@ func (this *app) Define(cfg gopi.Config) error {
 		} else if args := this.Command.Args(); len(args) != 0 {
 			return gopi.ErrBadParameter
 		} else {
-			return stub.Stop(ctx)
+			return stub.Pause(ctx)
 		}
 	})
 	cfg.Command("rotel next", "Send Next Track Command", func(ctx context.Context) error {

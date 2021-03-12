@@ -108,11 +108,11 @@ func (this *stub) SetBass(ctx context.Context, value int) error {
 	}
 }
 
-func (this *stub) SetBalance(ctx context.Context, location string, value uint) error {
+func (this *stub) SetBalance(ctx context.Context, value string) error {
 	this.Conn.Lock()
 	defer this.Conn.Unlock()
 
-	if _, err := this.ManagerClient.SetBalance(ctx, &Balance{Location: location, Value: uint32(value)}); err != nil {
+	if _, err := this.ManagerClient.SetBalance(ctx, &String{Value: value}); err != nil {
 		return err
 	} else {
 		return nil
@@ -202,7 +202,7 @@ func (this *stub) Stream(ctx context.Context, ch chan<- gopi.RotelEvent) error {
 				return nil
 			} else if err != nil {
 				return this.Err(err)
-			} else if evt := fromProtoEvent(msg); evt != nil {
+			} else if evt := fromProtoEvent(msg); evt != nil && evt.Flags() != gopi.ROTEL_FLAG_NONE {
 				ch <- evt
 			}
 		}

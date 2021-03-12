@@ -31,7 +31,7 @@ type State struct {
 var (
 	commands = []struct {
 		re *regexp.Regexp
-		fn func(this *State, args []string) (RotelFlag, error)
+		fn func(this *State, args []string) (gopi.RotelFlag, error)
 	}{
 		{regexp.MustCompile("^model=(\\w+)$"), SetModel},
 		{regexp.MustCompile("^power=(on|standby)$"), SetPower},
@@ -192,7 +192,7 @@ func (this *State) Update() string {
 }
 
 // Set sets state from data coming from amp
-func (this *State) Set(param string) (RotelFlag, error) {
+func (this *State) Set(param string) (gopi.RotelFlag, error) {
 	for _, command := range commands {
 		if args := command.re.FindStringSubmatch(param); len(args) != 0 {
 			return command.fn(this, args[1:])
@@ -248,27 +248,26 @@ func (this *State) String() string {
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
-func SetModel(this *State, args []string) (RotelFlag, error) {
+func SetModel(this *State, args []string) (gopi.RotelFlag, error) {
 	if args[0] == "" {
 		return 0, gopi.ErrBadParameter.WithPrefix("SetModel")
 	} else if this.model != args[0] {
 		this.model = args[0]
-		return FLAG_MODEL, nil
 	}
 	return 0, nil
 }
 
-func SetPower(this *State, args []string) (RotelFlag, error) {
+func SetPower(this *State, args []string) (gopi.RotelFlag, error) {
 	if args[0] == "" {
 		return 0, gopi.ErrBadParameter.WithPrefix("SetPower")
 	} else if this.power != args[0] {
 		this.power = args[0]
-		return FLAG_POWER, nil
+		return gopi.ROTEL_FLAG_POWER, nil
 	}
 	return 0, nil
 }
 
-func SetUpdateMode(this *State, args []string) (RotelFlag, error) {
+func SetUpdateMode(this *State, args []string) (gopi.RotelFlag, error) {
 	if args[0] == "" {
 		return 0, gopi.ErrBadParameter.WithPrefix("SetUpdateMode")
 	}
@@ -276,95 +275,95 @@ func SetUpdateMode(this *State, args []string) (RotelFlag, error) {
 	return 0, nil
 }
 
-func SetVolume(this *State, args []string) (RotelFlag, error) {
+func SetVolume(this *State, args []string) (gopi.RotelFlag, error) {
 	if volume, err := strconv.ParseUint(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if volume_ := fmt.Sprint(volume); volume_ != this.volume {
 		this.volume = volume_
-		return FLAG_VOLUME, nil
+		return gopi.ROTEL_FLAG_VOLUME, nil
 	}
 	return 0, nil
 }
 
-func SetBass(this *State, args []string) (RotelFlag, error) {
+func SetBass(this *State, args []string) (gopi.RotelFlag, error) {
 	if bass, err := strconv.ParseInt(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if bass_ := fmt.Sprint(bass); bass_ != this.bass {
 		this.bass = bass_
-		return FLAG_BASS, nil
+		return gopi.ROTEL_FLAG_BASS, nil
 	}
 	return 0, nil
 }
 
-func SetTreble(this *State, args []string) (RotelFlag, error) {
+func SetTreble(this *State, args []string) (gopi.RotelFlag, error) {
 	if treble, err := strconv.ParseInt(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if treble_ := fmt.Sprint(treble); treble_ != this.treble {
 		this.treble = treble_
-		return FLAG_TREBLE, nil
+		return gopi.ROTEL_FLAG_TREBLE, nil
 	}
 	return 0, nil
 }
 
-func SetBalance(this *State, args []string) (RotelFlag, error) {
+func SetBalance(this *State, args []string) (gopi.RotelFlag, error) {
 	if scalar, err := strconv.ParseUint(args[1], 10, 32); err != nil {
 		return 0, err
 	} else {
 		scalar_ := fmt.Sprint(scalar)
 		if this.balance == nil || scalar_ != this.balance[1] || args[0] != this.balance[0] {
 			this.balance = []string{args[0], fmt.Sprint(scalar)}
-			return FLAG_BALANCE, nil
+			return gopi.ROTEL_FLAG_BALANCE, nil
 		}
 	}
 	return 0, nil
 }
 
-func SetMute(this *State, args []string) (RotelFlag, error) {
+func SetMute(this *State, args []string) (gopi.RotelFlag, error) {
 	if args[0] != this.mute {
 		this.mute = args[0]
-		return FLAG_MUTE, nil
+		return gopi.ROTEL_FLAG_MUTE, nil
 	}
 	return 0, nil
 }
 
-func SetSource(this *State, args []string) (RotelFlag, error) {
+func SetSource(this *State, args []string) (gopi.RotelFlag, error) {
 	if args[0] != this.source {
 		this.source = args[0]
-		return FLAG_SOURCE, nil
+		return gopi.ROTEL_FLAG_SOURCE, nil
 	}
 	return 0, nil
 }
 
-func SetFreq(this *State, args []string) (RotelFlag, error) {
+func SetFreq(this *State, args []string) (gopi.RotelFlag, error) {
 	if args[0] != this.freq {
 		this.freq = args[0]
-		return FLAG_FREQ, nil
+		return gopi.ROTEL_FLAG_FREQ, nil
 	}
 	return 0, nil
 }
 
-func SetBypass(this *State, args []string) (RotelFlag, error) {
+func SetBypass(this *State, args []string) (gopi.RotelFlag, error) {
 	if args[0] != this.bypass {
 		this.bypass = args[0]
-		return FLAG_BYPASS, nil
+		return gopi.ROTEL_FLAG_BYPASS, nil
 	}
 	return 0, nil
 }
 
-func SetSpeaker(this *State, args []string) (RotelFlag, error) {
+func SetSpeaker(this *State, args []string) (gopi.RotelFlag, error) {
 	if args[0] != this.speaker {
 		this.speaker = args[0]
-		return FLAG_SPEAKER, nil
+		return gopi.ROTEL_FLAG_SPEAKER, nil
 	}
 	return 0, nil
 }
 
-func SetDimmer(this *State, args []string) (RotelFlag, error) {
+func SetDimmer(this *State, args []string) (gopi.RotelFlag, error) {
 	if dimmer, err := strconv.ParseUint(args[0], 10, 32); err != nil {
 		return 0, err
 	} else if dimmer_ := fmt.Sprint(dimmer); this.dimmer != dimmer_ {
 		this.dimmer = dimmer_
-		return FLAG_DIMMER, nil
+		return gopi.ROTEL_FLAG_DIMMER, nil
 	}
 	return 0, nil
 }

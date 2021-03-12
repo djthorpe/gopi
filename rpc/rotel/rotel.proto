@@ -15,7 +15,7 @@ service Manager {
     rpc SetBypass(Bool) returns (State);
     rpc SetTreble(Int) returns (State);
     rpc SetBass(Int) returns (State);
-    rpc SetBalance(Balance) returns (State);
+    rpc SetBalance(String) returns (State);
     rpc SetDimmer(Uint) returns (State);
 
     // Actions
@@ -51,7 +51,6 @@ message Balance {
 }
 
 message State {
-    string model = 1;
     bool power = 2;
     string source = 3;
     uint32 volume = 4;
@@ -64,8 +63,9 @@ message State {
 }
 
 message Event {
-    State state = 1;
-    Flag flags = 2;
+    string name = 1;
+    State state = 2;
+    Flag flags = 3;
  
     enum Flag {
         NONE    = 0x000;
@@ -80,6 +80,5 @@ message Event {
         BYPASS  = 0x100;
         SPEAKER = 0x200;
         DIMMER  = 0x400;
-        MODEL   = 0x800;
     }
 }

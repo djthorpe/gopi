@@ -108,10 +108,10 @@ func (this *service) SetBass(_ context.Context, req *Int) (*State, error) {
 	}
 }
 
-func (this *service) SetBalance(_ context.Context, req *Balance) (*State, error) {
+func (this *service) SetBalance(_ context.Context, req *String) (*State, error) {
 	this.Logger.Debug("<SetBalance ", req, ">")
 
-	if err := this.RotelManager.SetBalance(req.Location, uint(req.Value)); err != nil {
+	if err := this.RotelManager.SetBalance(req.Value); err != nil {
 		return nil, err
 	} else {
 		return toProtoState(this.RotelManager), nil
@@ -193,20 +193,22 @@ func (this *service) Stream(_ *empty.Empty, stream Manager_StreamServer) error {
 	// Obtain server cancel context
 	ctx := this.Server.NewStreamContext()
 
-	// Loop which streams until server context cancels
-	// or an error occurs sending a Ping
+	// Loop which streams until server context cancels or an error occurs sending a Ping
 	for {
 		select {
 		case evt := <-ch:
-			if evt.Name() == "rotel" {
-				this.Debug("Stream: ", evt)
-				if err := stream.Send(toProtoEvent(evt)); err != nil {
+			// Send event
+			if evt_, ok := evt.(gopi.RotelEvent); ok {
+				this.Debug("Stream: ", evt_)
+				if err := stream.Send(toProtoEvent(evt_)); err != nil {
 					this.Print("Stream: ", err)
 				}
 			}
 		case <-ctx.Done():
+			// Context done
 			return ctx.Err()
 		case <-ticker.C:
+			// Send a ping
 			if err := stream.Send(toProtoNull()); err != nil {
 				this.Debug("Stream: ", "Error sending null event, ending stream")
 				return err
