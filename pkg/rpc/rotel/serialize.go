@@ -21,10 +21,11 @@ func toProtoNull() *Event {
 	return &Event{}
 }
 
-func toProtoEvent(evt gopi.RotelEvent) *Event {
+func toProtoEvent(evt gopi.RotelEvent, dev gopi.RotelManager) *Event {
 	return &Event{
 		Name:  evt.Name(),
 		Flags: Event_Flag(evt.Flags()),
+		State: toProtoState(dev),
 	}
 }
 
@@ -82,6 +83,9 @@ func (this *event) String() string {
 	}
 	if flags := this.Flags(); flags != gopi.ROTEL_FLAG_NONE {
 		str += fmt.Sprint(" flags=", this.Flags())
+	}
+	if state := this.pb.State; state != nil {
+		str += fmt.Sprint(" state=", state)
 	}
 	return str + ">"
 }

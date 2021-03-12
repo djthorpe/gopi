@@ -35,96 +35,106 @@ func (this *service) mustEmbedUnimplementedManagerServer() {}
 /////////////////////////////////////////////////////////////////////
 // RPC METHODS
 
+func (this *service) GetName(_ context.Context, _ *empty.Empty) (*String, error) {
+	this.Logger.Debug("<GetName>")
+	return &String{Value: this.RotelManager.Model()}, nil
+}
+
+func (this *service) GetState(_ context.Context, _ *empty.Empty) (*State, error) {
+	this.Logger.Debug("<GetState>")
+	return toProtoState(this.RotelManager), nil
+}
+
 // Change Power State
-func (this *service) SetPower(_ context.Context, req *Bool) (*State, error) {
+func (this *service) SetPower(_ context.Context, req *Bool) (*empty.Empty, error) {
 	this.Logger.Debug("<SetPower ", req, ">")
 
 	if err := this.RotelManager.SetPower(req.Value); err != nil {
 		return nil, err
 	} else {
-		return toProtoState(this.RotelManager), nil
+		return &empty.Empty{}, nil
 	}
 }
 
 // Change Input Source
-func (this *service) SetSource(_ context.Context, req *String) (*State, error) {
+func (this *service) SetSource(_ context.Context, req *String) (*empty.Empty, error) {
 	this.Logger.Debug("<SetSource ", req, ">")
 
 	if err := this.RotelManager.SetSource(req.Value); err != nil {
 		return nil, err
 	} else {
-		return toProtoState(this.RotelManager), nil
+		return &empty.Empty{}, nil
 	}
 }
 
 // Change Volume
-func (this *service) SetVolume(_ context.Context, req *Uint) (*State, error) {
+func (this *service) SetVolume(_ context.Context, req *Uint) (*empty.Empty, error) {
 	this.Logger.Debug("<SetVolume ", req, ">")
 
 	if err := this.RotelManager.SetVolume(uint(req.Value)); err != nil {
 		return nil, err
 	} else {
-		return toProtoState(this.RotelManager), nil
+		return &empty.Empty{}, nil
 	}
 }
 
-func (this *service) SetMute(_ context.Context, req *Bool) (*State, error) {
+func (this *service) SetMute(_ context.Context, req *Bool) (*empty.Empty, error) {
 	this.Logger.Debug("<SetMute ", req, ">")
 
 	if err := this.RotelManager.SetMute(req.Value); err != nil {
 		return nil, err
 	} else {
-		return toProtoState(this.RotelManager), nil
+		return &empty.Empty{}, nil
 	}
 }
 
-func (this *service) SetBypass(_ context.Context, req *Bool) (*State, error) {
+func (this *service) SetBypass(_ context.Context, req *Bool) (*empty.Empty, error) {
 	this.Logger.Debug("<SetBypass ", req, ">")
 
 	if err := this.RotelManager.SetBypass(req.Value); err != nil {
 		return nil, err
 	} else {
-		return toProtoState(this.RotelManager), nil
+		return &empty.Empty{}, nil
 	}
 }
 
-func (this *service) SetTreble(_ context.Context, req *Int) (*State, error) {
+func (this *service) SetTreble(_ context.Context, req *Int) (*empty.Empty, error) {
 	this.Logger.Debug("<SetTreble ", req, ">")
 
 	if err := this.RotelManager.SetTreble(int(req.Value)); err != nil {
 		return nil, err
 	} else {
-		return toProtoState(this.RotelManager), nil
+		return &empty.Empty{}, nil
 	}
 }
 
-func (this *service) SetBass(_ context.Context, req *Int) (*State, error) {
+func (this *service) SetBass(_ context.Context, req *Int) (*empty.Empty, error) {
 	this.Logger.Debug("<SetBass ", req, ">")
 
 	if err := this.RotelManager.SetBass(int(req.Value)); err != nil {
 		return nil, err
 	} else {
-		return toProtoState(this.RotelManager), nil
+		return &empty.Empty{}, nil
 	}
 }
 
-func (this *service) SetBalance(_ context.Context, req *String) (*State, error) {
+func (this *service) SetBalance(_ context.Context, req *String) (*empty.Empty, error) {
 	this.Logger.Debug("<SetBalance ", req, ">")
 
 	if err := this.RotelManager.SetBalance(req.Value); err != nil {
 		return nil, err
 	} else {
-		return toProtoState(this.RotelManager), nil
+		return &empty.Empty{}, nil
 	}
 }
 
-func (this *service) SetDimmer(_ context.Context, req *Uint) (*State, error) {
+func (this *service) SetDimmer(_ context.Context, req *Uint) (*empty.Empty, error) {
 	this.Logger.Debug("<SetDimmer ", req, ">")
 
 	if err := this.RotelManager.SetDimmer(uint(req.Value)); err != nil {
 		return nil, err
 	} else {
-		return toProtoState(this.RotelManager), nil
+		return &empty.Empty{}, nil
 	}
 }
 
@@ -200,7 +210,7 @@ func (this *service) Stream(_ *empty.Empty, stream Manager_StreamServer) error {
 			// Send event
 			if evt_, ok := evt.(gopi.RotelEvent); ok {
 				this.Debug("Stream: ", evt_)
-				if err := stream.Send(toProtoEvent(evt_)); err != nil {
+				if err := stream.Send(toProtoEvent(evt_, this.RotelManager)); err != nil {
 					this.Print("Stream: ", err)
 				}
 			}

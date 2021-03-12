@@ -8,15 +8,19 @@ import "google/protobuf/empty.proto";
 
 service Manager {
     // Set Properties
-    rpc SetSource(String) returns (State);
-    rpc SetVolume(Uint) returns (State);
-    rpc SetPower(Bool) returns (State);
-    rpc SetMute(Bool) returns (State);
-    rpc SetBypass(Bool) returns (State);
-    rpc SetTreble(Int) returns (State);
-    rpc SetBass(Int) returns (State);
-    rpc SetBalance(String) returns (State);
-    rpc SetDimmer(Uint) returns (State);
+    rpc SetSource(String) returns (google.protobuf.Empty);
+    rpc SetVolume(Uint) returns (google.protobuf.Empty);
+    rpc SetPower(Bool) returns (google.protobuf.Empty);
+    rpc SetMute(Bool) returns (google.protobuf.Empty);
+    rpc SetBypass(Bool) returns (google.protobuf.Empty);
+    rpc SetTreble(Int) returns (google.protobuf.Empty);
+    rpc SetBass(Int) returns (google.protobuf.Empty);
+    rpc SetBalance(String) returns (google.protobuf.Empty);
+    rpc SetDimmer(Uint) returns (google.protobuf.Empty);
+
+    // Get State
+    rpc GetName(google.protobuf.Empty) returns (String);
+    rpc GetState(google.protobuf.Empty) returns (State);
 
     // Actions
     rpc Play(google.protobuf.Empty) returns (google.protobuf.Empty);
