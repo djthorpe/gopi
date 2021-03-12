@@ -16,6 +16,7 @@ import (
 	* eInk Paper Displays (GPIO, SPI, Bitmaps)
 	* Google Chromecast control (mDNS, RPC, Protocol Buffers)
 	* Rotel Amplifer control (via RS232)
+	* IKEA Tradfri Zigbee Gateway
 
 	Ultimately these should be split out into separate repos...
 */
