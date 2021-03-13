@@ -104,6 +104,6 @@ func (this *app) DecodeFrame(path string, frame gopi.MediaFrame) error {
 		return err
 	}
 
-	this.Printf("Saved frame: %q", path)
+	this.Printf("Saved frame:", frame, "=>", path)
 	return nil
 }

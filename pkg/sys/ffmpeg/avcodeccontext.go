@@ -73,7 +73,8 @@ func (this *AVCodecContext) DecodePacket(packet *AVPacket) error {
 // DecodeFrame does the frame decoding
 func (this *AVCodecContext) DecodeFrame(frame *AVFrame) error {
 	ctx := (*C.AVCodecContext)(unsafe.Pointer(this))
-	if err := AVError(C.avcodec_receive_frame(ctx, (*C.AVFrame)(frame))); err != 0 {
+	framectx := (*C.AVFrame)(frame)
+	if err := AVError(C.avcodec_receive_frame(ctx, framectx)); err != 0 {
 		if err.IsErrno(syscall.EAGAIN) {
 			return syscall.EAGAIN
 		} else if err.IsErrno(syscall.EINVAL) {
@@ -81,9 +82,20 @@ func (this *AVCodecContext) DecodeFrame(frame *AVFrame) error {
 		} else {
 			return err
 		}
-	} else {
-		return nil
 	}
+
+	// Set frame information from context
+	switch AVMediaType(ctx.codec_type) {
+	case AVMEDIA_TYPE_VIDEO:
+		framectx.format = C.int(ctx.pix_fmt)
+	case AVMEDIA_TYPE_AUDIO:
+		framectx.format = C.int(ctx.sample_fmt)
+		framectx.channels = ctx.channels
+		framectx.sample_rate = ctx.sample_rate
+	}
+
+	// Return success
+	return nil
 }
 
 func (this *AVCodecContext) Type() AVMediaType {

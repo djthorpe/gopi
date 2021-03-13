@@ -200,9 +200,6 @@ func (this *AVFrame) String() string {
 		if n := this.NumSamples(); n > 0 {
 			str += " nb_samples=" + fmt.Sprint(n)
 		}
-		if this.IsPlanar() {
-			str += " is_planar=true"
-		}
 	} else if f := this.PixelFormat(); f != AV_PIX_FMT_NONE {
 		str += " pixel_format=" + fmt.Sprint(f)
 		if key_frame := this.KeyFrame(); key_frame {
@@ -213,6 +210,9 @@ func (this *AVFrame) String() string {
 		}
 		if w, h := this.PictWidth(), this.PictHeight(); w >= 0 && h >= 0 {
 			str += " pict_size={" + fmt.Sprint(w, ",", h) + "}"
+		}
+		if this.IsPlanar() {
+			str += " is_planar=true"
 		}
 	}
 	return str + ">"
