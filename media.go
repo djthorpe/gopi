@@ -51,10 +51,11 @@ type MediaManager interface {
 
 // Media is an input or output
 type Media interface {
-	URL() *url.URL           // Return URL for the media location
-	Metadata() MediaMetadata // Return metadata
-	Flags() MediaFlag        // Return flags
-	Streams() []MediaStream  // Return streams
+	URL() *url.URL                  // Return URL for the media location
+	Metadata() MediaMetadata        // Return metadata
+	Flags() MediaFlag               // Return flags
+	Streams() []MediaStream         // Return streams
+	StreamForIndex(int) MediaStream // Return stream by index
 }
 
 type MediaInput interface {

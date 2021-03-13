@@ -148,6 +148,22 @@ func (this *outputctx) Streams() []gopi.MediaStream {
 	return result
 }
 
+func (this *outputctx) StreamForIndex(i int) gopi.MediaStream {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	// Check for closed file
+	if this.ctx == nil {
+		return nil
+	}
+	// Check bounds
+	if i < 0 || i >= len(this.streams) {
+		return nil
+	} else {
+		return this.streams[i]
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 

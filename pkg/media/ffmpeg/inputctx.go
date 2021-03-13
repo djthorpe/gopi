@@ -4,6 +4,7 @@ package ffmpeg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -143,6 +144,22 @@ func (this *inputctx) Streams() []gopi.MediaStream {
 	return result
 }
 
+func (this *inputctx) StreamForIndex(i int) gopi.MediaStream {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	// Check for closed file
+	if this.ctx == nil {
+		return nil
+	}
+	// Check bounds
+	if i < 0 || i >= len(this.streams) {
+		return nil
+	} else {
+		return this.streams[i]
+	}
+}
+
 func (this *inputctx) StreamsForFlag(flag gopi.MediaFlag) []int {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
@@ -217,6 +234,7 @@ func (this *inputctx) Read(ctx context.Context, streams []int, fn gopi.DecodeIte
 
 	// Iterate over incoming packets, callback when packet should
 	// be processed. Return if parent context is done
+FOR_LOOP:
 	for {
 		select {
 		case <-ctx.Done():
@@ -224,14 +242,17 @@ func (this *inputctx) Read(ctx context.Context, streams []int, fn gopi.DecodeIte
 		default:
 			if err := this.ctx.ReadPacket(packet); err == io.EOF {
 				// End of stream
-				break
+				break FOR_LOOP
 			} else if err != nil {
 				return err
 			} else if ctx, exists := contextmap[packet.Stream()]; exists {
 				// Call decode function with packet
 				err := fn(ctx, packet)
 				packet.Release()
-				if err != nil {
+				if errors.Is(err, io.EOF) {
+					// End of stream requested with no error
+					break FOR_LOOP
+				} else if err != nil {
 					return err
 				}
 			}

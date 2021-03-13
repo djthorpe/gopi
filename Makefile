@@ -249,6 +249,9 @@ openvgtest: rpi dispmanx openvg egl
 dxtest: dispmanx egl rpi
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) test -v -tags "$(TAGS)" ${GOFLAGS} ./pkg/graphics/surface/dispmanx
 
+ffextract: builddir ffmpeg
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/ffextract -tags "$(TAGS)" ${GOFLAGS} ./cmd/ffextract
+
 # Build rules - dependencies
 nfpm:
 	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm@v1.10.1

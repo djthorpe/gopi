@@ -118,9 +118,14 @@ func (this *AVFrame) PictType() AVPictureType {
 	return AVPictureType(ctx.pict_type)
 }
 
-func (this *AVFrame) PictSize() (int, int) {
+func (this *AVFrame) PictWidth() int {
 	ctx := (*C.AVFrame)(unsafe.Pointer(this))
-	return int(ctx.width), int(ctx.height)
+	return int(ctx.width)
+}
+
+func (this *AVFrame) PictHeight() int {
+	ctx := (*C.AVFrame)(unsafe.Pointer(this))
+	return int(ctx.height)
 }
 
 func (this *AVFrame) Buffer(plane int) *AVBufferRef {
@@ -206,7 +211,7 @@ func (this *AVFrame) String() string {
 		if pict_type := this.PictType(); pict_type != AV_PICTURE_TYPE_NONE {
 			str += " pict_type=" + fmt.Sprint(pict_type)
 		}
-		if w, h := this.PictSize(); w >= 0 && h >= 0 {
+		if w, h := this.PictWidth(), this.PictHeight(); w >= 0 && h >= 0 {
 			str += " pict_size={" + fmt.Sprint(w, ",", h) + "}"
 		}
 	}

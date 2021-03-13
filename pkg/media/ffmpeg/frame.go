@@ -69,7 +69,7 @@ func (this *frame) ColorModel() color.Model {
 func (this *frame) Bounds() image.Rectangle {
 	return image.Rectangle{
 		image.ZP,
-		image.Pt(this.ctx.PictSize()),
+		image.Pt(this.ctx.PictWidth(), this.ctx.PictHeight()),
 	}
 }
 
@@ -91,9 +91,10 @@ func (this *frame) At(x, y int) color.Color {
 	strideY := this.Stride(0)
 	strideCb := this.Stride(1)
 	strideCr := this.Stride(2)
+	// Currently assumes YUV420P
 	Y := this.Bytes(0)[x+y*strideY]
-	Cb := this.Bytes(1)[x>>1+y*strideCb]
-	Cr := this.Bytes(2)[x>>1+y*strideCr]
+	Cb := this.Bytes(1)[x>>1+y>>1*strideCb]
+	Cr := this.Bytes(2)[x>>1+y>>1*strideCr]
 	return color.YCbCr{Y, Cb, Cr}
 }
 
@@ -101,9 +102,10 @@ func (this *frame) At(x, y int) color.Color {
 // STRINGIFY
 
 func (this *frame) String() string {
-	if this.ctx == nil {
-		return "nil"
-	} else {
-		return fmt.Sprint(this.ctx)
+	str := "<MediaFrame"
+	if this.ctx != nil {
+		str += fmt.Sprint(" type=", this.ctx)
+		str += fmt.Sprint(" bounds=", this.Bounds())
 	}
+	return str + ">"
 }
