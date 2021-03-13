@@ -53,6 +53,9 @@ func multicastInterfaces(iface net.Interface) ([]net.Interface, error) {
 			if (ifi.Flags & net.FlagMulticast) == 0 {
 				continue
 			}
+			if (ifi.Flags & net.FlagPointToPoint) != 0 {
+				continue
+			}
 			if addrs, err := ifi.MulticastAddrs(); err != nil || len(addrs) == 0 {
 				continue
 			}
