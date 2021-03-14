@@ -252,6 +252,9 @@ dxtest: dispmanx egl rpi
 ffextract: builddir ffmpeg
 	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/ffextract -tags "$(TAGS)" ${GOFLAGS} ./cmd/ffextract
 
+audioid: builddir ffmpeg chromaprint
+	PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(GO) build -o ${BUILDDIR}/audioid -tags "$(TAGS)" ${GOFLAGS} ./cmd/audioid
+
 # Build rules - dependencies
 nfpm:
 	$(GO) get github.com/goreleaser/nfpm/cmd/nfpm@v1.10.1

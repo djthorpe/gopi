@@ -287,7 +287,7 @@ func (this *inputctx) DecodeFrameIterator(ctx gopi.MediaDecodeContext, packet go
 	// Iterate through frames
 	for {
 		// Return frames until no more available
-		if frame, err := ctx_.DecodeFrame(); err == io.EOF {
+		if frame, err := ctx_.DecodeFrame(); errors.Is(err, io.EOF) {
 			return err
 		} else if err != nil {
 			return fmt.Errorf("DecodeFrameIterator: %w", err)

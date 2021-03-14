@@ -245,6 +245,13 @@ func (this *Manager) ListCodecs(name string, flags gopi.MediaFlag) []gopi.MediaC
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS - PROFILES
+
+func (this *Manager) AudioProfile(fmt gopi.AudioFormat, rate uint, layout gopi.AudioChannelLayout) gopi.MediaProfile {
+	return NewAudioProfile(fmt, rate, layout)
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *Manager) String() string {

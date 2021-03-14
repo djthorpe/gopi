@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/color"
 
+	gopi "github.com/djthorpe/gopi/v3"
 	ffmpeg "github.com/djthorpe/gopi/v3/pkg/sys/ffmpeg"
 )
 
@@ -19,7 +20,7 @@ type frame struct {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// INIT
+// LIFECYCLE
 
 func NewFrame() *frame {
 	if ctx := ffmpeg.NewAVFrame(); ctx == nil {
@@ -60,7 +61,22 @@ func (this *frame) Free() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// IMAGE IMPLEMENTATION
+// PUBLIC METHODS
+
+func (this *frame) Flags() gopi.MediaFlag {
+	if this.ctx == nil {
+		return gopi.MEDIA_FLAG_NONE
+	} else if fmt := this.ctx.SampleFormat(); fmt != ffmpeg.AV_SAMPLE_FMT_NONE {
+		return gopi.MEDIA_FLAG_AUDIO
+	} else if fmt := this.ctx.PixelFormat(); fmt != ffmpeg.AV_PIX_FMT_NONE {
+		return gopi.MEDIA_FLAG_VIDEO
+	} else {
+		return gopi.MEDIA_FLAG_NONE
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PUBLIC METHODS: IMAGE
 
 func (this *frame) ColorModel() color.Model {
 	return color.YCbCrModel
@@ -98,11 +114,19 @@ func (this *frame) At(x, y int) color.Color {
 	return color.YCbCr{Y, Cb, Cr}
 }
 
+func (this *frame) Resample(gopi.MediaProfile) (gopi.MediaFrame, error) {
+	// TODO
+	return nil, gopi.ErrNotImplemented
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *frame) String() string {
-	str := "<MediaFrame"
+	str := "<ffmpeg.mediaframe"
+	if flags := this.Flags(); flags != gopi.MEDIA_FLAG_NONE {
+		str += fmt.Sprint(" flags=", flags)
+	}
 	if this.ctx != nil {
 		str += fmt.Sprint(" type=", this.ctx)
 		str += fmt.Sprint(" bounds=", this.Bounds())

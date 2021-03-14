@@ -11,9 +11,11 @@ import (
 /*
 	This file contains definitions for media devices:
 
-	* Video and Audio decoding
+	* Video and Audio encoding and decoding
 	* Input and output media devices
-	* DVB tuning and decoding
+	* DVB tuning and decoding (experimental)
+
+	There are aditional interfaces for audio and graphics elsewhere
 */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +29,7 @@ type (
 )
 
 ////////////////////////////////////////////////////////////////////////////////
-// MEDIA FILE INTERFACES
+// MEDIA MANAGER
 
 // MediaManager for media file management
 type MediaManager interface {
@@ -47,7 +49,13 @@ type MediaManager interface {
 	// audio, video, encode and decode. By default (empty name and
 	// MediaFlag) lists all codecs
 	ListCodecs(string, MediaFlag) []MediaCodec
+
+	// Create an audio profile with format, sample rate, channels and layout
+	AudioProfile(AudioFormat, uint, AudioChannelLayout) MediaProfile
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// MEDIA OBJECTS
 
 // Media is an input or output
 type Media interface {
@@ -58,6 +66,7 @@ type Media interface {
 	StreamForIndex(int) MediaStream // Return stream by index
 }
 
+// MediaInput represents a source of media
 type MediaInput interface {
 	Media
 
@@ -73,6 +82,7 @@ type MediaInput interface {
 	DecodeFrameIterator(MediaDecodeContext, MediaPacket, DecodeFrameIteratorFunc) error
 }
 
+// MediaOutput represents a sink for media
 type MediaOutput interface {
 	Media
 
@@ -80,17 +90,32 @@ type MediaOutput interface {
 	Write(MediaDecodeContext, MediaPacket) error
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// MEDIA PROFILES
+
+type MediaProfile interface {
+	Flags() MediaFlag // Return audio or video profile
+}
+
+type MediaAudioProfile interface {
+	MediaProfile
+
+	Format() AudioFormat
+	SampleRate() uint
+	Layout() AudioChannelLayout
+}
+
+type MediaVideoProfile interface {
+	MediaProfile
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// MEDIA METADATA AND CODECS
+
 // MediaMetadata are key value pairs for a media object
 type MediaMetadata interface {
 	Keys() []MediaKey           // Return all existing keys
 	Value(MediaKey) interface{} // Return value for key, or nil
-}
-
-// MediaStream is a stream of packets from a media object
-type MediaStream interface {
-	Index() int        // Stream index
-	Flags() MediaFlag  // Flags for the stream (Audio, Video, etc)
-	Codec() MediaCodec // Return codec and parameters
 }
 
 // MediaCodec is the codec and parameters
@@ -105,6 +130,16 @@ type MediaCodec interface {
 	Flags() MediaFlag
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// MEDIA STREAMS, PACKETS AND FRAMES
+
+// MediaStream is a stream of packets from a media object
+type MediaStream interface {
+	Index() int        // Stream index
+	Flags() MediaFlag  // Flags for the stream (Audio, Video, etc)
+	Codec() MediaCodec // Return codec and parameters
+}
+
 // MediaPacket is a packet of data from a stream
 type MediaPacket interface {
 	Size() int
@@ -114,8 +149,18 @@ type MediaPacket interface {
 
 // MediaFrame is a decoded audio or video frame
 type MediaFrame interface {
+	// Implements image interface which can be saved to save frame as bitmap
 	image.Image
+
+	// Resample a frame to a specific profile
+	Resample(MediaProfile) (MediaFrame, error)
+
+	// Flags for the frame (Audio, Video)
+	Flags() MediaFlag
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// MEDIA ENCODING AND DECODING
 
 // MediaDecodeContext provides packet data and streams for decoding
 // frames of data
@@ -125,23 +170,7 @@ type MediaDecodeContext interface {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// AUDIO INTERFACES
-
-type AudioManager interface {
-	// OpenDefaultSink opens default output device
-	OpenDefaultSink() (AudioContext, error)
-
-	// Close audio stream
-	Close(AudioContext) error
-}
-
-type AudioContext interface {
-	// Write data to audio output device
-	Write(MediaFrame) error
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// DVB INTERFACES
+// DVB INTERFACES - EXPERIMENTAL
 
 // DVBManager encapsulates methods for DVB reception
 type DVBManager interface {

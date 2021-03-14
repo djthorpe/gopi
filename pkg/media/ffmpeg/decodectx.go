@@ -132,7 +132,7 @@ func (this *decodectx) String() string {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 
-	str := "<mediacontext"
+	str := "<ffmpeg.mediacontext"
 	if frame_number := this.Frame(); frame_number >= 0 {
 		str += " frame_number=" + fmt.Sprint(frame_number)
 	}

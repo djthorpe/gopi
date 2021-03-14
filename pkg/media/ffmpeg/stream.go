@@ -111,7 +111,7 @@ func (this *stream) NewContextWithOptions(options *ffmpeg.AVDictionary) *ffmpeg.
 // STRINGIFY
 
 func (this *stream) String() string {
-	str := "<stream"
+	str := "<ffmpeg.stream"
 	str += " index=" + fmt.Sprint(this.Index())
 	if flags := this.Flags(); flags != gopi.MEDIA_FLAG_NONE {
 		str += " flags=" + fmt.Sprint(flags)

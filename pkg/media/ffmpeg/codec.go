@@ -104,7 +104,7 @@ func (this *codec) Flags() gopi.MediaFlag {
 // STRINGIFY
 
 func (this *codec) String() string {
-	str := "<codec"
+	str := "<ffmpeg.codec"
 	if flags := this.Flags(); flags != gopi.MEDIA_FLAG_NONE {
 		str += " flags=" + fmt.Sprint(flags)
 	}

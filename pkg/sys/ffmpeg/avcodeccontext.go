@@ -84,16 +84,6 @@ func (this *AVCodecContext) DecodeFrame(frame *AVFrame) error {
 		}
 	}
 
-	// Set frame information from context
-	switch AVMediaType(ctx.codec_type) {
-	case AVMEDIA_TYPE_VIDEO:
-		framectx.format = C.int(ctx.pix_fmt)
-	case AVMEDIA_TYPE_AUDIO:
-		framectx.format = C.int(ctx.sample_fmt)
-		framectx.channels = ctx.channels
-		framectx.sample_rate = ctx.sample_rate
-	}
-
 	// Return success
 	return nil
 }

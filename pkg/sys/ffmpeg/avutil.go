@@ -97,7 +97,7 @@ func (this AVError) Error() string {
 			return string(cbuffer)
 		}
 	} else {
-		return fmt.Sprintf("Error code: %v", this)
+		return fmt.Sprintf("Error code: %v", int(this))
 	}
 }
 

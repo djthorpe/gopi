@@ -78,7 +78,7 @@ func (this *metadata) Value(key gopi.MediaKey) interface{} {
 // STRINGIFY
 
 func (this *metadata) String() string {
-	str := "<metadata"
+	str := "<ffmpeg.metadata"
 	if keys := this.Keys(); len(keys) > 0 {
 		str += " keys="
 		for i, key := range keys {
