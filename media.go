@@ -133,11 +133,13 @@ type MediaCodec interface {
 ////////////////////////////////////////////////////////////////////////////////
 // MEDIA STREAMS, PACKETS AND FRAMES
 
-// MediaStream is a stream of packets from a media object
+// MediaStream is a stream of packets from a media object, with a defined
+// codec and audio or video profile
 type MediaStream interface {
-	Index() int        // Stream index
-	Flags() MediaFlag  // Flags for the stream (Audio, Video, etc)
-	Codec() MediaCodec // Return codec and parameters
+	Index() int            // Stream index
+	Flags() MediaFlag      // Flags for the stream (Audio, Video, etc)
+	Codec() MediaCodec     // Return codec and parameters
+	Profile() MediaProfile // Return audio or video profile for stream
 }
 
 // MediaPacket is a packet of data from a stream

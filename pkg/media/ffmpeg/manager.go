@@ -22,12 +22,13 @@ type Manager struct {
 	gopi.Logger
 	sync.Mutex
 
-	in  []*inputctx
-	out []*outputctx
+	in           []*inputctx
+	out          []*outputctx
+	audioprofile []*AudioProfile
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NEW
+// LIFECYCLE
 
 func (this *Manager) New(gopi.Config) error {
 	if this.Logger == nil {
@@ -72,6 +73,13 @@ func (this *Manager) Dispose() error {
 		}
 	}
 
+	// Free all audio profiles
+	for _, profile := range this.audioprofile {
+		if err := profile.Dispose(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
 	// Deinit
 	ffmpeg.AVFormatDeinit()
 
@@ -81,6 +89,7 @@ func (this *Manager) Dispose() error {
 	// Release resources
 	this.in = nil
 	this.out = nil
+	this.audioprofile = nil
 
 	// Return any errors
 	return result
@@ -248,7 +257,11 @@ func (this *Manager) ListCodecs(name string, flags gopi.MediaFlag) []gopi.MediaC
 // PUBLIC METHODS - PROFILES
 
 func (this *Manager) AudioProfile(fmt gopi.AudioFormat, rate uint, layout gopi.AudioChannelLayout) gopi.MediaProfile {
-	return NewAudioProfile(fmt, rate, layout)
+	profile := NewAudioProfile(fmt, rate, layout)
+	if profile != nil {
+		this.audioprofile = append(this.audioprofile, profile)
+	}
+	return profile
 }
 
 ////////////////////////////////////////////////////////////////////////////////

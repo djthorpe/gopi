@@ -60,7 +60,7 @@ func (this *app) Decode(ctx context.Context, file gopi.MediaInput) error {
 	// Decode frames
 	return file.Read(ctx, streams[0:1], func(ctx gopi.MediaDecodeContext, packet gopi.MediaPacket) error {
 		return file.DecodeFrameIterator(ctx, packet, func(frame gopi.MediaFrame) error {
-			this.Print("Decoded", ctx.Frame(), " => ", frame)
+			this.Print("Decoded", ctx.Stream(), ctx.Frame(), " => ", frame)
 			return nil
 		})
 	})

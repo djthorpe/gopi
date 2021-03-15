@@ -38,9 +38,10 @@ func NewCodecWithParameters(ctx *ffmpeg.AVCodecParameters) *codec {
 	}
 }
 
-func (this *codec) Release() {
+func (this *codec) Release() error {
 	this.ctx = nil
 	this.codec = nil
+	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

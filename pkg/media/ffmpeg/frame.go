@@ -126,10 +126,12 @@ func (this *frame) String() string {
 	str := "<ffmpeg.mediaframe"
 	if flags := this.Flags(); flags != gopi.MEDIA_FLAG_NONE {
 		str += fmt.Sprint(" flags=", flags)
+		if flags&gopi.MEDIA_FLAG_VIDEO != 0 {
+			str += fmt.Sprint(" bounds=", this.Bounds())
+		}
 	}
 	if this.ctx != nil {
 		str += fmt.Sprint(" type=", this.ctx)
-		str += fmt.Sprint(" bounds=", this.Bounds())
 	}
 	return str + ">"
 }

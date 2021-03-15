@@ -4,15 +4,20 @@ package ffmpeg
 
 import (
 	"fmt"
+	"sync"
 
 	gopi "github.com/djthorpe/gopi/v3"
 	ffmpeg "github.com/djthorpe/gopi/v3/pkg/sys/ffmpeg"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // TYPES
 
 type stream struct {
+	sync.RWMutex
+	*AudioProfile
+
 	ctx   *ffmpeg.AVStream
 	codec *codec
 }
@@ -23,6 +28,8 @@ type stream struct {
 // NewStream returns a stream object, can optiomally copy codec
 // parameters from another stream if source is not set to nil
 func NewStream(ctx *ffmpeg.AVStream, source *stream) *stream {
+	this := new(stream)
+
 	if ctx == nil {
 		return nil
 	}
@@ -30,26 +37,55 @@ func NewStream(ctx *ffmpeg.AVStream, source *stream) *stream {
 		if codec := NewCodecWithParameters(ctx.CodecPar()); codec == nil {
 			return nil
 		} else {
-			return &stream{ctx, codec}
+			this.ctx = ctx
+			this.codec = codec
 		}
 	} else {
 		if codec := NewCodecWithParameters(source.ctx.CodecPar()); codec == nil {
 			return nil
 		} else {
-			return &stream{ctx, codec}
+			this.ctx = ctx
+			this.codec = codec
 		}
 	}
+
+	// Return success
+	return this
 }
 
-func (this *stream) Release() {
+func (this *stream) Release() error {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	// Release
+	var result error
+	if this.codec != nil {
+		if err := this.codec.Release(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+	if this.AudioProfile != nil {
+		if err := this.AudioProfile.Dispose(); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	// Set instance variables to nil
 	this.ctx = nil
 	this.codec = nil
+	this.AudioProfile = nil
+
+	// Return any errors
+	return result
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS - STREAM
 
 func (this *stream) Index() int {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	if this.ctx == nil {
 		return -1
 	} else {
@@ -58,9 +94,11 @@ func (this *stream) Index() int {
 }
 
 func (this *stream) Flags() gopi.MediaFlag {
-	flags := gopi.MEDIA_FLAG_NONE
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
 
 	// Return NONE if released
+	flags := gopi.MEDIA_FLAG_NONE
 	if this.ctx == nil {
 		return flags
 	}
@@ -84,10 +122,24 @@ func (this *stream) Flags() gopi.MediaFlag {
 }
 
 func (this *stream) Codec() gopi.MediaCodec {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
 	if this.ctx == nil {
 		return nil
 	} else {
 		return this.codec
+	}
+}
+
+func (this *stream) Profile() gopi.MediaProfile {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if this.AudioProfile != nil {
+		return this.AudioProfile
+	} else {
+		return nil
 	}
 }
 
@@ -114,8 +166,13 @@ func (this *stream) String() string {
 	str := "<ffmpeg.stream"
 	str += " index=" + fmt.Sprint(this.Index())
 	if flags := this.Flags(); flags != gopi.MEDIA_FLAG_NONE {
-		str += " flags=" + fmt.Sprint(flags)
+		str += fmt.Sprint(" flags=", flags)
 	}
-	str += " codec=" + fmt.Sprint(this.Codec())
+	if codec := this.Codec(); codec != nil {
+		str += fmt.Sprint(" codec=", codec)
+	}
+	if profile := this.Profile(); profile != nil {
+		str += fmt.Sprint(" profile=", profile)
+	}
 	return str + ">"
 }
