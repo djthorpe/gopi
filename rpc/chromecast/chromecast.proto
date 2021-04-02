@@ -1,0 +1,51 @@
+syntax = "proto3";
+package gopi.chromecast;
+
+option go_package = "github.com/djthorpe/gopi/v3/rpc/chromecast";
+
+import "google/protobuf/empty.proto";
+
+service Manager {
+    rpc List(google.protobuf.Empty) returns (ListResponse);
+    rpc Stream(google.protobuf.Empty) returns (stream CastEvent);
+}
+
+message ListResponse {
+    repeated Cast cast = 1; 
+}
+
+message Cast {
+    string id = 1; 
+    string name = 2; 
+    string model = 3; 
+    string service = 4; 
+    CastState state = 5;
+
+    enum CastState {
+        NONE = 0x00;
+        ACTIVE = 0x01;
+        IDLE = 0x02;
+        BACKDROP = 0x04;
+        PLAYING = 0x08;
+        BUFFERING = 0x10; 
+        PAUSED = 0x20;
+        UNKNOWN = 0x40;
+    }
+}
+
+message CastEvent {
+    Cast cast = 1;
+    Flag flags = 2;
+
+    enum Flag {
+        NONE = 0x00;        // No changes
+        CONNECT = 0x01;     // Chromecast connected
+        DISCOVERY = 0x02;   // Chromecast discovered
+        NAME = 0x04;        // Chromecast name change
+        APP = 0x08;         // Chromecast app changed
+        VOLUME = 0x10;      // Chromecast volume changed
+        MUTE = 0x20;        // Chromecast volume mute changed
+        MEDIA = 0x40;       // Chromecast media state change
+        DISCONNECT = 0x80;  // Chromecast disconnected
+    }
+}

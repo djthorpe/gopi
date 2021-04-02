@@ -1,7 +1,6 @@
 package chromecast
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -32,16 +31,8 @@ func NewCastFromRecord(r gopi.ServiceRecord) *Cast {
 	this := new(Cast)
 
 	// Set addr and port
-	if port := r.Port(); port == 0 {
-		return nil
-	} else {
-		this.port = port
-	}
-	if ips := r.Addrs(); len(ips) == 0 {
-		return nil
-	} else {
-		this.ips = ips
-	}
+	this.port = r.Port()
+	this.ips = r.Addrs()
 
 	// Set properties
 	tuples := txtToMap(r.Txt())
@@ -79,28 +70,24 @@ func (this *Cast) Disconnect() error {
 	return nil
 }
 
-func (this *Manager) Run(ctx context.Context) error {
-	// Subscribe to events
-	ch := this.Publisher.Subscribe()
-	defer this.Publisher.Unsubscribe(ch)
-
-	// Loop handling messages until done
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case evt := <-ch:
-			fmt.Println(evt)
-		}
-	}
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
 
 func (this *Cast) String() string {
 	str := "<cast.device"
-	str += fmt.Sprintf(" id=%q", this.id)
+
+	str += fmt.Sprintf(" id=%q", this.Id())
+	if name := this.Name(); name != "" {
+		str += " name=" + strconv.Quote(name)
+	}
+	if model := this.Model(); model != "" {
+		str += " model=" + strconv.Quote(model)
+	}
+	if service := this.Service(); service != "" {
+		str += " service=" + strconv.Quote(service)
+	}
+	str += " state=" + fmt.Sprint(this.State())
+
 	return str + ">"
 }
 
@@ -111,8 +98,71 @@ func (this *Cast) Id() string {
 	return this.id
 }
 
+// Name returns the readable name for a chromecast
+func (this *Cast) Name() string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	return this.fn
+}
+
+// Model returns the reported model information
+func (this *Cast) Model() string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	return this.md
+}
+
+// Service returns the currently running service
+func (this *Cast) Service() string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	return this.rs
+}
+
+// State returns 0 if backdrop (no app running), else returns 1
+func (this *Cast) State() uint {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	return this.st
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// METHODS
+
+func (this *Cast) Equals(other *Cast) gopi.CastFlag {
+	flags := gopi.CAST_FLAG_NONE
+	if other == nil {
+		return flags
+	}
+	// Any change to Name, Model or Id
+	if this.Id() != other.Id() || this.Name() != other.Name() || this.Model() != other.Model() {
+		flags |= gopi.CAST_FLAG_NAME
+	}
+	// Any change to service or state
+	if this.Service() != other.Service() || this.State() != other.State() {
+		flags |= gopi.CAST_FLAG_APP
+	}
+	// Return changed flags
+	return flags
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
+
+func (this *Cast) updateFrom(other *Cast) {
+	this.RWMutex.Lock()
+	other.RWMutex.RLock()
+	defer this.RWMutex.Unlock()
+	defer other.RWMutex.RUnlock()
+
+	this.id = other.id
+	this.fn = other.fn
+	this.md = other.md
+	this.rs = other.rs
+	this.st = other.st
+	this.ips = other.ips
+	this.port = other.port
+}
 
 func txtToMap(txt []string) map[string]string {
 	result := make(map[string]string, len(txt))
