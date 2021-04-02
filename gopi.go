@@ -86,6 +86,21 @@ type Publisher interface {
 	Unsubscribe(<-chan Event)
 }
 
+// Promises runs chains of events in the background
+type Promises interface {
+	// Create a promise with a function
+	Do(context.Context, func(context.Context, interface{}) (interface{}, error), interface{}) Promise
+}
+
+// Promise is run in a chain, and finally calls given function
+type Promise interface {
+	// Chain a function to a promise
+	Then(func(context.Context, interface{}) (interface{}, error)) Promise
+
+	// Finalally runs the promise in the background and optionally waits for it to complete
+	Finally(func(interface{}, error), bool)
+}
+
 /////////////////////////////////////////////////////////////////////
 // UNITS
 

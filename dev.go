@@ -270,70 +270,70 @@ type CastFlag uint
 type CastManager interface {
 	// Return list of discovered Google Chromecast Devices
 	Devices(context.Context) ([]Cast, error)
+	/*
+		// Connect to the control channel for a device
+		Connect(Cast) error
 
-	// Connect to the control channel for a device
-	Connect(Cast) error
+		// Disconnect from the device
+		Disconnect(Cast) error
 
-	// Disconnect from the device
-	Disconnect(Cast) error
+		// LaunchAppWithId launches application with Id on a cast device.
+		LaunchAppWithId(Cast, string) error
 
-	// LaunchAppWithId launches application with Id on a cast device.
-	LaunchAppWithId(Cast, string) error
+		// SetVolume sets the volume for a device, the value is between 0.0
+		// and 1.0
+		SetVolume(Cast, float32) error
 
-	// SetVolume sets the volume for a device, the value is between 0.0
-	// and 1.0
-	SetVolume(Cast, float32) error
+		// SetMuted sets the volume as muted or unmuted. Does not affect the
+		// volume level
+		SetMuted(Cast, bool) error
 
-	// SetMuted sets the volume as muted or unmuted. Does not affect the
-	// volume level
-	SetMuted(Cast, bool) error
+		// SetPlay sets media playback state to either PLAY or STOP
+		SetPlay(Cast, bool) error
 
-	// SetPlay sets media playback state to either PLAY or STOP
-	SetPlay(Cast, bool) error
+		// SetPause sets media state to PLAY or PAUSE. Will not affect
+		// state if currently STOP
+		SetPause(Cast, bool) error
 
-	// SetPause sets media state to PLAY or PAUSE. Will not affect
-	// state if currently STOP
-	SetPause(Cast, bool) error
+		// Seek within media stream relative to start of stream
+		SeekAbs(Cast, time.Duration) error
 
-	// Seek within media stream relative to start of stream
-	SeekAbs(Cast, time.Duration) error
+		// Seek within media stream relative to current position
+		SeekRel(Cast, time.Duration) error
 
-	// Seek within media stream relative to current position
-	SeekRel(Cast, time.Duration) error
+		// Send stop signal, terminating any playing media
+		Stop(Cast) error
 
-	// Send stop signal, terminating any playing media
-	Stop(Cast) error
+		// Stream URL to Chromecast supports HTTP and HTTPS protocols,
+		// and the stream can be automatically started if the third
+		// argument is set to true. Requires application load before
+		// calling, to set the transport, or else returns an OutOfOrder
+		// error
+		LoadURL(Cast, *url.URL, bool) error
 
-	// Stream URL to Chromecast supports HTTP and HTTPS protocols,
-	// and the stream can be automatically started if the third
-	// argument is set to true. Requires application load before
-	// calling, to set the transport, or else returns an OutOfOrder
-	// error
-	LoadURL(Cast, *url.URL, bool) error
+		// Returns current volume state (level and muted)
+		Volume(Cast) (float32, bool, error)
 
-	// Returns current volume state (level and muted)
-	Volume(Cast) (float32, bool, error)
-
-	// Returns app state
-	App(Cast) (CastApp, error)
+		// Returns app state
+		App(Cast) (CastApp, error)*/
 }
 
 // Cast represents a Google Chromecast device
 type Cast interface {
 	// Id returns the identifier for a chromecast
 	Id() string
+	/*
+		// Name returns the readable name for a chromecast
+		Name() string
 
-	// Name returns the readable name for a chromecast
-	Name() string
+		// Model returns the reported model information
+		Model() string
 
-	// Model returns the reported model information
-	Model() string
+		// Service returns the currently running service
+		Service() string
 
-	// Service returns the currently running service
-	Service() string
-
-	// State returns 0 if backdrop, else returns 1
-	State() uint
+		// State returns 0 if backdrop, else returns 1
+		State() uint*/
 }
 
 // CastApp represents an application running on the Chromecast

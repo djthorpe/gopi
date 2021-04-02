@@ -9,4 +9,5 @@ import (
 
 func init() {
 	graph.RegisterUnit(reflect.TypeOf(&publisher{}), reflect.TypeOf((*gopi.Publisher)(nil)))
+	graph.RegisterUnit(reflect.TypeOf(&Promises{}), reflect.TypeOf((*gopi.Promises)(nil)))
 }
