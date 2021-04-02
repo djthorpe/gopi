@@ -41,7 +41,7 @@ func coapAuthenticate(conn *coap.ClientConn, id string, timeout time.Duration) (
 	defer cancel()
 
 	// Set identity
-	path := filepath.Join(ROOT_GATEWAY, ATTR_AUTH)
+	path := filepath.Join("/", ROOT_GATEWAY, ATTR_AUTH)
 	body := strings.NewReader(fmt.Sprintf("{%q:%q}", ATTR_IDENTITY, id))
 	if response, err := conn.PostWithContext(ctx, path, coap.AppJSON, body); err != nil {
 		return nil, err

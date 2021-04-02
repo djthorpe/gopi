@@ -48,7 +48,7 @@ const (
 // LIFECYCLE
 
 func (this *Manager) Define(cfg gopi.Config) error {
-	this.key = cfg.FlagString("tradfri.key", "", "Tradfri Gateway Key")
+	this.key = cfg.FlagString("tradfri.key", "", "Tradfri Gateway Key (Security Code)")
 	this.timeout = cfg.FlagDuration("tradfri.timeout", DEFAULT_TIMEOUT, "Connection Timeout")
 	this.path = cfg.FlagString("tradfri.path", "", "Path to configuration")
 	return nil
@@ -159,7 +159,10 @@ func (this *Manager) Connect(id string, host string, port uint16) error {
 	// Authenticate and Close connection
 	addr := fmt.Sprint(host, ":", port)
 	if this.Token.Id == "" || this.Token.Id != id || this.Token.Token == "" {
-		// Connect
+		// Connect with key
+		if *this.key == "" {
+			return gopi.ErrBadParameter.WithPrefix("-tradfri.key")
+		}
 		if conn, err := coapConnectWith(addr, "Client_identity", *this.key, *this.timeout); err != nil {
 			return fmt.Errorf("CoapConnect: %w", err)
 		} else if response, err := coapAuthenticate(conn, id, *this.timeout); err != nil {
