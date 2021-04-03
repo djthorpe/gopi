@@ -76,12 +76,15 @@ type cast struct {
 }
 
 func toProtoCast(cast gopi.Cast) *Cast {
+	volume, muted := cast.Volume()
 	return &Cast{
 		Id:      cast.Id(),
 		Name:    cast.Name(),
 		Model:   cast.Model(),
 		Service: cast.Service(),
 		State:   toProtoState(cast),
+		Volume:  volume,
+		Muted:   muted,
 	}
 }
 
@@ -115,6 +118,10 @@ func (this *cast) State() uint {
 	} else {
 		return 0
 	}
+}
+
+func (this *cast) Volume() (float32, bool) {
+	return this.pb.Volume, this.pb.Muted
 }
 
 func (this *cast) String() string {

@@ -1,5 +1,7 @@
 package chromecast
 
+import "fmt"
+
 // Ref: https://github.com/vishen/go-chromecast/
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,6 +75,11 @@ type MediaStatusResponse struct {
 	Status []Media `json:"status"`
 }
 
+type ErrorResponse struct {
+	PayloadHeader
+	Reason string `json:"reason"`
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 
@@ -99,4 +106,8 @@ func (this *LoadMediaRequest) WithId(id int) Payload {
 func (this *MediaRequest) WithId(id int) Payload {
 	this.PayloadHeader.RequestId = id
 	return this
+}
+
+func (this *ErrorResponse) Error() string {
+	return fmt.Sprintf("%v: %v", this.Type, this.Reason)
 }

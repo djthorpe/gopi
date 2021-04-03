@@ -67,6 +67,59 @@ func (this *Stub) Stream(ctx context.Context, ch chan<- gopi.CastEvent) error {
 	}
 }
 
+func (this *Stub) Connect(ctx context.Context, key string) (gopi.Cast, error) {
+	if cast, err := this.ManagerClient.Connect(ctx, &CastRequest{
+		Key: key,
+	}); err != nil {
+		return nil, err
+	} else {
+		return fromProtoCast(cast), nil
+	}
+}
+
+func (this *Stub) Disconnect(ctx context.Context, key string) error {
+	if _, err := this.ManagerClient.Disconnect(ctx, &CastRequest{
+		Key: key,
+	}); err != nil {
+		return err
+	} else {
+		return nil
+	}
+}
+
+func (this *Stub) SetVolume(ctx context.Context, key string, level float32) (gopi.Cast, error) {
+	if cast, err := this.ManagerClient.SetVolume(ctx, &VolumeRequest{
+		Key:    key,
+		Volume: level,
+	}); err != nil {
+		return nil, err
+	} else {
+		return fromProtoCast(cast), nil
+	}
+}
+
+func (this *Stub) SetMuted(ctx context.Context, key string, muted bool) (gopi.Cast, error) {
+	if cast, err := this.ManagerClient.SetMuted(ctx, &MutedRequest{
+		Key:   key,
+		Muted: muted,
+	}); err != nil {
+		return nil, err
+	} else {
+		return fromProtoCast(cast), nil
+	}
+}
+
+func (this *Stub) LaunchAppWithId(ctx context.Context, key, app string) (gopi.Cast, error) {
+	if cast, err := this.ManagerClient.SetApp(ctx, &AppRequest{
+		Key: key,
+		App: app,
+	}); err != nil {
+		return nil, err
+	} else {
+		return fromProtoCast(cast), nil
+	}
+}
+
 /////////////////////////////////////////////////////////////////////
 // STRINGIFY
 

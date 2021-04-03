@@ -27,7 +27,7 @@ type promise struct {
 type PromiseFunc func(context.Context, interface{}) (interface{}, error)
 
 // A Promise error is the last in the chain and acts on any error
-type PromiseFinally func(interface{}, error)
+type PromiseFinally func(interface{}, error) error
 
 ////////////////////////////////////////////////////////////////////////////////
 // STRINGIFY
@@ -66,15 +66,16 @@ func (this *promise) Then(fn func(context.Context, interface{}) (interface{}, er
 	return this
 }
 
-func (this *promise) Finally(fn func(interface{}, error), wait bool) {
+func (this *promise) Finally(fn func(interface{}, error) error, wait bool) error {
 	var wg sync.WaitGroup
+	var err error
 	if fn != nil {
 		this.finally = fn
 	}
 	wg.Add(1)
 	go func() {
 		// Run the chain of promises
-		this.run()
+		err = this.run()
 
 		// Release resources
 		this.parent = nil
@@ -89,6 +90,9 @@ func (this *promise) Finally(fn func(interface{}, error), wait bool) {
 	// If wait flag is set, then wait until done
 	if wait {
 		wg.Wait()
+		return err
+	} else {
+		return nil
 	}
 }
 
@@ -96,25 +100,16 @@ func (this *promise) Finally(fn func(interface{}, error), wait bool) {
 // PRIVATE METHODS
 
 // Run the promise in foreground and call finally when completed
-func (this *promise) run() {
+func (this *promise) run() error {
 	for {
 		select {
 		case <-this.parent.Done():
-			if this.finally != nil {
-				this.finally(this.value, this.parent.Err())
-			}
-			return
+			return this.finally(this.value, this.parent.Err())
 		default:
 			if len(this.chain) == 0 {
-				if this.finally != nil {
-					this.finally(this.value, nil)
-				}
-				return
+				return this.finally(this.value, nil)
 			} else if out, err := this.chain[0](this.parent, this.value); err != nil {
-				if this.finally != nil {
-					this.finally(out, err)
-				}
-				return
+				return this.finally(out, err)
 			} else {
 				this.chain = this.chain[1:]
 				this.value = out

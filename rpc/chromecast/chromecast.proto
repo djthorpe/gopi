@@ -11,6 +11,11 @@ import "google/protobuf/duration.proto";
 service Manager {
     rpc List(ListRequest) returns (ListResponse);
     rpc Stream(google.protobuf.Empty) returns (stream CastEvent);
+    rpc Connect(CastRequest) returns (Cast);
+    rpc Disconnect(CastRequest) returns (google.protobuf.Empty);
+    rpc SetVolume(VolumeRequest) returns (Cast);
+    rpc SetMuted(MutedRequest) returns (Cast);
+    rpc SetApp(AppRequest) returns (Cast);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,6 +28,25 @@ message ListResponse {
     repeated Cast cast = 1; 
 }
 
+message CastRequest {
+    string key = 1; 
+}
+
+message VolumeRequest {
+    string key = 1; 
+    float volume = 2;
+}
+
+message MutedRequest {
+    string key = 1; 
+    bool muted = 2;
+}
+
+message AppRequest {
+    string key = 1; 
+    string app = 2;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 message Cast {
@@ -31,6 +55,8 @@ message Cast {
     string model = 3; 
     string service = 4; 
     CastState state = 5;
+    float volume = 6;
+    bool muted = 7;
 
     enum CastState {
         NONE = 0x00;

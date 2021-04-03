@@ -24,6 +24,9 @@ type Cast struct {
 	host   string
 	ips    []net.IP
 	port   uint16
+
+	vol *Volume
+	app *App
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,6 +86,13 @@ func (this *Cast) String() string {
 	}
 	str += " state=" + fmt.Sprint(this.State())
 
+	if vol := this.volume(); vol != nil {
+		str += fmt.Sprint(" vol=", vol)
+	}
+	if app := this.App(); app != nil {
+		str += fmt.Sprint(" app=", app)
+	}
+
 	return str + ">"
 }
 
@@ -111,7 +121,11 @@ func (this *Cast) Model() string {
 func (this *Cast) Service() string {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
-	return this.rs
+	if this.app != nil && this.app.DisplayName != "" {
+		return this.app.DisplayName
+	} else {
+		return this.rs
+	}
 }
 
 // State returns 0 if backdrop (no app running), else returns 1
@@ -119,6 +133,42 @@ func (this *Cast) State() uint {
 	this.RWMutex.RLock()
 	defer this.RWMutex.RUnlock()
 	return this.st
+}
+
+// Return volume or nil if volume is not known
+func (this *Cast) volume() *Volume {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	if this.vol == nil {
+		return nil
+	} else {
+		// Make a copy of volume
+		vol := *this.vol
+		return &vol
+	}
+}
+
+// Return volume or (0,false) if volume is not known
+func (this *Cast) Volume() (float32, bool) {
+	if vol := this.volume(); vol == nil {
+		return 0, false
+	} else if vol.Level == 0.0 {
+		return 0, true
+	} else {
+		return vol.Level, vol.Muted
+	}
+}
+
+func (this *Cast) App() *App {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	if this.app == nil {
+		return nil
+	} else {
+		// Make a copy of app
+		app := *this.app
+		return &app
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,10 +191,52 @@ func (this *Cast) Equals(other *Cast) gopi.CastFlag {
 	return flags
 }
 
-func (this *Cast) Connect(timeout time.Duration) (*Conn, error) {
+func (this *Cast) ConnectWithTimeout(ch gopi.Publisher, timeout time.Duration) (*Conn, error) {
 	// Use hostname to connect
 	addr := fmt.Sprintf("%v:%v", this.host, this.port)
-	return NewConnWithTimeout(addr, timeout)
+
+	// Update state
+	this.vol = nil
+	this.app = nil
+
+	// Perform the connection
+	return NewConnWithTimeout(this.id, addr, timeout, ch)
+}
+
+func (this *Cast) Disconnect(conn *Conn) error {
+	// Update state
+	this.vol = nil
+	this.app = nil
+
+	// Close connection
+	return conn.Close()
+}
+
+func (this *Cast) UpdateState(state *State) gopi.CastFlag {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	// Changes in volume
+	flags := gopi.CAST_FLAG_NONE
+	if this.vol == nil || state.volume.Equals(*this.vol) == false {
+		this.vol = &state.volume
+		flags |= gopi.CAST_FLAG_VOLUME
+	}
+
+	// Changes in app
+	if this.app == nil && len(state.apps) > 0 {
+		this.app = &state.apps[0]
+		flags |= gopi.CAST_FLAG_APP
+	} else if len(state.apps) == 0 && this.app != nil {
+		this.app = nil
+		flags |= gopi.CAST_FLAG_APP
+	} else if this.app != nil && len(state.apps) > 0 && this.app.Equals(state.apps[0]) == false {
+		this.app = &state.apps[0]
+		flags |= gopi.CAST_FLAG_APP
+	}
+
+	// Return any changed state
+	return flags
 }
 
 ////////////////////////////////////////////////////////////////////////////////

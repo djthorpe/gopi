@@ -30,7 +30,7 @@ type Conn struct {
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewConnWithTimeout(key string, addr string, timeout time.Duration) (*Conn, error) {
+func NewConnWithTimeout(key string, addr string, timeout time.Duration, ch gopi.Publisher) (*Conn, error) {
 	this := new(Conn)
 
 	// Connect
@@ -43,7 +43,7 @@ func NewConnWithTimeout(key string, addr string, timeout time.Duration) (*Conn, 
 		return nil, err
 	} else {
 		this.Conn = conn
-		this.Channel.Init(key)
+		this.Channel.Init(ch, key)
 	}
 
 	// Start the receive loop, which will end on cancel()
@@ -54,6 +54,15 @@ func NewConnWithTimeout(key string, addr string, timeout time.Duration) (*Conn, 
 		defer this.WaitGroup.Done()
 		this.recv(ctx, timeout)
 	}(ctx)
+
+	// Send a connect message
+	if _, data, err := this.Channel.Connect(); err != nil {
+		defer this.Close()
+		return nil, err
+	} else if err := this.send(data); err != nil {
+		defer this.Close()
+		return nil, err
+	}
 
 	return this, nil
 }

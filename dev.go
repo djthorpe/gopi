@@ -4,6 +4,7 @@ import (
 	"context"
 	"image"
 	"net"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -270,26 +271,31 @@ type CastManager interface {
 	// Return list of discovered Google Chromecast Devices
 	Devices(context.Context) ([]Cast, error)
 
+	// Return a chromecast by id or name, returns nil if not found
+	Get(string) Cast
+
 	// Connect to the control channel for a device
 	Connect(Cast) error
 
 	// Disconnect from the device
 	Disconnect(Cast) error
 
+	// SetVolume sets the volume for a device, the value is between 0.0 and 1.0
+	SetVolume(context.Context, Cast, float32) error
+
+	// SetMuted sets the volume as muted or unmuted. Does not affect the
+	// volume level
+	SetMuted(context.Context, Cast, bool) error
+
+	// LaunchAppWithId launches application with Id on a cast device.
+	LaunchAppWithId(context.Context, Cast, string) error
+
+	// LoadMedia loads a video, audio, webpage or image onto the Chromecast,
+	// assuming an application has already been loaded. Autoplay parameter
+	// starts media playback immediately
+	LoadMedia(context.Context, Cast, *url.URL, bool) error
+
 	/*
-
-
-		// LaunchAppWithId launches application with Id on a cast device.
-		LaunchAppWithId(Cast, string) error
-
-		// SetVolume sets the volume for a device, the value is between 0.0
-		// and 1.0
-		SetVolume(Cast, float32) error
-
-		// SetMuted sets the volume as muted or unmuted. Does not affect the
-		// volume level
-		SetMuted(Cast, bool) error
-
 		// SetPlay sets media playback state to either PLAY or STOP
 		SetPlay(Cast, bool) error
 
@@ -305,19 +311,7 @@ type CastManager interface {
 
 		// Send stop signal, terminating any playing media
 		Stop(Cast) error
-
-		// Stream URL to Chromecast supports HTTP and HTTPS protocols,
-		// and the stream can be automatically started if the third
-		// argument is set to true. Requires application load before
-		// calling, to set the transport, or else returns an OutOfOrder
-		// error
-		LoadURL(Cast, *url.URL, bool) error
-
-		// Returns current volume state (level and muted)
-		Volume(Cast) (float32, bool, error)
-
-		// Returns app state
-		App(Cast) (CastApp, error)*/
+	*/
 }
 
 // Cast represents a Google Chromecast device
@@ -336,6 +330,11 @@ type Cast interface {
 
 	// State returns 0 if backdrop, else returns 1
 	State() uint
+
+	// Returns current volume state (level,0->1 and muted)
+	// and will return 0,false if not known (not connected to
+	// cast device)
+	Volume() (float32, bool)
 }
 
 // CastApp represents an application running on the Chromecast
@@ -373,46 +372,39 @@ type CastStub interface {
 	// Stream emits chromecast events on a channel
 	Stream(context.Context, chan<- CastEvent) error
 
+	// Connect to chromecast
+	Connect(context.Context, string) (Cast, error)
+
+	// Connect to chromecast
+	Disconnect(context.Context, string) error
+
+	// SetVolume sets the sound volume
+	SetVolume(ctx context.Context, key string, level float32) (Cast, error)
+
+	// SetMuted mutes and unmutes the sound
+	SetMuted(ctx context.Context, key string, value bool) (Cast, error)
+
+	// LaunchAppWithId loads an application into the Chromecast
+	LaunchAppWithId(context.Context, string, string) (Cast, error)
+
 	/*
 
-			// Return Volume
-			Volume(ctx context.Context, castId string) (float32, bool, error)
+		// Stop stops currently playing media if a media session is ongoing
+		// or else resets the Chromecast to the backdrop if no media session
+		Stop(ctx context.Context, castId string) error
 
-			// SetVolume sets the Chromecast sound volume
-			SetVolume(ctx context.Context, castId string, value float32) error
+		// Play resumes playback after paused media
+		Play(ctx context.Context, castId string) error
 
-			// SetMute mutes and unmutes the sound
-			SetMute(ctx context.Context, castId string, value bool) error
+		// Pause the media session
+		Pause(ctx context.Context, castId string) error
 
-			// Return App
-			App(ctx context.Context, castId string) (CastApp, error)
+		// SeekAbs within playing audio or video relative to the start of the
+		// playing media
+		SeekAbs(ctx context.Context, castId string, value time.Duration) error
 
-			// SetApp loads an application into the Chromecast
-			SetApp(ctx context.Context, castId, appId string) error
-
-			// LoadURL loads a video, audio or image onto the Chromecast,
-			// assuming an application has already been loaded
-			LoadURL(ctx context.Context, castId string, url *url.URL) error
-
-			// Stop stops currently playing media if a media session is ongoing
-			// or else resets the Chromecast to the backdrop if no media session
-			Stop(ctx context.Context, castId string) error
-
-			// Play resumes playback after paused media
-			Play(ctx context.Context, castId string) error
-
-			// Pause the media session
-			Pause(ctx context.Context, castId string) error
-
-			// SeekAbs within playing audio or video relative to the start of the
-			// playing media
-			SeekAbs(ctx context.Context, castId string, value time.Duration) error
-
-			// SeekRel within playing audio or video relative to the current position
-			SeekRel(ctx context.Context, castId string, value time.Duration) error
-		// Stream emits events from Chromecasts, filtered
-		// by the id of the chromecast  until context is cancelled. Where
-		// the id filter is empty, all connected chromecast events are emitted
+		// SeekRel within playing audio or video relative to the current position
+		SeekRel(ctx context.Context, castId string, value time.Duration) error
 	*/
 }
 

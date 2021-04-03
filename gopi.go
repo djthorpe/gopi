@@ -97,8 +97,9 @@ type Promise interface {
 	// Chain a function to a promise
 	Then(func(context.Context, interface{}) (interface{}, error)) Promise
 
-	// Finalally runs the promise in the background and optionally waits for it to complete
-	Finally(func(interface{}, error), bool)
+	// Finally runs the promise in the background and optionally waits for it to complete
+	// then returns any error if not running in background
+	Finally(func(interface{}, error) error, bool) error
 }
 
 /////////////////////////////////////////////////////////////////////

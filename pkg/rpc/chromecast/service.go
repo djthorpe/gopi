@@ -25,7 +25,15 @@ type Service struct {
 func (this *Service) New(cfg gopi.Config) error {
 	this.Require(this.Logger, this.Server, this.CastManager, this.Publisher)
 
+	// Register gRPC service
 	if err := this.RegisterService(RegisterManagerServer, this); err != nil {
+		return err
+	}
+
+	// Do an initial scan for chromecasts
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, err := this.CastManager.Devices(ctx); err != nil {
 		return err
 	}
 
@@ -37,7 +45,7 @@ func (this *Service) New(cfg gopi.Config) error {
 // RPC METHODS
 
 func (this *Service) List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
-	this.Logger.Debug("<List", req, ">")
+	this.Logger.Debug("<List ", req, ">")
 
 	timeout, err := ptypes.Duration(req.Timeout)
 	if err != nil {
@@ -94,6 +102,66 @@ func (this *Service) Stream(_ *empty.Empty, stream Manager_StreamServer) error {
 				return err
 			}
 		}
+	}
+}
+
+func (this *Service) Connect(ctx context.Context, req *CastRequest) (*Cast, error) {
+	this.Logger.Debug("<Connect ", req, ">")
+
+	if cast := this.CastManager.Get(req.Key); cast == nil {
+		return nil, gopi.ErrNotFound
+	} else if err := this.CastManager.Connect(cast); err != nil {
+		return nil, err
+	} else {
+		return toProtoCast(cast), nil
+	}
+}
+
+func (this *Service) Disconnect(ctx context.Context, req *CastRequest) (*empty.Empty, error) {
+	this.Logger.Debug("<Disconnect ", req, ">")
+
+	if cast := this.CastManager.Get(req.Key); cast == nil {
+		return nil, gopi.ErrNotFound
+	} else if err := this.CastManager.Disconnect(cast); err != nil {
+		return nil, err
+	} else {
+		return &empty.Empty{}, nil
+	}
+}
+
+func (this *Service) SetVolume(ctx context.Context, req *VolumeRequest) (*Cast, error) {
+	this.Logger.Debug("<SetVolume ", req, ">")
+
+	if cast := this.CastManager.Get(req.Key); cast == nil {
+		return nil, gopi.ErrNotFound
+	} else if err := this.CastManager.SetVolume(ctx, cast, req.Volume); err != nil {
+		return nil, err
+	} else {
+		return toProtoCast(cast), nil
+	}
+}
+
+func (this *Service) SetMuted(ctx context.Context, req *MutedRequest) (*Cast, error) {
+	this.Logger.Debug("<SetMuted ", req, ">")
+
+	if cast := this.CastManager.Get(req.Key); cast == nil {
+		return nil, gopi.ErrNotFound
+	} else if err := this.CastManager.SetMuted(ctx, cast, req.Muted); err != nil {
+		return nil, err
+	} else {
+		return toProtoCast(cast), nil
+	}
+}
+
+func (this *Service) SetApp(ctx context.Context, req *AppRequest) (*Cast, error) {
+	this.Logger.Debug("<SetApp ", req, ">")
+
+	if cast := this.CastManager.Get(req.Key); cast == nil {
+		return nil, gopi.ErrNotFound
+	} else if err := this.CastManager.LaunchAppWithId(ctx, cast, req.App); err != nil {
+		return nil, err
+	} else {
+		return toProtoCast(cast), nil
 	}
 }
 

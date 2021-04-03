@@ -1,4 +1,4 @@
-package googlecast
+package chromecast
 
 import (
 	"strconv"
