@@ -22,6 +22,7 @@ type Manager struct {
 	gopi.Logger
 
 	cast map[string]*Cast
+	conn map[string]*Conn
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,8 +39,9 @@ const (
 func (this *Manager) New(gopi.Config) error {
 	this.Require(this.ServiceDiscovery, this.Logger, this.Publisher)
 
-	// Make map of devices
+	// Make map of devices and connections
 	this.cast = make(map[string]*Cast)
+	this.conn = make(map[string]*Conn)
 
 	// Return success
 	return nil
@@ -56,6 +58,7 @@ func (this *Manager) Dispose() error {
 
 	// Release resources
 	this.cast = nil
+	this.conn = nil
 
 	// Return any errors
 	return result
@@ -129,6 +132,62 @@ func (this *Manager) Devices(ctx context.Context) ([]gopi.Cast, error) {
 	return result, nil
 }
 
+func (this *Manager) Connect(cast gopi.Cast) error {
+	// Check for bad parameters
+	if cast == nil {
+		return gopi.ErrBadParameter.WithPrefix("Connect")
+	}
+
+	// Device should have been discovered
+	var result error
+	if cast := this.getCastForId(cast.Id()); cast == nil {
+		return gopi.ErrNotFound.WithPrefix("Connect")
+	} else if conn := this.getConnForId(cast.id); conn != nil {
+		return gopi.ErrOutOfOrder.WithPrefix("Connect")
+	} else if conn, err := cast.Connect(serviceConnectTimeout); err != nil {
+		return err
+	} else {
+		this.setConnForId(cast.id, conn)
+
+		// Emit connect message
+		if err := this.Publisher.Emit(NewCastEvent(cast, gopi.CAST_FLAG_CONNECT), false); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	// Return any errors
+	return result
+}
+
+func (this *Manager) Disconnect(cast gopi.Cast) error {
+	// Check for bad parameters
+	if cast == nil {
+		return gopi.ErrBadParameter.WithPrefix("Disconnect")
+	}
+
+	// Device should have been discovered
+	var result error
+	if cast := this.getCastForId(cast.Id()); cast == nil {
+		return gopi.ErrNotFound.WithPrefix("Disconnect")
+	} else if conn := this.getConnForId(cast.id); conn == nil {
+		return gopi.ErrOutOfOrder.WithPrefix("Disconnect")
+	} else {
+		// Close connection
+		this.setConnForId(cast.id, nil)
+		if err := conn.Close(); err != nil {
+			result = multierror.Append(result, err)
+		}
+
+		// Emit disconnect message
+		if err := this.Publisher.Emit(NewCastEvent(cast, gopi.CAST_FLAG_DISCONNECT), false); err != nil {
+			result = multierror.Append(result, err)
+		}
+	}
+
+	// Return any errors
+	return result
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
@@ -145,10 +204,13 @@ func (this *Manager) disconnect(cast *Cast) error {
 		this.setCastForId(cast.id, nil)
 	}
 
-	// Call disconnect for the chromecast
+	// Remove connection from list
 	var result error
-	if err := cast.Disconnect(); err != nil {
-		result = multierror.Append(result, err)
+	if conn := this.getConnForId(cast.id); conn != nil {
+		this.setConnForId(cast.id, nil)
+		if err := conn.Close(); err != nil {
+			result = multierror.Append(result, err)
+		}
 	}
 
 	// Return any errors
@@ -177,6 +239,30 @@ func (this *Manager) setCastForId(id string, cast *Cast) {
 	}
 }
 
+func (this *Manager) getConnForId(id string) *Conn {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+
+	if conn, exists := this.conn[id]; exists {
+		return conn
+	} else {
+		return nil
+	}
+}
+
+func (this *Manager) setConnForId(id string, conn *Conn) {
+	this.RWMutex.Lock()
+	defer this.RWMutex.Unlock()
+
+	if conn == nil {
+		delete(this.conn, id)
+	} else {
+		this.conn[id] = conn
+	}
+}
+
+// CastEvent returns any changes to a chromecast if it is already
+// discovered or returns DISCOVERY flag
 func (this *Manager) castevent(cast *Cast) gopi.CastFlag {
 	if other := this.getCastForId(cast.id); other == nil {
 		this.setCastForId(cast.id, cast)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
+	"github.com/golang/protobuf/ptypes"
 	empty "github.com/golang/protobuf/ptypes/empty"
 )
 
@@ -35,8 +36,27 @@ func (this *Service) New(cfg gopi.Config) error {
 /////////////////////////////////////////////////////////////////////
 // RPC METHODS
 
-func (this *Service) List(context.Context, *empty.Empty) (*ListResponse, error) {
-	return nil, gopi.ErrNotImplemented
+func (this *Service) List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
+	this.Logger.Debug("<List", req, ">")
+
+	timeout, err := ptypes.Duration(req.Timeout)
+	if err != nil {
+		return nil, err
+	} else if timeout == 0 {
+		timeout = time.Second
+	}
+
+	timeoutctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	devices, err := this.CastManager.Devices(timeoutctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ListResponse{
+		Cast: toProtoCastList(devices),
+	}, nil
 }
 
 func (this *Service) Stream(_ *empty.Empty, stream Manager_StreamServer) error {

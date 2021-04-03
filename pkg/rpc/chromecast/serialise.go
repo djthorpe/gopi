@@ -122,3 +122,22 @@ func (this *cast) String() string {
 	str += " " + this.pb.String()
 	return str + ">"
 }
+
+/////////////////////////////////////////////////////////////////////
+// CAST LIST
+
+func toProtoCastList(casts []gopi.Cast) []*Cast {
+	result := make([]*Cast, 0, len(casts))
+	for _, cast := range casts {
+		result = append(result, toProtoCast(cast))
+	}
+	return result
+}
+
+func fromProtoCastList(casts []*Cast) []gopi.Cast {
+	result := make([]gopi.Cast, 0, len(casts))
+	for _, cast := range casts {
+		result = append(result, fromProtoCast(cast))
+	}
+	return result
+}

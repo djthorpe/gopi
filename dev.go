@@ -269,12 +269,15 @@ type CastFlag uint
 type CastManager interface {
 	// Return list of discovered Google Chromecast Devices
 	Devices(context.Context) ([]Cast, error)
-	/*
-		// Connect to the control channel for a device
-		Connect(Cast) error
 
-		// Disconnect from the device
-		Disconnect(Cast) error
+	// Connect to the control channel for a device
+	Connect(Cast) error
+
+	// Disconnect from the device
+	Disconnect(Cast) error
+
+	/*
+
 
 		// LaunchAppWithId launches application with Id on a cast device.
 		LaunchAppWithId(Cast, string) error
@@ -363,8 +366,9 @@ type CastService interface {
 type CastStub interface {
 	ServiceStub
 
-	// List returns all discovered Chromecast devices
-	List(ctx context.Context) ([]Cast, error)
+	// List returns all discovered Chromecast devices within
+	// a certain time
+	List(context.Context, time.Duration) ([]Cast, error)
 
 	// Stream emits chromecast events on a channel
 	Stream(context.Context, chan<- CastEvent) error

@@ -3,6 +3,7 @@ module github.com/djthorpe/gopi/v3
 go 1.13
 
 require (
+	github.com/djthorpe/data v0.0.1
 	github.com/go-ocf/go-coap v0.0.0-20200511140640-db6048acfdd3
 	github.com/golang/protobuf v1.5.0
 	github.com/hashicorp/errwrap v1.1.0 // indirect

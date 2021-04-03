@@ -3,8 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"time"
 
 	// Modules
+
+	"github.com/djthorpe/data"
+	table "github.com/djthorpe/data/pkg/table"
 	gopi "github.com/djthorpe/gopi/v3"
 
 	// Dependencies
@@ -33,6 +38,19 @@ func (this *Chromecast) Define(cfg gopi.Config) {
 		stub.Stream(ctx, ch)
 		close(ch)
 		return nil
+	})
+
+	cfg.Command("cast list", "Return list of Chromecasts", func(ctx context.Context) error {
+		stub := this.GetStub(ctx)
+		casts, err := stub.List(ctx, time.Second)
+		if err != nil {
+			return err
+		}
+		table := table.NewTable("Id", "Name", "Model", "Service", "State")
+		for _, cast := range casts {
+			table.Append(cast.Id(), cast.Name(), cast.Model(), cast.Service(), cast.State())
+		}
+		return table.Write(os.Stdout, table.OptHeader(), table.OptAscii(80, data.BorderLines))
 	})
 }
 

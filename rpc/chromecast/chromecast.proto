@@ -4,15 +4,26 @@ package gopi.chromecast;
 option go_package = "github.com/djthorpe/gopi/v3/rpc/chromecast";
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/duration.proto";
+
+///////////////////////////////////////////////////////////////////////////////
 
 service Manager {
-    rpc List(google.protobuf.Empty) returns (ListResponse);
+    rpc List(ListRequest) returns (ListResponse);
     rpc Stream(google.protobuf.Empty) returns (stream CastEvent);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+message ListRequest {
+    google.protobuf.Duration Timeout = 1;
 }
 
 message ListResponse {
     repeated Cast cast = 1; 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 message Cast {
     string id = 1; 

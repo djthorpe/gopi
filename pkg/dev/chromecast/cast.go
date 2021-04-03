@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	// Modules
 	"github.com/djthorpe/gopi/v3"
@@ -20,6 +21,7 @@ type Cast struct {
 	id, fn string
 	md, rs string
 	st     uint
+	host   string
 	ips    []net.IP
 	port   uint16
 }
@@ -31,6 +33,7 @@ func NewCastFromRecord(r gopi.ServiceRecord) *Cast {
 	this := new(Cast)
 
 	// Set addr and port
+	this.host = r.Host()
 	this.port = r.Port()
 	this.ips = r.Addrs()
 
@@ -60,14 +63,6 @@ func NewCastFromRecord(r gopi.ServiceRecord) *Cast {
 
 	// Return success
 	return this
-}
-
-func (this *Cast) Disconnect() error {
-	this.RWMutex.Lock()
-	defer this.RWMutex.Unlock()
-
-	// Return success
-	return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,6 +141,12 @@ func (this *Cast) Equals(other *Cast) gopi.CastFlag {
 	return flags
 }
 
+func (this *Cast) Connect(timeout time.Duration) (*Conn, error) {
+	// Use hostname to connect
+	addr := fmt.Sprintf("%v:%v", this.host, this.port)
+	return NewConnWithTimeout(addr, timeout)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
 
@@ -155,11 +156,13 @@ func (this *Cast) updateFrom(other *Cast) {
 	defer this.RWMutex.Unlock()
 	defer other.RWMutex.RUnlock()
 
+	// This seems dumb
 	this.id = other.id
 	this.fn = other.fn
 	this.md = other.md
 	this.rs = other.rs
 	this.st = other.st
+	this.host = other.host
 	this.ips = other.ips
 	this.port = other.port
 }
