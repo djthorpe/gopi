@@ -38,6 +38,7 @@ type Manager struct {
 const (
 	serviceTypeCast       = "_googlecast._tcp."
 	serviceConnectTimeout = time.Second * 15
+	serciceMessageTimeout = time.Second
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,10 +77,6 @@ func (this *Manager) Run(ctx context.Context) error {
 	ch := this.Publisher.Subscribe()
 	defer this.Publisher.Unsubscribe(ch)
 
-	// Update cast status every second
-	timer := time.NewTicker(time.Second)
-	defer timer.Stop()
-
 	// Loop handling messages until done
 	for {
 		select {
@@ -107,11 +104,6 @@ func (this *Manager) Run(ctx context.Context) error {
 						}
 					}
 				}
-			}
-		case <-timer.C:
-			// Update state of chromecasts
-			if err := this.updateStatus(); err != nil {
-				this.Print("CastManager: UpdateStatus: ", err)
 			}
 		}
 	}
@@ -179,14 +171,13 @@ func (this *Manager) Get(key string) gopi.Cast {
 	return nil
 }
 
-func (this *Manager) Connect(cast gopi.Cast) error {
+func (this *Manager) Connect(ctx context.Context, cast gopi.Cast) error {
 	// Check for bad parameters
 	if cast == nil {
 		return gopi.ErrBadParameter.WithPrefix("Connect")
 	}
 
-	// Device should have been discovered, return outoforder if
-	// already connected
+	// Device should have been discovered, return outoforder if already connected
 	var result error
 	if cast := this.getCastForId(cast.Id()); cast == nil {
 		return gopi.ErrNotFound.WithPrefix("Connect")
@@ -199,6 +190,13 @@ func (this *Manager) Connect(cast gopi.Cast) error {
 
 		// Emit connect message
 		if err := this.Publisher.Emit(NewCastEvent(cast, gopi.CAST_FLAG_CONNECT), false); err != nil {
+			result = multierror.Append(result, err)
+		}
+
+		// Get cast status
+		timeout, cancel := context.WithTimeout(ctx, serciceMessageTimeout)
+		defer cancel()
+		if err := this.Do(timeout, reqGetStatus, conn).Then(this.wait).Finally(this.done, true); err != nil {
 			result = multierror.Append(result, err)
 		}
 	}
@@ -253,7 +251,7 @@ func (this *Manager) SetVolume(ctx context.Context, cast gopi.Cast, level float3
 
 	// If no connection, then connect
 	if conn := this.getConnForId(cast.Id()); conn == nil {
-		if err := this.Connect(cast); err != nil {
+		if err := this.Connect(ctx, cast); err != nil {
 			return err
 		}
 	}
@@ -262,14 +260,16 @@ func (this *Manager) SetVolume(ctx context.Context, cast gopi.Cast, level float3
 	if conn := this.getConnForId(cast.Id()); conn == nil {
 		return gopi.ErrInternalAppError.WithPrefix("SetVolume")
 	} else {
-		return this.Do(ctx, reqSetVolume, []interface{}{conn, level}).Then(this.wait).Finally(this.done, true)
+		timeout, cancel := context.WithTimeout(ctx, serciceMessageTimeout)
+		defer cancel()
+		return this.Do(timeout, reqSetVolume, []interface{}{conn, level}).Then(this.wait).Finally(this.done, true)
 	}
 }
 
 func (this *Manager) SetMuted(ctx context.Context, cast gopi.Cast, muted bool) error {
 	// If no connection, then connect
 	if conn := this.getConnForId(cast.Id()); conn == nil {
-		if err := this.Connect(cast); err != nil {
+		if err := this.Connect(ctx, cast); err != nil {
 			return err
 		}
 	}
@@ -278,7 +278,9 @@ func (this *Manager) SetMuted(ctx context.Context, cast gopi.Cast, muted bool) e
 	if conn := this.getConnForId(cast.Id()); conn == nil {
 		return gopi.ErrInternalAppError.WithPrefix("SetMuted")
 	} else {
-		return this.Do(ctx, reqSetMuted, []interface{}{conn, muted}).Then(this.wait).Finally(this.done, true)
+		timeout, cancel := context.WithTimeout(ctx, serciceMessageTimeout)
+		defer cancel()
+		return this.Do(timeout, reqSetMuted, []interface{}{conn, muted}).Then(this.wait).Finally(this.done, true)
 	}
 }
 
@@ -286,7 +288,7 @@ func (this *Manager) SetMuted(ctx context.Context, cast gopi.Cast, muted bool) e
 func (this *Manager) LaunchAppWithId(ctx context.Context, cast gopi.Cast, app string) error {
 	// If no connection, then connect
 	if conn := this.getConnForId(cast.Id()); conn == nil {
-		if err := this.Connect(cast); err != nil {
+		if err := this.Connect(ctx, cast); err != nil {
 			return err
 		}
 	}
@@ -295,8 +297,71 @@ func (this *Manager) LaunchAppWithId(ctx context.Context, cast gopi.Cast, app st
 	if conn := this.getConnForId(cast.Id()); conn == nil {
 		return gopi.ErrInternalAppError.WithPrefix("LaunchAppWithId")
 	} else {
-		return this.Do(ctx, reqLaunchAppWithId, []interface{}{conn, app}).Then(this.wait).Finally(this.done, true)
+		timeout, cancel := context.WithTimeout(ctx, serciceMessageTimeout)
+		defer cancel()
+		return this.Do(timeout, reqLaunchAppWithId, []interface{}{conn, app}).Then(this.wait).Finally(this.done, true)
 	}
+}
+
+// ConnectMedia initiates a media session
+func (this *Manager) ConnectMedia(ctx context.Context, cast gopi.Cast) error {
+	// If no connection, then connect
+	conn := this.getConnForId(cast.Id())
+	if conn == nil {
+		if err := this.Connect(ctx, cast); err != nil {
+			return err
+		} else {
+			conn = this.getConnForId(cast.Id())
+		}
+	}
+
+	if cast := this.getCastForId(cast.Id()); cast == nil {
+		return gopi.ErrInternalAppError.WithPrefix("ConnectMedia")
+	} else if app := cast.App(); app == nil {
+		return gopi.ErrOutOfOrder.WithPrefix("ConnectMedia")
+	} else if app.TransportId == "" {
+		return gopi.ErrInternalAppError.WithPrefix("ConnectMedia")
+	} else if app.IsIdleScreen {
+		return gopi.ErrNotFound.WithPrefix("ConnectMedia")
+	} else {
+		timeout, cancel := context.WithTimeout(ctx, serciceMessageTimeout)
+		defer cancel()
+		return this.Do(timeout, reqConnectMedia, []interface{}{conn, app.TransportId}).
+			Then(reqGetMediaStatus).Then(this.wait).Finally(this.done, true)
+	}
+}
+
+// DisconnectMedia ends a media session
+func (this *Manager) DisconnectMedia(ctx context.Context, cast gopi.Cast) error {
+	// If no connection, then connect
+	conn := this.getConnForId(cast.Id())
+	if conn == nil {
+		if err := this.Connect(ctx, cast); err != nil {
+			return err
+		} else {
+			conn = this.getConnForId(cast.Id())
+		}
+	}
+
+	if cast := this.getCastForId(cast.Id()); cast == nil {
+		return gopi.ErrInternalAppError.WithPrefix("DisconnectMedia")
+	} else if app := cast.App(); app == nil {
+		return gopi.ErrOutOfOrder.WithPrefix("DisconnectMedia")
+	} else if app.TransportId == "" {
+		return gopi.ErrOutOfOrder.WithPrefix("DisconnectMedia")
+	} else if req, data, err := conn.DisconnectMedia(app.TransportId); err != nil {
+		return err
+	} else if err := conn.send(data); err != nil {
+		return err
+	} else if flags := cast.UpdateState(NewMediaState(cast.Id(), req, nil, Media{})); flags != gopi.CAST_FLAG_NONE {
+		// Emit any media changes
+		if err := this.Publisher.Emit(NewCastEvent(cast, flags), false); err != nil {
+			return err
+		}
+	}
+
+	// Return success
+	return nil
 }
 
 // LoadMedia asks Chromecast to play media
@@ -310,7 +375,7 @@ func (this *Manager) LoadMedia(ctx context.Context, cast gopi.Cast, url *url.URL
 
 	// If no connection, then connect
 	if conn := this.getConnForId(cast.Id()); conn == nil {
-		if err := this.Connect(cast); err != nil {
+		if err := this.Connect(ctx, cast); err != nil {
 			return err
 		}
 	}
@@ -339,34 +404,33 @@ func (this *Manager) LoadMedia(ctx context.Context, cast gopi.Cast, url *url.URL
 		mimetype = contenttype
 	}
 
-	// Send request
-	if conn := this.getConnForId(cast.Id()); conn == nil {
-		return gopi.ErrInternalAppError.WithPrefix("LaunchAppWithId")
+	// Get transportId
+	var transportId string
+	if cast := this.getCastForId(cast.Id()); cast == nil {
+		return gopi.ErrInternalAppError.WithPrefix("LoadMedia")
+	} else if app := cast.App(); app == nil {
+		return gopi.ErrOutOfOrder.WithPrefix("LoadMedia")
+	} else if app.TransportId == "" {
+		return gopi.ErrOutOfOrder.WithPrefix("LoadMedia")
 	} else {
-		return this.Do(ctx, reqLoadMedia, []interface{}{conn, url, mimetype, autoplay}).Then(this.wait).Finally(this.done, true)
+		transportId = app.TransportId
 	}
+
+	// Get connection
+	conn := this.getConnForId(cast.Id())
+	if conn == nil {
+		return gopi.ErrInternalAppError.WithPrefix("LaunchAppWithId")
+	}
+
+	// Send request
+	timeout, cancel := context.WithTimeout(ctx, serciceMessageTimeout)
+	defer cancel()
+	return this.Do(timeout, reqLoadMedia, []interface{}{conn, transportId, url, mimetype, autoplay}).
+		Then(this.wait).Finally(this.done, true)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
-
-func (this *Manager) updateStatus() error {
-	var result error
-	for _, cast := range this.getCasts() {
-		if cast.volume() != nil {
-			continue
-		} else if conn := this.getConnForId(cast.id); conn == nil {
-			continue
-		} else if conn.Addr() == nil {
-			continue
-		} else {
-			// TODO: LEAK CANCEL
-			ctx, _ := context.WithTimeout(context.Background(), time.Second)
-			this.Do(ctx, reqGetStatus, conn).Then(this.wait).Finally(this.done, false)
-		}
-	}
-	return result
-}
 
 func (this *Manager) disconnect(cast *Cast) error {
 	// Check parameters
@@ -471,7 +535,7 @@ type promise struct {
 }
 
 func reqGetStatus(ctx context.Context, v interface{}) (interface{}, error) {
-	// Update status for volume and app
+	fmt.Println("reqGetStatus")
 	conn := v.(*Conn)
 	if req, data, err := conn.GetStatus(); err != nil {
 		return nil, err
@@ -483,7 +547,7 @@ func reqGetStatus(ctx context.Context, v interface{}) (interface{}, error) {
 }
 
 func reqSetVolume(ctx context.Context, v interface{}) (interface{}, error) {
-	// Update volume
+	fmt.Println("reqSetVolume")
 	params := v.([]interface{})
 	conn := params[0].(*Conn)
 	level := params[1].(float32)
@@ -497,7 +561,7 @@ func reqSetVolume(ctx context.Context, v interface{}) (interface{}, error) {
 }
 
 func reqSetMuted(ctx context.Context, v interface{}) (interface{}, error) {
-	// Update muted flag
+	fmt.Println("reqSetMuted")
 	params := v.([]interface{})
 	conn := params[0].(*Conn)
 	muted := params[1].(bool)
@@ -511,7 +575,7 @@ func reqSetMuted(ctx context.Context, v interface{}) (interface{}, error) {
 }
 
 func reqLaunchAppWithId(ctx context.Context, v interface{}) (interface{}, error) {
-	// Launch an application
+	fmt.Println("reqLaunchAppWithId")
 	params := v.([]interface{})
 	conn := params[0].(*Conn)
 	app := params[1].(string)
@@ -524,15 +588,78 @@ func reqLaunchAppWithId(ctx context.Context, v interface{}) (interface{}, error)
 	}
 }
 
-func reqLoadMedia(ctx context.Context, v interface{}) (interface{}, error) {
-	// Load media
+func reqConnectMedia(ctx context.Context, v interface{}) (interface{}, error) {
+	fmt.Println("reqConnectMedia")
 	params := v.([]interface{})
 	conn := params[0].(*Conn)
-	url := params[1].(*url.URL)
-	mimetype := params[2].(string)
-	autoplay := params[3].(bool)
+	transportId := params[1].(string)
+	if _, data, err := conn.ConnectMedia(transportId); err != nil {
+		return nil, err
+	} else if err := conn.send(data); err != nil {
+		return nil, err
+	} else {
+		return []interface{}{conn, transportId}, nil
+	}
+}
 
-	if req, data, err := conn.LaunchAppWithId(app); err != nil {
+func reqGetMediaStatus(ctx context.Context, v interface{}) (interface{}, error) {
+	fmt.Println("reqGetMediaStatus")
+	params := v.([]interface{})
+	conn := params[0].(*Conn)
+	transportId := params[1].(string)
+	if req, data, err := conn.GetMediaStatus(transportId); err != nil {
+		return nil, err
+	} else if err := conn.send(data); err != nil {
+		return nil, err
+	} else {
+		return &promise{conn.key, req}, nil
+	}
+}
+
+func reqLoadMedia(ctx context.Context, v interface{}) (interface{}, error) {
+	fmt.Println("reqLoadMedia")
+	params := v.([]interface{})
+	conn := params[0].(*Conn)
+	transportId := params[1].(string)
+	url := params[2].(*url.URL)
+	mimetype := params[3].(string)
+	autoplay := params[4].(bool)
+
+	if req, data, err := conn.LoadMedia(transportId, url.String(), mimetype, autoplay); err != nil {
+		return nil, err
+	} else if err := conn.send(data); err != nil {
+		return nil, err
+	} else {
+		return &promise{conn.key, req}, nil
+	}
+}
+
+func reqSetPlay(ctx context.Context, v interface{}) (interface{}, error) {
+	fmt.Println("reqSetPlay")
+	params := v.([]interface{})
+	conn := params[0].(*Conn)
+	transportId := params[1].(string)
+	sessionId := params[2].(int)
+	state := params[3].(bool)
+
+	if req, data, err := conn.Play(transportId, sessionId, state); err != nil {
+		return nil, err
+	} else if err := conn.send(data); err != nil {
+		return nil, err
+	} else {
+		return &promise{conn.key, req}, nil
+	}
+}
+
+func reqSetPause(ctx context.Context, v interface{}) (interface{}, error) {
+	fmt.Println("reqSetPause")
+	params := v.([]interface{})
+	conn := params[0].(*Conn)
+	transportId := params[1].(string)
+	sessionId := params[2].(int)
+	state := params[3].(bool)
+
+	if req, data, err := conn.Pause(transportId, sessionId, state); err != nil {
 		return nil, err
 	} else if err := conn.send(data); err != nil {
 		return nil, err

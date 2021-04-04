@@ -2,6 +2,7 @@ package chromecast
 
 import (
 	context "context"
+	"net/url"
 	"sync"
 	"time"
 
@@ -110,7 +111,7 @@ func (this *Service) Connect(ctx context.Context, req *CastRequest) (*Cast, erro
 
 	if cast := this.CastManager.Get(req.Key); cast == nil {
 		return nil, gopi.ErrNotFound
-	} else if err := this.CastManager.Connect(cast); err != nil {
+	} else if err := this.CastManager.Connect(ctx, cast); err != nil {
 		return nil, err
 	} else {
 		return toProtoCast(cast), nil
@@ -159,6 +160,44 @@ func (this *Service) SetApp(ctx context.Context, req *AppRequest) (*Cast, error)
 	if cast := this.CastManager.Get(req.Key); cast == nil {
 		return nil, gopi.ErrNotFound
 	} else if err := this.CastManager.LaunchAppWithId(ctx, cast, req.App); err != nil {
+		return nil, err
+	} else {
+		return toProtoCast(cast), nil
+	}
+}
+
+func (this *Service) ConnectMedia(ctx context.Context, req *CastRequest) (*Cast, error) {
+	this.Logger.Debug("<ConnectMedia ", req, ">")
+
+	if cast := this.CastManager.Get(req.Key); cast == nil {
+		return nil, gopi.ErrNotFound
+	} else if err := this.CastManager.ConnectMedia(ctx, cast); err != nil {
+		return nil, err
+	} else {
+		return toProtoCast(cast), nil
+	}
+}
+
+func (this *Service) DisconnectMedia(ctx context.Context, req *CastRequest) (*Cast, error) {
+	this.Logger.Debug("<DisconnectMedia ", req, ">")
+
+	if cast := this.CastManager.Get(req.Key); cast == nil {
+		return nil, gopi.ErrNotFound
+	} else if err := this.CastManager.DisconnectMedia(ctx, cast); err != nil {
+		return nil, err
+	} else {
+		return toProtoCast(cast), nil
+	}
+}
+
+func (this *Service) LoadMedia(ctx context.Context, req *MediaRequest) (*Cast, error) {
+	this.Logger.Debug("<LoadMedia ", req, ">")
+
+	if url, err := url.Parse(req.Url); err != nil {
+		return nil, err
+	} else if cast := this.CastManager.Get(req.Key); cast == nil {
+		return nil, gopi.ErrNotFound
+	} else if err := this.CastManager.LoadMedia(ctx, cast, url, req.Autoplay); err != nil {
 		return nil, err
 	} else {
 		return toProtoCast(cast), nil

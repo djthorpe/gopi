@@ -97,7 +97,31 @@ func (this *Channel) LaunchAppWithId(appId string) (int, []byte, error) {
 	return id, data, err
 }
 
-// Load media
+// Connect Media
+func (this *Channel) ConnectMedia(transportId string) (int, []byte, error) {
+	payload := &PayloadHeader{Type: "CONNECT"}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_CONN, payload.WithId(id))
+	return id, data, err
+}
+
+// Disconnect Media
+func (this *Channel) DisconnectMedia(transportId string) (int, []byte, error) {
+	payload := &PayloadHeader{Type: "CLOSE"}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_CONN, payload.WithId(id))
+	return id, data, err
+}
+
+// Get Media Status
+func (this *Channel) GetMediaStatus(transportId string) (int, []byte, error) {
+	payload := &PayloadHeader{Type: "GET_STATUS"}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
+	return id, data, err
+}
+
+// Load Media
 func (this *Channel) LoadMedia(transportId string, url, mimetype string, autoplay bool) (int, []byte, error) {
 	payload := &LoadMediaRequest{}
 	payload.PayloadHeader = PayloadHeader{Type: "LOAD"}
@@ -107,6 +131,78 @@ func (this *Channel) LoadMedia(transportId string, url, mimetype string, autopla
 	payload.Media.StreamType = "BUFFERED"
 	id := this.nextMsg()
 	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
+	return id, data, err
+}
+
+// Play
+func (this *Channel) Play(transportId string, sessionId int, state bool) (int, []byte, error) {
+	payload := &MediaRequest{
+		MediaSessionId: sessionId,
+	}
+	switch state {
+	case true:
+		payload.Type = "PLAY"
+	case false:
+		payload.Type = "STOP"
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
+	return id, data, err
+}
+
+// Pause
+func (this *Channel) Pause(transportId string, sessionId int, state bool) (int, []byte, error) {
+	payload := &MediaRequest{
+		MediaSessionId: sessionId,
+	}
+	switch state {
+	case false:
+		payload.Type = "PLAY"
+	case true:
+		payload.Type = "PAUSE"
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
+	return id, data, err
+}
+
+// SeekAbs
+func (this *Channel) SeekAbs(transportId string, sessionId int, value float32) (int, []byte, error) {
+	payload := &MediaRequest{
+		PayloadHeader: PayloadHeader{
+			Type: "SEEK",
+		},
+		MediaSessionId: sessionId,
+		CurrentTime:    value,
+		ResumeState:    "PLAYBACK_START",
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
+	return id, data, err
+}
+
+// SeekRel
+func (this *Channel) SeekRel(transportId string, sessionId int, value float32) (int, []byte, error) {
+	payload := &MediaRequest{
+		PayloadHeader: PayloadHeader{
+			Type: "SEEK",
+		},
+		MediaSessionId: sessionId,
+		RelativeTime:   value,
+		ResumeState:    "PLAYBACK_START",
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, transportId, CAST_NS_MEDIA, payload.WithId(id))
+	return id, data, err
+}
+
+// Stop
+func (this *Channel) Stop() (int, []byte, error) {
+	payload := &PayloadHeader{
+		Type: "STOP",
+	}
+	id := this.nextMsg()
+	data, err := this.encode(CAST_DEFAULT_SENDER, CAST_DEFAULT_RECEIVER, CAST_NS_RECV, payload.WithId(id))
 	return id, data, err
 }
 

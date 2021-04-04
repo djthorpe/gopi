@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -122,6 +123,31 @@ func (this *Chromecast) Define(cfg gopi.Config) {
 		return nil
 	})
 
+	cfg.Command("cast media", "Connect, disconnect or load media", func(ctx context.Context) error {
+		stub := this.GetStub(ctx)
+		args := this.GetArgs(ctx)
+		if len(args) != 2 {
+			return gopi.ErrBadParameter
+		} else {
+			switch args[1] {
+			case "connect":
+				if _, err := stub.ConnectMedia(ctx, args[0]); err != nil {
+					return err
+				}
+			case "disconnect":
+				if _, err := stub.DisconnectMedia(ctx, args[0]); err != nil {
+					return err
+				}
+			default:
+				if url, err := url.Parse(args[1]); err != nil {
+					return err
+				} else if _, err := stub.LoadMedia(ctx, args[0], url, true); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -3,6 +3,7 @@ package chromecast
 import (
 	context "context"
 	"io"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -87,6 +88,26 @@ func (this *Stub) Disconnect(ctx context.Context, key string) error {
 	}
 }
 
+func (this *Stub) ConnectMedia(ctx context.Context, key string) (gopi.Cast, error) {
+	if cast, err := this.ManagerClient.ConnectMedia(ctx, &CastRequest{
+		Key: key,
+	}); err != nil {
+		return nil, err
+	} else {
+		return fromProtoCast(cast), nil
+	}
+}
+
+func (this *Stub) DisconnectMedia(ctx context.Context, key string) (gopi.Cast, error) {
+	if cast, err := this.ManagerClient.DisconnectMedia(ctx, &CastRequest{
+		Key: key,
+	}); err != nil {
+		return nil, err
+	} else {
+		return fromProtoCast(cast), nil
+	}
+}
+
 func (this *Stub) SetVolume(ctx context.Context, key string, level float32) (gopi.Cast, error) {
 	if cast, err := this.ManagerClient.SetVolume(ctx, &VolumeRequest{
 		Key:    key,
@@ -113,6 +134,20 @@ func (this *Stub) LaunchAppWithId(ctx context.Context, key, app string) (gopi.Ca
 	if cast, err := this.ManagerClient.SetApp(ctx, &AppRequest{
 		Key: key,
 		App: app,
+	}); err != nil {
+		return nil, err
+	} else {
+		return fromProtoCast(cast), nil
+	}
+}
+
+func (this *Stub) LoadMedia(ctx context.Context, key string, url *url.URL, autoplay bool) (gopi.Cast, error) {
+	if url == nil {
+		return nil, gopi.ErrBadParameter.WithPrefix("LoadMedia")
+	} else if cast, err := this.ManagerClient.LoadMedia(ctx, &MediaRequest{
+		Key:      key,
+		Url:      url.String(),
+		Autoplay: autoplay,
 	}); err != nil {
 		return nil, err
 	} else {

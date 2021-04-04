@@ -275,7 +275,7 @@ type CastManager interface {
 	Get(string) Cast
 
 	// Connect to the control channel for a device
-	Connect(Cast) error
+	Connect(context.Context, Cast) error
 
 	// Disconnect from the device
 	Disconnect(Cast) error
@@ -290,18 +290,25 @@ type CastManager interface {
 	// LaunchAppWithId launches application with Id on a cast device.
 	LaunchAppWithId(context.Context, Cast, string) error
 
+	// ConnectMedia starts a media session
+	ConnectMedia(context.Context, Cast) error
+
+	// DisconnectMedia ends a media session
+	DisconnectMedia(context.Context, Cast) error
+
 	// LoadMedia loads a video, audio, webpage or image onto the Chromecast,
 	// assuming an application has already been loaded. Autoplay parameter
 	// starts media playback immediately
 	LoadMedia(context.Context, Cast, *url.URL, bool) error
 
-	/*
-		// SetPlay sets media playback state to either PLAY or STOP
-		SetPlay(Cast, bool) error
+	// SetPlay sets media playback state to either PLAY or STOP
+	//SetPlay(context.Context, Cast, bool) error
 
-		// SetPause sets media state to PLAY or PAUSE. Will not affect
-		// state if currently STOP
-		SetPause(Cast, bool) error
+	// SetPause sets media state to PLAY or PAUSE. Will not affect
+	// state if currently STOP
+	//SetPause(context.Context, Cast, bool) error
+
+	/*
 
 		// Seek within media stream relative to start of stream
 		SeekAbs(Cast, time.Duration) error
@@ -378,6 +385,12 @@ type CastStub interface {
 	// Connect to chromecast
 	Disconnect(context.Context, string) error
 
+	// Initiate Media Session
+	ConnectMedia(context.Context, string) (Cast, error)
+
+	// Terminate Media Session
+	DisconnectMedia(context.Context, string) (Cast, error)
+
 	// SetVolume sets the sound volume
 	SetVolume(ctx context.Context, key string, level float32) (Cast, error)
 
@@ -387,17 +400,20 @@ type CastStub interface {
 	// LaunchAppWithId loads an application into the Chromecast
 	LaunchAppWithId(context.Context, string, string) (Cast, error)
 
+	// LoadMedia to chromecast from URL and with autoplay flag
+	LoadMedia(context.Context, string, *url.URL, bool) (Cast, error)
+
+	// Play resumes playback after paused media
+	//Play(context.Context, string) error
+
+	// Pause the media session
+	//Pause(context.Context, string) error
+
 	/*
 
 		// Stop stops currently playing media if a media session is ongoing
 		// or else resets the Chromecast to the backdrop if no media session
 		Stop(ctx context.Context, castId string) error
-
-		// Play resumes playback after paused media
-		Play(ctx context.Context, castId string) error
-
-		// Pause the media session
-		Pause(ctx context.Context, castId string) error
 
 		// SeekAbs within playing audio or video relative to the start of the
 		// playing media

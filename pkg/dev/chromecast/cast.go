@@ -117,6 +117,12 @@ func (this *Cast) Model() string {
 	return this.md
 }
 
+func (this *Cast) service() string {
+	this.RWMutex.RLock()
+	defer this.RWMutex.RUnlock()
+	return this.rs
+}
+
 // Service returns the currently running service
 func (this *Cast) Service() string {
 	this.RWMutex.RLock()
@@ -184,7 +190,12 @@ func (this *Cast) Equals(other *Cast) gopi.CastFlag {
 		flags |= gopi.CAST_FLAG_NAME
 	}
 	// Any change to service or state
-	if this.Service() != other.Service() || this.State() != other.State() {
+	if this.service() != other.service() {
+		fmt.Println(" service changed")
+		flags |= gopi.CAST_FLAG_APP
+	}
+	if this.State() != other.State() {
+		fmt.Println(" state changed")
 		flags |= gopi.CAST_FLAG_APP
 	}
 	// Return changed flags
@@ -216,6 +227,18 @@ func (this *Cast) UpdateState(state *State) gopi.CastFlag {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
 
+	fmt.Println("=>updateState")
+
+	if state.apps != nil {
+		return this.updateStateApps(state)
+	} else if state.media != nil {
+		return this.updateStateMedia(state)
+	} else {
+		return gopi.CAST_FLAG_NONE
+	}
+}
+
+func (this *Cast) updateStateApps(state *State) gopi.CastFlag {
 	// Changes in volume
 	flags := gopi.CAST_FLAG_NONE
 	if this.vol == nil || state.volume.Equals(*this.vol) == false {
@@ -235,7 +258,15 @@ func (this *Cast) UpdateState(state *State) gopi.CastFlag {
 		flags |= gopi.CAST_FLAG_APP
 	}
 
+	fmt.Println("   => updateStateApps", flags, this.app)
+
 	// Return any changed state
+	return flags
+}
+
+func (this *Cast) updateStateMedia(state *State) gopi.CastFlag {
+	fmt.Println("   => updateStateMedia", state.media)
+	flags := gopi.CAST_FLAG_NONE
 	return flags
 }
 
