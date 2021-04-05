@@ -134,6 +134,22 @@ func (r *Rect) Size() (uint32, uint32) {
 	return uint32(r.width), uint32(r.height)
 }
 
+func (r *Rect) SetOrigin(x, y int32) {
+	r.x, r.y = C.int32_t(x), C.int32_t(y)
+}
+
+func (r *Rect) SetSize(w, h uint32) {
+	r.width, r.height = C.int32_t(w), C.int32_t(h)
+}
+
+func (r *Rect) SetY(y int32, h uint32) {
+	r.y, r.height = C.int32_t(y), C.int32_t(h)
+}
+
+func (r *Rect) SetX(x int32, w uint32) {
+	r.x, r.width = C.int32_t(x), C.int32_t(w)
+}
+
 func (r *Rect) String() string {
 	str := "<rect"
 	x, y := r.Origin()

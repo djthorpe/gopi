@@ -77,6 +77,7 @@ type Bitmap interface {
 	Format() SurfaceFormat
 	Size() Size
 	ClearToColor(color.Color)
+	SetAt(color.Color, int, int) error
 }
 
 // FontManager for font management
