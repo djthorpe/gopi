@@ -17,9 +17,9 @@ all: hw httpserver helloworld argonone douglas dnsregister rpc googlecast mediak
 	@echo Use "make test" to run tests
 
 clean: 
+	$(GO) mod tidy
 	rm -fr $(BUILDDIR)
 	$(GO) clean
-	$(GO) mod tidy
 
 # Darwin anticipates additional libraries installed via homebrew
 darwin:
@@ -115,6 +115,7 @@ endif
 
 # Create build folder
 builddir:
+	$(GO) mod tidy
 	install -d $(BUILDDIR)
 
 # Make debian packages

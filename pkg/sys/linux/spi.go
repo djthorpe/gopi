@@ -3,11 +3,13 @@
 package linux
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 	"syscall"
 	"unsafe"
 
+	// Modules
 	"github.com/djthorpe/gopi/v3"
 )
 
@@ -114,6 +116,7 @@ func SPIBitsPerWord(fd uintptr) (uint8, error) {
 }
 
 func SPISetMode(fd uintptr, mode gopi.SPIMode) error {
+	mode = mode & gopi.SPI_MODE_MASK
 	if err := spi_ioctl(fd, SPI_IOC_WR_MODE, unsafe.Pointer(&mode)); err != 0 {
 		return os.NewSyscallError("spi_ioctl", err)
 	} else {
@@ -154,7 +157,6 @@ func SPITransfer(fd uintptr, send []byte, speed uint32, delay uint16, bits uint8
 		delay_usecs:   delay,
 		bits_per_word: bits,
 	}
-
 	if err := spi_ioctl(fd, uintptr(C._SPI_IOC_MESSAGE(C.int(1))), unsafe.Pointer(&message)); err != 0 {
 		return nil, os.NewSyscallError("spi_ioctl", err)
 	} else {

@@ -10,13 +10,6 @@ import (
 	"time"
 
 	"github.com/djthorpe/gopi/v3"
-
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
-
-	_ "github.com/djthorpe/gopi/v3/pkg/dev/waveshare"
-	_ "github.com/djthorpe/gopi/v3/pkg/hw/spi"
 )
 
 type app struct {

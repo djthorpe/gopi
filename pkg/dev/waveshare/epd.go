@@ -9,7 +9,6 @@ import (
 	"time"
 
 	gopi "github.com/djthorpe/gopi/v3"
-	_ "github.com/djthorpe/gopi/v3/pkg/hw/gpio/broadcom"
 	"golang.org/x/image/draw"
 	"golang.org/x/image/math/f64"
 )

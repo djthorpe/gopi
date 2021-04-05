@@ -380,7 +380,7 @@ func (p PlatformType) FlagString() string {
 }
 
 func (m SPIMode) String() string {
-	switch m {
+	switch m & SPI_MODE_MASK {
 	case SPI_MODE_NONE:
 		return "SPI_MODE_NONE"
 	case SPI_MODE_0:
