@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"time"
 
@@ -31,7 +30,7 @@ type Command uint16
 const (
 	SPI_BUS   = 0
 	SPI_SLAVE = 0
-	SPI_SPEED = 4000000
+	SPI_SPEED = 24000000
 	SPI_MODE  = gopi.SPI_MODE_0
 )
 
@@ -109,12 +108,14 @@ func (this *IT8951) New(cfg gopi.Config) error {
 		this.Printf("VCOM=0x%04X", vcom)
 	}
 
-	// Get Device Info
-	if err := this.GetDeviceInfo(timeout); errors.Is(err, context.DeadlineExceeded) {
-		return gopi.ErrNotFound.WithPrefix("IT8951")
-	} else if err != nil {
-		return err
-	}
+	/*
+		// Get Device Info
+		if err := this.GetDeviceInfo(timeout); errors.Is(err, context.DeadlineExceeded) {
+			return gopi.ErrNotFound.WithPrefix("IT8951")
+		} else if err != nil {
+			return err
+		}
+	*/
 
 	// Return success
 	return nil
@@ -152,59 +153,51 @@ func (this *IT8951) WaitForReady(ctx context.Context) error {
 }
 
 func (this *IT8951) WriteCommand(ctx context.Context, cmd Command) error {
-	this.Printf("WriteCommand 0x%04X", cmd)
+	out := append(PREAMBLE_COMMAND, byte(cmd>>8), byte(cmd))
+	this.Printf("WriteCommand 0x%v", hex.EncodeToString(out))
 	if err := this.WaitForReady(ctx); err != nil {
 		return err
-	} else if err := this.SPI.Write(this.bus, PREAMBLE_COMMAND); err != nil {
-		return err
-	} else if err := this.SPI.Write(this.bus, []byte{byte(cmd >> 8), byte(cmd)}); err != nil {
+	} else if err := this.SPI.Write(this.bus, out); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (this *IT8951) ReadData(ctx context.Context, size uint32) ([]byte, error) {
-	this.Print("ReadData ", size, " bytes")
-	in := append(PREAMBLE_READ, 0x00, 0x00) // Two padded bytes at beginning
-	for i := uint32(0); i < size; i++ {
-		in = append(in, 0x00)
-	}
-	this.Print(hex.EncodeToString(in))
-	if err := this.WaitForReady(ctx); err != nil {
-		return nil, err
-	} else if out, err := this.SPI.Transfer(this.bus, in); err != nil {
-		return nil, err
-	} else {
-		return out[1:], nil
-	}
-}
-
-func (this *IT8951) WriteUint16(ctx context.Context, word uint16) error {
-	this.Printf("WriteUint16 0x%04X", word)
-	in := append(PREAMBLE_WRITE, byte(word>>8), byte(word))
+func (this *IT8951) WriteData(ctx context.Context, data []byte) error {
+	out := append(PREAMBLE_WRITE, data...)
+	this.Printf("WriteData 0x%v", hex.EncodeToString(out))
 	if err := this.WaitForReady(ctx); err != nil {
 		return err
-	} else if err := this.SPI.Write(this.bus, in); err != nil {
+	} else if err := this.SPI.Write(this.bus, out); err != nil {
 		return err
 	} else {
 		return nil
 	}
 }
 
+func (this *IT8951) ReadData(ctx context.Context, size uint32) ([]byte, error) {
+	out := append(PREAMBLE_READ, make([]byte, size+2)...)
+	this.Printf("ReadData  0x%v", hex.EncodeToString(out))
+	if err := this.WaitForReady(ctx); err != nil {
+		return nil, err
+	} else if in, err := this.SPI.Transfer(this.bus, out); err != nil {
+		return nil, err
+	} else {
+		return in[2:], nil
+	}
+}
+
+func (this *IT8951) WriteUint16(ctx context.Context, word uint16) error {
+	this.Printf("WriteUint16 0x%04X", word)
+	return this.WriteData(ctx, []byte{byte(word >> 8), byte(word)})
+}
+
 func (this *IT8951) ReadUint16(ctx context.Context) (uint16, error) {
 	this.Printf("ReadUint16")
-	in := append(PREAMBLE_READ, 0x00, 0x00)
-	out := make([]byte, 2)
-	if err := this.WaitForReady(ctx); err != nil {
-		return 0, err
-	} else if err := this.SPI.Write(this.bus, in); err != nil {
-		return 0, err
-	} else if err := this.WaitForReady(ctx); err != nil {
-		return 0, err
-	} else if err := this.SPI.Read(this.bus, out); err != nil {
+	if in, err := this.ReadData(ctx, 2); err != nil {
 		return 0, err
 	} else {
-		return uint16(out[0])<<8 | uint16(out[1]), nil
+		return uint16(in[0])<<8 | uint16(in[1]), nil
 	}
 }
 
@@ -223,8 +216,6 @@ func (this *IT8951) GetDeviceInfo(ctx context.Context) error {
 func (this *IT8951) GetVCOM(ctx context.Context) (uint16, error) {
 	this.Printf("GetVCOM")
 	if err := this.WriteCommand(ctx, CMD_VCOM); err != nil {
-		return 0, err
-	} else if err := this.WriteUint16(ctx, 0x0000); err != nil {
 		return 0, err
 	} else if vcom, err := this.ReadUint16(ctx); err != nil {
 		return 0, err
