@@ -3,7 +3,6 @@
 package linux
 
 import (
-	"encoding/hex"
 	"fmt"
 	"os"
 	"syscall"

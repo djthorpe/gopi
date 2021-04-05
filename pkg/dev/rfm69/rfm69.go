@@ -2,6 +2,8 @@ package rfm69
 
 import (
 	// Modules
+	"fmt"
+
 	gopi "github.com/djthorpe/gopi/v3"
 )
 
@@ -62,7 +64,15 @@ func (this *RFM69) New(gopi.Config) error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PROPERTIES
+// STRINGIFY
+
+func (this *RFM69) String() string {
+	str := "<rfm69"
+	str += fmt.Sprintf(" version=0x%02X", this.version)
+	str += fmt.Sprint(" spibus=", this.SPIBus)
+	str += fmt.Sprint(" spi=", this.SPI)
+	return str + ">"
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE METHODS
