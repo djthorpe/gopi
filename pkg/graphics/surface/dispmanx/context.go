@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/djthorpe/gopi/v3"
+	// Modules
+	gopi "github.com/djthorpe/gopi/v3"
 	dx "github.com/djthorpe/gopi/v3/pkg/sys/dispmanx"
-	"github.com/hashicorp/go-multierror"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -16,7 +17,6 @@ import (
 
 type Context struct {
 	sync.RWMutex
-
 	dx.Display
 	dx.Update
 }
@@ -72,7 +72,7 @@ func (this *Context) Valid() bool {
 // STRINGIFY
 
 func (this *Context) String() string {
-	str := "<context"
+	str := "<dispmanx.context"
 	if handle := this.Update; handle != 0 {
 		str += fmt.Sprintf(" dispmanx=0x%08X", this.Update)
 	}

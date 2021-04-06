@@ -13,11 +13,11 @@ import (
 // INTERFACE
 
 type BitmapFactory interface {
-	New(fmt gopi.SurfaceFormat, w, h uint32) (gopi.Bitmap, error)
+	New(ColorModel, uint32, uint32) (gopi.Bitmap, error)
 	Dispose(gopi.Bitmap) error
 }
 
-type Manager struct {
+type Bitmaps struct {
 	gopi.Unit
 	gopi.Platform
 	sync.Mutex
@@ -29,18 +29,19 @@ type Manager struct {
 // CONSTANTS
 
 var (
-	factories = make(map[gopi.SurfaceFormat]BitmapFactory)
+	factories   = make(map[gopi.SurfaceFormat]BitmapFactory)
+	colormodels = make(map[gopi.SurfaceFormat]ColorModel)
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func (this *Manager) New(gopi.Config) error {
+func (this *Bitmaps) New(gopi.Config) error {
 	this.Require(this.Platform)
 	return nil
 }
 
-func (this *Manager) Dispose() error {
+func (this *Bitmaps) Dispose() error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -62,15 +63,33 @@ func (this *Manager) Dispose() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (this *Bitmaps) String() string {
+	str := "<bitmaps models=["
+	for _, model := range colormodels {
+		str += fmt.Sprint(" ", model)
+	}
+	return str + " ]>"
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // PUBLIC METHODS
 
-func (this *Manager) NewBitmap(format gopi.SurfaceFormat, w, h uint32) (gopi.Bitmap, error) {
+func (this *Bitmaps) NewBitmap(format gopi.SurfaceFormat, w, h uint32) (gopi.Bitmap, error) {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
+	// Get color model
+	model, exists := colormodels[format]
+	if exists == false {
+		return nil, gopi.ErrNotFound.WithPrefix(format)
+	}
+
+	// Create bitmap with factory
 	if factory, exists := factories[format]; exists == false {
 		return nil, gopi.ErrNotFound.WithPrefix(format)
-	} else if bitmap, err := factory.New(format, w, h); err != nil {
+	} else if bitmap, err := factory.New(model, w, h); err != nil {
 		return nil, err
 	} else {
 		this.bitmaps = append(this.bitmaps, bitmap)
@@ -78,7 +97,7 @@ func (this *Manager) NewBitmap(format gopi.SurfaceFormat, w, h uint32) (gopi.Bit
 	}
 }
 
-func (this *Manager) DisposeBitmap(bitmap gopi.Bitmap) error {
+func (this *Bitmaps) DisposeBitmap(bitmap gopi.Bitmap) error {
 	this.Mutex.Lock()
 	defer this.Mutex.Unlock()
 
@@ -93,7 +112,7 @@ func (this *Manager) DisposeBitmap(bitmap gopi.Bitmap) error {
 	return gopi.ErrNotFound.WithPrefix("DisposeBitmap")
 }
 
-func (this *Manager) disposeBitmap(bitmap gopi.Bitmap) error {
+func (this *Bitmaps) disposeBitmap(bitmap gopi.Bitmap) error {
 	if factory, exists := factories[bitmap.Format()]; exists == false {
 		return gopi.ErrInternalAppError.WithPrefix("Dispose")
 	} else {
@@ -111,6 +130,22 @@ func RegisterFactory(factory BitmapFactory, formats ...gopi.SurfaceFormat) {
 		} else {
 			factories[format] = factory
 		}
+	}
+}
+
+func RegisterColorModel(format gopi.SurfaceFormat, model ColorModel) {
+	if _, exists := colormodels[format]; exists {
+		panic("RegisterColorModel: Duplicate: " + fmt.Sprint(format))
+	} else {
+		colormodels[format] = model
+	}
+}
+
+func GetColorModel(fmt gopi.SurfaceFormat) ColorModel {
+	if model, exists := colormodels[fmt]; exists {
+		return model
+	} else {
+		return nil
 	}
 }
 

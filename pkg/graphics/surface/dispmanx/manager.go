@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	// Modules
 	gopi "github.com/djthorpe/gopi/v3"
 	dx "github.com/djthorpe/gopi/v3/pkg/sys/dispmanx"
 	egl "github.com/djthorpe/gopi/v3/pkg/sys/egl"
@@ -16,18 +17,16 @@ import (
 // TYPES
 
 type Manager struct {
-	sync.RWMutex
 	gopi.Unit
 	gopi.Logger
 	gopi.Platform
+	sync.RWMutex
+	*Surfaces
 
 	display *uint
 	handle  dx.Display
 	egl     egl.EGLDisplay
 	info    dx.DisplayInfo
-	bitmap  map[*Bitmap]bool
-	surface map[*Surface]uint16
-	l       sync.RWMutex // Guards bitmap and surface
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,7 +38,7 @@ func (this *Manager) Define(cfg gopi.Config) error {
 }
 
 func (this *Manager) New(gopi.Config) error {
-	this.Require(this.Logger, this.Platform)
+	this.Require(this.Logger, this.Surfaces, this.Platform)
 
 	// Open display
 	if handle, err := dx.DisplayOpen(uint32(*this.display)); err != nil {
@@ -65,42 +64,13 @@ func (this *Manager) New(gopi.Config) error {
 		return err
 	}
 
-	// Create bitmapsand surfaces
-	this.bitmap = make(map[*Bitmap]bool)
-	this.surface = make(map[*Surface]uint16)
-
 	// Return success
 	return nil
 }
 
 func (this *Manager) Dispose() error {
 	this.RWMutex.Lock()
-	this.l.Lock()
 	defer this.RWMutex.Unlock()
-	defer this.l.Unlock()
-
-	// Remove surfaces
-	var result error
-	if update, err := dx.UpdateStart(0); err != nil {
-		result = multierror.Append(result, err)
-	} else {
-		for surface := range this.surface {
-			if err := surface.Dispose(update); err != nil {
-				result = multierror.Append(result, err)
-			}
-		}
-		// Submit
-		if err := dx.UpdateSubmitSync(update); err != nil {
-			result = multierror.Append(result, err)
-		}
-	}
-
-	// Remove bitmaps
-	for bitmap := range this.bitmap {
-		if err := bitmap.Dispose(); err != nil {
-			result = multierror.Append(result, err)
-		}
-	}
 
 	// Terminate EGL
 	if err := egl.EGLTerminate(this.egl); err != nil {
@@ -113,8 +83,6 @@ func (this *Manager) Dispose() error {
 	}
 
 	// Release resources
-	this.surface = nil
-	this.bitmap = nil
 	this.egl = 0
 	this.handle = 0
 
@@ -123,12 +91,21 @@ func (this *Manager) Dispose() error {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// STRINGIFY
+
+func (this *Manager) String() string {
+	str := "<dispmanx.surfacemanager"
+	if size := this.Size(); size != gopi.ZeroSize {
+		str += fmt.Sprint(" size=", size)
+	}
+	str += fmt.Sprint(" surfaces=", this.Surfaces)
+	return str + ">"
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // PROPERTIES
 
 func (this *Manager) Size() gopi.Size {
-	this.RWMutex.RLock()
-	defer this.RWMutex.RUnlock()
-
 	if this.handle == 0 {
 		return gopi.ZeroSize
 	} else {
@@ -139,6 +116,7 @@ func (this *Manager) Size() gopi.Size {
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS
 
+/*
 func (this *Manager) CreateBackground(gopi.GraphicsContext, gopi.SurfaceFlags) (gopi.Surface, error) {
 	// TODO
 	return nil, gopi.ErrNotImplemented
@@ -234,36 +212,19 @@ func (this *Manager) DisposeSurface(ctx gopi.GraphicsContext, surface gopi.Surfa
 	// Return any errors
 	return result
 }
+*/
 
-func (this *Manager) CreateBitmap(format gopi.SurfaceFormat, size gopi.Size) (gopi.Bitmap, error) {
-	bitmap, err := NewBitmap(format, uint32(size.W), uint32(size.H))
-	if err != nil {
-		return nil, err
-	}
-
-	if err := this.addBitmap(bitmap); err != nil {
-		bitmap.Dispose()
-		return nil, err
-	}
-
-	// Retain bitmap
-	bitmap.Retain()
-
-	// Return success
-	return bitmap, nil
+func (this *Manager) CreateBitmap(fmt gopi.SurfaceFormat, size gopi.Size) (gopi.Bitmap, error) {
+	return this.Surfaces.NewBitmap(fmt, uint32(size.W), uint32(size.H))
 }
 
 func (this *Manager) DisposeBitmap(bitmap gopi.Bitmap) error {
-	if bitmap_, ok := bitmap.(*Bitmap); ok == false {
-		return gopi.ErrBadParameter.WithPrefix("DisposeBitmap")
-	} else {
-		return this.releaseBitmap(bitmap_)
-	}
+	return this.Surfaces.DisposeBitmap(bitmap)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // DO
-
+/*
 func (this *Manager) Do(cb gopi.SurfaceManagerCallback) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()
@@ -287,17 +248,6 @@ func (this *Manager) Do(cb gopi.SurfaceManagerCallback) error {
 
 	// Return any errors
 	return result
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// STRINGIFY
-
-func (this *Manager) String() string {
-	str := "<surfacemanager"
-	if size := this.Size(); size != gopi.ZeroSize {
-		str += fmt.Sprint(" size=", size)
-	}
-	return str + ">"
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -374,3 +324,4 @@ func (this *Manager) delSurface(surface *Surface) error {
 	// Return success
 	return nil
 }
+*/

@@ -3,8 +3,6 @@
 package rgba32dx
 
 import (
-	"fmt"
-
 	// Modules
 	gopi "github.com/djthorpe/gopi/v3"
 	dx "github.com/djthorpe/gopi/v3/pkg/sys/dispmanx"

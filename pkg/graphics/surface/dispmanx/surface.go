@@ -8,7 +8,6 @@ import (
 
 	gopi "github.com/djthorpe/gopi/v3"
 	dx "github.com/djthorpe/gopi/v3/pkg/sys/dispmanx"
-	egl "github.com/djthorpe/gopi/v3/pkg/sys/egl"
 	multierror "github.com/hashicorp/go-multierror"
 )
 
@@ -24,18 +23,16 @@ type Surface struct {
 	opacity uint8
 	layer   uint16
 	bitmap  *Bitmap
-	context egl.EGLContext
-	surface egl.EGLSurface
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // LIFECYCLE
 
-func NewSurface(ctx dx.Update, display dx.Display, bitmap *Bitmap, x, y int32, w, h uint32, layer uint16, opacity uint8) (*Surface, error) {
+func NewSurfaceWithBitmap(update dx.Update, display dx.Display, bitmap *Bitmap, x, y int32, w, h uint32, layer uint16, opacity uint8) (*Surface, error) {
 	this := new(Surface)
 
 	// Check parameters
-	if ctx == 0 || w == 0 || h == 0 || w > 0xFFFF || h > 0xFFFF {
+	if update == 0 || w == 0 || h == 0 || w > 0xFFFF || h > 0xFFFF {
 		return nil, gopi.ErrBadParameter.WithPrefix("NewSurface")
 	}
 
@@ -60,7 +57,6 @@ func NewSurface(ctx dx.Update, display dx.Display, bitmap *Bitmap, x, y int32, w
 
 	// Set surface parameters
 	this.bitmap = bitmap
-	this.context = context
 	this.x, this.y = x, y
 	this.w, this.h = w, h
 	this.opacity = opacity
@@ -70,7 +66,6 @@ func NewSurface(ctx dx.Update, display dx.Display, bitmap *Bitmap, x, y int32, w
 	return this, nil
 }
 
-// TODO: Dispose of EGLSurface and EGLContext
 func (this *Surface) Dispose(ctx dx.Update) error {
 	this.RWMutex.Lock()
 	defer this.RWMutex.Unlock()

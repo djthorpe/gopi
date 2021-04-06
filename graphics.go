@@ -37,27 +37,27 @@ type FontSize struct {
 	Unit FontSizeUnit
 }
 
-type SurfaceManagerCallback func(GraphicsContext) error
+//type SurfaceManagerCallback func(GraphicsContext) error
 
 ////////////////////////////////////////////////////////////////////////////////
 // INTERFACES
 
-// SurfaceManager to manage graphics surfaces
+// SurfaceManager manages graphics surfaces
 type SurfaceManager interface {
 	//CreateBackground(GraphicsContext, SurfaceFlags) (Surface, error)
-	CreateSurface(GraphicsContext, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
+	//CreateSurface(GraphicsContext, SurfaceFlags, float32, uint16, Point, Size) (Surface, error)
 	//CreateSurfaceWithBitmap(GraphicsContext, SurfaceFlags, Bitmap, float32, uint16, Point, Size) (Surface, error)
-	DisposeSurface(GraphicsContext, Surface) error
+	//DisposeSurface(GraphicsContext, Surface) error
 
 	// CreateBitmap returns a new bitmap with a specific pixel format
 	// and size. The size cannot be zero
 	CreateBitmap(SurfaceFormat, Size) (Bitmap, error)
 
-	// DisposeBitmap frees resources for a bitmap
+	// DisposeBitmap discards a bitmap
 	DisposeBitmap(Bitmap) error
 
 	// Do method is used to make graphics updates
-	Do(SurfaceManagerCallback) error
+	//Do(SurfaceManagerCallback) error
 }
 
 // Surface is an on-screen surface, which embeds a drawable canvas
@@ -68,7 +68,7 @@ type Surface interface {
 }
 
 // GraphicsContext is an opaque type
-type GraphicsContext interface{}
+//type GraphicsContext interface{}
 
 // Bitmap represents pixel-based images
 type Bitmap interface {

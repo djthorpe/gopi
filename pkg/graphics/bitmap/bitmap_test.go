@@ -21,7 +21,7 @@ import (
 
 type App struct {
 	gopi.Unit
-	*bitmap.Manager
+	*bitmap.Bitmaps
 }
 
 const (
@@ -30,7 +30,7 @@ const (
 
 func Test_Bitmap_001(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		app.Require(app.Manager)
+		app.Require(app.Bitmaps)
 
 		if bitmap, err := app.NewBitmap(gopi.SURFACE_FMT_RGBA32, 10, 10); err != nil {
 			t.Error(err)
@@ -42,7 +42,7 @@ func Test_Bitmap_001(t *testing.T) {
 
 func Test_Bitmap_002(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		app.Require(app.Manager)
+		app.Require(app.Bitmaps)
 
 		bitmap, err := app.NewBitmap(gopi.SURFACE_FMT_RGBA32, 100, 100)
 		if err != nil {
@@ -62,7 +62,7 @@ func Test_Bitmap_002(t *testing.T) {
 
 func Test_Bitmap_003(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
-		app.Require(app.Manager)
+		app.Require(app.Bitmaps)
 
 		reader, err := os.Open(PNG_FILEPATH)
 		if err != nil {
@@ -71,7 +71,7 @@ func Test_Bitmap_003(t *testing.T) {
 		defer reader.Close()
 		if bitmap, _, err := image.Decode(reader); err != nil {
 			t.Error(err)
-		} else if dest, err := app.Manager.NewBitmap(gopi.SURFACE_FMT_RGBA32, uint32(bitmap.Bounds().Dx()), uint32(bitmap.Bounds().Dy())); err != nil {
+		} else if dest, err := app.NewBitmap(gopi.SURFACE_FMT_RGBA32, uint32(bitmap.Bounds().Dx()), uint32(bitmap.Bounds().Dy())); err != nil {
 			t.Error(err)
 		} else {
 			bounds := bitmap.Bounds()

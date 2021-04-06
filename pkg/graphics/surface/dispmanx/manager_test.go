@@ -3,7 +3,6 @@
 package dispmanx_test
 
 import (
-	"image/color"
 	"testing"
 
 	// Frameworks
@@ -36,6 +35,7 @@ func Test_Manager_001(t *testing.T) {
 	})
 }
 
+/*
 func Test_Manager_002(t *testing.T) {
 	tool.Test(t, nil, new(App), func(app *App) {
 		err := app.Manager.Do(func(ctx gopi.GraphicsContext) error {
@@ -65,3 +65,4 @@ func Test_Manager_003(t *testing.T) {
 		}
 	})
 }
+*/
